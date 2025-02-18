@@ -1,9 +1,20 @@
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+const router = createRouter({ routeTree });
+
+declare module "@tanstack/react-router" {
+    interface Register {
+        router: typeof router;
+    }
+}
+
 function App() {
-  return (
-    <div className="bg-blue-500 text-white text-3xl font-bold p-6">
-      ¡Tailwind está funcionando!
-    </div>
-  );
+    return (
+        <>
+            <RouterProvider router={router} />
+        </>
+    );
 }
 
 export default App;
