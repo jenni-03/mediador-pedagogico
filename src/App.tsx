@@ -1,5 +1,6 @@
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import "primeicons/primeicons.css";
 
 const router = createRouter({ routeTree });
 

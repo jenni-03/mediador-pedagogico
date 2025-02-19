@@ -12,8 +12,11 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
-import { Route as SimuladorPracticaSecuenciaImport } from './routes/simulador/practica-secuencia'
-import { Route as ConceptosSecuenciaImport } from './routes/conceptos/secuencia'
+import { Route as SimuladorEstructuraImport } from './routes/simulador/$estructura'
+import { Route as ConceptosEstructuraImport } from './routes/conceptos/$estructura'
+import { Route as ConceptosEstructuraOperacionesImport } from './routes/conceptos/$estructura/operaciones'
+import { Route as ConceptosEstructuraDefinicionImport } from './routes/conceptos/$estructura/definicion'
+import { Route as ConceptosEstructuraComplejidadImport } from './routes/conceptos/$estructura/complejidad'
 
 // Create/Update Routes
 
@@ -23,19 +26,38 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const SimuladorPracticaSecuenciaRoute = SimuladorPracticaSecuenciaImport.update(
-  {
-    id: '/simulador/practica-secuencia',
-    path: '/simulador/practica-secuencia',
-    getParentRoute: () => rootRoute,
-  } as any,
-)
-
-const ConceptosSecuenciaRoute = ConceptosSecuenciaImport.update({
-  id: '/conceptos/secuencia',
-  path: '/conceptos/secuencia',
+const SimuladorEstructuraRoute = SimuladorEstructuraImport.update({
+  id: '/simulador/$estructura',
+  path: '/simulador/$estructura',
   getParentRoute: () => rootRoute,
 } as any)
+
+const ConceptosEstructuraRoute = ConceptosEstructuraImport.update({
+  id: '/conceptos/$estructura',
+  path: '/conceptos/$estructura',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ConceptosEstructuraOperacionesRoute =
+  ConceptosEstructuraOperacionesImport.update({
+    id: '/operaciones',
+    path: '/operaciones',
+    getParentRoute: () => ConceptosEstructuraRoute,
+  } as any)
+
+const ConceptosEstructuraDefinicionRoute =
+  ConceptosEstructuraDefinicionImport.update({
+    id: '/definicion',
+    path: '/definicion',
+    getParentRoute: () => ConceptosEstructuraRoute,
+  } as any)
+
+const ConceptosEstructuraComplejidadRoute =
+  ConceptosEstructuraComplejidadImport.update({
+    id: '/complejidad',
+    path: '/complejidad',
+    getParentRoute: () => ConceptosEstructuraRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -48,67 +70,127 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/conceptos/secuencia': {
-      id: '/conceptos/secuencia'
-      path: '/conceptos/secuencia'
-      fullPath: '/conceptos/secuencia'
-      preLoaderRoute: typeof ConceptosSecuenciaImport
+    '/conceptos/$estructura': {
+      id: '/conceptos/$estructura'
+      path: '/conceptos/$estructura'
+      fullPath: '/conceptos/$estructura'
+      preLoaderRoute: typeof ConceptosEstructuraImport
       parentRoute: typeof rootRoute
     }
-    '/simulador/practica-secuencia': {
-      id: '/simulador/practica-secuencia'
-      path: '/simulador/practica-secuencia'
-      fullPath: '/simulador/practica-secuencia'
-      preLoaderRoute: typeof SimuladorPracticaSecuenciaImport
+    '/simulador/$estructura': {
+      id: '/simulador/$estructura'
+      path: '/simulador/$estructura'
+      fullPath: '/simulador/$estructura'
+      preLoaderRoute: typeof SimuladorEstructuraImport
       parentRoute: typeof rootRoute
+    }
+    '/conceptos/$estructura/complejidad': {
+      id: '/conceptos/$estructura/complejidad'
+      path: '/complejidad'
+      fullPath: '/conceptos/$estructura/complejidad'
+      preLoaderRoute: typeof ConceptosEstructuraComplejidadImport
+      parentRoute: typeof ConceptosEstructuraImport
+    }
+    '/conceptos/$estructura/definicion': {
+      id: '/conceptos/$estructura/definicion'
+      path: '/definicion'
+      fullPath: '/conceptos/$estructura/definicion'
+      preLoaderRoute: typeof ConceptosEstructuraDefinicionImport
+      parentRoute: typeof ConceptosEstructuraImport
+    }
+    '/conceptos/$estructura/operaciones': {
+      id: '/conceptos/$estructura/operaciones'
+      path: '/operaciones'
+      fullPath: '/conceptos/$estructura/operaciones'
+      preLoaderRoute: typeof ConceptosEstructuraOperacionesImport
+      parentRoute: typeof ConceptosEstructuraImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface ConceptosEstructuraRouteChildren {
+  ConceptosEstructuraComplejidadRoute: typeof ConceptosEstructuraComplejidadRoute
+  ConceptosEstructuraDefinicionRoute: typeof ConceptosEstructuraDefinicionRoute
+  ConceptosEstructuraOperacionesRoute: typeof ConceptosEstructuraOperacionesRoute
+}
+
+const ConceptosEstructuraRouteChildren: ConceptosEstructuraRouteChildren = {
+  ConceptosEstructuraComplejidadRoute: ConceptosEstructuraComplejidadRoute,
+  ConceptosEstructuraDefinicionRoute: ConceptosEstructuraDefinicionRoute,
+  ConceptosEstructuraOperacionesRoute: ConceptosEstructuraOperacionesRoute,
+}
+
+const ConceptosEstructuraRouteWithChildren =
+  ConceptosEstructuraRoute._addFileChildren(ConceptosEstructuraRouteChildren)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/conceptos/secuencia': typeof ConceptosSecuenciaRoute
-  '/simulador/practica-secuencia': typeof SimuladorPracticaSecuenciaRoute
+  '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
+  '/simulador/$estructura': typeof SimuladorEstructuraRoute
+  '/conceptos/$estructura/complejidad': typeof ConceptosEstructuraComplejidadRoute
+  '/conceptos/$estructura/definicion': typeof ConceptosEstructuraDefinicionRoute
+  '/conceptos/$estructura/operaciones': typeof ConceptosEstructuraOperacionesRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/conceptos/secuencia': typeof ConceptosSecuenciaRoute
-  '/simulador/practica-secuencia': typeof SimuladorPracticaSecuenciaRoute
+  '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
+  '/simulador/$estructura': typeof SimuladorEstructuraRoute
+  '/conceptos/$estructura/complejidad': typeof ConceptosEstructuraComplejidadRoute
+  '/conceptos/$estructura/definicion': typeof ConceptosEstructuraDefinicionRoute
+  '/conceptos/$estructura/operaciones': typeof ConceptosEstructuraOperacionesRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/conceptos/secuencia': typeof ConceptosSecuenciaRoute
-  '/simulador/practica-secuencia': typeof SimuladorPracticaSecuenciaRoute
+  '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
+  '/simulador/$estructura': typeof SimuladorEstructuraRoute
+  '/conceptos/$estructura/complejidad': typeof ConceptosEstructuraComplejidadRoute
+  '/conceptos/$estructura/definicion': typeof ConceptosEstructuraDefinicionRoute
+  '/conceptos/$estructura/operaciones': typeof ConceptosEstructuraOperacionesRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/conceptos/secuencia' | '/simulador/practica-secuencia'
+  fullPaths:
+    | '/'
+    | '/conceptos/$estructura'
+    | '/simulador/$estructura'
+    | '/conceptos/$estructura/complejidad'
+    | '/conceptos/$estructura/definicion'
+    | '/conceptos/$estructura/operaciones'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/conceptos/secuencia' | '/simulador/practica-secuencia'
+  to:
+    | '/'
+    | '/conceptos/$estructura'
+    | '/simulador/$estructura'
+    | '/conceptos/$estructura/complejidad'
+    | '/conceptos/$estructura/definicion'
+    | '/conceptos/$estructura/operaciones'
   id:
     | '__root__'
     | '/'
-    | '/conceptos/secuencia'
-    | '/simulador/practica-secuencia'
+    | '/conceptos/$estructura'
+    | '/simulador/$estructura'
+    | '/conceptos/$estructura/complejidad'
+    | '/conceptos/$estructura/definicion'
+    | '/conceptos/$estructura/operaciones'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ConceptosSecuenciaRoute: typeof ConceptosSecuenciaRoute
-  SimuladorPracticaSecuenciaRoute: typeof SimuladorPracticaSecuenciaRoute
+  ConceptosEstructuraRoute: typeof ConceptosEstructuraRouteWithChildren
+  SimuladorEstructuraRoute: typeof SimuladorEstructuraRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ConceptosSecuenciaRoute: ConceptosSecuenciaRoute,
-  SimuladorPracticaSecuenciaRoute: SimuladorPracticaSecuenciaRoute,
+  ConceptosEstructuraRoute: ConceptosEstructuraRouteWithChildren,
+  SimuladorEstructuraRoute: SimuladorEstructuraRoute,
 }
 
 export const routeTree = rootRoute
@@ -122,18 +204,35 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/conceptos/secuencia",
-        "/simulador/practica-secuencia"
+        "/conceptos/$estructura",
+        "/simulador/$estructura"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
-    "/conceptos/secuencia": {
-      "filePath": "conceptos/secuencia.tsx"
+    "/conceptos/$estructura": {
+      "filePath": "conceptos/$estructura.tsx",
+      "children": [
+        "/conceptos/$estructura/complejidad",
+        "/conceptos/$estructura/definicion",
+        "/conceptos/$estructura/operaciones"
+      ]
     },
-    "/simulador/practica-secuencia": {
-      "filePath": "simulador/practica-secuencia.tsx"
+    "/simulador/$estructura": {
+      "filePath": "simulador/$estructura.tsx"
+    },
+    "/conceptos/$estructura/complejidad": {
+      "filePath": "conceptos/$estructura/complejidad.tsx",
+      "parent": "/conceptos/$estructura"
+    },
+    "/conceptos/$estructura/definicion": {
+      "filePath": "conceptos/$estructura/definicion.tsx",
+      "parent": "/conceptos/$estructura"
+    },
+    "/conceptos/$estructura/operaciones": {
+      "filePath": "conceptos/$estructura/operaciones.tsx",
+      "parent": "/conceptos/$estructura"
     }
   }
 }
