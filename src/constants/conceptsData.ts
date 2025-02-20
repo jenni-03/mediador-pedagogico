@@ -1,5 +1,5 @@
 export const conceptosData: Record<string, any> = {
-  arbol: {
+  1: {
     definicion: {
       descripcion:
         "Un árbol es una estructura de datos jerárquica que se compone de nodos...",
@@ -19,10 +19,11 @@ export const conceptosData: Record<string, any> = {
     complejidad: {
       analisis: "El análisis de complejidad del árbol depende de su balance...",
     },
-    tipo: "Árboles Binarios"
+    tipo: "Árboles Binarios",
+    nombre: "arbol"
   },
 
-  lista: {
+  2: {
     definicion: {
       descripcion: "Una lista es una colección ordenada de elementos...",
       caracteristicas: [
@@ -45,6 +46,7 @@ export const conceptosData: Record<string, any> = {
       analisis:
         "El acceso en listas enlazadas es O(n), mientras que en arreglos es O(1)...",
     },
-    tipo: "Estructura Lineal"
+    tipo: "Estructura Lineal",
+    nombre: "lista"
   },
 };
