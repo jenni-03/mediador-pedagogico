@@ -1,9 +1,14 @@
+import { getRouteApi } from "@tanstack/react-router";
 import { ConsoleComponent } from "./components/ConsoleComponent";
+import { DataStructureInfo } from "./components/DataStructureInfo";
 import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
+import { conceptosData } from "../../constants/conceptsData";
 
 export function Simulator() {
-    // const route = getRouteApi("/simulador/$estructura");
-    // const { estructura } = route.useParams();
+    const route = getRouteApi("/simulador/$estructura");
+    const { estructura } = route.useParams();
+    const nombre = conceptosData[estructura].nombre;
+
     const buttonsLeft = [
         { label: "Insert", tooltip: "Insertar un nodo..." },
         { label: "Delete", tooltip: "Borrar un nodo..." },
@@ -20,19 +25,12 @@ export function Simulator() {
         <div className="h-screen flex flex-col">
             <div>
                 <h1 className="font-bold text-3xl text-center mt-2">
-                    NOMBRE ESTRUCTURA
+                    {nombre.toUpperCase()}
                 </h1>
             </div>
-            <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3">
+            <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
                 <div className="flex-[2] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4">
-                    {/* SEPARAR EN UN COMPONENTE */}
-                    <div className="flex-[4] flex flex-row border-2 border-gray-300 bg-gray-100 rounded-3xl p-4">
-                        <div className="flex-[5]"></div>
-                        <div className="flex-[1] mt-2">
-                            <h1 className="font-medium">TAMAÑO: </h1>
-                            <h1 className="font-medium">CAPACIDAD: </h1>
-                        </div>
-                    </div>
+                    <DataStructureInfo />
                     {/* Muestra los comandos */}
                     <div className="flex-[1] flex items-center flex-col rounded-xl">
                         <span
@@ -48,12 +46,11 @@ export function Simulator() {
                     </div>
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
-                {/* <div className="flex-[1] flex flex-col sm:flex-row rounded-xl mb-3 mx-3 overflow-hidden"> */}
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
-                        <ConsoleComponent></ConsoleComponent>
+                        <ConsoleComponent />
                     </div>
                     {/* SEPARAR EN UN COMPONENTE */}
-                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 ml-2 rounded-xl shadow-[6px_6px_10px_#b8b8b8]">
+                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl">
                         <h1 className="font-medium text-center mt-2">
                             CÓDIGO DE EJECUCIÓN
                         </h1>
