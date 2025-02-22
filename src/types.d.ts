@@ -23,6 +23,21 @@ export type SideBarProps = {
     setIsOpen: (open: boolean) => void
 }
 
+export type SideBarItemProps = {
+    to: string;
+    params: any;
+    label: string;
+}
+
+export type CommandProps = {
+    label: string;
+    tooltip: string;
+}
+
+export type GroupCommandProps = {
+    buttons: CommandProps[];
+}
+
 export type FilterState = {
     query: string;
     type: FilterTypeValue;

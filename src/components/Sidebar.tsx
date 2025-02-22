@@ -1,10 +1,15 @@
-import { Link, useMatchRoute } from "@tanstack/react-router";
 import { SideBarProps } from "../types";
+import { SidebarItem } from "./SidebarItem";
 
 export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
-    const matchRoute = useMatchRoute();
-
-    const isActive = (path: string) => !!matchRoute({ to: path });
+    const menuItems = [
+        { to: "/conceptos/$estructura/definicion", label: "Definición" },
+        { to: "/conceptos/$estructura/operaciones", label: "Operaciones" },
+        {
+            to: "/conceptos/$estructura/complejidad",
+            label: "Costo y Complejidad",
+        },
+    ];
 
     return (
         <>
@@ -34,54 +39,15 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
                 <h2 className="text-lg font-bold mb-4">SEED</h2>
                 <hr className="mt-1 mb-4" />
                 <ul className="space-y-2">
-                    <li>
-                        <Link
-                            to="/conceptos/$estructura/definicion"
+                    {/* Muestra los elementos del menú */}
+                    {menuItems.map((item) => (
+                        <SidebarItem
+                            key={item.to}
+                            to={item.to}
                             params={{ estructura }}
-                            className={`block p-2 rounded-lg transition-colors duration-200 ${
-                                isActive("/conceptos/$estructura/definicion")
-                                    ? "bg-gray-300 font-medium"
-                                    : "bg-white text-gray-500 hover:bg-gray-200"
-                            }`}
-                        >
-                            <i
-                                className={`pi ${isActive("/conceptos/$estructura/definicion") ? "pi-star-fill" : "pi-star"} mr-3`}
-                            ></i>
-                            Definición
-                        </Link>
-                    </li>
-                    <li>
-                        <Link
-                            to="/conceptos/$estructura/operaciones"
-                            params={{ estructura }}
-                            className={`block p-2 rounded-lg transition-colors duration-200 ${
-                                isActive("/conceptos/$estructura/operaciones")
-                                    ? "bg-gray-300 font-medium"
-                                    : "bg-white text-gray-500 hover:bg-gray-200"
-                            }`}
-                        >
-                            <i
-                                className={`pi ${isActive("/conceptos/$estructura/operaciones") ? "pi-star-fill" : "pi-star"} mr-3`}
-                            ></i>
-                            Operaciones
-                        </Link>
-                    </li>
-                    <li>
-                        <Link
-                            to="/conceptos/$estructura/complejidad"
-                            params={{ estructura }}
-                            className={`block p-2 rounded-lg transition-colors duration-200 ${
-                                isActive("/conceptos/$estructura/complejidad")
-                                    ? "bg-gray-300 font-medium"
-                                    : "bg-white text-gray-500 hover:bg-gray-200"
-                            }`}
-                        >
-                            <i
-                                className={`pi ${isActive("/conceptos/$estructura/complejidad") ? "pi-star-fill" : "pi-star"} mr-3`}
-                            ></i>
-                            Costo y Complejidad
-                        </Link>
-                    </li>
+                            label={item.label}
+                        />
+                    ))}
                 </ul>
             </div>
 
