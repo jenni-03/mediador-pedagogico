@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as PruebaImport } from './routes/prueba'
 import { Route as IndexImport } from './routes/index'
 import { Route as SimuladorEstructuraImport } from './routes/simulador/$estructura'
 import { Route as ConceptosEstructuraImport } from './routes/conceptos/$estructura'
@@ -19,6 +20,12 @@ import { Route as ConceptosEstructuraDefinicionImport } from './routes/conceptos
 import { Route as ConceptosEstructuraComplejidadImport } from './routes/conceptos/$estructura/complejidad'
 
 // Create/Update Routes
+
+const PruebaRoute = PruebaImport.update({
+  id: '/prueba',
+  path: '/prueba',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   id: '/',
@@ -68,6 +75,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/prueba': {
+      id: '/prueba'
+      path: '/prueba'
+      fullPath: '/prueba'
+      preLoaderRoute: typeof PruebaImport
       parentRoute: typeof rootRoute
     }
     '/conceptos/$estructura': {
@@ -127,6 +141,7 @@ const ConceptosEstructuraRouteWithChildren =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/prueba': typeof PruebaRoute
   '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
   '/simulador/$estructura': typeof SimuladorEstructuraRoute
   '/conceptos/$estructura/complejidad': typeof ConceptosEstructuraComplejidadRoute
@@ -136,6 +151,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/prueba': typeof PruebaRoute
   '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
   '/simulador/$estructura': typeof SimuladorEstructuraRoute
   '/conceptos/$estructura/complejidad': typeof ConceptosEstructuraComplejidadRoute
@@ -146,6 +162,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/prueba': typeof PruebaRoute
   '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
   '/simulador/$estructura': typeof SimuladorEstructuraRoute
   '/conceptos/$estructura/complejidad': typeof ConceptosEstructuraComplejidadRoute
@@ -157,6 +174,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/prueba'
     | '/conceptos/$estructura'
     | '/simulador/$estructura'
     | '/conceptos/$estructura/complejidad'
@@ -165,6 +183,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/prueba'
     | '/conceptos/$estructura'
     | '/simulador/$estructura'
     | '/conceptos/$estructura/complejidad'
@@ -173,6 +192,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/prueba'
     | '/conceptos/$estructura'
     | '/simulador/$estructura'
     | '/conceptos/$estructura/complejidad'
@@ -183,12 +203,14 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PruebaRoute: typeof PruebaRoute
   ConceptosEstructuraRoute: typeof ConceptosEstructuraRouteWithChildren
   SimuladorEstructuraRoute: typeof SimuladorEstructuraRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PruebaRoute: PruebaRoute,
   ConceptosEstructuraRoute: ConceptosEstructuraRouteWithChildren,
   SimuladorEstructuraRoute: SimuladorEstructuraRoute,
 }
@@ -204,12 +226,16 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/prueba",
         "/conceptos/$estructura",
         "/simulador/$estructura"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/prueba": {
+      "filePath": "prueba.tsx"
     },
     "/conceptos/$estructura": {
       "filePath": "conceptos/$estructura.tsx",
