@@ -25,7 +25,7 @@ export type SideBarProps = {
 
 export type SideBarItemProps = {
     to: string;
-    params: any;
+    params: string;
     label: string;
 }
 

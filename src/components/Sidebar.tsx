@@ -44,7 +44,7 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
                         <SidebarItem
                             key={item.to}
                             to={item.to}
-                            params={{ estructura }}
+                            params={estructura}
                             label={item.label}
                         />
                     ))}

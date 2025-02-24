@@ -9,7 +9,7 @@ export function SidebarItem({ to, params, label }: SideBarItemProps) {
         <li>
             <Link
                 to={to}
-                params={params}
+                params={{ estructura: params }}
                 className={`block p-2 rounded-lg transition-colors duration-200 ${
                     isActive
                         ? "bg-gray-300 font-medium"
