@@ -7,7 +7,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Lista Simplemente Enlazada',
@@ -17,7 +17,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Lista Doblemente Enlazada',
@@ -27,7 +27,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Lista Circular Simple',
@@ -37,7 +37,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Lista Circular Doble Enlazada',
@@ -47,7 +47,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Pila',
@@ -57,7 +57,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Cola',
@@ -67,7 +67,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Cola de Prioridad',
@@ -77,7 +77,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Tabla Hash',
@@ -87,7 +87,7 @@ export const data = [
         bgCard: '#7309b6',
         bgButton: '#b064d4',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol Binario',
@@ -97,7 +97,7 @@ export const data = [
         type: 'arbol_binario',
         bgButton: '#90def6',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol Binario de Búsqueda',
@@ -107,7 +107,7 @@ export const data = [
         type: 'arbol_binario',
         bgButton: '#90def6',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol AVL',
@@ -117,7 +117,7 @@ export const data = [
         type: 'arbol_binario',
         bgButton: '#90def6',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol RojiNegro',
@@ -127,7 +127,7 @@ export const data = [
         type: 'arbol_binario',
         bgButton: '#90def6',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol Splay',
@@ -137,7 +137,7 @@ export const data = [
         type: 'arbol_binario',
         bgButton: '#90def6',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol Heap',
@@ -147,7 +147,7 @@ export const data = [
         type: 'arbol_binario',
         bgButton: '#90def6',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol Eneario',
@@ -157,7 +157,7 @@ export const data = [
         bgCard: '#ff5501',
         bgButton: '#ff9460',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol 1-2-3',
@@ -167,7 +167,7 @@ export const data = [
         bgCard: '#ff5501',
         bgButton: '#ff9460',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol B',
@@ -177,7 +177,7 @@ export const data = [
         bgCard: '#ff5501',
         bgButton: '#ff9460',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Árbol B+',
@@ -187,6 +187,6 @@ export const data = [
         bgCard: '#ff5501',
         bgButton: '#ff9460',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '',
+        toPracticar: '/simulador/$estructura',
     },
 ]

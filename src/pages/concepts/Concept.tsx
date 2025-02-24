@@ -14,6 +14,20 @@ export function Concept() {
         navigate({ to: `/conceptos/${estructura}/definicion`, replace: true });
     }, [estructura, navigate]);
 
+    // Hace que el botón "Atrás" del navegador redirija al home "/"
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            event.preventDefault();
+            navigate({ to: "/", replace: true });
+        };
+
+        window.addEventListener("popstate", handlePopState);
+
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [navigate]);
+
     return (
         <div className="flex h-screen">
             {/* Sidebar dinámico, dependiendo del tamaño de la pantalla*/}
