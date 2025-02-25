@@ -9,16 +9,13 @@ export function Simulator() {
     const { estructura } = route.useParams();
     const nombre = conceptosData[estructura].nombre;
 
-    const buttonsLeft = [
+    const buttons = [
         { label: "Insert", tooltip: "Insertar un nodo..." },
         { label: "Delete", tooltip: "Borrar un nodo..." },
         { label: "Create", tooltip: "Crear un nodo..." },
-    ];
-
-    const buttonsRight = [
         { label: "Search", tooltip: "Buscar el nodo..." },
         { label: "Edit", tooltip: "Editar el nodo..." },
-        { label: "Clear", tooltip: "Borrar el nodo..." },
+        { label: "Clear", tooltip: "Borrar el nodo..." }
     ];
 
     return (
@@ -39,10 +36,7 @@ export function Simulator() {
                         >
                             COMANDOS DISPONIBLES
                         </span>
-                        <div className="flex flex-row justify-between w-full">
-                            <GroupCommandsComponent buttons={buttonsLeft} />
-                            <GroupCommandsComponent buttons={buttonsRight} />
-                        </div>
+                        <GroupCommandsComponent buttons={buttons}/>
                     </div>
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
