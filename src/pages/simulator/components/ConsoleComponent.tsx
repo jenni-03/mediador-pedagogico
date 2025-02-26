@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { commandRules } from "../../../constants/commandRules";
+import { commandRules } from "../../../shared/constants/commandRules";
 
 interface ConsoleComponentProps {
     structureType: string;
