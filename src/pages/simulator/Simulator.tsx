@@ -18,6 +18,11 @@ export function Simulator() {
         { label: "Clear", tooltip: "Borrar el nodo..." }
     ];
 
+    const handleCommand = (command: string) => {
+        console.log(`Comando a ejecutar: ${command}`);
+        // Añadir lógica para procesar el comando
+    };
+
     return (
         <div className="h-screen flex flex-col">
             <div>
@@ -41,7 +46,7 @@ export function Simulator() {
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
-                        <ConsoleComponent />
+                        <ConsoleComponent structureType="secuencia" onCommand={handleCommand}/>
                     </div>
                     {/* SEPARAR EN UN COMPONENTE */}
                     <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl">

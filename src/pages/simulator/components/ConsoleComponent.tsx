@@ -1,36 +1,47 @@
 import { useState } from "react";
+import { commandRules } from "../../../constants/commandRules";
 
-export function ConsoleComponent() {
-    // Para manejar el historial de comandos
+interface ConsoleComponentProps {
+    structureType: string;
+    onCommand: (command: string) => void;
+}
+
+export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentProps) {
     const [history, setHistory] = useState<string[]>([]);
-    // Guarda el comando
     const [input, setInput] = useState("");
-    // Para buscar en el historial de comandos
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && input.trim() !== "") {
-            e.preventDefault(); //Evita salto de línea
-            if (input.trim() === "") return;
+            e.preventDefault();
 
             if (input.trim().toLowerCase() === "clear") {
-                setHistory([]); //Vacía la consola
+                setHistory([]);
                 setInput("");
             } else {
-                setHistory([...history, input]); // Guarda el comando en el historial
+                // Se divide el comando escrito en el input
+                const parts = input.trim().split(/\s+/);
+                // Se verifica si es o no un comando con formato válido
+                const commandValid = commandRules[structureType](parts) ?? false;
+
+                if (commandValid) {
+                    onCommand(input.trim()); // Enviamos el comando a simulator
+                    setHistory([...history, `$ ${input}`, "Comando válido, procesando..."]);
+                } else {
+                    setHistory([...history, `$ ${input}`, "Comando no válido"]);
+                }
                 setInput("");
             }
         }
+
         // Manejo de Flecha Arriba
         else if (e.key === "ArrowUp") {
             e.preventDefault();
             if (history.length > 0) {
-                const newIndex =
-                    historyIndex === -1
-                        ? history.length - 1
-                        : Math.max(0, historyIndex - 1);
+                const newIndex = historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1);
                 setHistoryIndex(newIndex);
-                setInput(history[newIndex]);
+                setInput(history[newIndex].replace("$ ", ""));
             }
         }
 
@@ -38,10 +49,9 @@ export function ConsoleComponent() {
         else if (e.key === "ArrowDown") {
             e.preventDefault();
             if (history.length > 0) {
-                const newIndex =
-                    historyIndex === history.length - 1 ? -1 : historyIndex + 1;
+                const newIndex = historyIndex === history.length - 1 ? -1 : historyIndex + 1;
                 setHistoryIndex(newIndex);
-                setInput(newIndex === -1 ? "" : history[newIndex]);
+                setInput(newIndex === -1 ? "" : history[newIndex].replace("$ ", ""));
             }
         }
     };
@@ -49,8 +59,8 @@ export function ConsoleComponent() {
     return (
         <div className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono">
             {history.map((cmd, index) => (
-                <div key={index} className="text-green-400">
-                    $ {cmd}
+                <div key={index} className={cmd === "OK" ? "text-green-400" : cmd === "Comando no válido" ? "text-red-500" : "text-green-400"}>
+                    {cmd}
                 </div>
             ))}
 
