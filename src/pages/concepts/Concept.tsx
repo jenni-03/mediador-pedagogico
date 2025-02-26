@@ -1,6 +1,6 @@
 import { getRouteApi, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { SideBar } from "../../components/Sidebar";
+import { SideBar } from "./components/Sidebar";
 
 export function Concept() {
     const route = getRouteApi("/conceptos/$estructura");

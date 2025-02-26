@@ -1,4 +1,4 @@
-import { TYPE_FILTER } from "./constants/consts";
+import { TYPE_FILTER } from "./shared/constants/consts";
 
 export type CardListProps = {
     data: CardData[]
@@ -38,6 +38,13 @@ export type GroupCommandProps = {
     buttons: CommandProps[];
 }
 
+export type SimulatorProps = {
+    actions: BaseStructureActions;
+    query: BaseQueryOperations;
+    reset: () => void;
+    children: React.ReactNode
+}
+
 export type FilterState = {
     query: string;
     type: FilterTypeValue;
@@ -54,4 +61,20 @@ export interface CardData {
     bgButton: string;
     toConceptos: string;
     toPracticar: string;
+}
+
+export type BaseQueryOperations = {
+    create: number | null,
+    toAdd: number | null,
+    toDelete: number | null,
+    toSearch: number | null,
+    toUpdate?: number | [number, number] | []
+}
+
+export type BaseStructureActions = {
+    create: (n: number) => void,
+    insert: (element: number) => void,
+    remove: (element: number) => void,
+    search: (element: number) => void,
+    clear: () => void,
 }

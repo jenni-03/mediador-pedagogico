@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { CardList } from "./CardList";
-import { NavBar } from "./NavBar";
+import { CardList } from "./components/CardList";
+import { NavBar } from "./components/NavBar";
 import { FilterState } from "../../types";
-import { data } from "../../constants/data-cards";
+import { data } from "../../shared/constants/data-cards";
 
 export function Home() {
     const [filter, setFilter] = useState<FilterState>({

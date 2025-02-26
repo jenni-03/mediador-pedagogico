@@ -1,0 +1,98 @@
+import { useState } from "react"
+import { Secuencia } from "../../../shared/utils/structures/Secuencia"
+import { BaseQueryOperations } from "../../../types";
+
+export function useSequence() {
+
+    // Estado para manejar la secuencia
+    const [secuencia, setSecuencia] = useState(new Secuencia(0));
+
+    // Estado para manejar las query del usuario
+    const [query, setQuery] = useState<BaseQueryOperations>({
+        create: null,
+        toAdd: null,
+        toDelete: null,
+        toSearch: null,
+        toUpdate: []
+    });
+
+    const insertarElemento = (elemento: number) => {
+        const nuevaSecuencia = secuencia.clonar();
+        nuevaSecuencia.insertar(elemento);
+        setSecuencia(nuevaSecuencia);
+        setQuery((prev) => ({
+            ...prev,
+            toAdd: elemento
+        }));
+    }
+
+    const eliminarElemento = (elemento: number) => {
+        const nuevaSecuencia = secuencia.clonar();
+        nuevaSecuencia.eliminar(elemento);
+        setSecuencia(nuevaSecuencia);
+        setQuery((prev) => ({
+            ...prev,
+            toDelete: elemento
+        }));
+    }
+
+    const buscarElemento = (elemento: number) => {
+        return secuencia.esta(elemento);
+    }
+
+    const actualizarElemento = (elemento: number, pos: number) => {
+        const nuevaSecuencia = secuencia.clonar();
+        nuevaSecuencia.set(pos, elemento);
+        setSecuencia(nuevaSecuencia);
+        setQuery((prev) => ({
+            ...prev,
+            toUpdate: [pos, elemento]
+        }));
+    }
+
+    const crearSecuencia = (n: number) => {
+        const nuevaSecuencia = new Secuencia(n);
+        setSecuencia(nuevaSecuencia);
+        setQuery((prev) => ({
+            ...prev,
+            create: n
+        }));
+    }
+
+    const vaciarSecuencia = () => {
+        const nuevaSecuencia = secuencia.clonar();
+        nuevaSecuencia.vaciar();
+        setSecuencia(nuevaSecuencia);
+    }
+
+    const setSearchQuery = (elemento: number) => {
+        setQuery((prev) => ({
+            ...prev,
+            toSearch: elemento
+        }));
+    }
+
+    const resetQueryValues = () => {
+        setQuery({
+            create: null,
+            toAdd: null,
+            toDelete: null,
+            toSearch: null,
+            toUpdate: []
+        })
+    }
+
+    return {
+        secuencia,
+        query,
+        insertarElemento,
+        eliminarElemento,
+        buscarElemento,
+        actualizarElemento,
+        crearSecuencia,
+        vaciarSecuencia,
+        setSearchQuery,
+        resetQueryValues
+    }
+
+}

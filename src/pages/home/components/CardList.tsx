@@ -1,6 +1,6 @@
-import { CardListProps } from "../../types";
+import { CardListProps } from "../../../types";
 import { Card } from "./Card";
-import { useFilteredCard } from "./useFilteredCard";
+import { useFilteredCard } from "../hooks/useFilteredCard";
 import { AnimatePresence } from "framer-motion";
 
 export function CardList({ data, filter }: CardListProps) {

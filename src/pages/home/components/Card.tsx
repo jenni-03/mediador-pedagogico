@@ -1,6 +1,6 @@
-import { CardData } from "../../types";
+import { CardData } from "../../../types";
 import { motion } from "framer-motion";
-import { AnimatedButtonLink } from "../../components/AnimatedButtonLink";
+import { AnimatedButtonLink } from "../../../shared/components/AnimatedButtonLink";
 
 export function Card({
     bgCard,

@@ -3,10 +3,10 @@
 /**
  * Clase que representa un vector
  */
-export class Secuencia<T> {
+export class Secuencia {
 
     // Vector donde se almacena los objetos
-    private vector: (T | null)[];
+    private vector: (number | null)[];
 
     // Cantidad de elementos actualmente almacenados en la secuencia.
     private cant: number;
@@ -21,7 +21,7 @@ export class Secuencia<T> {
             this.cant = 0;
             return;
         }
-        this.vector = new Array<T | null>(n);
+        this.vector = new Array<number | null>(n);
         for (let i = 0; i < n; i++) {
             this.vector[i] = null;
         }
@@ -32,7 +32,7 @@ export class Secuencia<T> {
      * Método que inserta un nuevo elemento a la secuencia
      * @param elem Elemento a insertar
      */
-    insertar(elem: T) {
+    insertar(elem: number) {
         if (this.cant >= this.vector.length) {
             console.error("No hay más espacio");
             return;
@@ -45,7 +45,7 @@ export class Secuencia<T> {
      * Método que elimina un elemento de la secuencia
      * @param elem Elemento a eliminar
      */
-    eliminar(elem: T) {
+    eliminar(elem: number) {
         let encontrado = false;
         let j = 0;
         for (let i = 0; i < this.cant; i++) {
@@ -98,11 +98,11 @@ export class Secuencia<T> {
     }
 
     /**
-     * Método que retorna el elemento en la posición indicda
+     * Método que retorna el elemento en la posición indicada
      * @param i Posición del elemento
      * @returns El elemento de tipo T o null si la posición es inválida.
      */
-    get(i: number): T | null {
+    get(i: number): number | null {
         if (i < 0 || i >= this.cant) {
             console.error("Indíce fuera de rango!");
             return null;
@@ -115,7 +115,7 @@ export class Secuencia<T> {
      * @param i Posición a modificar.
      * @param nuevo Nuevo elemento a insertar.
      */
-    set(i: number, nuevo: T) {
+    set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
             console.error("Indíce fuera de rango!");
             return;
@@ -132,7 +132,7 @@ export class Secuencia<T> {
      * @param elem Elemento a buscar.
      * @returns true si se encuentra, false en caso contrario.
      */
-    esta(elem: T) {
+    esta(elem: number) {
         for (let i = 0; i < this.cant; i++) {
             if (this.vector[i] === elem) {
                 return true;
@@ -146,7 +146,7 @@ export class Secuencia<T> {
      * @param elem Elemento a ubicar.
      * @returns El índice si se encuentra o -1 en caso contrario.
      */
-    getIndice(elem: T): number {
+    getIndice(elem: number) {
         for (let i = 0; i < this.cant; i++) {
             if (this.vector[i] === elem) {
                 return i;
@@ -159,7 +159,7 @@ export class Secuencia<T> {
      * Método que retorna el número de elementos almacenados.
      * @returns Cantidad de elementos.
      */
-    getTamanio(): number {
+    getTamanio() {
         return this.cant;
     }
 
@@ -167,7 +167,7 @@ export class Secuencia<T> {
      * Método que verifica si la secuencia está vacía.
      * @returns true si está vacía.
      */
-    esVacia(): boolean {
+    esVacia() {
         return this.cant === 0;
     }
 
@@ -175,53 +175,29 @@ export class Secuencia<T> {
      * Método que retorna la capacidad (tamaño real) del vector.
      * @returns Capacidad de la secuencia.
      */
-    getCapacidad(): number {
+    getCapacidad() {
         return this.vector.length;
+    }
+
+    clonar() {
+        const secuenciaClonada = new Secuencia(this.getCapacidad());
+        for (let i = 0; i < this.getTamanio(); i++) {
+            secuenciaClonada.insertar(this.get(i) ?? -1);
+        }
+        return secuenciaClonada;
     }
 
 }
 
-// const secuencia = new Secuencia<number>(4);
-// console.log(secuencia)
+const secuencia = new Secuencia(4);
 
-// console.log(secuencia.getCapacidad());
-// console.log(secuencia.getTamanio());
+secuencia.insertar(1)
+secuencia.insertar(3)
+secuencia.insertar(3)
+secuencia.insertar(3)
 
-// secuencia.insertar(1);
-// secuencia.insertar(2);
-// secuencia.insertar(3);
-// secuencia.insertar(4);
-// console.log(secuencia)
+console.log(secuencia)
 
-// secuencia.eliminarPos(2);
+secuencia.eliminar(3)
 
-// console.log(secuencia);
-
-// console.log(secuencia.get(1));
-
-// secuencia.set(1, 3);
-
-// console.log(secuencia);
-
-// console.log(secuencia.esta(5));
-
-// console.log(secuencia.getIndice(3));
-
-// console.log(secuencia.getTamanio());
-
-// console.log(secuencia.esVacia());
-
-// console.log(secuencia.getCapacidad());
-
-// const secuencia2 = new Secuencia<number>(4);
-
-// secuencia2.insertar(4);
-// secuencia2.insertar(4);
-// secuencia2.insertar(4);
-// secuencia2.insertar(4);
-
-// console.log(secuencia2);
-
-// secuencia2.eliminar(4);
-
-// console.log(secuencia2);
+console.log(secuencia)
