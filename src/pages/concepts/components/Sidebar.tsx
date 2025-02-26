@@ -1,4 +1,4 @@
-import { SideBarProps } from "../types";
+import { SideBarProps } from "../../../types";
 import { SidebarItem } from "./SidebarItem";
 
 export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {

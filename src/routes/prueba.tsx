@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { D3Array } from "../components/Array";
+import { D3Array } from "../shared/components/Array";
 
 export const Route = createFileRoute("/prueba")({
     component: RouteComponent,

@@ -1,5 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { conceptosData } from "../../constants/conceptsData";
+import { conceptosData } from "../../shared/constants/conceptsData";
 
 export function Operation() {
     const route = getRouteApi("/conceptos/$estructura/operaciones");

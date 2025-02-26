@@ -1,13 +1,15 @@
-import { getRouteApi } from "@tanstack/react-router";
 import { ConsoleComponent } from "./components/ConsoleComponent";
 import { DataStructureInfo } from "./components/DataStructureInfo";
 import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
-import { conceptosData } from "../../constants/conceptsData";
+import { conceptosData } from "../../shared/constants/conceptsData";
+import { SimulatorProps } from "../../types";
 
-export function Simulator() {
-    const route = getRouteApi("/simulador/$estructura");
-    const { estructura } = route.useParams();
-    const nombre = conceptosData[estructura].nombre;
+export function Simulator({ actions, query, reset, children }: SimulatorProps) {
+    console.log(actions);
+    console.log(query);
+    console.log(reset);
+
+    //const nombre = conceptosData[estructura].nombre;
 
     const buttons = [
         { label: "Insert", tooltip: "Insertar un nodo..." },
@@ -15,7 +17,7 @@ export function Simulator() {
         { label: "Create", tooltip: "Crear un nodo..." },
         { label: "Search", tooltip: "Buscar el nodo..." },
         { label: "Edit", tooltip: "Editar el nodo..." },
-        { label: "Clear", tooltip: "Borrar el nodo..." }
+        { label: "Clear", tooltip: "Borrar el nodo..." },
     ];
 
     const handleCommand = (command: string) => {
@@ -27,12 +29,12 @@ export function Simulator() {
         <div className="h-screen flex flex-col">
             <div>
                 <h1 className="font-bold text-3xl text-center mt-2">
-                    {nombre.toUpperCase()}
+                    {"secuencia".toUpperCase()}
                 </h1>
             </div>
             <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
                 <div className="flex-[2] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4">
-                    <DataStructureInfo />
+                    <DataStructureInfo>{children}</DataStructureInfo>
                     {/* Muestra los comandos */}
                     <div className="flex-[1] flex items-center flex-col rounded-xl">
                         <span
@@ -41,7 +43,7 @@ export function Simulator() {
                         >
                             COMANDOS DISPONIBLES
                         </span>
-                        <GroupCommandsComponent buttons={buttons}/>
+                        <GroupCommandsComponent buttons={buttons} />
                     </div>
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
