@@ -34,8 +34,7 @@ export class Secuencia {
      */
     insertar(elem: number) {
         if (this.cant >= this.vector.length) {
-            console.error("No hay más espacio");
-            return;
+            throw new Error(`No hay espacio para insertar el elemento ${elem}`);
         } else {
             this.vector[this.cant++] = elem;
         }
@@ -59,6 +58,8 @@ export class Secuencia {
         }
         if (encontrado) {
             this.cant--;
+        } else {
+            throw new Error(`El elemento ${elem} no está en la secuencia`);
         }
     }
 
@@ -68,8 +69,7 @@ export class Secuencia {
      */
     eliminarPos(pos: number) {
         if (pos < 0 || pos >= this.cant) {
-            console.error("Indice fuera de rango");
-            return;
+            throw new Error(`La posición ${pos} no existe, está fuera de rango`);
         }
         let eliminado = false;
         let j = 0;

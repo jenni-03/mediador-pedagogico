@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { commandRules } from "../../../shared/constants/commandRules";
 
 interface ConsoleComponentProps {
@@ -10,7 +10,13 @@ export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentP
     const [history, setHistory] = useState<string[]>([]);
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
+    const consoleRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        if(consoleRef.current){
+            consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+        }
+    }, [history])
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && input.trim() !== "") {
@@ -57,7 +63,8 @@ export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentP
     };
 
     return (
-        <div className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono">
+        <div ref={consoleRef} className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono">
+        {/* <div ref={consoleRef} className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono overflow-y-auto max-h-60"> */}
             {history.map((cmd, index) => (
                 <div key={index} className={cmd === "OK" ? "text-green-400" : cmd === "Comando no válido" ? "text-red-500" : "text-green-400"}>
                     {cmd}
