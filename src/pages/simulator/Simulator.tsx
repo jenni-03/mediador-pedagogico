@@ -5,10 +5,6 @@ import { conceptosData } from "../../shared/constants/conceptsData";
 import { SimulatorProps } from "../../types";
 
 export function Simulator({ actions, query, reset, children }: SimulatorProps) {
-    console.log(actions);
-    console.log(query);
-    console.log(reset);
-
     //const nombre = conceptosData[estructura].nombre;
 
     const buttons = [
@@ -48,7 +44,10 @@ export function Simulator({ actions, query, reset, children }: SimulatorProps) {
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
-                        <ConsoleComponent structureType="secuencia" onCommand={handleCommand}/>
+                        <ConsoleComponent
+                            structureType="secuencia"
+                            onCommand={handleCommand}
+                        />
                     </div>
                     {/* SEPARAR EN UN COMPONENTE */}
                     <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl">
@@ -56,6 +55,8 @@ export function Simulator({ actions, query, reset, children }: SimulatorProps) {
                             CÓDIGO DE EJECUCIÓN
                         </h1>
                     </div>
+                    <button onClick={() => actions.create(20)}>hola</button>
+                    <button onClick={() => actions.insert(2)}>hola2</button>
                 </div>
             </div>
         </div>

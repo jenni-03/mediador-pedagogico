@@ -26,7 +26,7 @@ export function SequenceSimulator() {
             query={query}
             reset={resetQueryValues}
         >
-            <SequenceRender sequence={secuencia} />
+            <SequenceRender sequence={secuencia.getVector()} query={query} />
         </Simulator>
     );
 }

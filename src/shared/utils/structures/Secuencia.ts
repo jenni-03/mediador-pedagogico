@@ -179,6 +179,18 @@ export class Secuencia {
         return this.vector.length;
     }
 
+    /**
+     * Método que retorna el vector contenedor de la secuencia
+     * @returns Vector contenedor
+     */
+    getVector() {
+        return this.vector;
+    }
+
+    /**
+     * Método encargado de clonar la secuencia actual
+     * @returns Nueva secuencia clonada
+     */
     clonar() {
         const secuenciaClonada = new Secuencia(this.getCapacidad());
         for (let i = 0; i < this.getTamanio(); i++) {
@@ -188,16 +200,3 @@ export class Secuencia {
     }
 
 }
-
-const secuencia = new Secuencia(4);
-
-secuencia.insertar(1)
-secuencia.insertar(3)
-secuencia.insertar(3)
-secuencia.insertar(3)
-
-console.log(secuencia)
-
-secuencia.eliminar(3)
-
-console.log(secuencia)
