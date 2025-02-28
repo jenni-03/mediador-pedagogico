@@ -6,6 +6,7 @@ export function SequenceSimulator() {
     const {
         secuencia,
         query,
+        error,
         crearSecuencia,
         insertarElemento,
         eliminarElemento,
@@ -25,8 +26,10 @@ export function SequenceSimulator() {
             }}
             query={query}
             reset={resetQueryValues}
+            error={error}
         >
             <SequenceRender sequence={secuencia} />
         </Simulator>
     );
+
 }

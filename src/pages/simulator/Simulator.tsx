@@ -1,28 +1,65 @@
 import { ConsoleComponent } from "./components/ConsoleComponent";
 import { DataStructureInfo } from "./components/DataStructureInfo";
 import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
-import { conceptosData } from "../../shared/constants/conceptsData";
 import { SimulatorProps } from "../../types";
+import { useEffect, useState } from "react";
 
-export function Simulator({ actions, query, reset, children }: SimulatorProps) {
-    console.log(actions);
-    console.log(query);
-    console.log(reset);
-
+export function Simulator({
+    actions,
+    query,
+    reset,
+    error,
+    children,
+}: SimulatorProps) {
     //const nombre = conceptosData[estructura].nombre;
+    const [visibleError, setVisibleError] = useState(error);
+
+    useEffect(() => {
+        if (error) {
+            setVisibleError(error);
+            const timer = setTimeout(() => {
+                setVisibleError(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
 
     const buttons = [
+        { label: "Create", tooltip: "Crear un nodo..." },
         { label: "Insert", tooltip: "Insertar un nodo..." },
         { label: "Delete", tooltip: "Borrar un nodo..." },
-        { label: "Create", tooltip: "Crear un nodo..." },
-        { label: "Search", tooltip: "Buscar el nodo..." },
         { label: "Edit", tooltip: "Editar el nodo..." },
+        { label: "Search", tooltip: "Buscar el nodo..." },
         { label: "Clear", tooltip: "Borrar el nodo..." },
     ];
 
+    // Llama a la operación a realizar en la estructura de datos
     const handleCommand = (command: string) => {
-        console.log(`Comando a ejecutar: ${command}`);
-        // Añadir lógica para procesar el comando
+        const parts = command.trim().split(/\s+/);
+        const keyword = parts[0]?.toLowerCase();
+        const value = Number(parts[1]);
+        switch (keyword) {
+            case "create":
+                actions.create(value);
+                break;
+            case "insert":
+                actions.insert(value);
+                break;
+            case "delete":
+                actions.remove(value);
+                break;
+            case "search":
+                actions.search(value);
+                break;
+            case "clean":
+                actions.clear();
+                break;
+            case "update":
+                console.log("El comando 'update' aún no está implementado.");
+                break;
+            default:
+                break;
+        }
     };
 
     return (
@@ -48,7 +85,16 @@ export function Simulator({ actions, query, reset, children }: SimulatorProps) {
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
-                        <ConsoleComponent structureType="secuencia" onCommand={handleCommand}/>
+                        <ConsoleComponent
+                            structureType="secuencia"
+                            onCommand={handleCommand}
+                        />
+                        {/* Muestra el error si existe */}
+                        {error && (
+                            <div className="text-red-500 font-bold text-center mb-3">
+                                {visibleError}
+                            </div>
+                        )}
                     </div>
                     {/* SEPARAR EN UN COMPONENTE */}
                     <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl">

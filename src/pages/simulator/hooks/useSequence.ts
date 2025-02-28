@@ -7,6 +7,9 @@ export function useSequence() {
     // Estado para manejar la secuencia
     const [secuencia, setSecuencia] = useState(new Secuencia(0));
 
+    //Estado para manejar el error
+    const [error, setError] = useState<string | null>(null);
+
     // Estado para manejar las query del usuario
     const [query, setQuery] = useState<BaseQueryOperations>({
         create: null,
@@ -17,23 +20,33 @@ export function useSequence() {
     });
 
     const insertarElemento = (elemento: number) => {
-        const nuevaSecuencia = secuencia.clonar();
-        nuevaSecuencia.insertar(elemento);
-        setSecuencia(nuevaSecuencia);
-        setQuery((prev) => ({
-            ...prev,
-            toAdd: elemento
-        }));
+        try {
+            const nuevaSecuencia = secuencia.clonar();
+            nuevaSecuencia.insertar(elemento);
+            setSecuencia(nuevaSecuencia);
+            setQuery((prev) => ({
+                ...prev,
+                toAdd: elemento
+            }));
+            setError(null);
+        } catch (error: any) {
+            setError(error.message);
+        }
     }
 
     const eliminarElemento = (elemento: number) => {
-        const nuevaSecuencia = secuencia.clonar();
-        nuevaSecuencia.eliminar(elemento);
-        setSecuencia(nuevaSecuencia);
-        setQuery((prev) => ({
-            ...prev,
-            toDelete: elemento
-        }));
+        try {
+            const nuevaSecuencia = secuencia.clonar();
+            nuevaSecuencia.eliminar(elemento);
+            setSecuencia(nuevaSecuencia);
+            setQuery((prev) => ({
+                ...prev,
+                toDelete: elemento
+            }));
+            setError(null);
+        } catch (error: any) {
+            setError(error.message);
+        }
     }
 
     const buscarElemento = (elemento: number) => {
@@ -85,6 +98,7 @@ export function useSequence() {
     return {
         secuencia,
         query,
+        error,
         insertarElemento,
         eliminarElemento,
         buscarElemento,

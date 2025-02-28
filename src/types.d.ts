@@ -41,6 +41,7 @@ export type GroupCommandProps = {
 export type SimulatorProps = {
     actions: BaseStructureActions;
     query: BaseQueryOperations;
+    error: string | null;
     reset: () => void;
     children: React.ReactNode
 }
