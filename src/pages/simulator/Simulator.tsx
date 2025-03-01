@@ -3,9 +3,14 @@ import { DataStructureInfo } from "./components/DataStructureInfo";
 import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
 import { SimulatorProps } from "../../types";
 import { useEffect, useState } from "react";
+import { commandsData } from "../../shared/constants/commandsData";
 
 export function Simulator({ actions, error, children }: SimulatorProps) {
     const [visibleError, setVisibleError] = useState(error);
+
+    //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
+    const estructura = "secuencia";
+    const buttons = commandsData[estructura].buttons;
 
     useEffect(() => {
         if (error) {
@@ -16,15 +21,6 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
             return () => clearTimeout(timer);
         }
     }, [error]);
-
-    const buttons = [
-        { label: "Create", tooltip: "Crear un nodo..." },
-        { label: "Insert", tooltip: "Insertar un nodo..." },
-        { label: "Delete", tooltip: "Borrar un nodo..." },
-        { label: "Edit", tooltip: "Editar el nodo..." },
-        { label: "Search", tooltip: "Buscar el nodo..." },
-        { label: "Clear", tooltip: "Borrar el nodo..." },
-    ];
 
     // Llama a la operación a realizar en la estructura de datos
     const handleCommand = (command: string) => {
@@ -79,7 +75,7 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
                         <ConsoleComponent
-                            structureType="secuencia"
+                            structureType={estructura}
                             onCommand={handleCommand}
                         />
                         {/* Muestra el error si existe */}

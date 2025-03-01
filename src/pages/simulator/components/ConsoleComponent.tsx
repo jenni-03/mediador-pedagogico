@@ -25,17 +25,19 @@ export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentP
             if (input.trim().toLowerCase() === "clear") {
                 setHistory([]);
                 setInput("");
-            } else {
-                // Se divide el comando escrito en el input
+            }  else {
                 const parts = input.trim().split(/\s+/);
-                // Se verifica si es o no un comando con formato válido
-                const commandValid = commandRules[structureType](parts) ?? false;
-
-                if (commandValid) {
-                    onCommand(input.trim()); // Enviamos el comando a simulator
-                    setHistory([...history, `$ ${input}`, "Comando válido, procesando..."]);
+                const commandValidation = commandRules[structureType](parts);
+    
+                if (typeof commandValidation === "boolean") {
+                    if (commandValidation) {
+                        onCommand(input.trim());
+                        setHistory([...history, `$ ${input}`, "Comando válido, procesando..."]);
+                    } else {
+                        setHistory([...history, `$ ${input}`, "Comando no válido"]);
+                    }
                 } else {
-                    setHistory([...history, `$ ${input}`, "Comando no válido"]);
+                    setHistory([...history, `$ ${input}`, `Error: ${commandValidation.message}`]);
                 }
                 setInput("");
             }
@@ -80,6 +82,7 @@ export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentP
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     autoFocus
+                    spellCheck={false}
                 />
             </div>
         </div>

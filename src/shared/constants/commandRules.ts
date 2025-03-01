@@ -1,11 +1,22 @@
 // Reglas de comandos para cada estructura de datos
-export const commandRules: Record<string, (parts: string[]) => boolean> = {
+    export const commandRules: Record<string, (parts: string[]) => boolean | { valid: boolean; message?: string }> = {    
     secuencia: (parts) => {
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
+            case "create":
+                if (parts.length !== 2) {
+                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                }
+                const num = Number(parts[1]);
+                if (isNaN(num)) {
+                    return { valid: false, message: "El argumento debe ser un número válido." };
+                }
+                if (num <= 0 || num > 20) {
+                    return { valid: false, message: "El número debe ser mayor que 0 y menor que 21." };
+                }
+                return true; // Si todo está bien, solo devuelve `true`
             case "insert":
             case "delete":
-            case "create":
             case "search":
                 return parts.length === 2 && !isNaN(Number(parts[1])); // Válida que solo venga el comando y el elemento, y además que el elemento sea un número
             case "update":
@@ -222,9 +233,8 @@ export const commandRules: Record<string, (parts: string[]) => boolean> = {
             case "delete":
             case "search":
                 return parts.length === 2 && !isNaN(Number(parts[1])); // Requiere un solo número
-            case "traverse_preorder":
-            case "traverse_postorder":
-            case "traverse_levelorder":
+            case "traverse":
+                return parts.length === 2 && ["levelorder", "preorder", "postorder"].includes(parts[1].toLowerCase());
             case "clean":
                 return parts.length === 1; // No requiere parámetros
             default:
@@ -247,8 +257,8 @@ export const commandRules: Record<string, (parts: string[]) => boolean> = {
                 return parts.length === 2 && !isNaN(Number(parts[1])); // Requiere un solo número
             // case "split": // Si un nodo se llena, se divide en dos.
             // case "merge": // Si un nodo tiene muy pocas claves, se fusiona con un hermano.
-            case "traverse_levelorder":
-            case "traverse_inorder":
+            case "traverse":
+                return parts.length === 2 && ["levelorder", "inorder"].includes(parts[1].toLowerCase());
             case "clean":
                 return parts.length === 1; // No requiere parámetros
             default:
