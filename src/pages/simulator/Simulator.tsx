@@ -4,13 +4,7 @@ import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
 import { SimulatorProps } from "../../types";
 import { useEffect, useState } from "react";
 
-export function Simulator({
-    actions,
-    query,
-    reset,
-    error,
-    children,
-}: SimulatorProps) {
+export function Simulator({ actions, error, children }: SimulatorProps) {
     //const nombre = conceptosData[estructura].nombre;
     const [visibleError, setVisibleError] = useState(error);
 

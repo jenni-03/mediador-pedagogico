@@ -1,5 +1,5 @@
 import { Link, useMatchRoute } from "@tanstack/react-router";
-import { SideBarItemProps } from "../types";
+import { SideBarItemProps } from "../../../types";
 
 export function SidebarItem({ to, params, label }: SideBarItemProps) {
     const matchRoute = useMatchRoute();
