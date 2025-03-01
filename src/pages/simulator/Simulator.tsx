@@ -4,13 +4,7 @@ import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
 import { SimulatorProps } from "../../types";
 import { useEffect, useState } from "react";
 
-export function Simulator({
-    actions,
-    query,
-    reset,
-    error,
-    children,
-}: SimulatorProps) {
+export function Simulator({ actions, error, children }: SimulatorProps) {
     //const nombre = conceptosData[estructura].nombre;
     const [visibleError, setVisibleError] = useState(error);
 
@@ -102,8 +96,6 @@ export function Simulator({
                             CÓDIGO DE EJECUCIÓN
                         </h1>
                     </div>
-                    <button onClick={() => actions.create(20)}>hola</button>
-                    <button onClick={() => actions.insert(2)}>hola2</button>
                 </div>
             </div>
         </div>

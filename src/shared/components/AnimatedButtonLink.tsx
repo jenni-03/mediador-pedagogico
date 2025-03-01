@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { AnimatedButtonLinkProps } from "../types";
+import { AnimatedButtonLinkProps } from "../../types";
 
 export function AnimatedButtonLink({
     bgColor,
