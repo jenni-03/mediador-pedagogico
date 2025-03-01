@@ -9,5 +9,6 @@ shadow-[6px_6px_10px_#b8b8b8,-6px_-6px_10px_#ffffff] transition duration-200 act
             <span className="text-sm font-medium text-gray-700">{label}</span>
             <i title={tooltip} className="pi pi-info-circle text-gray-500"></i>
         </div>
+        //950 pixeles de ancho
     );
 }

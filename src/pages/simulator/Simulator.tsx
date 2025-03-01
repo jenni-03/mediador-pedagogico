@@ -5,7 +5,6 @@ import { SimulatorProps } from "../../types";
 import { useEffect, useState } from "react";
 
 export function Simulator({ actions, error, children }: SimulatorProps) {
-    //const nombre = conceptosData[estructura].nombre;
     const [visibleError, setVisibleError] = useState(error);
 
     useEffect(() => {

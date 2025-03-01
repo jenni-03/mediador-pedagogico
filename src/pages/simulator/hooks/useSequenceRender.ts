@@ -87,8 +87,8 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
                 .transition()
                 .delay(100)
                 .duration(700)
-                .attr("fill", "dodgerblue")
-                .attr("stroke-width", 4)
+                .attr("fill", "cyan")
+                .attr("stroke-width", 2)
                 .attr("width", elementWidth)
                 .attr("height", elementHeight)
                 .ease(d3.easeBounce);
