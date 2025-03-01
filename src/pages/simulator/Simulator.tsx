@@ -102,8 +102,6 @@ export function Simulator({
                             CÓDIGO DE EJECUCIÓN
                         </h1>
                     </div>
-                    <button onClick={() => actions.create(20)}>hola</button>
-                    <button onClick={() => actions.insert(2)}>hola2</button>
                 </div>
             </div>
         </div>
