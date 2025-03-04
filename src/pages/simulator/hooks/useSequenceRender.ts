@@ -10,12 +10,14 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
         // En caso de que la secuencia sea nula o indefinida
         if (!secuencia) return;
 
+        console.log(query);
+
         // Margenes para el SVG
         const margin = { left: 20, right: 20 };
 
         // Dimensiones de cada elemento (rectángulos)
-        const elementWidth = 50;
-        const elementHeight = 50;
+        const elementWidth = 70;
+        const elementHeight = 70;
 
         // Espaciado entre elementos (rectángulos)
         const spacing = 10;
@@ -54,6 +56,8 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
                         .attr("fill", d => d === null ? "lightgray" : "cyan")
                         .attr("stroke", "black")
                         .attr("stroke-width", 1)
+                        .attr("rx", 10)
+                        .attr("ry", 10)
                         .transition()
                         .duration(1000)
                         .attr("width", elementWidth)
@@ -69,6 +73,7 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
                         .text(d => d === null ? "" : d.toString())
                         .attr("fill", "black")
                         .style("opacity", 0)
+                        .style("font-size", "18px")
                         .transition()
                         .delay(300)
                         .duration(700)
@@ -103,10 +108,30 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
                 .style("opacity", 0)
                 .on("end", function () {
                     d3.select(this)
-                        .text(query.toAdd ? query.toAdd.toString() : "")
+                        .text(query.toAdd !== null ? query.toAdd.toString() : "")
                         .transition()
                         .duration(700)
                         .style("opacity", 1);
+                });
+        }
+
+        // Operación de eliminación
+        if (query.toDelete !== null) {
+            // Cambiamos el valor del texto del rectángulo 
+            groups.filter(d => d === null)
+                .select("rect")
+                .transition()
+                .duration(500)
+                .attr("fill", "lightgray")
+                .ease(d3.easeLinear);
+
+            groups.filter(d => d === null)
+                .select("text")
+                .transition()
+                .duration(500)
+                .style("opacity", 0)
+                .on("end", function () {
+                    d3.select(this).text("");
                 });
         }
 

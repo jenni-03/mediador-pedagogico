@@ -31,5 +31,4 @@ export function SequenceSimulator() {
             <SequenceRender sequence={secuencia.getVector()} query={query} />
         </Simulator>
     );
-
 }

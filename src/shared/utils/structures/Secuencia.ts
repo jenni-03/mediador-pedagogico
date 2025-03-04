@@ -58,6 +58,7 @@ export class Secuencia {
         }
         if (encontrado) {
             this.cant--;
+            this.vector[this.cant] = null;
         } else {
             throw new Error(`El elemento ${elem} no está en la secuencia`);
         }
@@ -84,6 +85,7 @@ export class Secuencia {
         }
         if (eliminado) {
             this.cant--;
+            this.vector[this.cant] = null;
         }
     }
 
@@ -200,3 +202,4 @@ export class Secuencia {
     }
 
 }
+
