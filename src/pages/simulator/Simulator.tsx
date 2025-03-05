@@ -59,18 +59,11 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
                 </h1>
             </div>
             <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
-                <div className="flex-[2] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4">
+                <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl my-3 mx-3 space-y-3">
+                    {/* Muestra la estructura */}
                     <DataStructureInfo>{children}</DataStructureInfo>
                     {/* Muestra los comandos */}
-                    <div className="flex-[1] flex items-center flex-col rounded-xl">
-                        <span
-                            className="w-full text-center font-medium rounded-2xl border-2 border-gray-300 bg-gray-100 mb-3 px-3 py-1 
-                shadow-[6px_6px_10px_#b8b8b8,-6px_-6px_10px_#ffffff]"
-                        >
-                            COMANDOS DISPONIBLES
-                        </span>
-                        <GroupCommandsComponent buttons={buttons} />
-                    </div>
+                    <GroupCommandsComponent buttons={buttons} />
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
@@ -85,7 +78,6 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
                             </div>
                         )}
                     </div>
-                    {/* SEPARAR EN UN COMPONENTE */}
                     <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl">
                         <h1 className="font-medium text-center mt-2">
                             CÓDIGO DE EJECUCIÓN
