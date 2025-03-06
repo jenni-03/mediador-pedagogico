@@ -8,15 +8,16 @@ interface ConsoleComponentProps {
 
 export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentProps) {
     const [history, setHistory] = useState<string[]>([]);
+    const [commandHistory, setCommandHistory] = useState<string[]>([]);  // Solo comandos válidos
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const consoleRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if(consoleRef.current){
+        if (consoleRef.current) {
             consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
         }
-    }, [history])
+    }, [history]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && input.trim() !== "") {
@@ -25,41 +26,44 @@ export function ConsoleComponent({ structureType, onCommand }: ConsoleComponentP
             if (input.trim().toLowerCase() === "clear") {
                 setHistory([]);
                 setInput("");
-            }  else {
+            } else {
                 const parts = input.trim().split(/\s+/);
                 const commandValidation = commandRules[structureType](parts);
-    
+
                 if (typeof commandValidation === "boolean") {
                     if (commandValidation) {
                         onCommand(input.trim());
                         setHistory([...history, `$ ${input}`, "Comando válido, procesando..."]);
+                        setCommandHistory([...commandHistory, input.trim()]); // Guardamos solo el comando
                     } else {
                         setHistory([...history, `$ ${input}`, "Comando no válido"]);
                     }
                 } else {
                     setHistory([...history, `$ ${input}`, `Error: ${commandValidation.message}`]);
                 }
+
                 setInput("");
+                setHistoryIndex(-1); // Reiniciamos el índice del historial
             }
         }
 
-        // Manejo de Flecha Arriba
+        // Manejo de Flecha Arriba (recorre solo commandHistory)
         else if (e.key === "ArrowUp") {
             e.preventDefault();
-            if (history.length > 0) {
-                const newIndex = historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1);
+            if (commandHistory.length > 0) {
+                const newIndex = historyIndex === -1 ? commandHistory.length - 1 : Math.max(0, historyIndex - 1);
                 setHistoryIndex(newIndex);
-                setInput(history[newIndex].replace("$ ", ""));
+                setInput(commandHistory[newIndex]);
             }
         }
 
         // Manejo de Flecha Abajo
         else if (e.key === "ArrowDown") {
             e.preventDefault();
-            if (history.length > 0) {
-                const newIndex = historyIndex === history.length - 1 ? -1 : historyIndex + 1;
+            if (commandHistory.length > 0) {
+                const newIndex = historyIndex === commandHistory.length - 1 ? -1 : historyIndex + 1;
                 setHistoryIndex(newIndex);
-                setInput(newIndex === -1 ? "" : history[newIndex].replace("$ ", ""));
+                setInput(newIndex === -1 ? "" : commandHistory[newIndex]);
             }
         }
     };

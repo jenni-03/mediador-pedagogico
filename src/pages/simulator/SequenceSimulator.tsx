@@ -20,9 +20,9 @@ export function SequenceSimulator() {
             actions={{
                 create: crearSecuencia,
                 insert: insertarElemento,
-                remove: eliminarElemento,
+                delete: eliminarElemento,
                 search: buscarElemento,
-                clear: vaciarSecuencia,
+                clean: vaciarSecuencia,
             }}
             query={query}
             reset={resetQueryValues}
