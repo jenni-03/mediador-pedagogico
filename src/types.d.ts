@@ -75,7 +75,7 @@ export type BaseQueryOperations = {
 export type BaseStructureActions = {
     create: (n: number) => void,
     insert: (element: number) => void,
-    remove: (element: number) => void,
+    delete: (element: number) => void,
     search: (element: number) => void,
-    clear: () => void,
+    clean: () => void,
 }

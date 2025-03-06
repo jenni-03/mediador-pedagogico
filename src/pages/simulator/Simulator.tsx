@@ -25,37 +25,18 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
     // Llama a la operación a realizar en la estructura de datos
     const handleCommand = (command: string) => {
         const parts = command.trim().split(/\s+/);
-        const keyword = parts[0]?.toLowerCase();
+        const action = parts[0]?.toLowerCase();
         const value = Number(parts[1]);
-        switch (keyword) {
-            case "create":
-                actions.create(value);
-                break;
-            case "insert":
-                actions.insert(value);
-                break;
-            case "delete":
-                actions.remove(value);
-                break;
-            case "search":
-                actions.search(value);
-                break;
-            case "clean":
-                actions.clear();
-                break;
-            case "update":
-                console.log("El comando 'update' aún no está implementado.");
-                break;
-            default:
-                break;
-        }
+
+        // Ejecutar directamente la acción si existe en actions
+        (actions as any)?.[action]?.(value);
     };
 
     return (
         <div className="h-screen flex flex-col">
             <div>
                 <h1 className="font-bold text-3xl text-center mt-2">
-                    {"secuencia".toUpperCase()}
+                    {estructura.toUpperCase()}
                 </h1>
             </div>
             <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
