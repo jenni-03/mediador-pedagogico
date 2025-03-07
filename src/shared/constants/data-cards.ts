@@ -2,7 +2,7 @@ export const data = [
     {
         title: 'Secuencia',
         id: 1,
-        img: '',
+        img: '/assets/images/secuencia.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -12,7 +12,7 @@ export const data = [
     {
         title: 'Lista Simplemente Enlazada',
         id: 2,
-        img: '',
+        img: '/assets/images/lista_simple.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -22,7 +22,7 @@ export const data = [
     {
         title: 'Lista Doblemente Enlazada',
         id: 3,
-        img: '',
+        img: '/assets/images/lista_simple.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -32,7 +32,7 @@ export const data = [
     {
         title: 'Lista Circular Simple',
         id: 4,
-        img: '',
+        img: '/assets/images/lista_simple.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -42,7 +42,7 @@ export const data = [
     {
         title: 'Lista Circular Doble Enlazada',
         id: 5,
-        img: '',
+        img: '/assets/images/lista_simple.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -52,7 +52,7 @@ export const data = [
     {
         title: 'Pila',
         id: 6,
-        img: '',
+        img: '/assets/images/pila.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -62,7 +62,7 @@ export const data = [
     {
         title: 'Cola',
         id: 7,
-        img: '',
+        img: '/assets/images/cola.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -72,7 +72,7 @@ export const data = [
     {
         title: 'Cola de Prioridad',
         id: 8,
-        img: '',
+        img: '/assets/images/cola.png',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -82,7 +82,7 @@ export const data = [
     {
         title: 'Tabla Hash',
         id: 9,
-        img: '',
+        img: '/assets/images/tabla_hash.jpg',
         type: 'estructura_lineal',
         bgCard: '#7309b6',
         bgButton: '#b064d4',
@@ -92,7 +92,7 @@ export const data = [
     {
         title: 'Árbol Binario',
         id: 10,
-        img: '',
+        img: '/assets/images/arbol_binario.png',
         bgCard: '#50ccf4',
         type: 'arbol_binario',
         bgButton: '#90def6',
@@ -102,7 +102,7 @@ export const data = [
     {
         title: 'Árbol Binario de Búsqueda',
         id: 11,
-        img: '',
+        img: '/assets/images/arbol_binario.png',
         bgCard: '#50ccf4',
         type: 'arbol_binario',
         bgButton: '#90def6',
@@ -112,7 +112,7 @@ export const data = [
     {
         title: 'Árbol AVL',
         id: 12,
-        img: '',
+        img: '/assets/images/arbol_avl.jpg',
         bgCard: '#50ccf4',
         type: 'arbol_binario',
         bgButton: '#90def6',
@@ -122,7 +122,7 @@ export const data = [
     {
         title: 'Árbol RojiNegro',
         id: 13,
-        img: '',
+        img: '/assets/images/arbol_rn.png',
         bgCard: '#50ccf4',
         type: 'arbol_binario',
         bgButton: '#90def6',
@@ -132,7 +132,7 @@ export const data = [
     {
         title: 'Árbol Splay',
         id: 14,
-        img: '',
+        img: '/assets/images/arbol_splay.jpg',
         bgCard: '#50ccf4',
         type: 'arbol_binario',
         bgButton: '#90def6',
@@ -142,7 +142,7 @@ export const data = [
     {
         title: 'Árbol Heap',
         id: 15,
-        img: '',
+        img: '/assets/images/arbol_heap.jpg',
         bgCard: '#50ccf4',
         type: 'arbol_binario',
         bgButton: '#90def6',
@@ -152,7 +152,7 @@ export const data = [
     {
         title: 'Árbol Eneario',
         id: 16,
-        img: '',
+        img: '/assets/images/arbol_eneario.jpg',
         type: 'arbol_eneario',
         bgCard: '#ff5501',
         bgButton: '#ff9460',
@@ -162,7 +162,7 @@ export const data = [
     {
         title: 'Árbol 1-2-3',
         id: 17,
-        img: '',
+        img: '/assets/images/arbol_123.jpg',
         type: 'arbol_eneario',
         bgCard: '#ff5501',
         bgButton: '#ff9460',
@@ -172,7 +172,7 @@ export const data = [
     {
         title: 'Árbol B',
         id: 18,
-        img: '',
+        img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6uxV6yeyM6vLUspnMmz78vte7XykZ18ZIC99gbdU3Fe2cN9f0vkrDg98eAw6jMstRSR9IUS3wTykqnXmT2Z69NoThtbn2Jl-IIi4NOR0KFeJzZUuXw_-9rEqwg8BOin4ePTkfHPuPYE0/s1600/B13.jpg.jpg',
         type: 'arbol_eneario',
         bgCard: '#ff5501',
         bgButton: '#ff9460',
@@ -182,7 +182,7 @@ export const data = [
     {
         title: 'Árbol B+',
         id: 19,
-        img: '',
+        img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6uxV6yeyM6vLUspnMmz78vte7XykZ18ZIC99gbdU3Fe2cN9f0vkrDg98eAw6jMstRSR9IUS3wTykqnXmT2Z69NoThtbn2Jl-IIi4NOR0KFeJzZUuXw_-9rEqwg8BOin4ePTkfHPuPYE0/s1600/B13.jpg.jpg',
         type: 'arbol_eneario',
         bgCard: '#ff5501',
         bgButton: '#ff9460',
