@@ -11,6 +11,7 @@ export function SequenceSimulator() {
         insertarElemento,
         eliminarElemento,
         buscarElemento,
+        actualizarElemento,
         vaciarSecuencia,
         resetQueryValues,
     } = useSequence();
@@ -23,12 +24,17 @@ export function SequenceSimulator() {
                 delete: eliminarElemento,
                 search: buscarElemento,
                 clean: vaciarSecuencia,
+                update: actualizarElemento,
             }}
             query={query}
             reset={resetQueryValues}
             error={error}
         >
-            <SequenceRender sequence={secuencia.getVector()} query={query} />
+            <SequenceRender
+                sequence={secuencia.getVector()}
+                query={query}
+                resetQueryValues={resetQueryValues}
+            />
         </Simulator>
     );
 }

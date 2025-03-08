@@ -3,11 +3,19 @@ import { BaseQueryOperations } from "../../../types";
 import * as d3 from "d3";
 import { drawBaseSequence } from "../../../shared/utils/drawBaseSequence";
 import { animateInsertionSquence } from "../../../shared/utils/animateInsertionSequence";
+import { usePrevious } from "../../../shared/hooks/usePrevious";
+import { animateDeletionSequence } from "../../../shared/utils/animateDeletionSequence";
 
-export function useSequenceRender(secuencia: (number | null)[], query: BaseQueryOperations) {
+export function useSequenceRender(secuencia: (number | null)[], query: BaseQueryOperations, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
+    // Almacenamos la secuencia previa para la detección de eliminaciones
+    const prevSecuencia = usePrevious(secuencia);
+
+    console.log("Secuencia previa xd")
+    console.log(prevSecuencia)
+    console.log("--------")
     console.log(secuencia);
     console.log(query);
 
@@ -40,6 +48,7 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
         drawBaseSequence(svg, secuencia, { margin, elementWidth, elementHeight, spacing, height });
     }, [secuencia]);
 
+    // Operación de inserción
     useEffect(() => {
         // Verificamos que la secuencia sea válida, que la referencia al SVG se haya establecido y que query.toAdd no sea nulo
         if (!secuencia || !svgRef.current || query.toAdd === null) return;
@@ -50,8 +59,38 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
         const svg = d3.select(svgRef.current);
 
         // Animamos la inserción del nuevo elemento
-        animateInsertionSquence(svg, secuencia, query.toAdd);
-    }, [query.toAdd])
+        animateInsertionSquence(svg, query.toAdd, resetQueryValues);
+    }, [query.toAdd]);
+
+    // Operación de eliminación
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!secuencia || !svgRef.current || query.toDelete === null || !prevSecuencia) return;
+
+        console.log("ELIMINANDO")
+
+        // Buscamos el índice o índices donde el elemento pasó de tener un valor a ser null
+        console.log("Secuencia previa xd")
+        console.log(prevSecuencia);
+        const indicesEliminados = secuencia.reduce<number[]>((acc, curr, i) => {
+            if (prevSecuencia[i] !== null && curr === null) {
+                acc.push(i);
+            }
+            return acc;
+        }, []);
+
+        console.log("Índices eliminados:", indicesEliminados);
+
+        // Seleccionamos el elemento SVG de acuerdo a su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Para cada índice eliminado, aplicamos la animación de eliminación
+        indicesEliminados.forEach((index) => {
+            svg.selectAll<SVGGElement, number | null>("g.element")
+                .filter((_d, i) => i === index)
+                .call(animateDeletionSequence, resetQueryValues);
+        });
+    }, [query.toDelete]);
 
     return { svgRef }
 

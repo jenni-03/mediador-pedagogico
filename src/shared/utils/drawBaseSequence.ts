@@ -22,7 +22,7 @@ export function drawBaseSequence(
                 gEnter.append("rect")
                     .attr("width", 0)
                     .attr("height", 0)
-                    .attr("fill", d => d === null ? "lightgray" : "cyan")
+                    .attr("fill", d => d === null ? "lightgray" : "skyblue")
                     .attr("stroke", "black")
                     .attr("stroke-width", 1)
                     .attr("rx", 10)
@@ -58,7 +58,7 @@ export function drawBaseSequence(
 
                 // Aquí forzamos los atributos de todos los rectángulos existentes
                 update.select("rect")
-                    .attr("fill", d => d === null ? "lightgray" : "cyan")
+                    .attr("fill", d => d === null ? "lightgray" : "skyblue")
                     .attr("stroke-width", 1)
                     .attr("rx", 10)
                     .attr("ry", 10);

@@ -78,4 +78,5 @@ export type BaseStructureActions = {
     delete: (element: number) => void,
     search: (element: number) => void,
     clean: () => void,
+    update: (pos: number, element: number) => void
 }

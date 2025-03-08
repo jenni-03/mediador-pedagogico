@@ -53,7 +53,7 @@ export function useSequence() {
         return secuencia.esta(elemento);
     }
 
-    const actualizarElemento = (elemento: number, pos: number) => {
+    const actualizarElemento = (pos: number, elemento: number) => {
         const nuevaSecuencia = secuencia.clonar();
         nuevaSecuencia.set(pos, elemento);
         setSecuencia(nuevaSecuencia);

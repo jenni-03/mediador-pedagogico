@@ -26,10 +26,16 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
     const handleCommand = (command: string) => {
         const parts = command.trim().split(/\s+/);
         const action = parts[0]?.toLowerCase();
-        const value = Number(parts[1]);
 
-        // Ejecutar directamente la acción si existe en actions
-        (actions as any)?.[action]?.(value);
+        const values = parts.slice(1).map(Number); // Convierte los valores a números
+
+        if (values.length === 2) {
+            (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
+        } else if (values.length === 1) {
+            (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
+        } else {
+            (actions as any)?.[action]?.(); // Llama sin parámetros
+        }
     };
 
     return (
