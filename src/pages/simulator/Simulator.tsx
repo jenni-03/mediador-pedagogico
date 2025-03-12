@@ -74,3 +74,4 @@ export function Simulator({ structure: structure, actions, error, children }: Si
         </div>
     );
 }
+
