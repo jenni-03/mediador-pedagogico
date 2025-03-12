@@ -33,7 +33,7 @@ export class Secuencia {
      * @param elem Elemento a insertar
      */
     insertar(elem: number) {
-        if (this.esta(elem)) {
+        if (this.vector.includes(elem)) {
             throw new Error(`El elemento ${elem} ya está en la secuencia`);
         }
         if (this.cant >= this.vector.length) {
@@ -95,6 +95,7 @@ export class Secuencia {
             this.vector[i] = null;
         }
         this.cant = 0;
+        this.vector.length = 0;
     }
 
     /**
@@ -119,7 +120,7 @@ export class Secuencia {
         if (i < 0 || i >= this.cant) {
             throw new Error("Indíce fuera de rango!");
         }
-        if (this.esta(nuevo)) {
+        if (this.vector.includes(nuevo)) {
             throw new Error(`El elemento ${nuevo} ya está en la secuencia`);
         }
         this.vector[i] = nuevo;
@@ -131,7 +132,10 @@ export class Secuencia {
      * @returns true si se encuentra, false en caso contrario.
      */
     esta(elem: number): boolean {
-        return this.vector.includes(elem);
+        if(this.vector.includes(elem)){
+            return true
+        }
+        throw new Error(`El elemento ${elem} no se encontró en la secuencia`);
     }
 
     /**

@@ -50,8 +50,21 @@ export function useSequence() {
     }
 
     const buscarElemento = (elemento: number) => {
-        return secuencia.esta(elemento);
-    }
+        try {
+            if (secuencia.esta(elemento)) {
+                setQuery((prev) => ({
+                    ...prev,
+                    toSearch: elemento
+                }));
+            }
+        } catch (error: any) {
+            setQuery((prev) => ({
+                ...prev,
+                toSearch: null
+            }));
+            setError(error.message);
+        }
+    };
 
     const actualizarElemento = (elemento: number, pos: number) => {
         const nuevaSecuencia = secuencia.clonar();
@@ -78,12 +91,12 @@ export function useSequence() {
         setSecuencia(nuevaSecuencia);
     }
 
-    const setSearchQuery = (elemento: number) => {
-        setQuery((prev) => ({
-            ...prev,
-            toSearch: elemento
-        }));
-    }
+    // const setSearchQuery = (elemento: number) => {
+    //     setQuery((prev) => ({
+    //         ...prev,
+    //         toSearch: elemento
+    //     }));
+    // }
 
     const resetQueryValues = () => {
         setQuery({
@@ -105,7 +118,7 @@ export function useSequence() {
         actualizarElemento,
         crearSecuencia,
         vaciarSecuencia,
-        setSearchQuery,
+        // setSearchQuery,
         resetQueryValues
     }
 

@@ -3,6 +3,7 @@ import { BaseQueryOperations } from "../../../types";
 import * as d3 from "d3";
 import { drawBaseSequence } from "../../../shared/utils/drawBaseSequence";
 import { animateInsertionSquence } from "../../../shared/utils/animateInsertionSequence";
+import { animateSearchSequence } from "../../../shared/utils/animateSearchSequence";
 
 export function useSequenceRender(secuencia: (number | null)[], query: BaseQueryOperations) {
     // Referencia que apunta al elemento SVG del DOM
@@ -52,6 +53,20 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
         // Animamos la inserción del nuevo elemento
         animateInsertionSquence(svg, secuencia, query.toAdd);
     }, [query.toAdd])
+
+    useEffect(() => {
+        // Verificamos que la secuencia sea válida, que la referencia al SVG se haya establecido y que query.toSearch no sea nulo
+        if (!secuencia || !svgRef.current || query.toSearch === null) return;
+    
+        console.log("BUSCANDO");
+    
+        // Seleccionamos el elemento SVG de acuerdo a su referencia
+        const svg = d3.select(svgRef.current);
+    
+        // Animamos la búsqueda del elemento
+        animateSearchSequence(svg, secuencia, query.toSearch);
+    }, [query.toSearch]);
+    
 
     return { svgRef }
 
