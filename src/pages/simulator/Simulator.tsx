@@ -5,12 +5,12 @@ import { SimulatorProps } from "../../types";
 import { useEffect, useState } from "react";
 import { commandsData } from "../../shared/constants/commandsData";
 
-export function Simulator({ actions, error, children }: SimulatorProps) {
+export function Simulator({ structure: structure, actions, error, children }: SimulatorProps) {
     const [visibleError, setVisibleError] = useState(error);
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
-    const estructura = "secuencia";
-    const buttons = commandsData[estructura].buttons;
+    const structureName = "secuencia";
+    const buttons = commandsData[structureName].buttons;
 
     useEffect(() => {
         if (error) {
@@ -26,30 +26,35 @@ export function Simulator({ actions, error, children }: SimulatorProps) {
     const handleCommand = (command: string) => {
         const parts = command.trim().split(/\s+/);
         const action = parts[0]?.toLowerCase();
-        const value = Number(parts[1]);
+        const values = parts.slice(1).map(Number); // Convierte los valores a números
 
-        // Ejecutar directamente la acción si existe en actions
-        (actions as any)?.[action]?.(value);
+        if (values.length === 2) {
+            (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
+        } else if (values.length === 1) {
+            (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
+        } else {
+            (actions as any)?.[action]?.(); // Llama sin parámetros
+        }
     };
 
     return (
         <div className="h-screen flex flex-col">
             <div>
                 <h1 className="font-bold text-3xl text-center mt-2">
-                    {estructura.toUpperCase()}
+                    {structureName.toUpperCase()}
                 </h1>
             </div>
             <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
                 <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl my-3 mx-3 space-y-3">
                     {/* Muestra la estructura */}
-                    <DataStructureInfo>{children}</DataStructureInfo>
+                    <DataStructureInfo structure={structureName} structurePrueba={structure}>{children}</DataStructureInfo>
                     {/* Muestra los comandos */}
                     <GroupCommandsComponent buttons={buttons} />
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
                     <div className=" flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
                         <ConsoleComponent
-                            structureType={estructura}
+                            structureType={structureName}
                             onCommand={handleCommand}
                         />
                         {/* Muestra el error si existe */}

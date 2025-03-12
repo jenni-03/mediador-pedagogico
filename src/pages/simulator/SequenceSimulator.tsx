@@ -17,6 +17,7 @@ export function SequenceSimulator() {
 
     return (
         <Simulator
+            structure={secuencia}
             actions={{
                 create: crearSecuencia,
                 insert: insertarElemento,

@@ -39,6 +39,7 @@ export type GroupCommandProps = {
 }
 
 export type SimulatorProps = {
+    structure: any,
     actions: BaseStructureActions;
     query: BaseQueryOperations;
     error: string | null;
