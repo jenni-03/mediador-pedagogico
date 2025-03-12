@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { BaseQueryOperations } from "../../../types";
 import * as d3 from "d3";
-import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, animateDeleteElementSequence } from "../../../shared/utils/sequenceDrawActions";
+import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, animateDeleteElementSequence, animateSearchSequence } from "../../../shared/utils/sequenceDrawActions";
 import { usePrevious } from "../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../shared/constants/consts";
 
@@ -218,6 +218,19 @@ export function useSequenceRender(secuencia: (number | null)[], query: BaseQuery
         // Animamos el proceso de actualización del elemento
         animateUpdateSequence(updatedGroup, resetQueryValues, oldVal, newVal);
     }, [query.toUpdate]);
+
+    useEffect(() => {
+        // Verificamos que la secuencia sea válida, que la referencia al SVG se haya establecido y que query.toSearch no sea nulo
+        if (!secuencia || !svgRef.current || query.toSearch === null) return;
+    
+        console.log("BUSCANDO");
+    
+        // Seleccionamos el elemento SVG de acuerdo a su referencia
+        const svg = d3.select(svgRef.current);
+    
+        // Animamos la búsqueda del elemento
+        animateSearchSequence(svg, secuencia, query.toSearch);
+    }, [query.toSearch]);
 
     return { svgRef }
 }
