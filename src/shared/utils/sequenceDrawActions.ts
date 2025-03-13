@@ -124,13 +124,11 @@ export function animateInsertionSequence(
  * @param targetGroup Grupo dentro del lienzo que se va a animar
  * @param resetQueryValues Función que restablece los valores de las queries del usuario
  * @param valueToDelete Valor del elemento a ser eliminado
- * @param actualValue Valor que ocupa el elemento una vez es eliminado
  */
 export function animateDeleteElementSequence(
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     resetQueryValues: () => void,
-    valueToDelete: number,
-    actualValue?: number | null
+    valueToDelete: number
 ) {
     // Animamos el rectángulo: se desvanece (fade out) y luego se asigna el color de eliminación
     targetGroup.select("rect")
@@ -156,9 +154,96 @@ export function animateDeleteElementSequence(
         .style("opacity", 0)
         .on("end", function () {
             d3.select(this)
-                .text(actualValue ?? "")
+                .text("")
             resetQueryValues()
         });
+}
+
+/**
+ * Función encargada de animar la reestructuración de los elementos afectados por una eliminación
+ * @param deletedGroup Grupo dentro del lienzo referente al elemento eliminado
+ * @param affectedGroups Grupos del lienzo afectados por la eliminación
+ * @param nullGroup Grupo del lienzo que termina sin valor
+ * @param resetQueryValues Función que restablece los valores de las queries del usuario
+ * @param valueToDelete Valor eliminado
+ * @param actualValue Valor que reemplaza al valor eliminado
+ * @param lastValue Ultimo valor afectado por la eliminación
+ */
+export function animateTransformDeleteSequence(
+    deletedGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    affectedGroups: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    nullGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    resetQueryValues: () => void,
+    valueToDelete: number,
+    actualValue: number | null,
+    lastValue: number
+) {
+    // Transición para el rectángulo: fade-out y luego cambio a lightgray
+    const rectTransition = deletedGroup.select("rect")
+        .transition()
+        .duration(1500)
+        .attr("fill", "gray")
+        .style("opacity", 0)
+        .ease(d3.easeBack)
+        .transition()
+        .duration(1000)
+        .attr("fill", "lightgray")
+        .style("opacity", 1)
+        .end()
+
+    // Transición para el texto: fade-out y cambio final de texto
+    const textTransition = deletedGroup.select("text")
+        .text(valueToDelete)
+        .transition()
+        .delay(100)
+        .duration(1500)
+        .style("opacity", 0)
+        .on("end", function () {
+            d3.select(this).text(actualValue);
+        })
+        .end();
+
+    // Una vez que ambas transiciones han finalizado, se lanza la segunda animación
+    Promise.all([rectTransition, textTransition]).then(() => {
+        affectedGroups.select("rect")
+            .transition()
+            .duration(1000)
+            .attr("fill", "skyblue");
+
+        affectedGroups.select("text")
+            .transition()
+            .duration(1000)
+            .style("opacity", 0)
+            .transition()
+            .duration(5500)
+            .style("opacity", 1)
+            .on("end", resetQueryValues);
+
+        nullGroup.select("rect")
+            .transition()
+            .duration(1500)
+            .style("opacity", 0)
+            .transition()
+            .duration(1500)
+            .style("opacity", 1)
+            .attr("fill", "lightgray");
+
+        nullGroup.select("text")
+            .transition()
+            .duration(1500)
+            .style("opacity", 0)
+            .on("end", function () {
+                d3.select(this)
+                    .text("")
+            });
+    });
+
+    // Elementos necesarios antes de comenzar la eliminación
+    nullGroup.select("rect")
+        .attr("fill", "skyblue")
+
+    nullGroup.select("text")
+        .text(lastValue);
 }
 
 /**
@@ -200,42 +285,54 @@ export function animateUpdateSequence(
         });
 }
 
+/**
+ * Función encargada de animar la búsqueda de un elemento dentro de la secuencia
+ * @param svg Lienzo donde se va a aplicar la animación
+ * @param valueToSearch Valor a buscar
+ */
 export function animateSearchSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodoEncontrado: (number | null)[],
     valueToSearch: number
 ) {
+    // Seleccionamos los elementos
+    const elements = svg.selectAll("g.element");
 
-    const elements = svg.selectAll("g.element"); // Seleccionamos los elementos
-    let found = false; // Bandera para detener la animación
+    // Bandera para detener la animación
+    let found = false;
 
-    // Restablecer todos los elementos a su color original antes de iniciar la animación
+    // Restablecemos todos los elementos a su color original antes de iniciar la animación
     elements.each(function (d) {
         d3.select(this).select("rect")
-            .attr("fill", d === null ? "lightgray" : "skyblue") // Si el nodo no tiene info, lightgray; si sí, cyan
+            .attr("fill", d === null ? "lightgray" : "skyblue")
             .attr("stroke-width", 1);
     });
 
+    // Recorremos cada elemento
     elements.each(function (d, i) {
-        if (found) return; // Si ya lo encontramos, no hacemos nada más
+        // Si se encuentra el elemento detenemos la ejecución
+        if (found) return;
 
+        // Añadimos un retardo al procesamiento de cada elemento
         setTimeout(() => {
-            if (found) return; // Si se encontró antes de que este timeout corra, salir
+            // Evitamos que se procese el timeout si el elemento ya fue encontrado
+            if (found) return;
 
+            // Selección del elemento actual
             const el = d3.select(this);
 
+            // Transición en cascada
             el.select("rect")
                 .transition()
                 .duration(500)
-                .attr("fill", "violet") // Resaltar en violet mientras se hace el recorrido
+                .attr("fill", "violet")
                 .transition()
                 .duration(500)
-                .attr("fill", d === valueToSearch ? "violet" : "skyblue") // Si es el buscado, violet; si no, cyan
-                .attr("stroke-width",  d === valueToSearch ? 2 : 1);
+                .attr("fill", d === valueToSearch ? "violet" : "skyblue")
+                .attr("stroke-width", d === valueToSearch ? 2 : 1);
 
+            // Si se encuentra el elemento, actualizamos el flag de busqueda
             if (d === valueToSearch) {
-                console.log("Elemento encontrado:", valueToSearch);
-                found = true; // Marcamos que lo encontramos
+                found = true;
             }
         }, i * 1200);
     });
