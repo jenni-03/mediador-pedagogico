@@ -45,28 +45,28 @@ export const infoStructures: Record<string, any> = {
             "Total elementos",
         ]
     },
-    
+
     bst: {
         info: [
             "Peso",
             "Altura",
         ]
     },
-    
+
     avl: {
         info: [
             "Peso",
             "Altura",
         ]
     },
-    
+
     roji_negro: {
         info: [
             "Peso",
             "Altura",
         ]
     },
-    
+
     splay: {
         info: [
             "Peso",
@@ -80,7 +80,7 @@ export const infoStructures: Record<string, any> = {
             "Altura",
         ]
     },
-    
+
     arbol_eneario: {
         info: [
             "Peso",
@@ -88,7 +88,7 @@ export const infoStructures: Record<string, any> = {
             "Gordura",
         ]
     },
-    
+
     arbol_b: {
         info: [
             "Peso",
@@ -96,7 +96,7 @@ export const infoStructures: Record<string, any> = {
             "Gordura",
         ]
     },
-    
+
     arbol_b_plus: {
         info: [
             "Peso",
