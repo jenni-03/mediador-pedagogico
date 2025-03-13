@@ -30,12 +30,23 @@ export type SideBarItemProps = {
 }
 
 export type CommandProps = {
-    label: string;
-    tooltip: string;
+    title: string;
+    description: string;
+    estructura: string;
+    ejemplo: string;
 }
 
 export type GroupCommandProps = {
     buttons: CommandProps[];
+}
+
+export type CustomModalProps = {
+    title: string;
+    description: string;
+    structure: string;
+    example: string;
+    children: ReactNode;
+    onClose: () => void; // Función que se llama al cerrar el modal
 }
 
 export type SimulatorProps = {

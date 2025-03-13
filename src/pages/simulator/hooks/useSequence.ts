@@ -96,6 +96,10 @@ export function useSequence() {
         })
     }
 
+    const getMemoria = () => {
+        return secuencia.getVectorMemoria();
+    }
+
     return {
         secuencia,
         query,
@@ -106,6 +110,7 @@ export function useSequence() {
         actualizarElemento,
         crearSecuencia,
         vaciarSecuencia,
-        resetQueryValues
+        resetQueryValues,
+        getMemoria
     }
 }

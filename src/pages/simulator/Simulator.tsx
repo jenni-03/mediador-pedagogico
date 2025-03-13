@@ -5,6 +5,7 @@ import { SimulatorProps } from "../../types";
 import { useEffect, useState } from "react";
 import { commandsData } from "../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../shared/constants/pseudoCode";
+import { AddrGen } from "../../shared/utils/RAM/AddrGen";
 
 export function Simulator({
     structure: structure,
@@ -41,11 +42,17 @@ export function Simulator({
         const action = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
 
-        if (values.length === 2) {
+        let memory : string;
+        if (values.length === 2) { // update
+            memory = AddrGen.generate(values[1]);
+            // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
-        } else if (values.length === 1) {
+        } else if (values.length === 1) { // insert, delete, search, create
+            memory = AddrGen.generate(values[0]);
+            // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
             (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
-        } else {
+        } else { // clean 
+            // Aquí se debe buscar la manera de vaciar ese espacio de memoria, borrarlo
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
 
@@ -86,12 +93,12 @@ export function Simulator({
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl">
-                        <h1 className="font-medium text-center mt-2 mb-4">
+                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-auto">
+                        <h1 className="font-medium text-center mt-2">
                             CÓDIGO DE EJECUCIÓN
                         </h1>
-                        <pre className="font-mono text-md p-3 whitespace-pre-wrap break-words overflow-hidden">
-                            {codigoEjecucion}
+                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md bg-gray-100">
+                            {codigoEjecucion.trim()}
                         </pre>
                     </div>
                 </div>

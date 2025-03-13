@@ -5,7 +5,7 @@ import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, anim
 import { usePrevious } from "../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../shared/constants/consts";
 
-export function useSequenceRender(secuencia: (number | null)[], query: BaseQueryOperations, resetQueryValues: () => void) {
+export function useSequenceRender(secuencia: (number | null)[], memoria: number[], query: BaseQueryOperations, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
