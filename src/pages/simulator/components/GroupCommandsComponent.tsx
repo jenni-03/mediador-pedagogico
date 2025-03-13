@@ -14,8 +14,10 @@ export function GroupCommandsComponent({ buttons }: GroupCommandProps) {
                 {buttons.map((button, index) => (
                     <ButtonCommandsComponent
                         key={index}
-                        label={button.label}
-                        tooltip={button.tooltip}
+                        title={button.title}
+                        description={button.description}
+                        estructura={button.estructura}
+                        ejemplo={button.ejemplo}
                     />
                 ))}
             </div>

@@ -1,199 +1,192 @@
 export const commandsData: Record<string, any> = {
     secuencia: {
         buttons: [
-            { label: "Create", tooltip: "Crear un nodo..." },
-            { label: "Insert", tooltip: "Insertar un nodo..." },
-            { label: "Delete", tooltip: "Borrar un nodo..." },
-            { label: "Search", tooltip: "Buscar el nodo..." },
-            { label: "Update", tooltip: "Actualizar el nodo..." },
-            { label: "Clean", tooltip: "Borrar la estructura..." },
+            { title: "Create", description: "Crear un nodo...", estructura: "Create valor", ejemplo: "Create 1" },
+            { title: "Insert", description: "Insertar un nodo...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Borrar un nodo...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar el nodo...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Update", description: "Actualizar el nodo...", estructura: "Update posición nuevo-valor", ejemplo: "Update 1 10"},
+            { title: "Clean", description: "Borrar la estructura...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     lista_simple: {
         buttons: [
-            { label: "Create", tooltip: "Crear una lista vacía o con un valor inicial..." },
-            { label: "Insert_First", tooltip: "Insertar al inicio..." },
-            { label: "Insert_Last", tooltip: "Insertar al final..." },
-            { label: "Insert_At", tooltip: "Insertar en una posición específica..." },
-            { label: "Delete", tooltip: "Eliminar un nodo..." },
-            { label: "Search", tooltip: "Buscar un nodo..." },
-            { label: "Update", tooltip: "Actualizar un nodo..." },
-            { label: "Clean", tooltip: "Borrar la lista..." },
-            { label: "Traverse", tooltip: "Recorrer la lista..." },
+            { title: "Create", description: "Crear una lista vacía o con un valor inicial...", estructura: "Create valor", ejemplo: "Create 1" },
+            { title: "Insert_First", description: "Insertar al inicio...", estructura: "Insert_First valor", ejemplo: "Insert_First 1" },
+            { title: "Insert_Last", description: "Insertar al final...", estructura: "Insert_Last valor", ejemplo: "Insert_Last 1" },
+            { title: "Insert_At", description: "Insertar en una posición específica...", estructura: "Insert_At valor", ejemplo: "Insert_At 1" },
+            { title: "Delete", description: "Eliminar un nodo...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Update", description: "Actualizar un nodo...", estructura: "Update valor", ejemplo: "Update 1" },
+            { title: "Clean", description: "Borrar la lista...", estructura: "Clean", ejemplo: "Clean" },
+            { title: "Traverse", description: "Recorrer la lista...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
         ]
     },
     lista_doble: {
         buttons: [
-            { label: "Create", tooltip: "Crear una lista doblemente enlazada..." },
-            { label: "Insert_First", tooltip: "Insertar al inicio..." },
-            { label: "Insert_Last", tooltip: "Insertar al final..." },
-            { label: "Insert_At", tooltip: "Insertar en una posición específica..." },
-            { label: "Delete", tooltip: "Eliminar un nodo..." },
-            { label: "Search", tooltip: "Buscar un nodo..." },
-            { label: "Update", tooltip: "Actualizar un nodo..." },
-            { label: "Clean", tooltip: "Borrar la lista..." },
-            { label: "Traverse_F", tooltip: "Recorrer la lista hacia adelante..." },
-            { label: "Traverse_B", tooltip: "Recorrer la lista hacia atrás..." },
+            { title: "Create", description: "Crear una lista doblemente enlazada...", estructura: "Create valor", ejemplo: "Create 1" },
+            { title: "Insert_First", description: "Insertar al inicio...", estructura: "Insert_First valor", ejemplo: "Insert_First 1" },
+            { title: "Insert_Last", description: "Insertar al final...", estructura: "Insert_Last valor", ejemplo: "Insert_Last 1" },
+            { title: "Insert_At", description: "Insertar en una posición específica...", estructura: "Insert_At valor", ejemplo: "Insert_At 1" },
+            { title: "Delete", description: "Eliminar un nodo...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Update", description: "Actualizar un nodo...", estructura: "Update valor", ejemplo: "Update 1" },
+            { title: "Clean", description: "Borrar la lista...", estructura: "Clean", ejemplo: "Clean" },
+            { title: "Traverse_F", description: "Recorrer la lista hacia adelante...", estructura: "Traverse_F valor", ejemplo: "Traverse_F 1" },
+            { title: "Traverse_B", description: "Recorrer la lista hacia atrás...", estructura: "Traverse_B valor", ejemplo: "Traverse_B 1" },
         ]
     },
     lista_circular: {
         buttons: [
-            { label: "Create", tooltip: "Crear una lista circular..." },
-            { label: "Insert_First", tooltip: "Insertar al inicio..." },
-            { label: "Insert_Last", tooltip: "Insertar al final..." },
-            { label: "Insert_At", tooltip: "Insertar en una posición específica..." },
-            { label: "Delete", tooltip: "Eliminar un nodo..." },
-            { label: "Search", tooltip: "Buscar un nodo..." },
-            { label: "Update", tooltip: "Actualizar un nodo..." },
-            { label: "Clean", tooltip: "Borrar la lista..." },
-            { label: "Traverse", tooltip: "Recorrer la lista..." },
+            { title: "Create", description: "Crear una lista circular...", estructura: "Create valor", ejemplo: "Create 1" },
+            { title: "Insert_First", description: "Insertar al inicio...", estructura: "Insert_First valor", ejemplo: "Insert_First 1" },
+            { title: "Insert_Last", description: "Insertar al final...", estructura: "Insert_Last valor", ejemplo: "Insert_Last 1" },
+            { title: "Insert_At", description: "Insertar en una posición específica...", estructura: "Insert_At valor", ejemplo: "Insert_At 1" },
+            { title: "Delete", description: "Eliminar un nodo...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Update", description: "Actualizar un nodo...", estructura: "Update valor", ejemplo: "Update 1" },
+            { title: "Clean", description: "Borrar la lista...", estructura: "Clean", ejemplo: "Clean" },
+            { title: "Traverse", description: "Recorrer la lista...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
         ]
     },
     lista_circular_doble: {
         buttons: [
-            { label: "Create", tooltip: "Crear una lista circular doblemente enlazada..." },
-            { label: "Insert_First", tooltip: "Insertar al inicio..." },
-            { label: "Insert_Last", tooltip: "Insertar al final..." },
-            { label: "Insert_At", tooltip: "Insertar en una posición específica..." },
-            { label: "Delete", tooltip: "Eliminar un nodo..." },
-            { label: "Search", tooltip: "Buscar un nodo..." },
-            { label: "Update", tooltip: "Actualizar un nodo..." },
-            { label: "Clean", tooltip: "Borrar la lista..." },
-            { label: "Traverse_F", tooltip: "Recorrer la lista hacia adelante..." },
-            { label: "Traverse_B", tooltip: "Recorrer la lista hacia atrás..." },
+            { title: "Create", description: "Crear una lista circular doblemente enlazada...", estructura: "Create valor", ejemplo: "Create 1" },
+            { title: "Insert_First", description: "Insertar al inicio...", estructura: "Insert_First valor", ejemplo: "Insert_First 1" },
+            { title: "Insert_Last", description: "Insertar al final...", estructura: "Insert_Last valor", ejemplo: "Insert_Last 1" },
+            { title: "Insert_At", description: "Insertar en una posición específica...", estructura: "Insert_At valor", ejemplo: "Insert_At 1" },
+            { title: "Delete", description: "Eliminar un nodo...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Update", description: "Actualizar un nodo...", estructura: "Update valor", ejemplo: "Update 1" },
+            { title: "Clean", description: "Borrar la lista...", estructura: "Clean", ejemplo: "Clean" },
+            { title: "Traverse_F", description: "Recorrer la lista hacia adelante...", estructura: "Traverse_F valor", ejemplo: "Traverse_F 1" },
+            { title: "Traverse_B", description: "Recorrer la lista hacia atrás...", estructura: "Traverse_B valor", ejemplo: "Traverse_B 1" },
         ]
     },
     pila: {
         buttons: [
-            { label: "Push", tooltip: "Apilar un elemento..." },
-            { label: "Pop", tooltip: "Desapilar un elemento..." },
-            { label: "Top", tooltip: "Obtener el elemento superior..." },
-            { label: "Clean", tooltip: "Vaciar la pila..." },
+            { title: "Push", description: "Apilar un elemento...", estructura: "Push valor", ejemplo: "Push 1" },
+            { title: "Pop", description: "Desapilar un elemento...", estructura: "Pop valor", ejemplo: "Pop 1" },
+            { title: "Top", description: "Obtener el elemento superior...", estructura: "Top valor", ejemplo: "Top 1" },
+            { title: "Clean", description: "Vaciar la pila...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     cola: {
         buttons: [
-            { label: "Enqueue", tooltip: "Encolar un elemento..." },
-            { label: "Dequeue", tooltip: "Desencolar un elemento..." },
-            { label: "Front", tooltip: "Obtener el primer elemento..." },
-            { label: "Rear", tooltip: "Obtener el último elemento..." },
-            { label: "Clean", tooltip: "Vaciar la cola..." },
+            { title: "Enqueue", description: "Encolar un elemento...", estructura: "Enqueue valor", ejemplo: "Enqueue 1" },
+            { title: "Dequeue", description: "Desencolar un elemento...", estructura: "Dequeue valor", ejemplo: "Dequeue 1" },
+            { title: "Front", description: "Obtener el primer elemento...", estructura: "Front valor", ejemplo: "Front 1" },
+            { title: "Rear", description: "Obtener el último elemento...", estructura: "Rear valor", ejemplo: "Rear 1" },
+            { title: "Clean", description: "Vaciar la cola...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     cola_de_prioridad: {
         buttons: [
-            { label: "Enqueue", tooltip: "Encolar un elemento con prioridad..." },
-            { label: "Dequeue", tooltip: "Desencolar el elemento con mayor prioridad..." },
-            { label: "Front", tooltip: "Obtener el primer elemento..." },
-            { label: "Rear", tooltip: "Obtener el último elemento..." },
-            { label: "Clean", tooltip: "Vaciar la cola de prioridad..." },
+            { title: "Enqueue", description: "Encolar un elemento con prioridad...", estructura: "Enqueue valor", ejemplo: "Enqueue 1" },
+            { title: "Dequeue", description: "Desencolar el elemento con mayor prioridad...", estructura: "Dequeue valor", ejemplo: "Dequeue 1" },
+            { title: "Front", description: "Obtener el primer elemento...", estructura: "Front valor", ejemplo: "Front 1" },
+            { title: "Rear", description: "Obtener el último elemento...", estructura: "Rear valor", ejemplo: "Rear 1" },
+            { title: "Clean", description: "Vaciar la cola de prioridad...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     tabla_hash: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un elemento con clave y valor..." },
-            { label: "Update", tooltip: "Actualizar un valor existente..." },
-            { label: "Delete", tooltip: "Eliminar un elemento por su clave..." },
-            { label: "Search", tooltip: "Buscar un valor por su clave..." },
-            { label: "Contains", tooltip: "Verificar si una clave existe..." },
-            { label: "Resize", tooltip: "Redimensionar la tabla hash..." },
-            { label: "Clean", tooltip: "Borrar la tabla hash..." },
-            { label: "Traverse", tooltip: "Recorrer todos los elementos..." },
+            { title: "Insert", description: "Insertar un elemento con clave y valor...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Update", description: "Actualizar un valor existente...", estructura: "Update valor", ejemplo: "Update 1" },
+            { title: "Delete", description: "Eliminar un elemento por su clave...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un valor por su clave...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Contains", description: "Verificar si una clave existe...", estructura: "Contains valor", ejemplo: "Contains 1" },
+            { title: "Resize", description: "Redimensionar la tabla hash...", estructura: "Resize valor", ejemplo: "Resize 1" },
+            { title: "Clean", description: "Borrar la tabla hash...", estructura: "Clean", ejemplo: "Clean" },
+            { title: "Traverse", description: "Recorrer todos los elementos...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
         ]
     },
     
     bst: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el BST..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del BST..." },
-            { label: "Search", tooltip: "Buscar un nodo en el BST..." },
-            { label: "Traverse", tooltip: "Recorrer el BST en diferentes órdenes..." },
-            { label: "FindMin", tooltip: "Encontrar el mínimo..." },
-            { label: "FindMax", tooltip: "Encontrar el máximo..." },
-            { label: "Clean", tooltip: "Borrar el BST..." },
+            { title: "Insert", description: "Insertar un nodo en el BST...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del BST...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el BST...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Traverse", description: "Recorrer el BST en diferentes órdenes...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
+            { title: "FindMin", description: "Encontrar el mínimo...", estructura: "FindMin valor", ejemplo: "FindMin 1" },
+            { title: "FindMax", description: "Encontrar el máximo...", estructura: "FindMax valor", ejemplo: "FindMax 1" },
+            { title: "Clean", description: "Borrar el BST...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     
     avl: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el AVL..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del AVL..." },
-            { label: "Search", tooltip: "Buscar un nodo en el AVL..." },
-            { label: "Traverse", tooltip: "Recorrer el AVL en diferentes órdenes..." },
-            { label: "FindMin", tooltip: "Encontrar el mínimo..." },
-            { label: "FindMax", tooltip: "Encontrar el máximo..." },
-            { label: "Balance", tooltip: "Balancear el árbol AVL..." },
-            { label: "Clean", tooltip: "Borrar el AVL..." },
+            { title: "Insert", description: "Insertar un nodo en el AVL...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del AVL...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el AVL...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Traverse", description: "Recorrer el AVL en diferentes órdenes...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
+            { title: "FindMin", description: "Encontrar el mínimo...", estructura: "FindMin valor", ejemplo: "FindMin 1" },
+            { title: "FindMax", description: "Encontrar el máximo...", estructura: "FindMax valor", ejemplo: "FindMax 1" },
+            { title: "Balance", description: "Balancear el árbol AVL...", estructura: "Balance valor", ejemplo: "Balance 1" },
+            { title: "Clean", description: "Borrar el AVL...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     
     roji_negro: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el árbol Rojo-Negro..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del árbol Rojo-Negro..." },
-            { label: "Search", tooltip: "Buscar un nodo en el árbol Rojo-Negro..." },
-            { label: "Traverse", tooltip: "Recorrer el árbol Rojo-Negro..." },
-            { label: "FindMin", tooltip: "Encontrar el mínimo..." },
-            { label: "FindMax", tooltip: "Encontrar el máximo..." },
-            { label: "Clean", tooltip: "Borrar el árbol Rojo-Negro..." },
+            { title: "Insert", description: "Insertar un nodo en el árbol Rojo-Negro...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del árbol Rojo-Negro...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el árbol Rojo-Negro...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Traverse", description: "Recorrer el árbol Rojo-Negro...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
+            { title: "FindMin", description: "Encontrar el mínimo...", estructura: "FindMin valor", ejemplo: "FindMin 1" },
+            { title: "FindMax", description: "Encontrar el máximo...", estructura: "FindMax valor", ejemplo: "FindMax 1" },
+            { title: "Clean", description: "Borrar el árbol Rojo-Negro...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     
     splay: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el árbol Splay..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del árbol Splay..." },
-            { label: "Search", tooltip: "Buscar un nodo en el árbol Splay..." },
-            { label: "Splay", tooltip: "Realizar la operación Splay..." },
-            { label: "Clean", tooltip: "Borrar el árbol Splay..." },
+            { title: "Insert", description: "Insertar un nodo en el árbol Splay...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del árbol Splay...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el árbol Splay...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Splay", description: "Realizar la operación Splay...", estructura: "Splay valor", ejemplo: "Splay 1" },
+            { title: "Clean", description: "Borrar el árbol Splay...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
 
     heap: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un elemento en el Heap..." },
-            { label: "Delete", tooltip: "Eliminar un elemento del Heap..." },
-            { label: "ExtractMin", tooltip: "Extraer el mínimo del Heap..." },
-            { label: "ExtractMax", tooltip: "Extraer el máximo del Heap..." },
-            { label: "Heapify", tooltip: "Aplicar Heapify..." },
-            { label: "Clean", tooltip: "Borrar el Heap..." },
+            { title: "Insert", description: "Insertar un elemento en el Heap...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un elemento del Heap...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "ExtractMin", description: "Extraer el mínimo del Heap...", estructura: "ExtractMin valor", ejemplo: "ExtractMin 1" },
+            { title: "ExtractMax", description: "Extraer el máximo del Heap...", estructura: "ExtractMax valor", ejemplo: "ExtractMax 1" },
+            { title: "Heapify", description: "Aplicar Heapify...", estructura: "Heapify valor", ejemplo: "Heapify 1" },
+            { title: "Clean", description: "Borrar el Heap...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     
     arbol_eneario: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el árbol N-ario..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del árbol N-ario..." },
-            { label: "Search", tooltip: "Buscar un nodo en el árbol N-ario..." },
-            // { label: "TraversePreorder", tooltip: "Recorrer en Preorden..." },
-            // { label: "TraversePostorder", tooltip: "Recorrer en Postorden..." },
-            // { label: "TraverseLevelorder", tooltip: "Recorrer por niveles..." },
-            { label: "Traverse", tooltip: "Recorrer el eneario en diferentes órdenes..." },
-            { label: "Clean", tooltip: "Borrar el árbol N-ario..." },
+            { title: "Insert", description: "Insertar un nodo en el árbol N-ario...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del árbol N-ario...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el árbol N-ario...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Traverse", description: "Recorrer el eneario en diferentes órdenes...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
+            { title: "Clean", description: "Borrar el árbol N-ario...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     
     arbol_b: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el árbol B..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del árbol B..." },
-            { label: "Search", tooltip: "Buscar un nodo en el árbol B..." },
-            // { label: "TraverseLevelorder", tooltip: "Recorrer por niveles..." },
-            // { label: "TraverseInorder", tooltip: "Recorrer en Inorden..." },
-            { label: "Traverse", tooltip: "Recorrer el Árbol b en diferentes órdenes..." },
-            { label: "Clean", tooltip: "Borrar el árbol B..." },
+            { title: "Insert", description: "Insertar un nodo en el árbol B...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del árbol B...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el árbol B...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Traverse", description: "Recorrer el Árbol b en diferentes órdenes...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
+            { title: "Clean", description: "Borrar el árbol B...", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     
     arbol_b_plus: {
         buttons: [
-            { label: "Insert", tooltip: "Insertar un nodo en el árbol B+..." },
-            { label: "Delete", tooltip: "Eliminar un nodo del árbol B+..." },
-            { label: "Search", tooltip: "Buscar un nodo en el árbol B+..." },
-            { label: "Traverse", tooltip: "Recorrer el Árbol b+ en diferentes órdenes..." },
-            // { label: "TraverseLevelorder", tooltip: "Recorrer por niveles..." },
-            // { label: "TraverseInorder", tooltip: "Recorrer en Inorden..." },
-            { label: "Clean", tooltip: "Borrar el árbol B+..." },
+            { title: "Insert", description: "Insertar un nodo en el árbol B+...", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Eliminar un nodo del árbol B+...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Search", description: "Buscar un nodo en el árbol B+...", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Traverse", description: "Recorrer el Árbol b+ en diferentes órdenes...", estructura: "Traverse valor", ejemplo: "Traverse 1" },
+            { title: "Clean", description: "Borrar el árbol B+...", estructura: "Clean", ejemplo: "Clean" },
         ]
     }
 };
