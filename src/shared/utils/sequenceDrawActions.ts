@@ -53,6 +53,15 @@ export function drawBaseSequence(
                     .attr("fill", "black")
                     .style("font-size", "18px");
 
+                // Texto adicional (por ejemplo, índice o etiqueta personalizada)
+                gEnter.append("text")
+                    .attr("x", elementWidth / 2)
+                    .attr("y", elementHeight + 20) // Ajusta el offset vertical según sea necesario
+                    .attr("text-anchor", "middle")
+                    .text((d) => `Índice: ${d ?? 4}`)  // Puedes cambiar esto por la etiqueta que desees
+                    .attr("fill", "black")
+                    .style("font-size", "14px");
+
                 return gEnter;
             },
             // Actualización de elementos existentes
