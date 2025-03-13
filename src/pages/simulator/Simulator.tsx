@@ -86,12 +86,12 @@ export function Simulator({
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-y-auto">
+                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-auto">
                         <h1 className="font-medium text-center mt-2">
                             CÓDIGO DE EJECUCIÓN
                         </h1>
-                        <pre className="font-mono text-md whitespace-pre-wrap break-words">
-                            {codigoEjecucion}
+                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md bg-gray-100">
+                            {codigoEjecucion.trim()}
                         </pre>
                     </div>
                 </div>
