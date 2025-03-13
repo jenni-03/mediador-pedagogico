@@ -33,11 +33,13 @@ export class Secuencia {
      * @param elem Elemento a insertar
      */
     insertar(elem: number) {
+        if (this.vector.includes(elem)) {
+            throw new Error(`El elemento ${elem} ya está en la secuencia`);
+        }
         if (this.cant >= this.vector.length) {
             throw new Error(`No hay espacio para insertar el elemento ${elem}`);
-        } else {
-            this.vector[this.cant++] = elem;
         }
+        this.vector[this.cant++] = elem;
     }
 
     /**
@@ -45,23 +47,19 @@ export class Secuencia {
      * @param elem Elemento a eliminar
      */
     eliminar(elem: number) {
-        let encontrado = false;
-        let j = 0;
-        for (let i = 0; i < this.cant; i++) {
-            if (this.vector[i] !== elem) {
-                this.vector[j] = this.vector[i];
-                j++;
-            } else {
-                encontrado = true;
-                this.vector[j] = null;
-            }
-        }
-        if (encontrado) {
-            this.cant--;
-            this.vector[this.cant] = null;
-        } else {
+        const indice = this.getIndice(elem);
+        if (indice === -1) {
             throw new Error(`El elemento ${elem} no está en la secuencia`);
         }
+
+        // Mover los elementos hacia la izquierda
+        for (let i = indice; i < this.cant - 1; i++) {
+            this.vector[i] = this.vector[i + 1];
+        }
+
+        // Reducir cantidad y limpiar el último espacio
+        this.vector[this.cant - 1] = null;
+        this.cant--;
     }
 
     /**
@@ -93,10 +91,7 @@ export class Secuencia {
      * Método que vacía la secuencia
      */
     vaciar(): void {
-        for (let i = 0; i < this.cant; i++) {
-            this.vector[i] = null;
-        }
-        this.cant = 0;
+        this.vector = [];
     }
 
     /**
@@ -119,12 +114,10 @@ export class Secuencia {
      */
     set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
-            console.error("Indíce fuera de rango!");
-            return;
+            throw new Error("Indíce fuera de rango!");
         }
-        if (nuevo === null || nuevo === undefined) {
-            console.error("No se pueden ingresar datos nulos!");
-            return;
+        if (this.vector.includes(nuevo)) {
+            throw new Error(`El elemento ${nuevo} ya está en la secuencia`);
         }
         this.vector[i] = nuevo;
     }
@@ -134,13 +127,11 @@ export class Secuencia {
      * @param elem Elemento a buscar.
      * @returns true si se encuentra, false en caso contrario.
      */
-    esta(elem: number) {
-        for (let i = 0; i < this.cant; i++) {
-            if (this.vector[i] === elem) {
-                return true;
-            }
+    esta(elem: number): boolean {
+        if (this.vector.includes(elem)) {
+            return true
         }
-        return false;
+        throw new Error(`El elemento ${elem} no se encontró en la secuencia`);
     }
 
     /**
@@ -148,13 +139,8 @@ export class Secuencia {
      * @param elem Elemento a ubicar.
      * @returns El índice si se encuentra o -1 en caso contrario.
      */
-    getIndice(elem: number) {
-        for (let i = 0; i < this.cant; i++) {
-            if (this.vector[i] === elem) {
-                return i;
-            }
-        }
-        return -1;
+    getIndice(elem: number): number {
+        return this.vector.indexOf(elem);
     }
 
     /**
@@ -202,4 +188,3 @@ export class Secuencia {
     }
 
 }
-

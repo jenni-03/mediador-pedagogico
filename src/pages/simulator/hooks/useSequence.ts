@@ -3,7 +3,6 @@ import { Secuencia } from "../../../shared/utils/structures/Secuencia"
 import { BaseQueryOperations } from "../../../types";
 
 export function useSequence() {
-
     // Estado para manejar la secuencia
     const [secuencia, setSecuencia] = useState(new Secuencia(0));
 
@@ -50,10 +49,19 @@ export function useSequence() {
     }
 
     const buscarElemento = (elemento: number) => {
-        return secuencia.esta(elemento);
-    }
+        try {
+            if (secuencia.esta(elemento)) {
+                setQuery((prev) => ({
+                    ...prev,
+                    toSearch: elemento
+                }));
+            }
+        } catch (error: any) {
+            setError(error.message);
+        }
+    };
 
-    const actualizarElemento = (elemento: number, pos: number) => {
+    const actualizarElemento = (pos: number, elemento: number) => {
         const nuevaSecuencia = secuencia.clonar();
         nuevaSecuencia.set(pos, elemento);
         setSecuencia(nuevaSecuencia);
@@ -78,13 +86,6 @@ export function useSequence() {
         setSecuencia(nuevaSecuencia);
     }
 
-    const setSearchQuery = (elemento: number) => {
-        setQuery((prev) => ({
-            ...prev,
-            toSearch: elemento
-        }));
-    }
-
     const resetQueryValues = () => {
         setQuery({
             create: null,
@@ -105,8 +106,6 @@ export function useSequence() {
         actualizarElemento,
         crearSecuencia,
         vaciarSecuencia,
-        setSearchQuery,
         resetQueryValues
     }
-
 }

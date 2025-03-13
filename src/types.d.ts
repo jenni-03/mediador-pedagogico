@@ -30,15 +30,27 @@ export type SideBarItemProps = {
 }
 
 export type CommandProps = {
-    label: string;
-    tooltip: string;
+    title: string;
+    description: string;
+    estructura: string;
+    ejemplo: string;
 }
 
 export type GroupCommandProps = {
     buttons: CommandProps[];
 }
 
+export type CustomModalProps = {
+    title: string;
+    description: string;
+    structure: string;
+    example: string;
+    children: ReactNode;
+    onClose: () => void; // Función que se llama al cerrar el modal
+}
+
 export type SimulatorProps = {
+    structure: any,
     actions: BaseStructureActions;
     query: BaseQueryOperations;
     error: string | null;
@@ -75,7 +87,8 @@ export type BaseQueryOperations = {
 export type BaseStructureActions = {
     create: (n: number) => void,
     insert: (element: number) => void,
-    remove: (element: number) => void,
+    delete: (element: number) => void,
     search: (element: number) => void,
-    clear: () => void,
+    clean: () => void,
+    update: (pos: number, element: number) => void
 }
