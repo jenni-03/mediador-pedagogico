@@ -51,12 +51,12 @@ export class Secuencia {
         if (indice === -1) {
             throw new Error(`El elemento ${elem} no está en la secuencia`);
         }
-    
+
         // Mover los elementos hacia la izquierda
         for (let i = indice; i < this.cant - 1; i++) {
             this.vector[i] = this.vector[i + 1];
         }
-    
+
         // Reducir cantidad y limpiar el último espacio
         this.vector[this.cant - 1] = null;
         this.cant--;
@@ -91,11 +91,7 @@ export class Secuencia {
      * Método que vacía la secuencia
      */
     vaciar(): void {
-        for (let i = 0; i < this.cant; i++) {
-            this.vector[i] = null;
-        }
-        this.cant = 0;
-        this.vector.length = 0;
+        this.vector = [];
     }
 
     /**
@@ -132,7 +128,7 @@ export class Secuencia {
      * @returns true si se encuentra, false en caso contrario.
      */
     esta(elem: number): boolean {
-        if(this.vector.includes(elem)){
+        if (this.vector.includes(elem)) {
             return true
         }
         throw new Error(`El elemento ${elem} no se encontró en la secuencia`);
