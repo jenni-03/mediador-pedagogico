@@ -14,6 +14,7 @@ export function SequenceSimulator() {
         actualizarElemento,
         vaciarSecuencia,
         resetQueryValues,
+        getMemoria
     } = useSequence();
 
     return (
@@ -33,6 +34,7 @@ export function SequenceSimulator() {
         >
             <SequenceRender
                 sequence={secuencia.getVector()}
+                memoria={getMemoria()}
                 query={query}
                 resetQueryValues={resetQueryValues}
             />

@@ -11,21 +11,40 @@ export class Secuencia {
     // Cantidad de elementos actualmente almacenados en la secuencia.
     private cant: number;
 
+    // Dirección base ficticia desde donde se comienza a calcular la memoria
+    private direccionBase: number;
+
+    // Tamaño simulado de cada nodo en bytes
+    private tamanioNodo: number;
+
+    // Vector de direcciones de memoria
+    private vectorMemoria: number[];
+
     /**
      * Constructor de la clase Secuencia
      * @param n Tamaño (capacidad) de la secuencia
+     * @param direccionBase Dirección base de memoria (opcional, por defecto 1000)
+     * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4)
      */
-    constructor(n: number) {
+    constructor(n: number, direccionBase: number = 1000, tamanioNodo: number = 4) {
         if (n <= 0) {
             this.vector = [];
+            this.vectorMemoria = [];
             this.cant = 0;
+            this.direccionBase = 0;
+            this.tamanioNodo = 0;
             return;
         }
-        this.vector = new Array<number | null>(n);
-        for (let i = 0; i < n; i++) {
-            this.vector[i] = null;
-        }
+        this.vector = new Array<number | null>(n).fill(null);
+        this.vectorMemoria = new Array<number>(n);
         this.cant = 0;
+        this.direccionBase = direccionBase;
+        this.tamanioNodo = tamanioNodo;
+
+        // Asignar direcciones de memoria a cada posición del vector
+        for (let i = 0; i < n; i++) {
+            this.vectorMemoria[i] = this.direccionBase + i * this.tamanioNodo;
+        }
     }
 
     /**
@@ -185,6 +204,26 @@ export class Secuencia {
             secuenciaClonada.insertar(this.get(i) ?? -1);
         }
         return secuenciaClonada;
+    }
+
+    /**
+     * Método que retorna la dirección de memoria de un índice dado
+     * @param i Índice del vector
+     * @returns Dirección de memoria correspondiente al índice
+     */
+    getDireccion(i: number): number | null {
+        if (i < 0 || i >= this.vector.length) {
+            return null;
+        }
+        return this.vectorMemoria[i];
+    }
+
+    /**
+     * Método que retorna el vector de direcciones de memoria completo
+     * @returns Vector con las direcciones de memoria
+     */
+    getVectorMemoria(): number[] {
+        return this.vectorMemoria;
     }
 
 }
