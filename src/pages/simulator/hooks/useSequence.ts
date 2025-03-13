@@ -62,13 +62,18 @@ export function useSequence() {
     };
 
     const actualizarElemento = (pos: number, elemento: number) => {
-        const nuevaSecuencia = secuencia.clonar();
-        nuevaSecuencia.set(pos, elemento);
-        setSecuencia(nuevaSecuencia);
-        setQuery((prev) => ({
-            ...prev,
-            toUpdate: [pos, elemento]
-        }));
+        try {
+            const nuevaSecuencia = secuencia.clonar();
+            nuevaSecuencia.set(pos, elemento);
+            setSecuencia(nuevaSecuencia);
+            setQuery((prev) => ({
+                ...prev,
+                toUpdate: [pos, elemento]
+            }));
+        } catch (error: any) {
+            setError(error.message);
+        }
+
     }
 
     const crearSecuencia = (n: number) => {
