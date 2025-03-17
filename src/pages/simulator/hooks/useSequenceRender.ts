@@ -14,7 +14,8 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
     const prevSecuencia = usePrevious(secuencia);
 
     // Control de bloqueo de animación
-    const { setIsAnimating } = useAnimation();
+    const { isAnimating, setIsAnimating } = useAnimation();
+    console.log(isAnimating);
 
     console.log("Secuencia previa xd")
     console.log(prevSecuencia)
@@ -75,7 +76,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                 .filter((_d, i) => i === newIndex);
 
             // Animamos la inserción del nuevo elemento
-            animateInsertionSequence(targetGroup, resetQueryValues, () => setIsAnimating(false));
+            animateInsertionSequence(targetGroup, resetQueryValues, () => setIsAnimating(true));
         }
     }, [query.toAdd]);
 
