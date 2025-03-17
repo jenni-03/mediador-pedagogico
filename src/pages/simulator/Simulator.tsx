@@ -2,10 +2,9 @@ import { ConsoleComponent } from "./components/ConsoleComponent";
 import { DataStructureInfo } from "./components/DataStructureInfo";
 import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
 import { SimulatorProps } from "../../types";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { commandsData } from "../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../shared/constants/pseudoCode";
-import { AddrGen } from "../../shared/utils/RAM/AddrGen";
 
 export function Simulator({
     structure: structure,
@@ -13,8 +12,7 @@ export function Simulator({
     error,
     children,
 }: SimulatorProps) {
-    // Estado para el manejo del error
-    const [visibleError, setVisibleError] = useState(error);
+    
 
     // Estado para el manejo de la visualización del código
     const [codigoEjecucion, setCodigoEjecucion] = useState("");
@@ -26,29 +24,29 @@ export function Simulator({
     // Pseudocódigo de las operaciones de la estructura
     const operations_code = operations_pseudoCode[structureName];
 
-    useEffect(() => {
-        if (error) {
-            setVisibleError(error);
-            const timer = setTimeout(() => {
-                setVisibleError(null);
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [error]);
 
-    // Llama a la operación a realizar en la estructura de datos
-    const handleCommand = (command: string) => {
+    const consoleRef = useRef<HTMLDivElement>(null);
+
+    const handleCommand = (command: string, isValid: boolean) => {
+
+        if(!isValid) {
+            if (consoleRef.current) {
+                requestAnimationFrame(() => {
+                    consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                });
+            }
+
+            return;
+        }
+
         const parts = command.trim().split(/\s+/);
         const action = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
 
-        let memory : string;
         if (values.length === 2) { // update
-            memory = AddrGen.generate(values[1]);
             // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
         } else if (values.length === 1) { // insert, delete, search, create
-            memory = AddrGen.generate(values[0]);
             // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
             (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
         } else { // clean 
@@ -59,6 +57,12 @@ export function Simulator({
         setCodigoEjecucion(
             operations_code[action as keyof typeof operations_code]
         );
+
+        if (consoleRef.current) {
+            requestAnimationFrame(() => {
+                consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+            });
+        }
     };
 
     return (
@@ -81,17 +85,14 @@ export function Simulator({
                     <GroupCommandsComponent buttons={buttons} />
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
-                    <div className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto">
-                        <ConsoleComponent
+                    <div ref={consoleRef}
+                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto h-full">
+                        <ConsoleComponent 
                             structureType={structureName}
-                            onCommand={handleCommand}
+                            onCommand={handleCommand}   
+                            error={error}
                         />
-                        {/* Muestra el error si existe */}
-                        {error && (
-                            <div className="text-red-500 font-bold text-center mb-3">
-                                {visibleError}
-                            </div>
-                        )}
+                        
                     </div>
                     <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-auto">
                         <h1 className="font-medium text-center mt-2">

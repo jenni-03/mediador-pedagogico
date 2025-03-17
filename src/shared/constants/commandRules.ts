@@ -15,12 +15,34 @@
                     return { valid: false, message: "El número debe ser mayor que 0 y menor que 21." };
                 }
                 return true; // Si todo está bien, solo devuelve `true`
-            case "insert":
+            case "insert": {
+                if (parts.length !== 2) {
+                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                }
+                const value = parts[1];
+                const pattern = /^(\d{1,3}|\d{1,2}\.\d{1})$/; // Regex para validar el formato permitido
+            
+                if (!pattern.test(value)) {
+                    return { valid: false, message: "El número debe ser un entero de hasta 3 dígitos o un decimal con máximo 2 dígitos enteros y 1 decimal." };
+                }
+                return true;
+            }
             case "delete":
             case "search":
                 return parts.length === 2 && !isNaN(Number(parts[1])); // Válida que solo venga el comando y el elemento, y además que el elemento sea un número
             case "update":
-                return parts.length === 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2])); // Válida que venga el comando y dos elementos, y que los dos elementos sean números
+                if (parts.length !== 3) {
+                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
+                }
+                if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
+                    return { valid: false, message: "Ambos argumentos deben ser números válidos" };
+                }
+                const value = parts[2];
+                const pattern = /^(\d{1,3}|\d{1,2}\.\d{1})$/; // Regex para validar el formato permitido
+                if (!pattern.test(value)) {
+                    return { valid: false, message: "El argumento debe ser un número entero de hasta 3 dígitos o un decimal con máximo 2 dígitos enteros y 1 decimal." };
+                }
+                return true;
             case "clean":
                 return parts.length === 1;
             default:

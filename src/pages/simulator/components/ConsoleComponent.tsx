@@ -1,27 +1,35 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { commandRules } from "../../../shared/constants/commandRules";
 
 interface ConsoleComponentProps {
     structureType: string;
-    onCommand: (command: string) => void;
+    onCommand: (command: string, isValid: boolean) => void;
+    error: {message: string, id: number} | null;
 }
 
 export function ConsoleComponent({
     structureType,
     onCommand,
+    error
 }: ConsoleComponentProps) {
     const [history, setHistory] = useState<string[]>([]);
     const [commandHistory, setCommandHistory] = useState<string[]>([]); // Solo comandos válidos
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const [isCreated, setIsCreated] = useState<boolean>(false);
-    const consoleRef = useRef<HTMLDivElement>(null);
+
+    // Estado para el manejo del error
+    const [visibleError, setVisibleError] = useState<string | null>();
 
     useEffect(() => {
-        if (consoleRef.current) {
-            consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+        if (error) {
+            setVisibleError(error.message);
+            setHistory([
+                ...history, `Error: ${error.message}`,
+            ])
         }
-    }, [history]);
+    }, [error?.id]);
+    
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && input.trim() !== "") {
@@ -39,13 +47,14 @@ export function ConsoleComponent({
                         const command = parts[0]?.toLowerCase();
                         // Si la estructura no ha sido creada solo se permite el cmd create
                         if (!isCreated && command !== "create") {
+                            onCommand("", false);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Error: Debe crear la estructura primero con 'create'",
                             ]);
                         } else if (isCreated && command == "clean") {
-                            onCommand(input.trim());
+                            onCommand(input.trim(), true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
@@ -60,31 +69,37 @@ export function ConsoleComponent({
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
                             }
-                            onCommand(input.trim());
+                            onCommand(input.trim(), true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
-                            setCommandHistory([
-                                ...commandHistory,
-                                input.trim(),
-                            ]); // Guardamos solo el comando
                         }
                     } else {
+                        onCommand("", false);
+
                         setHistory([
                             ...history,
                             `$ ${input}`,
                             "Error: Comando no válido",
                         ]);
+                        
                     }
                 } else {
+                    onCommand("", false);
                     setHistory([
                         ...history,
                         `$ ${input}`,
                         `Error: ${commandValidation.message}`,
                     ]);
                 }
+
+                //Guardamos el comando en el historial
+                setCommandHistory([
+                    ...commandHistory,
+                    input.trim(),
+                ]);
 
                 setInput("");
                 setHistoryIndex(-1); // Reiniciamos el índice del historial
@@ -120,7 +135,6 @@ export function ConsoleComponent({
 
     return (
         <div
-            ref={consoleRef}
             className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono"
         >
             {history.map((cmd, index) => (
@@ -129,6 +143,7 @@ export function ConsoleComponent({
                     className={
                         cmd.startsWith("Error:")
                             ? "text-red-500"
+                            : cmd == "Comando válido, procesando..." ? "text-yellow-400" 
                             : "text-green-400"
                     }
                 >
