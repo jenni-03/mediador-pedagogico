@@ -52,33 +52,10 @@ export class Secuencia {
      * @param elem Elemento a insertar
      */
     insertar(elem: number) {
-        if (this.vector.includes(elem)) {
-            throw new Error(`El elemento ${elem} ya está en la secuencia`);
-        }
         if (this.cant >= this.vector.length) {
             throw new Error(`No hay espacio para insertar el elemento ${elem}`);
         }
         this.vector[this.cant++] = elem;
-    }
-
-    /**
-     * Método que elimina un elemento de la secuencia
-     * @param elem Elemento a eliminar
-     */
-    eliminar(elem: number) {
-        const indice = this.getIndice(elem);
-        if (indice === -1) {
-            throw new Error(`El elemento ${elem} no está en la secuencia`);
-        }
-
-        // Mover los elementos hacia la izquierda
-        for (let i = indice; i < this.cant - 1; i++) {
-            this.vector[i] = this.vector[i + 1];
-        }
-
-        // Reducir cantidad y limpiar el último espacio
-        this.vector[this.cant - 1] = null;
-        this.cant--;
     }
 
     /**
@@ -89,21 +66,11 @@ export class Secuencia {
         if (pos < 0 || pos >= this.cant) {
             throw new Error(`La posición ${pos} no existe, está fuera de rango`);
         }
-        let eliminado = false;
-        let j = 0;
-        for (let i = 0; i < this.cant; i++) {
-            if (i !== pos) {
-                this.vector[j] = this.vector[i];
-                j++;
-            } else {
-                eliminado = true;
-                this.vector[j] = null;
-            }
+        for (let i = pos; i < this.cant - 1; i++) {
+            this.vector[i] = this.vector[i + 1];
         }
-        if (eliminado) {
-            this.cant--;
-            this.vector[this.cant] = null;
-        }
+        this.vector[this.cant - 1] = null;
+        this.cant--;
     }
 
     /**
@@ -134,9 +101,6 @@ export class Secuencia {
     set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
             throw new Error("Indíce fuera de rango!");
-        }
-        if (this.vector.includes(nuevo)) {
-            throw new Error(`El elemento ${nuevo} ya está en la secuencia`);
         }
         this.vector[i] = nuevo;
     }
@@ -227,3 +191,20 @@ export class Secuencia {
     }
 
 }
+
+const secuencia = new Secuencia(4);
+
+
+secuencia.insertar(1);
+secuencia.insertar(2);
+secuencia.insertar(1);
+secuencia.insertar(2);
+
+console.log(secuencia.getVector());
+console.log(secuencia.getTamanio());
+
+secuencia.eliminarPos(0);
+
+console.log(secuencia.getVector());
+console.log(secuencia.getTamanio());
+

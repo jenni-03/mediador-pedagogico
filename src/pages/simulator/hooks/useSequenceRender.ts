@@ -44,19 +44,35 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
             .attr("width", width);
 
         // Creamos la estructura base de la secuencia en el lienzo
-        drawBaseSequence(svg, secuencia, { margin, elementWidth, elementHeight, spacing, height });
+        drawBaseSequence(svg, secuencia, memoria, { margin, elementWidth, elementHeight, spacing, height });
     }, [secuencia]);
 
     // Operación de inserción
     useEffect(() => {
         // Verificamos que la secuencia sea válida, que la referencia al SVG se haya establecido y que query.toAdd no sea nulo
-        if (!secuencia || !svgRef.current || query.toAdd === null) return;
+        if (!secuencia || !svgRef.current || query.toAdd === null || !prevSecuencia) return;
 
-        // Seleccionamos el elemento SVG de acuerdo a su referencia
-        const svg = d3.select(svgRef.current);
+        console.log("INSERTANDO");
 
-        // Animamos la inserción del nuevo elemento
-        animateInsertionSequence(svg, query.toAdd, resetQueryValues);
+        // Buscamos el primer índice donde la secuencia actual difiere del estado previo
+        const newIndex = secuencia.findIndex((valorActual, i) => valorActual !== prevSecuencia[i]);
+
+        // Si se encontro una diferencia
+        if (newIndex !== -1) {
+            // Seleccionamos el elemento SVG de acuerdo a su referencia
+            const svg = d3.select(svgRef.current);
+
+            // 🚨 Interrumpir cualquier animación en curso antes de iniciar una nueva
+            svg.selectAll("g.element").interrupt();
+
+            // Seleccionamos el grupo dentro del lienzo que se va a animar
+            const targetGroup = svg
+                .selectAll<SVGGElement, number | null>("g.element")
+                .filter((_d, i) => i === newIndex);
+
+            // Animamos la inserción del nuevo elemento
+            animateInsertionSequence(targetGroup, resetQueryValues);
+        }
     }, [query.toAdd]);
 
     // Operación de eliminación
@@ -67,49 +83,113 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
         console.log("ELIMINANDO");
 
         // Determinamos el indice del elemento que se elimino
-        const indexEliminado = secuencia.findIndex(
-            (val, i) => val !== prevSecuencia[i]
-        );
+        const indexEliminado = query.toDelete;
+        console.log("Indice eliminado: ", indexEliminado)
+
+        // Determinamos el elemento que se elimino
+        const deletedElement = prevSecuencia[indexEliminado];
+        console.log("Elemento eliminado: ", deletedElement)
 
         // Determinamos el primer indice con null en la secuencia actual
         let firstNullIndex = secuencia.findIndex(val => val === null);
         if (firstNullIndex === -1) firstNullIndex = secuencia.length;
+        console.log("Primer elemento nulo", firstNullIndex);
 
         // Seleccionamos el elemento SVG de acuerdo a su referencia
         const svg = d3.select(svgRef.current);
 
-        console.log("Indice eliminado", indexEliminado);
-        console.log("Primer elemento nulo", firstNullIndex);
+        // 🚨 Interrumpir cualquier animación en curso antes de iniciar una nueva
+        svg.selectAll("g.element").interrupt();
 
         // Determinamos la animación a aplicar en base a si el elemento siguiente al elemento a eliminar es nulo o no
-        if (indexEliminado === secuencia.length - 1 || prevSecuencia[indexEliminado + 1] === null) {
+        if (indexEliminado === firstNullIndex) {
             const targetGroup = svg
                 .selectAll<SVGGElement, number | null>("g.element")
                 .filter((_d, i) => i === indexEliminado);
 
-            animateDeleteElementSequence(targetGroup, resetQueryValues, query.toDelete);
+            animateDeleteElementSequence(targetGroup, resetQueryValues, deletedElement);
         } else {
-            // Valor actual luego de ser eliminado el elemento
-            const newVal = secuencia[indexEliminado];
 
-            // Ultimo valor de la secuencia que se traslada producto de la eliminación
-            const repVal = prevSecuencia[firstNullIndex];
+            console.log("Secuencia actual usada en eliminación");
+            console.log(secuencia);
+            console.log("------------");
+            console.log("Secuencia previa usada en eliminación");
+            console.log(prevSecuencia);
 
             // Grupo del lienzo correspondiente al elemento eliminado
             const deletedGroup = svg
                 .selectAll<SVGGElement, number | null>("g.element")
                 .filter((_d, i) => i === indexEliminado);
 
-            // Filtramos los grupos afectados cuyo índice esté entre indexEliminado y firstNullIndex
+            // Grupos afectados cuyo índice esté entre indexEliminado y firstNullIndex
             const affectedGroups = svg.selectAll<SVGGElement, number | null>("g.element")
-                .filter((_d, i) => i >= indexEliminado && i < firstNullIndex);
+                .filter((_d, i) => i >= indexEliminado && i <= firstNullIndex);
 
-            // Grupo del elemento que pasa a ser nulo
+            // Forzamos que los elementos afectados por la eliminación muestren sus valores anteriores
+            affectedGroups.select("text")
+                .text((_d, i) => {
+                    return prevSecuencia[indexEliminado + i];
+                });
+
+            // Grupo correspondiente al elemento que pasa a ser nulo
             const nullGroup = svg.selectAll<SVGGElement, number | null>("g.element")
                 .filter((_d, i) => i === firstNullIndex);
 
-            // Animación del proceso de eliminación
-            animateTransformDeleteSequence(deletedGroup, affectedGroups, nullGroup, resetQueryValues, query.toDelete, newVal, repVal);
+            // Pintamos el grupo antes de comenzar a animar
+            nullGroup.select("rect")
+                .attr("fill", "skyblue");
+
+            // Animación para desvanecimiento del texto
+            deletedGroup.select("text")
+                .text("")
+                .transition()
+                .delay(100)
+                .duration(1500)
+                .style("opacity", 0)
+                .on("end", function () {
+                    d3.select(this)
+                        .text("");
+                });
+
+            // Animación de eliminación (fade-out del elemento a eliminar)
+            deletedGroup.select("rect")
+                .transition()
+                .duration(1500)
+                .attr("fill", "gray")
+                .style("opacity", 0)
+                .transition()
+                .duration(1000)
+                .attr("fill", "lightgray")
+                .style("opacity", 1)
+                .on("end", function () {
+                    // Devolvemos el color original al contenedor del elemento eliminado
+                    deletedGroup.select("rect")
+                        .transition()
+                        .duration(1500)
+                        .attr("fill", "skyblue");
+
+                    // Actualizamos los valores de los elementos afectados a sus valores actuales
+                    affectedGroups.select("text")
+                        .transition()
+                        .duration(1500)
+                        .style("opacity", 0)
+                        .transition()
+                        .duration(1500)
+                        .text((_d, i) => {
+                            return secuencia[indexEliminado + i] ?? "";
+                        })
+                        .style("opacity", 1)
+                        .on("end", function () {
+                            nullGroup.select("rect")
+                                .transition()
+                                .duration(800)
+                                .attr("fill", "lightgray")
+                                .on("end", () => {
+                                    // Una vez completada la animación, actualizamos el estado final
+                                    resetQueryValues();
+                                });
+                        });
+                });
         }
     }, [query.toDelete]);
 

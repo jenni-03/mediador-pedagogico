@@ -10,6 +10,7 @@ import * as d3 from "d3";
 export function drawBaseSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     secuencia: (number | null)[],
+    memoria: number[],
     { margin, elementWidth, elementHeight, spacing, height }:
         { margin: { left: number, right: number }, elementWidth: number, elementHeight: number, spacing: number, height: number }
 ) {
@@ -53,14 +54,19 @@ export function drawBaseSequence(
                     .attr("fill", "black")
                     .style("font-size", "18px");
 
-                // Texto adicional (por ejemplo, índice o etiqueta personalizada)
+                // Dirección de memoria del elemento
                 gEnter.append("text")
+                    .attr("class", "memory")
                     .attr("x", elementWidth / 2)
-                    .attr("y", elementHeight + 20) // Ajusta el offset vertical según sea necesario
+                    .attr("y", elementHeight + 20)
                     .attr("text-anchor", "middle")
-                    .text((d) => `Índice: ${d ?? 4}`)  // Puedes cambiar esto por la etiqueta que desees
+                    .style("opacity", 0)
+                    .text((_d, i) => memoria[i])
                     .attr("fill", "black")
-                    .style("font-size", "14px");
+                    .style("font-size", "14px")
+                    .transition()
+                    .duration(2500)
+                    .style("opacity", 1)
 
                 return gEnter;
             },
@@ -79,11 +85,15 @@ export function drawBaseSequence(
                     .attr("rx", 10)
                     .attr("ry", 10);
 
-                // Actualizamos el texto
+                // Actualizamos el texto correspondiente al valor del elemento
                 update.select("text")
                     .text(d => d === null ? "" : d.toString())
                     .style("opacity", 1)
                     .style("font-size", "18px");
+
+                // Actualizamos el texto correspondiente a la dirección de memoria
+                update.select("text.memory")
+                    .style("font-weight", "normal");
 
                 return update;
             }
@@ -94,19 +104,13 @@ export function drawBaseSequence(
 
 /**
  * Función encargada de animar la inserción de un nuevo elemento a la secuencia
- * @param svg Lienzo donde se va a aplicar la animación
- * @param valueToAdd Valor por añadir a la secuencia
+ * @param targetGroup Grupo dentro del lienzo que se va a animar
  * @param resetQueryValues Función que restablece los valores de las queries del usuario
  */
 export function animateInsertionSequence(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    valueToAdd: number,
+    targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     resetQueryValues: () => void
 ) {
-    // Filtramos el grupo correspondiente
-    const targetGroup = svg.selectAll("g.element")
-        .filter((d) => d === valueToAdd);
-
     // Resaltamos el elemento donde se realizó la inserción
     targetGroup.select("rect")
         .transition()
@@ -314,6 +318,9 @@ export function animateSearchSequence(
         d3.select(this).select("rect")
             .attr("fill", d === null ? "lightgray" : "skyblue")
             .attr("stroke-width", 1);
+
+        d3.select(this).select("text.memory")
+            .style("font-weight", "normal");
     });
 
     // Recorremos cada elemento
@@ -341,6 +348,7 @@ export function animateSearchSequence(
 
             // Si se encuentra el elemento, actualizamos el flag de busqueda
             if (d === valueToSearch) {
+                el.select("text.memory").style("font-weight", "bold")
                 found = true;
             }
         }, i * 1200);

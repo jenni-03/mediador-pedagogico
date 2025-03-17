@@ -33,14 +33,14 @@ export function useSequence() {
         }
     }
 
-    const eliminarElemento = (elemento: number) => {
+    const eliminarElemento = (pos: number) => {
         try {
             const nuevaSecuencia = secuencia.clonar();
-            nuevaSecuencia.eliminar(elemento);
+            nuevaSecuencia.eliminarPos(pos);
             setSecuencia(nuevaSecuencia);
             setQuery((prev) => ({
                 ...prev,
-                toDelete: elemento
+                toDelete: pos
             }));
             setError(null);
         } catch (error: any) {
