@@ -3,7 +3,7 @@ export const commandsData: Record<string, any> = {
         buttons: [
             { title: "Create", description: "Crear un nodo...", estructura: "Create valor", ejemplo: "Create 1" },
             { title: "Insert", description: "Insertar un nodo...", estructura: "Insert valor", ejemplo: "Insert 1" },
-            { title: "Delete", description: "Borrar un nodo...", estructura: "Delete valor", ejemplo: "Delete 1" },
+            { title: "Delete", description: "Borrar un nodo...", estructura: "Delete posición valor", ejemplo: "Delete 1 10" },
             { title: "Search", description: "Buscar el nodo...", estructura: "Search valor", ejemplo: "Search 1" },
             { title: "Update", description: "Actualizar el nodo...", estructura: "Update posición nuevo-valor", ejemplo: "Update 1 10"},
             { title: "Clean", description: "Borrar la estructura...", estructura: "Clean", ejemplo: "Clean" },

@@ -133,7 +133,7 @@ export class Secuencia {
      */
     set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
-            throw new Error("Indíce fuera de rango!");
+            throw new Error(`Indíce ${i} fuera de rango!`);     
         }
         if (this.vector.includes(nuevo)) {
             throw new Error(`El elemento ${nuevo} ya está en la secuencia`);

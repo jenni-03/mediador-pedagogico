@@ -7,7 +7,7 @@ export function useSequence() {
     const [secuencia, setSecuencia] = useState(new Secuencia(0));
 
     //Estado para manejar el error
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<{message: string, id: number} | null>(null);
 
     // Estado para manejar las query del usuario
     const [query, setQuery] = useState<BaseQueryOperations>({
@@ -27,9 +27,11 @@ export function useSequence() {
                 ...prev,
                 toAdd: elemento
             }));
+
+            
             setError(null);
         } catch (error: any) {
-            setError(error.message);
+            setError({ message: error.message, id: Date.now() });
         }
     }
 
@@ -44,7 +46,7 @@ export function useSequence() {
             }));
             setError(null);
         } catch (error: any) {
-            setError(error.message);
+            setError({ message: error.message, id: Date.now() });
         }
     }
 
@@ -57,7 +59,7 @@ export function useSequence() {
                 }));
             }
         } catch (error: any) {
-            setError(error.message);
+            setError({ message: error.message, id: Date.now() });
         }
     };
 
@@ -71,7 +73,7 @@ export function useSequence() {
                 toUpdate: [pos, elemento]
             }));
         } catch (error: any) {
-            setError(error.message);
+            setError({ message: error.message, id: Date.now() });
         }
 
     }
