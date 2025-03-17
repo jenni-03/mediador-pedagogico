@@ -109,7 +109,8 @@ export function drawBaseSequence(
  */
 export function animateInsertionSequence(
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
-    resetQueryValues: () => void
+    resetQueryValues: () => void,
+    onAnimationEnd: () => void
 ) {
     // Resaltamos el elemento donde se realizó la inserción
     targetGroup.select("rect")
@@ -128,7 +129,8 @@ export function animateInsertionSequence(
         .duration(2000)
         .style("opacity", 1)
         .on("end", function () {
-            resetQueryValues()
+            resetQueryValues();
+            onAnimationEnd();
         });
 }
 

@@ -12,7 +12,12 @@ export function SequenceRender({
     query: BaseQueryOperations;
     resetQueryValues: () => void;
 }) {
-    const { svgRef } = useSequenceRender(sequence, memoria, query, resetQueryValues);
+    const { svgRef } = useSequenceRender(
+        sequence,
+        memoria,
+        query,
+        resetQueryValues
+    );
 
     return (
         <div>

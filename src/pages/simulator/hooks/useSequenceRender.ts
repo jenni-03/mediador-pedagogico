@@ -4,6 +4,7 @@ import * as d3 from "d3";
 import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, animateDeleteElementSequence, animateSearchSequence, animateTransformDeleteSequence } from "../../../shared/utils/sequenceDrawActions";
 import { usePrevious } from "../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../shared/constants/consts";
+import { useAnimation } from "../../../shared/hooks/useAnimation";
 
 export function useSequenceRender(secuencia: (number | null)[], memoria: number[], query: BaseQueryOperations, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
@@ -11,6 +12,9 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
 
     // Estado previo de la secuencia
     const prevSecuencia = usePrevious(secuencia);
+
+    // Control de bloqueo de animación
+    const { setIsAnimating } = useAnimation();
 
     console.log("Secuencia previa xd")
     console.log(prevSecuencia)
@@ -71,7 +75,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                 .filter((_d, i) => i === newIndex);
 
             // Animamos la inserción del nuevo elemento
-            animateInsertionSequence(targetGroup, resetQueryValues);
+            animateInsertionSequence(targetGroup, resetQueryValues, () => setIsAnimating(false));
         }
     }, [query.toAdd]);
 
