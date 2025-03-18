@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { commandRules } from "../../../shared/constants/commandRules";
+import { useAnimation } from "../../../shared/hooks/useAnimation";
 
 interface ConsoleComponentProps {
     structureType: string;
@@ -21,6 +22,21 @@ export function ConsoleComponent({
     // Estado para el manejo del error
     const [visibleError, setVisibleError] = useState<string | null>();
 
+    const { isAnimating, setIsAnimating } = useAnimation();
+
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!isAnimating && inputRef.current) {
+            const timeout = setTimeout(() => {
+                inputRef.current?.focus(); // Hace que el input obtenga el foco después de 1 segundo
+            }, 1000); // 1000 ms = 1 segundo
+    
+            return () => clearTimeout(timeout); // Limpia el timeout si el componente se desmonta o el estado cambia
+        }
+    }, [isAnimating]);
+    
+
     useEffect(() => {
         if (error) {
             setVisibleError(error.message);
@@ -32,6 +48,7 @@ export function ConsoleComponent({
     
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (isAnimating) return;
         if (e.key === "Enter" && input.trim() !== "") {
             e.preventDefault();
 
@@ -159,6 +176,8 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
+                    disabled={isAnimating}
+                    ref={inputRef}
                     autoFocus
                     spellCheck={false}
                 />

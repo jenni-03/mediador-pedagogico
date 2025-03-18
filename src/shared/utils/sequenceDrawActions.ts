@@ -12,7 +12,7 @@ export function drawBaseSequence(
     secuencia: (number | null)[],
     memoria: number[],
     { margin, elementWidth, elementHeight, spacing, height }:
-        { margin: { left: number, right: number }, elementWidth: number, elementHeight: number, spacing: number, height: number }
+        { margin: { left: number, right: number }, elementWidth: number, elementHeight: number, spacing: number, height: number },
 ) {
     // Realizamos el data join usando el indice como key
     const groups = svg.selectAll<SVGGElement, number | null>("g.element")

@@ -15,11 +15,10 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
 
     // Control de bloqueo de animación
     const { isAnimating, setIsAnimating } = useAnimation();
-    console.log(isAnimating);
 
     console.log("Secuencia previa xd")
     console.log(prevSecuencia)
-    console.log("--------")
+    console.log("--------") 
     console.log(secuencia);
     console.log(query);
 
@@ -50,6 +49,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
 
         // Creamos la estructura base de la secuencia en el lienzo
         drawBaseSequence(svg, secuencia, memoria, { margin, elementWidth, elementHeight, spacing, height });
+        setIsAnimating(false)
     }, [secuencia]);
 
     // Operación de inserción

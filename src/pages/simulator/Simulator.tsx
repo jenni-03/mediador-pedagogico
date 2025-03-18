@@ -5,6 +5,7 @@ import { SimulatorProps } from "../../types";
 import { useRef, useState } from "react";
 import { commandsData } from "../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../shared/constants/pseudoCode";
+import { useAnimation } from "../../shared/hooks/useAnimation";
 
 export function Simulator({
     structure: structure,
@@ -12,10 +13,10 @@ export function Simulator({
     error,
     children,
 }: SimulatorProps) {
-    
-
     // Estado para el manejo de la visualización del código
     const [codigoEjecucion, setCodigoEjecucion] = useState("");
+
+    const { isAnimating, setIsAnimating } = useAnimation();
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
     const structureName = "secuencia";
@@ -42,6 +43,8 @@ export function Simulator({
         const parts = command.trim().split(/\s+/);
         const action = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
+
+        setIsAnimating(true);
 
         if (values.length === 2) { // update
             // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
