@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useState } from "react";
 import { AnimationContextType } from "../../types";
 
 // Contexto para manejo de bloqueo de animación

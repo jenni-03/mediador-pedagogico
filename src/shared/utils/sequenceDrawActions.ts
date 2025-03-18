@@ -110,28 +110,29 @@ export function drawBaseSequence(
 export function animateInsertionSequence(
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     resetQueryValues: () => void,
-    onAnimationEnd: () => void
-) {
-    // Resaltamos el elemento donde se realizó la inserción
-    targetGroup.select("rect")
-        .transition()
-        .delay(100)
-        .duration(800)
-        .attr("fill", "deepskyblue")
-        .attr("stroke-width", 2.5)
-        .ease(d3.easeBounce);
+): Promise<void> {
+    return new Promise((resolve) => {
+        // Resaltamos el elemento donde se realizó la inserción
+        targetGroup.select("rect")
+            .transition()
+            .delay(100)
+            .duration(800)
+            .attr("fill", "deepskyblue")
+            .attr("stroke-width", 2.5)
+            .ease(d3.easeBounce);
 
-    // Transición para la aparición del elemento insertado
-    targetGroup.select("text")
-        .style("opacity", 0)
-        .transition()
-        .delay(100)
-        .duration(2000)
-        .style("opacity", 1)
-        .on("end", function () {
-            resetQueryValues();
-            onAnimationEnd();
-        });
+        // Transición para la aparición del elemento insertado
+        targetGroup.select("text")
+            .style("opacity", 0)
+            .transition()
+            .delay(100)
+            .duration(2000)
+            .style("opacity", 1)
+            .on("end", function () {
+                resetQueryValues();
+                resolve();
+            });
+    });
 }
 
 /**
@@ -143,7 +144,8 @@ export function animateInsertionSequence(
 export function animateDeleteElementSequence(
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     resetQueryValues: () => void,
-    valueToDelete: number
+    valueToDelete: number,
+    onAnimationEnd: () => void
 ) {
     // Animamos el rectángulo: se desvanece (fade out) y luego se asigna el color de eliminación
     targetGroup.select("rect")
@@ -171,6 +173,7 @@ export function animateDeleteElementSequence(
             d3.select(this)
                 .text("")
             resetQueryValues()
+            onAnimationEnd()
         });
 }
 
@@ -272,7 +275,8 @@ export function animateUpdateSequence(
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     resetQueryValues: () => void,
     oldValue: number,
-    newValue: number
+    newValue: number,
+    onAnimationEnd: () => void
 ) {
     // Animación de resaltado
     targetGroup.select("rect")
@@ -297,6 +301,7 @@ export function animateUpdateSequence(
         .style("opacity", 1)
         .on("end", () => {
             resetQueryValues();
+            onAnimationEnd();
         });
 }
 
@@ -307,7 +312,8 @@ export function animateUpdateSequence(
  */
 export function animateSearchSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    valueToSearch: number
+    valueToSearch: number,
+    onAnimationEnd: () => void
 ) {
     // Seleccionamos los elementos
     const elements = svg.selectAll("g.element");
@@ -351,6 +357,7 @@ export function animateSearchSequence(
             // Si se encuentra el elemento, actualizamos el flag de busqueda
             if (d === valueToSearch) {
                 el.select("text.memory").style("font-weight", "bold")
+                onAnimationEnd()
                 found = true;
             }
         }, i * 1200);

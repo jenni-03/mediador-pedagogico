@@ -15,10 +15,11 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
 
     // Control de bloqueo de animación
     const { isAnimating, setIsAnimating } = useAnimation();
+    console.log("Animación bloqueada: ", isAnimating);
 
     console.log("Secuencia previa xd")
     console.log(prevSecuencia)
-    console.log("--------") 
+    console.log("--------")
     console.log(secuencia);
     console.log(query);
 
@@ -76,7 +77,10 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                 .filter((_d, i) => i === newIndex);
 
             // Animamos la inserción del nuevo elemento
-            animateInsertionSequence(targetGroup, resetQueryValues, () => setIsAnimating(false));
+            animateInsertionSequence(targetGroup, resetQueryValues)
+                .then(() => {
+                    setIsAnimating(false);
+                });
         }
     }, [query.toAdd]);
 
@@ -112,7 +116,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                 .selectAll<SVGGElement, number | null>("g.element")
                 .filter((_d, i) => i === indexEliminado);
 
-            animateDeleteElementSequence(targetGroup, resetQueryValues, deletedElement);
+            animateDeleteElementSequence(targetGroup, resetQueryValues, deletedElement, () => setIsAnimating(false));
         } else {
 
             console.log("Secuencia actual usada en eliminación");
@@ -192,6 +196,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                                 .on("end", () => {
                                     // Una vez completada la animación, actualizamos el estado final
                                     resetQueryValues();
+                                    setIsAnimating(false);
                                 });
                         });
                 });
@@ -221,7 +226,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
             .filter((_d, i) => i === pos);
 
         // Animamos el proceso de actualización del elemento
-        animateUpdateSequence(updatedGroup, resetQueryValues, oldVal, newVal);
+        animateUpdateSequence(updatedGroup, resetQueryValues, oldVal, newVal, () => setIsAnimating(false));
     }, [query.toUpdate]);
 
     // Operación de búsqueda
@@ -235,7 +240,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
         const svg = d3.select(svgRef.current);
 
         // Animamos la búsqueda del elemento
-        animateSearchSequence(svg, query.toSearch);
+        animateSearchSequence(svg, query.toSearch, () => setIsAnimating(false));
     }, [query.toSearch]);
 
     return { svgRef }
