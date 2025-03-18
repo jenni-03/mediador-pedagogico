@@ -1,29 +1,56 @@
 import { useState, useEffect } from "react";
-import { FaChevronDown, FaChevronRight, FaSyncAlt } from "react-icons/fa"; // Ícono de intercambio
-import { MemoryMapComponent } from "./MemoryMapComponent"; // Importamos la nueva vista
+import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+
+// Definir la interfaz para la estructura de memoria
+interface MemoryEntry {
+    type: string;
+    name: string;
+    value: any;
+    address: string;
+}
 
 interface ScreenComponentProps {
-    content: string; // Recibe un string JSON representando la RAM
+    content: string; // Recibe un string con la memoria en el formato mostrado
 }
 
 export function ScreenComponent({ content }: ScreenComponentProps) {
-    const [memoryData, setMemoryData] = useState<Record<string, Record<string, any>> | null>(null);
-    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({}); // Estado de cada tipo de dato
-    const [isCircuitView, setIsCircuitView] = useState(false); // Estado para intercambiar la vista
+    const [memoryData, setMemoryData] = useState<Record<string, MemoryEntry[]>>({});
+    const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
-        if (!content.trim()) return; // No hacer nada si el contenido está vacío
+        if (!content.trim()) return;
 
         try {
-            const parsedData = JSON.parse(content);
-            setMemoryData(parsedData);
+            const lines = content.split("\n").map(line => line.trim());
+            const parsedMemory: Record<string, MemoryEntry[]> = { ...memoryData };
+            let currentType = "";
+
+            for (const line of lines) {
+                if (line.startsWith("[") && line.endsWith("]:")) {
+                    currentType = line.replace(/[\[\]:]/g, "").toLowerCase();
+                    if (!parsedMemory[currentType]) {
+                        parsedMemory[currentType] = [];
+                    }
+                } else if (line.startsWith("{") && line.endsWith("}")) {
+                    try {
+                        const entry: MemoryEntry = JSON.parse(line);
+                        if (currentType && !parsedMemory[currentType].some(e => e.address === entry.address)) {
+                            parsedMemory[currentType].push(entry);
+                        }
+                    } catch {
+                        console.error("Error al parsear la línea:", line);
+                    }
+                }
+            }
+
+            setMemoryData(parsedMemory);
         } catch (error) {
-            // Si hay un error, no actualizamos la memoria
+            console.error("Error al procesar la memoria:", error);
         }
-    }, [content]);
+    }, [content]); // ✅ La RAM se mantiene en estado y no se borra con nuevas actualizaciones
 
     const toggleCategory = (category: string) => {
-        setCollapsed((prev) => ({
+        setCollapsed(prev => ({
             ...prev,
             [category]: !prev[category],
         }));
@@ -31,18 +58,14 @@ export function ScreenComponent({ content }: ScreenComponentProps) {
 
     return (
         <div className="w-full flex justify-center sm:justify-start px-4 sm:pl-12 mt-4 sm:mt-6">
-            {/* Televisor */}
+            {/* Contenedor del televisor */}
             <div className="relative w-full sm:w-[65%] max-w-screen-md bg-gray-900 border-8 border-gray-700 rounded-lg p-4 shadow-2xl">
                 
                 {/* Pantalla */}
                 <div className="relative w-full h-36 sm:h-48 lg:h-60 bg-black text-green-400 p-2 rounded-md border-4 border-gray-600 overflow-auto font-mono text-xs sm:text-sm leading-tight">
                     
-                    {isCircuitView ? (
-                        // 🔌 Modo Tablero de Circuitos
-                        <MemoryMapComponent memoryData={memoryData} />
-                    ) : memoryData ? (
-                        // 📜 Modo Texto Tradicional
-                        Object.entries(memoryData).map(([dataType, addresses], index) => (
+                    {Object.keys(memoryData).length > 0 ? (
+                        Object.entries(memoryData).map(([dataType, entries], index) => (
                             <div key={index} className="mb-2">
                                 {/* Botón para expandir/colapsar */}
                                 <button 
@@ -53,13 +76,13 @@ export function ScreenComponent({ content }: ScreenComponentProps) {
                                     {dataType.toUpperCase()}
                                 </button>
                                 
-                                {/* Contenedor flexible para celdas (se oculta si está colapsado) */}
+                                {/* Contenedor flexible para celdas */}
                                 {!collapsed[dataType] && (
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        {Object.entries(addresses).map(([address, value]) => (
-                                            <div key={address} className="bg-gray-800 text-center p-2 rounded border border-gray-700 w-auto min-w-[80px] max-w-full break-words">
-                                                <p className="text-blue-400 text-xs">{address}</p>
-                                                <p className="text-white text-sm break-words">{JSON.stringify(value)}</p>
+                                        {entries.map((entry, i) => (
+                                            <div key={entry.address} className="bg-gray-800 text-center p-2 rounded border border-gray-700 w-auto min-w-[100px] max-w-full break-words">
+                                                <p className="text-blue-400 text-xs">{entry.address}</p>
+                                                <p className="text-white text-sm break-words">{entry.name}: {JSON.stringify(entry.value)}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -69,18 +92,6 @@ export function ScreenComponent({ content }: ScreenComponentProps) {
                     ) : (
                         <div className="h-full flex items-center justify-center text-gray-500">Esperando datos...</div>
                     )}
-                </div>
-
-                {/* Controles del televisor */}
-                <div className="mt-4 flex justify-center">
-                    {/* 🔄 Botón de intercambio de vista */}
-                    <button
-                        onClick={() => setIsCircuitView((prev) => !prev)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full shadow-lg transition flex items-center"
-                    >
-                        <FaSyncAlt className="mr-2" />
-                        {isCircuitView ? "Jerarquia" : "Mapa"}
-                    </button>
                 </div>
             </div>
         </div>

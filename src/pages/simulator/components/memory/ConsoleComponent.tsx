@@ -2,14 +2,17 @@ import { useEffect, useRef, useState } from "react";
 
 interface ConsoleComponentProps {
     onCommand: (command: string) => void;
+    outputMessage: string;  // Mensaje a mostrar
+    isSuccess: boolean;     // Define si el mensaje es exitoso o error
 }
 
-export function ConsoleComponent({ onCommand }: ConsoleComponentProps) {
+export function ConsoleComponent({ onCommand, outputMessage, isSuccess }: ConsoleComponentProps) {
     const [history, setHistory] = useState<string[]>([]);
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const consoleRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [lastOutput, setLastOutput] = useState<string>("");
 
     useEffect(() => {
         if (consoleRef.current) {
@@ -17,16 +20,23 @@ export function ConsoleComponent({ onCommand }: ConsoleComponentProps) {
         }
     }, [history]);
 
+    useEffect(() => {
+        if (outputMessage) {
+            setLastOutput(outputMessage); 
+        }
+    }, [outputMessage]);
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && input.trim() !== "") {
             e.preventDefault();
 
-            if (input.trim().toLowerCase() === "clear") {
+            if (input.trim().toLowerCase() === "clear" || input.trim().toLowerCase() === "cls") {
                 setHistory([]);
+                setLastOutput("");
                 setInput("");
             } else {
                 onCommand(input.trim());
-                setHistory([...history, `$ ${input}`, "Procesando comando..."]);
+                setHistory([...history, `$ ${input}`]); 
                 setInput("");
             }
         } else if (e.key === "ArrowUp") {
@@ -46,27 +56,31 @@ export function ConsoleComponent({ onCommand }: ConsoleComponentProps) {
         }
     };
 
-    // 📌 Permitir que cualquier parte de la consola active la escritura
+    // Permitir que cualquier parte de la consola active la escritura
     const focusInput = () => {
         inputRef.current?.focus();
     };
 
     return (
         <div className="w-full flex justify-center sm:justify-start px-4 sm:pl-12 mt-6 sm:mt-8">
-            {/* Consola sin efectos de neón, solo fondo negro */}
             <div
                 ref={consoleRef}
                 className="relative w-full sm:w-[40%] max-w-screen-md h-40 sm:h-52 lg:h-60 bg-black text-green-400 p-4 rounded-lg font-mono overflow-y-auto border-2 border-gray-600"
-                onClick={focusInput} // Al hacer clic en cualquier parte, el input recibe el foco
+                onClick={focusInput}
             >
-                {/* Renderizado de historial de comandos */}
+                {/* Renderiza el historial de comandos */}
                 {history.map((cmd, index) => (
-                    <div key={index} className="text-green-400">
-                        {cmd}
-                    </div>
+                    <div key={index} className="text-green-400">{cmd}</div>
                 ))}
 
-                {/* Input de la consola con cursor parpadeante */}
+                {/* Muestra el mensaje con color dinámico */}
+                {lastOutput && (
+                    <div className={isSuccess ? "text-green-400" : "text-red-500"}>
+                        → {lastOutput}
+                    </div>
+                )}
+
+                {/* Input de la consola */}
                 <div className="flex items-center">
                     <span className="text-green-400">$</span>
                     <input

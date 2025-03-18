@@ -1,11 +1,10 @@
-import Simulador from "../../../../shared/utils/RAM/Simulador";
 
 interface StateComponentProps {
     stateInfo: string;
 }
 
 export function StateComponent({ stateInfo = "{}" }: StateComponentProps) {
-    const sim = Simulador.getInstance();
+    const sim = "Simulador.getInstance();"
     let parsedData: Record<string, any> = {};
 
     try {
@@ -34,7 +33,7 @@ export function StateComponent({ stateInfo = "{}" }: StateComponentProps) {
                             let displayValue = value;
 
                             if (Array.isArray(value)) {
-                                displayValue = value.map(addr => sim.getValue(addr));
+                                displayValue = value;
                             }
 
                             return (
