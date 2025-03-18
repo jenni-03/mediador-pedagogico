@@ -76,7 +76,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                 .filter((_d, i) => i === newIndex);
 
             // Animamos la inserción del nuevo elemento
-            animateInsertionSequence(targetGroup, resetQueryValues, () => setIsAnimating(true));
+            animateInsertionSequence(targetGroup, resetQueryValues, () => setIsAnimating(false));
         }
     }, [query.toAdd]);
 
