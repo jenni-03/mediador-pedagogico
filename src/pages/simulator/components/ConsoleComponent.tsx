@@ -48,7 +48,7 @@ export function ConsoleComponent({
     
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (isAnimating) return;
+        // if (isAnimating) return;
         if (e.key === "Enter" && input.trim() !== "") {
             e.preventDefault();
 
@@ -85,6 +85,7 @@ export function ConsoleComponent({
                         } else {
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
+
                             }
                             onCommand(input.trim(), true);
                             setHistory([
@@ -101,7 +102,6 @@ export function ConsoleComponent({
                             `$ ${input}`,
                             "Error: Comando no válido",
                         ]);
-                        
                     }
                 } else {
                     onCommand("", false);
@@ -176,7 +176,7 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    disabled={isAnimating}
+                    // disabled={isAnimating}
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}

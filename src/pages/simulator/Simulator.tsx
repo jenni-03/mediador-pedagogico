@@ -29,7 +29,6 @@ export function Simulator({
     const consoleRef = useRef<HTMLDivElement>(null);
 
     const handleCommand = (command: string, isValid: boolean) => {
-
         if(!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
@@ -41,19 +40,15 @@ export function Simulator({
         }
 
         const parts = command.trim().split(/\s+/);
-        const action = parts[0]?.toLowerCase();
+        const action: string = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
-
         setIsAnimating(true);
 
-        if (values.length === 2) { // update
-            // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
+        if (values.length === 2) {
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
-        } else if (values.length === 1) { // insert, delete, search, create
-            // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
+        } else if (values.length === 1) {
             (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
-        } else { // clean 
-            // Aquí se debe buscar la manera de vaciar ese espacio de memoria, borrarlo
+        } else {
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
 
@@ -66,13 +61,14 @@ export function Simulator({
                 consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
             });
         }
+
     };
 
     return (
         <div className="h-screen flex flex-col">
             <div>
                 <h1 className="font-bold text-3xl text-center mt-2">
-                    {structureName.toUpperCase()}
+                    {structureName.toUpperCase() + " <int>"}
                 </h1>
             </div>
             <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
