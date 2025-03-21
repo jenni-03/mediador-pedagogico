@@ -126,6 +126,19 @@ class MemoryValidator {
         return [false, `Tipo de dato desconocido "${type}".`];
     }
   }
+
+  /**
+   * Elimina un nombre globalmente registrado.
+   * @param name Nombre de la variable a eliminar.
+   * @returns `true` si se eliminó correctamente, `[false, "mensaje de error"]` si no existía.
+   */
+  static removeGlobalName(name: string): [true, string] | [false, string] {
+    if (this.globalNames.has(name)) {
+      this.globalNames.delete(name);
+      return [true, `Nombre "${name}" eliminado del ámbito global.`];
+    }
+    return [false, `El nombre "${name}" no estaba registrado globalmente.`];
+  }
 }
 
 export { MemoryValidator };

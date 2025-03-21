@@ -31,7 +31,8 @@ class MemoryConverterTest {
     });
 
     console.log("\n📌 Estado final de la memoria:");
-    console.log(converter.printMemory());
+    const memoryState = converter.printMemory();
+    console.log(memoryState.object[0].value);
   }
 }
 

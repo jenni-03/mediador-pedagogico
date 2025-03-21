@@ -33,6 +33,7 @@ interface MemoryEntry {
  * Permite almacenar y administrar variables primitivas, arrays y objetos.
  */
 class Memory {
+  private static STORAGE_KEY = "memory_state"; // Clave de almacenamiento en localStorage
   /**
    * Contador de direcciones para cada tipo de dato en la memoria.
    * Se usa para generar direcciones únicas.
@@ -80,7 +81,7 @@ class Memory {
       this.segments.set(type as PrimitiveType | ComplexType, new Map())
     );
   }
-
+  
   /**
    * Genera una dirección de memoria única para el tipo de dato especificado.
    * @param type Tipo de dato para el que se generará la dirección.
@@ -182,7 +183,7 @@ class Memory {
 
     //Ahora almacenamos los elementos después de validar todo
     for (let i = 0; i < values.length; i++) {
-      const elementName = `${name}_element_${i}`;
+      const elementName = `${name}_${i}`;
       this.validateAndStorePrimitive(type, elementName, values[i]); // Ahora sí almacena
     }
 
@@ -300,48 +301,63 @@ class Memory {
    * @param address Dirección de memoria a eliminar.
    * @returns `[true, mensaje]` si se eliminó correctamente, `[false, mensaje]` si la dirección no existe.
    */
-  remove(address: string): [true, string] | [false, string] {
-    for (const segment of this.segments.values()) {
+  removeByAddress(address: string): [true, string] | [false, string] {
+    for (const [type, segment] of this.segments.entries()) {
       if (segment.has(address)) {
         const entry = segment.get(address)!;
+        let message = `Eliminado: ${entry.type.toUpperCase()} "${entry.name}" en dirección ${address}.`;
 
-        // Si es un objeto, eliminamos todas sus propiedades internas
+        // Eliminar el nombre del ámbito global
+        MemoryValidator.removeGlobalName(entry.name);
+
+        // Si es un objeto, eliminar sus propiedades internas
         if (entry.type === "object") {
           const properties = entry.value as {
-            type: PrimitiveType | "array";
+            type: PrimitiveType;
             key: string;
             value: any;
           }[];
 
-          properties.forEach((prop) => {
-            const propAddress = `${entry.name}_${prop.key}`;
+          let deletedProps: string[] = [];
 
-            // Si la propiedad es un array, eliminarlo correctamente
-            if (Array.isArray(prop.value)) {
-              const arrayAddress = this.getAddressByName(propAddress);
-              if (arrayAddress) {
-                this.remove(arrayAddress);
-              }
-            } else {
-              this.removeByName(propAddress); // Elimina datos primitivos normalmente
+          for (const prop of properties) {
+            const propName = `${entry.name}_${prop.key}`;
+            const propAddress = this.getAddressByName(propName);
+
+            if (propAddress) {
+              this.removeByAddress(propAddress);
+              deletedProps.push(`"${propName}" eliminada.`);
             }
-          });
-        }
+          }
 
-        // Si es un array, eliminamos todos sus elementos internos
-        if (entry.type === "array") {
-          const elements = entry.value as any[];
-          for (let i = 0; i < elements.length; i++) {
-            this.removeByName(`${entry.name}_element_${i}`);
+          if (deletedProps.length > 0) {
+            message += `\nPropiedades eliminadas:\n${deletedProps.join("\n")}`;
           }
         }
 
-        // Finalmente, eliminamos la entrada principal
+        // Si es un array, eliminar cada elemento interno
+        if (entry.type === "array") {
+          const elements = entry.value as any[];
+          let deletedElements: string[] = [];
+
+          for (let i = 0; i < elements.length; i++) {
+            const elementName = `${entry.name}_element_${i}`;
+            const elementAddress = this.getAddressByName(elementName);
+
+            if (elementAddress) {
+              this.removeByAddress(elementAddress);
+              deletedElements.push(`"${elementName}" eliminado.`);
+            }
+          }
+
+          if (deletedElements.length > 0) {
+            message += `\ Elementos del array eliminados:\n${deletedElements.join("\n")}`;
+          }
+        }
+
+        // Finalmente, eliminar la entrada principal
         segment.delete(address);
-        return [
-          true,
-          `Variable eliminada en dirección ${address} y su contenido interno.`,
-        ];
+        return [true, message];
       }
     }
     return [false, `No se encontró la dirección ${address}.`];
@@ -380,18 +396,42 @@ class Memory {
   }
 
   /**
-   * Imprime el estado completo de la memoria, mostrando todos los segmentos.
-   * @returns Cadena con la representación de la memoria.
+   * Devuelve el estado completo de la memoria en un formato estructurado.
+   * @returns Un objeto con cada segmento de memoria y sus variables.
    */
-  printMemory(): string {
-    let output = "";
+  printMemory(): Record<string, any[]> {
+    const memoryState: Record<string, any[]> = {};
+
     this.segments.forEach((segment, type) => {
-      output += `\n[${type}]:\n`;
-      segment.forEach((entry) => {
-        output += `  ${JSON.stringify(entry)}\n`;
+      memoryState[type] = Array.from(segment.values()).map((entry) => {
+        return {
+          ...entry,
+          value: this.serializeValue(entry.value), // Serializamos correctamente el value
+        };
       });
     });
-    return output;
+
+    return memoryState;
+  }
+
+  /**
+   * Serializa valores de arrays y objetos para que se impriman correctamente.
+   * @param value Valor a serializar.
+   * @returns El valor serializado correctamente.
+   */
+  private serializeValue(value: any): any {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.serializeValue(item)); // Recursión para expandir arrays anidados
+    }
+
+    if (typeof value === "object" && value !== null) {
+      return Object.entries(value).map(([key, val]) => ({
+        key,
+        value: this.serializeValue(val),
+      }));
+    }
+
+    return value; // Si no es array ni objeto, devolver tal cual
   }
 
   /**

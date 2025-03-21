@@ -10,9 +10,9 @@ export class Consola {
   /**
    * Ejecuta un comando e interpreta su acción.
    * @param command El comando a ejecutar.
-   * @returns `[true, ...mensajes]` si tiene éxito, `[false, mensaje]` si hay error.
+   * @returns `[true, ...any[]]` si tiene éxito, `[false, mensaje]` si hay error.
    */
-  ejecutarComando(command: string): [true, ...string[]] | [false, string] {
+  ejecutarComando(command: string): [true, ...any[]] | [false, string] {
     command = command.trim();
 
     if (command.startsWith("insert ")) {
@@ -27,6 +27,14 @@ export class Consola {
       return this.ejecutarGetSegment(command.substring(12).trim());
     }
 
+    if (command.startsWith("delete address ")) {
+      return this.ejecutarDeleteAddress(command.substring(15).trim());
+    }
+
+    if (command === "print memory") {
+      return this.ejecutarPrintMemory();
+    }
+
     return [false, "Comando no reconocido."];
   }
 
@@ -35,14 +43,14 @@ export class Consola {
    */
   private ejecutarInsert(
     instruction: string
-  ): [true, string, string] | [false, string] {
+  ): [true, string, object] | [false, string] {
     const result = this.memoria.parseAndStore(instruction);
 
     if (result[0] === false) {
       return [false, result[1]];
     }
 
-    return [true, result[1], this.memoria.printMemory()];
+    return [true, result[1], this.memoria.printMemory()]; // ✅ Devuelve un objeto JSON
   }
 
   /**
@@ -50,19 +58,14 @@ export class Consola {
    */
   private ejecutarGetAddress(
     address: string
-  ): [true, ...string[]] | [false, string] {
+  ): [true, string, object] | [false, string] {
     const result = this.memoria.getEntryByAddress(address);
 
     if (result[0] === false) {
       return [false, result[1]];
     }
 
-    return [
-      true,
-      "Comando recibido",
-      this.memoria.printMemory(),
-      JSON.stringify(result[1]),
-    ];
+    return [true, "Comando recibido", result[1]]; // ✅ Devuelve objeto JSON directamente
   }
 
   /**
@@ -70,18 +73,35 @@ export class Consola {
    */
   private ejecutarGetSegment(
     segmentType: string
-  ): [true, ...string[]] | [false, string] {
+  ): [true, string, object] | [false, string] {
     const result = this.memoria.getSegmentByType(segmentType as any);
 
     if (result[0] === false) {
       return [false, result[1]];
     }
 
-    return [
-      true,
-      "Comando recibido",
-      this.memoria.printMemory(),
-      JSON.stringify([...result[1].values()], null, 2),
-    ];
+    return [true, "Comando recibido", [...result[1].values()]]; // ✅ Devuelve array de objetos JSON
+  }
+
+  /**
+   * Ejecuta el comando "delete address" para eliminar un valor por su dirección de memoria.
+   */
+  private ejecutarDeleteAddress(
+    address: string
+  ): [true, string, object] | [false, string] {
+    const result = this.memoria.removeByAddress(address);
+
+    if (result[0] === false) {
+      return [false, result[1]];
+    }
+
+    return [true, result[1], this.memoria.printMemory()]; // ✅ Devuelve estado actualizado
+  }
+
+  /**
+   * Ejecuta el comando "print memory" para devolver el estado actual de la memoria.
+   */
+  private ejecutarPrintMemory(): [true, object] {
+    return [true, this.memoria.printMemory()]; // ✅ Devuelve objeto JSON
   }
 }

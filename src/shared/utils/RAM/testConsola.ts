@@ -15,4 +15,7 @@ console.log(nose[2]);
 
 nose = consola.ejecutarComando("get segment float");
 // 📌 Obteniendo todas las variables de tipo "int"
-console.log(nose[1]);
+console.log(nose[2]);
+
+nose = consola.ejecutarComando("delete address 6x000");
+console.log(nose);

@@ -24,7 +24,7 @@ export class MemoryC extends Memory {
     ) {
       return this.parsePrimitive(input);
     } else {
-      return [false, "[Error] Formato no soportado"];
+      return [false, "Formato no soportado"];
     }
   }
 
@@ -35,7 +35,7 @@ export class MemoryC extends Memory {
     const primitiveRegex =
       /^(boolean|char|byte|short|int|long|float|double|string)\s+(\w+)\s*=\s*(.+);$/;
     const match = input.match(primitiveRegex);
-    if (!match) return [false, "[Error] Error al analizar primitivo."];
+    if (!match) return [false, "Error al analizar primitivo."];
 
     const [_, type, key, rawValue] = match;
 
@@ -55,7 +55,7 @@ export class MemoryC extends Memory {
     const arrayRegex =
       /^(boolean|char|byte|short|int|long|float|double|string)\[\]\s+(\w+)\s*=\s*\[(.+)\];$/;
     const match = input.match(arrayRegex);
-    if (!match) return [false, "[Error] Error al analizar arreglo."];
+    if (!match) return [false, "Error al analizar arreglo."];
 
     const [_, type, key, rawValues] = match;
 
@@ -73,7 +73,7 @@ export class MemoryC extends Memory {
   private parseObject(input: string): [true, string] | [false, string] {
     const objectRegex = /^object\s+(\w+)\s*=\s*\((.+)\);$/;
     const match = input.match(objectRegex);
-    if (!match) return [false, "[Error] Error al analizar objeto."];
+    if (!match) return [false, "Error al analizar objeto."];
 
     const [_, objectKey, rawProps] = match;
 
@@ -100,7 +100,7 @@ export class MemoryC extends Memory {
         /^(boolean|char|byte|short|int|long|float|double|string)\[\]\s+(\w+)\s*=\s*\[(.+)\]$/;
       const match = prop.match(arrayRegex);
       if (!match)
-        throw new Error(`[Error] Error al analizar arreglo en objeto: ${prop}`);
+        throw new Error(`Error al analizar arreglo en objeto: ${prop}`);
 
       const [_, type, key, rawValues] = match;
 
@@ -115,9 +115,7 @@ export class MemoryC extends Memory {
         /^(boolean|char|byte|short|int|long|float|double|string)\s+(\w+)\s*=\s*(.+)$/;
       const match = prop.match(primitiveRegex);
       if (!match)
-        throw new Error(
-          `[Error] Error al analizar primitivo en objeto: ${prop}`
-        );
+        throw new Error(`Error al analizar primitivo en objeto: ${prop}`);
 
       const [_, type, key, rawValue] = match;
 
@@ -137,20 +135,20 @@ export class MemoryC extends Memory {
       case "byte":
       case "short":
       case "long":
-        if (!/^-?\d+$/.test(value)) return value; // ❌ No convertir si no es un número entero
+        if (!/^-?\d+$/.test(value)) return value; 
         return parseInt(value, 10);
       case "float":
       case "double":
-        if (!/^-?\d+(\.\d+)?$/.test(value)) return value; // ❌ No convertir si no es un número decimal
+        if (!/^-?\d+(\.\d+)?$/.test(value)) return value; 
         return parseFloat(value);
       case "boolean":
-        if (value !== "true" && value !== "false") return value; // ❌ No convertir si no es "true" o "false"
+        if (value !== "true" && value !== "false") return value; 
         return value === "true";
       case "char":
-        if (value.length !== 1) return value; // ❌ No convertir si no es un solo carácter
+        if (value.length !== 1) return value; 
         return value;
       case "string":
-        return value.replace(/^"(.*)"$/, "$1"); // ✅ Quita comillas de strings
+        return value.replace(/^"(.*)"$/, "$1");
       default:
         return value;
     }
