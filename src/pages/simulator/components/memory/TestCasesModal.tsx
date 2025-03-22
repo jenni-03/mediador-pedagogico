@@ -20,7 +20,6 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
     const [executed, setExecuted] = useState(false);
     const [results, setResults] = useState<Result[]>([]);
 
-    // Agregar comando a la lista
     const addCommand = () => {
         if (input.trim() !== "") {
             setTestCommands(prev => [...prev, input.trim()]);
@@ -28,7 +27,6 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
         }
     };
 
-    //Cargar comandos preestablecidos
     const loadPredefinedCases = () => {
         const cases = [
             "insert int edad = 25;",
@@ -41,7 +39,6 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
         setTestCommands(cases);
     };
 
-    //Ejecutar comandos uno por uno
     const executeTestCases = async () => {
         const localResults: Result[] = [];
 
@@ -59,11 +56,9 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
             }
         }
 
-        //Mostrar resultado final
         setResults(localResults);
         setExecuted(true);
 
-        //Actualizar estado de la memoria
         const final = consolaRef.current?.ejecutarComando("print memory");
         if (final && final[0]) {
             setMemoryState(final.length === 3 ? final[2] : final[1]);
@@ -71,16 +66,15 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
             <motion.div
                 initial={{ opacity: 0, y: -50 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -50 }}
-                className="bg-gray-900 text-white p-6 rounded-lg shadow-lg max-w-xl w-full border-4 border-blue-500"
+                className="bg-white text-black p-6 rounded-lg shadow-lg max-w-xl w-full border-4 border-red-500"
             >
-                <h2 className="text-xl font-bold mb-4 text-blue-400">🧪 Casos de Prueba</h2>
+                <h2 className="text-xl font-bold mb-4 text-red-600">🧪 Casos de Prueba</h2>
 
-                {/* Campo para añadir comandos */}
                 {!executed && (
                     <>
                         <div className="flex gap-2 mb-4">
@@ -89,44 +83,58 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
                                 placeholder="Escribe un comando..."
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                className="flex-1 bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-sm"
+                                className="flex-1 bg-gray-100 border border-gray-300 rounded-md px-3 py-2 text-sm"
                             />
-                            <button onClick={addCommand} className="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-md text-sm">
+                            <button
+                                onClick={addCommand}
+                                className="bg-black text-white hover:bg-gray-800 px-3 py-2 rounded-md text-sm"
+                            >
                                 Añadir
                             </button>
                         </div>
 
-                        {/* Lista de comandos añadidos */}
                         {testCommands.map((cmd, idx) => (
-                            <li key={idx} className="text-sm text-gray-300 bg-gray-800 rounded px-2 py-1 flex justify-between items-center gap-2">
+                            <li
+                                key={idx}
+                                className="text-sm bg-gray-100 text-black rounded px-2 py-1 flex justify-between items-center gap-2"
+                            >
                                 <span className="truncate flex-1">{cmd}</span>
                                 <button
                                     onClick={() => {
                                         setInput(cmd);
                                         setTestCommands(prev => prev.filter((_, i) => i !== idx));
                                     }}
-                                    className="text-yellow-400 hover:text-yellow-300 text-sm"
+                                    className="text-red-500 hover:text-red-700 text-sm"
                                     title="Editar comando"
                                 >
                                     ✏️
                                 </button>
                             </li>
                         ))}
+
                         <div className="flex justify-between mt-4">
-                            <button onClick={closeModal} className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md">
+                            <button
+                                onClick={closeModal}
+                                className="bg-red-600 hover:bg-red-700 px-4 py-2 text-white rounded-md"
+                            >
                                 Cancelar
                             </button>
-                            <button onClick={loadPredefinedCases} className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-md">
+                            <button
+                                onClick={loadPredefinedCases}
+                                className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-md"
+                            >
                                 Cargar Pruebas
                             </button>
-                            <button onClick={executeTestCases} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md">
+                            <button
+                                onClick={executeTestCases}
+                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md"
+                            >
                                 Ejecutar
                             </button>
                         </div>
                     </>
                 )}
 
-                {/* Resultados después de ejecutar */}
                 {executed && (
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -135,19 +143,25 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
                         className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-1"
                     >
                         {results.map((res, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-gray-800 rounded-md px-3 py-2 text-sm">
-                                <span className="flex-1 text-left text-gray-300 truncate">{res.command}</span>
+                            <div
+                                key={i}
+                                className="flex items-center gap-3 bg-gray-100 text-black rounded-md px-3 py-2 text-sm"
+                            >
+                                <span className="flex-1 text-left truncate">{res.command}</span>
                                 <span className="text-lg">
                                     {res.isSuccess ? "✅" : "❌"}
                                 </span>
-                                <span className={`text-sm ${res.isSuccess ? "text-green-400" : "text-red-400"} text-right`}>
+                                <span className={`text-sm ${res.isSuccess ? "text-green-600" : "text-red-600"} text-right`}>
                                     {res.message}
                                 </span>
                             </div>
                         ))}
 
                         <div className="text-center mt-3">
-                            <button onClick={closeModal} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md">
+                            <button
+                                onClick={closeModal}
+                                className="bg-black hover:bg-gray-800 text-white px-4 py-2 rounded-md"
+                            >
                                 Finalizar
                             </button>
                         </div>

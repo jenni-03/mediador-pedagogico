@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { ConsoleComponent } from "./components/memory/ConsoleComponent";
 import { MemoryScreen } from "./components/memory/MemoryScreen";
-import { BackgroundEffect } from "./components/memory/Background";
 import { TitleComponent } from "./components/memory/TitleComponent";
 import { Consola } from "../../shared/utils/RAM/Consola"; 
 
@@ -32,7 +31,6 @@ export function MemorySimulator() {
 
     return (
         <div className="h-screen flex flex-col bg-transparent relative">
-            <BackgroundEffect />
             <TitleComponent />
             <MemoryScreen 
             consolaRef={consolaRef} 
