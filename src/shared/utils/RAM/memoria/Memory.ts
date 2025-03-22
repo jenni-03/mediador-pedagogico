@@ -33,7 +33,6 @@ interface MemoryEntry {
  * Permite almacenar y administrar variables primitivas, arrays y objetos.
  */
 class Memory {
-  private static STORAGE_KEY = "memory_state"; // Clave de almacenamiento en localStorage
   /**
    * Contador de direcciones para cada tipo de dato en la memoria.
    * Se usa para generar direcciones únicas.
@@ -475,6 +474,22 @@ class Memory {
     }
 
     return [true, segment];
+  }
+
+  /**
+   * Limpia completamente toda la memoria y los nombres globales registrados.
+   */
+  clearMemory(): void {
+    // 1. Limpiar los nombres globales
+    MemoryValidator.clearGlobalNames();
+
+    // 2. Limpiar todos los segmentos de memoria
+    this.segments.forEach((segment) => segment.clear());
+
+    // 3. Reiniciar los contadores de direcciones
+    Object.keys(Memory.addressCounters).forEach((type) => {
+      Memory.addressCounters[type as PrimitiveType | ComplexType] = 0;
+    });
   }
 }
 

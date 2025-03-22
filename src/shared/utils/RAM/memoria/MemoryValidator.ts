@@ -38,7 +38,7 @@ class MemoryValidator {
         if (typeof value !== "string") {
           return [false, `"${value}" no es un carácter válido.`];
         }
-        
+
         const cleanChar = value.replace(/^"(.*)"$/, "$1");
 
         if (cleanChar.length !== 1) {
@@ -138,6 +138,13 @@ class MemoryValidator {
       return [true, `Nombre "${name}" eliminado del ámbito global.`];
     }
     return [false, `El nombre "${name}" no estaba registrado globalmente.`];
+  }
+
+  /**
+   * Elimina todos los nombres registrados globalmente.
+   */
+  static clearGlobalNames(): void {
+    this.globalNames.clear();
   }
 }
 
