@@ -20,7 +20,7 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
     const [executed, setExecuted] = useState(false);
     const [results, setResults] = useState<Result[]>([]);
 
-    // 📌 Agregar comando a la lista
+    // Agregar comando a la lista
     const addCommand = () => {
         if (input.trim() !== "") {
             setTestCommands(prev => [...prev, input.trim()]);
@@ -28,7 +28,7 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
         }
     };
 
-    // 📌 Cargar comandos preestablecidos
+    //Cargar comandos preestablecidos
     const loadPredefinedCases = () => {
         const cases = [
             "insert int edad = 25;",
@@ -41,7 +41,7 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
         setTestCommands(cases);
     };
 
-    // 📌 Ejecutar comandos uno por uno
+    //Ejecutar comandos uno por uno
     const executeTestCases = async () => {
         const localResults: Result[] = [];
 
@@ -59,11 +59,11 @@ export function TestCasesModal({ consolaRef, setMemoryState, closeModal }: TestC
             }
         }
 
-        // 🔥 Mostrar resultado final
+        //Mostrar resultado final
         setResults(localResults);
         setExecuted(true);
 
-        // 📦 Actualizar estado de la memoria
+        //Actualizar estado de la memoria
         const final = consolaRef.current?.ejecutarComando("print memory");
         if (final && final[0]) {
             setMemoryState(final.length === 3 ? final[2] : final[1]);

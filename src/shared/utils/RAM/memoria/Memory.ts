@@ -81,7 +81,7 @@ class Memory {
       this.segments.set(type as PrimitiveType | ComplexType, new Map())
     );
   }
-  
+
   /**
    * Genera una dirección de memoria única para el tipo de dato especificado.
    * @param type Tipo de dato para el que se generará la dirección.
@@ -135,7 +135,10 @@ class Memory {
 
     // Validar si el valor es compatible con el tipo
     const valueValidation = MemoryValidator.validateValueByType(type, value);
-    if (valueValidation !== true) return [false, valueValidation[1]];
+    if (valueValidation !== true) {
+      MemoryValidator.removeGlobalName(name);
+      return [false, valueValidation[1]];
+    }
 
     // Si todo está bien, almacenamos el valor en la memoria
     const address = this.generateAddress(type);
@@ -167,9 +170,10 @@ class Memory {
 
     // Validamos el array completo antes de almacenarlo
     const arrayValidation = Memory.validateArray(type, values);
-    if (arrayValidation[0] === false)
+    if (arrayValidation[0] === false) {
+      MemoryValidator.removeGlobalName(name);
       return [false, `"Array ${name}": ${arrayValidation[1]}`];
-
+    }
     // Si todo es válido, generamos la dirección del array y lo almacenamos
     const arrayAddress = this.generateAddress("array");
     const arraySegment = this.segments.get("array")!;
@@ -231,8 +235,10 @@ class Memory {
 
     // Validamos el objeto completo antes de almacenarlo
     const objectValidation = Memory.validateObject(name, properties);
-    if (objectValidation[0] === false) return [false, objectValidation[1]];
-
+    if (objectValidation[0] === false) {
+      MemoryValidator.removeGlobalName(name);
+      return [false, objectValidation[1]];
+    }
     // Si todo es válido, generamos la dirección del objeto y lo almacenamos
     const objectAddress = this.generateAddress("object");
     const objectSegment = this.segments.get("object")!;
