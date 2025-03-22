@@ -60,6 +60,12 @@ export const operations_pseudoCode = {
                 fin si
                 lanzar error "El elemento {elem} no se encontró en la secuencia"
             fin función
+        `,
+        clean: `
+            función vaciar():
+                vector ← arreglo vacío
+                cant ← 0
+            fin función
         `
     }
 }

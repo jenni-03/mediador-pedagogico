@@ -53,7 +53,7 @@ export type SimulatorProps = {
     structure: any,
     actions: BaseStructureActions;
     query: BaseQueryOperations;
-    error: string | null;
+    error: { message: string, id: number } | null;
     reset: () => void;
     children: React.ReactNode
 }
@@ -92,3 +92,8 @@ export type BaseStructureActions = {
     clean: () => void,
     update: (pos: number, element: number) => void
 }
+
+export type AnimationContextType = {
+    isAnimating: boolean;
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
+};

@@ -11,21 +11,40 @@ export class Secuencia {
     // Cantidad de elementos actualmente almacenados en la secuencia.
     private cant: number;
 
+    // Dirección base ficticia desde donde se comienza a calcular la memoria
+    private direccionBase: number;
+
+    // Tamaño simulado de cada nodo en bytes
+    private tamanioNodo: number;
+
+    // Vector de direcciones de memoria
+    private vectorMemoria: number[];
+
     /**
      * Constructor de la clase Secuencia
      * @param n Tamaño (capacidad) de la secuencia
+     * @param direccionBase Dirección base de memoria (opcional, por defecto 1000)
+     * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4)
      */
-    constructor(n: number) {
+    constructor(n: number, direccionBase: number = 1000, tamanioNodo: number = 4) {
         if (n <= 0) {
             this.vector = [];
+            this.vectorMemoria = [];
             this.cant = 0;
+            this.direccionBase = 0;
+            this.tamanioNodo = 0;
             return;
         }
-        this.vector = new Array<number | null>(n);
-        for (let i = 0; i < n; i++) {
-            this.vector[i] = null;
-        }
+        this.vector = new Array<number | null>(n).fill(null);
+        this.vectorMemoria = new Array<number>(n);
         this.cant = 0;
+        this.direccionBase = direccionBase;
+        this.tamanioNodo = tamanioNodo;
+
+        // Asignar direcciones de memoria a cada posición del vector
+        for (let i = 0; i < n; i++) {
+            this.vectorMemoria[i] = this.direccionBase + i * this.tamanioNodo;
+        }
     }
 
     /**
@@ -33,33 +52,10 @@ export class Secuencia {
      * @param elem Elemento a insertar
      */
     insertar(elem: number) {
-        if (this.vector.includes(elem)) {
-            throw new Error(`El elemento ${elem} ya está en la secuencia`);
-        }
         if (this.cant >= this.vector.length) {
             throw new Error(`No hay espacio para insertar el elemento ${elem}`);
         }
         this.vector[this.cant++] = elem;
-    }
-
-    /**
-     * Método que elimina un elemento de la secuencia
-     * @param elem Elemento a eliminar
-     */
-    eliminar(elem: number) {
-        const indice = this.getIndice(elem);
-        if (indice === -1) {
-            throw new Error(`El elemento ${elem} no está en la secuencia`);
-        }
-
-        // Mover los elementos hacia la izquierda
-        for (let i = indice; i < this.cant - 1; i++) {
-            this.vector[i] = this.vector[i + 1];
-        }
-
-        // Reducir cantidad y limpiar el último espacio
-        this.vector[this.cant - 1] = null;
-        this.cant--;
     }
 
     /**
@@ -70,21 +66,11 @@ export class Secuencia {
         if (pos < 0 || pos >= this.cant) {
             throw new Error(`La posición ${pos} no existe, está fuera de rango`);
         }
-        let eliminado = false;
-        let j = 0;
-        for (let i = 0; i < this.cant; i++) {
-            if (i !== pos) {
-                this.vector[j] = this.vector[i];
-                j++;
-            } else {
-                eliminado = true;
-                this.vector[j] = null;
-            }
+        for (let i = pos; i < this.cant - 1; i++) {
+            this.vector[i] = this.vector[i + 1];
         }
-        if (eliminado) {
-            this.cant--;
-            this.vector[this.cant] = null;
-        }
+        this.vector[this.cant - 1] = null;
+        this.cant--;
     }
 
     /**
@@ -114,10 +100,7 @@ export class Secuencia {
      */
     set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
-            throw new Error("Indíce fuera de rango!");
-        }
-        if (this.vector.includes(nuevo)) {
-            throw new Error(`El elemento ${nuevo} ya está en la secuencia`);
+            throw new Error(`Indíce ${i} fuera de rango!`);
         }
         this.vector[i] = nuevo;
     }
@@ -187,4 +170,41 @@ export class Secuencia {
         return secuenciaClonada;
     }
 
+    /**
+     * Método que retorna la dirección de memoria de un índice dado
+     * @param i Índice del vector
+     * @returns Dirección de memoria correspondiente al índice
+     */
+    getDireccion(i: number): number | null {
+        if (i < 0 || i >= this.vector.length) {
+            return null;
+        }
+        return this.vectorMemoria[i];
+    }
+
+    /**
+     * Método que retorna el vector de direcciones de memoria completo
+     * @returns Vector con las direcciones de memoria
+     */
+    getVectorMemoria(): number[] {
+        return this.vectorMemoria;
+    }
+
 }
+
+const secuencia = new Secuencia(4);
+
+
+secuencia.insertar(1);
+secuencia.insertar(2);
+secuencia.insertar(1);
+secuencia.insertar(2);
+
+console.log(secuencia.getVector());
+console.log(secuencia.getTamanio());
+
+secuencia.eliminarPos(0);
+
+console.log(secuencia.getVector());
+console.log(secuencia.getTamanio());
+

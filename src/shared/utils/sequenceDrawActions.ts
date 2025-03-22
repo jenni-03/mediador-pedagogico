@@ -10,8 +10,9 @@ import * as d3 from "d3";
 export function drawBaseSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     secuencia: (number | null)[],
+    memoria: number[],
     { margin, elementWidth, elementHeight, spacing, height }:
-        { margin: { left: number, right: number }, elementWidth: number, elementHeight: number, spacing: number, height: number }
+        { margin: { left: number, right: number }, elementWidth: number, elementHeight: number, spacing: number, height: number },
 ) {
     // Realizamos el data join usando el indice como key
     const groups = svg.selectAll<SVGGElement, number | null>("g.element")
@@ -53,6 +54,20 @@ export function drawBaseSequence(
                     .attr("fill", "black")
                     .style("font-size", "18px");
 
+                // Dirección de memoria del elemento
+                gEnter.append("text")
+                    .attr("class", "memory")
+                    .attr("x", elementWidth / 2)
+                    .attr("y", elementHeight + 20)
+                    .attr("text-anchor", "middle")
+                    .style("opacity", 0)
+                    .text((_d, i) => memoria[i])
+                    .attr("fill", "black")
+                    .style("font-size", "14px")
+                    .transition()
+                    .duration(2500)
+                    .style("opacity", 1)
+
                 return gEnter;
             },
             // Actualización de elementos existentes
@@ -70,11 +85,15 @@ export function drawBaseSequence(
                     .attr("rx", 10)
                     .attr("ry", 10);
 
-                // Actualizamos el texto
+                // Actualizamos el texto correspondiente al valor del elemento
                 update.select("text")
                     .text(d => d === null ? "" : d.toString())
                     .style("opacity", 1)
                     .style("font-size", "18px");
+
+                // Actualizamos el texto correspondiente a la dirección de memoria
+                update.select("text.memory")
+                    .style("font-weight", "normal");
 
                 return update;
             }
@@ -85,19 +104,14 @@ export function drawBaseSequence(
 
 /**
  * Función encargada de animar la inserción de un nuevo elemento a la secuencia
- * @param svg Lienzo donde se va a aplicar la animación
- * @param valueToAdd Valor por añadir a la secuencia
+ * @param targetGroup Grupo dentro del lienzo que se va a animar
  * @param resetQueryValues Función que restablece los valores de las queries del usuario
  */
 export function animateInsertionSequence(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    valueToAdd: number,
-    resetQueryValues: () => void
+    targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    resetQueryValues: () => void,
+    onAnimationEnd: () => void
 ) {
-    // Filtramos el grupo correspondiente
-    const targetGroup = svg.selectAll("g.element")
-        .filter((d) => d === valueToAdd);
-
     // Resaltamos el elemento donde se realizó la inserción
     targetGroup.select("rect")
         .transition()
@@ -115,7 +129,8 @@ export function animateInsertionSequence(
         .duration(2000)
         .style("opacity", 1)
         .on("end", function () {
-            resetQueryValues()
+            resetQueryValues();
+            onAnimationEnd();
         });
 }
 
@@ -305,6 +320,9 @@ export function animateSearchSequence(
         d3.select(this).select("rect")
             .attr("fill", d === null ? "lightgray" : "skyblue")
             .attr("stroke-width", 1);
+
+        d3.select(this).select("text.memory")
+            .style("font-weight", "normal");
     });
 
     // Recorremos cada elemento
@@ -332,6 +350,7 @@ export function animateSearchSequence(
 
             // Si se encuentra el elemento, actualizamos el flag de busqueda
             if (d === valueToSearch) {
+                el.select("text.memory").style("font-weight", "bold")
                 found = true;
             }
         }, i * 1200);

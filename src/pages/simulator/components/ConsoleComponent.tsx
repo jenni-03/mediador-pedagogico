@@ -1,29 +1,54 @@
 import { useEffect, useRef, useState } from "react";
 import { commandRules } from "../../../shared/constants/commandRules";
+import { useAnimation } from "../../../shared/hooks/useAnimation";
 
 interface ConsoleComponentProps {
     structureType: string;
-    onCommand: (command: string) => void;
+    onCommand: (command: string, isValid: boolean) => void;
+    error: {message: string, id: number} | null;
 }
 
 export function ConsoleComponent({
     structureType,
     onCommand,
+    error
 }: ConsoleComponentProps) {
     const [history, setHistory] = useState<string[]>([]);
     const [commandHistory, setCommandHistory] = useState<string[]>([]); // Solo comandos válidos
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const [isCreated, setIsCreated] = useState<boolean>(false);
-    const consoleRef = useRef<HTMLDivElement>(null);
+
+    // Estado para el manejo del error
+    const [visibleError, setVisibleError] = useState<string | null>();
+
+    const { isAnimating, setIsAnimating } = useAnimation();
+
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if (consoleRef.current) {
-            consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+        if (!isAnimating && inputRef.current) {
+            const timeout = setTimeout(() => {
+                inputRef.current?.focus(); // Hace que el input obtenga el foco después de 1 segundo
+            }, 1000); // 1000 ms = 1 segundo
+    
+            return () => clearTimeout(timeout); // Limpia el timeout si el componente se desmonta o el estado cambia
         }
-    }, [history]);
+    }, [isAnimating]);
+    
+
+    useEffect(() => {
+        if (error) {
+            setVisibleError(error.message);
+            setHistory([
+                ...history, `Error: ${error.message}`,
+            ])
+        }
+    }, [error?.id]);
+    
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (isAnimating) return;
         if (e.key === "Enter" && input.trim() !== "") {
             e.preventDefault();
 
@@ -39,13 +64,14 @@ export function ConsoleComponent({
                         const command = parts[0]?.toLowerCase();
                         // Si la estructura no ha sido creada solo se permite el cmd create
                         if (!isCreated && command !== "create") {
+                            onCommand("", false);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Error: Debe crear la estructura primero con 'create'",
                             ]);
                         } else if (isCreated && command == "clean") {
-                            onCommand(input.trim());
+                            onCommand(input.trim(), true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
@@ -60,31 +86,37 @@ export function ConsoleComponent({
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
                             }
-                            onCommand(input.trim());
+                            onCommand(input.trim(), true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
-                            setCommandHistory([
-                                ...commandHistory,
-                                input.trim(),
-                            ]); // Guardamos solo el comando
                         }
                     } else {
+                        onCommand("", false);
+
                         setHistory([
                             ...history,
                             `$ ${input}`,
                             "Error: Comando no válido",
                         ]);
+                        
                     }
                 } else {
+                    onCommand("", false);
                     setHistory([
                         ...history,
                         `$ ${input}`,
                         `Error: ${commandValidation.message}`,
                     ]);
                 }
+
+                //Guardamos el comando en el historial
+                setCommandHistory([
+                    ...commandHistory,
+                    input.trim(),
+                ]);
 
                 setInput("");
                 setHistoryIndex(-1); // Reiniciamos el índice del historial
@@ -120,7 +152,6 @@ export function ConsoleComponent({
 
     return (
         <div
-            ref={consoleRef}
             className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono"
         >
             {history.map((cmd, index) => (
@@ -129,6 +160,7 @@ export function ConsoleComponent({
                     className={
                         cmd.startsWith("Error:")
                             ? "text-red-500"
+                            : cmd == "Comando válido, procesando..." ? "text-yellow-400" 
                             : "text-green-400"
                     }
                 >
@@ -144,6 +176,8 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
+                    disabled={isAnimating}
+                    ref={inputRef}
                     autoFocus
                     spellCheck={false}
                 />

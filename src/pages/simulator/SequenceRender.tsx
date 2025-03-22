@@ -3,14 +3,21 @@ import { useSequenceRender } from "./hooks/useSequenceRender";
 
 export function SequenceRender({
     sequence,
+    memoria,
     query,
     resetQueryValues,
 }: {
     sequence: (number | null)[];
+    memoria: number[];
     query: BaseQueryOperations;
     resetQueryValues: () => void;
 }) {
-    const { svgRef } = useSequenceRender(sequence, query, resetQueryValues);
+    const { svgRef } = useSequenceRender(
+        sequence,
+        memoria,
+        query,
+        resetQueryValues
+    );
 
     return (
         <div>

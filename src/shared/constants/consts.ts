@@ -11,5 +11,5 @@ export const SVG_SEQUENCE_VALUES = {
     ELEMENT_WIDTH: 70,
     ELEMENT_HEIGHT: 70,
     SPACING: 10,
-    HEIGHT: 100
+    HEIGHT: 120
 } as const 
