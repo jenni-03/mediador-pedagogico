@@ -25,23 +25,28 @@ export function CustomModal({
             </div>
             {isOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white rounded-2xl p-4 w-10/12 md:w-1/2 lg:w-1/3">
-                        <h2 className="text-2xl font-bold mb-4 text-center">
-                            {title}
-                        </h2>
-                        <p className="mb-2">
+                    <div
+                        className="rounded-2xl p-6 w-10/12 md:w-1/2 lg:w-1/4
+                        bg-white/20 backdrop-blur-md border border-white/30 shadow-lg"
+                    >
+                        <div className="flex flex-col items-center">
+                            <i className="pi pi-info-circle text-white text-4xl mb-2"></i>
+                            <h2 className="text-2xl font-bold mb-4 text-white">
+                                {title}
+                            </h2>
+                        </div>
+                        <p className="mb-2 text-white">
                             <strong>Funcionalidad:</strong> {description}
                         </p>
-                        <p className="mb-2">
+                        <p className="mb-2 text-white">
                             <strong>Estructura del comando:</strong> {structure}
                         </p>
-                        <p className="mb-4">
+                        <p className="mb-4 text-white">
                             <strong>Ejemplo de uso:</strong> {example}
                         </p>
                         <div className="text-center">
                             <AnimatedButtonModal
-                                // bgColor="#b064d4"
-                                bgColor="#ffffff"
+                                bgColor="#D02222"
                                 text="Aceptar"
                                 onClick={closeModal}
                             ></AnimatedButtonModal>

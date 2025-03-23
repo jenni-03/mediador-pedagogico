@@ -4,7 +4,7 @@ export function DataStructureInfo({ children, structure, structurePrueba }: { ch
     const info = infoStructures[structure].info;
     
     return (
-        <div className="flex-[4] flex flex-col border-2 border-gray-300 bg-gray-100 rounded-3xl p-4 overflow-auto">
+        <div className="flex-[4] flex flex-col bg-white rounded-3xl p-4 overflow-auto">
             <div className="ml-auto">
                 {info.map((infoKey: string, index: number) => (
                     <h1 key={index} className="font-medium">

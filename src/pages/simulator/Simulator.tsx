@@ -71,7 +71,8 @@ export function Simulator({
                     {structureName.toUpperCase() + " <int>"}
                 </h1>
             </div>
-            <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
+            {/* <div className="flex-1 bg-custom-gray border-2 border-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden"> */}
+            <div className="flex-1 bg-red-300 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
                 <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl my-3 mx-3 space-y-3">
                     {/* Muestra la estructura */}
                     <DataStructureInfo
@@ -93,11 +94,11 @@ export function Simulator({
                         />
                         
                     </div>
-                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-auto">
-                        <h1 className="font-medium text-center mt-2">
+                    <div className="flex-1 bg-white rounded-xl overflow-auto">
+                        <h1 className="font-medium text-center mt-2 text-black">
                             CÓDIGO DE EJECUCIÓN
                         </h1>
-                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md bg-gray-100">
+                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md text-black">
                             {codigoEjecucion.trim()}
                         </pre>
                     </div>

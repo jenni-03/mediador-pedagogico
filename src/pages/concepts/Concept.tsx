@@ -40,7 +40,7 @@ export function Concept() {
                     setIsOpen={setIsSidebarOpen}
                 />
             </div>
-            <div className="flex-1 p-4 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
                 <Outlet /> {/* Renderiza las subrutas */}
             </div>
         </div>

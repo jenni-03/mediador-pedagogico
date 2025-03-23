@@ -17,6 +17,12 @@ export type AnimatedButtonLinkProps = {
     params: string
 }
 
+export type AnimatedButtonModalProps = {
+    bgColor: string,
+    text: string,
+    onClick?: () => void;
+}
+
 export type SideBarProps = {
     estructura: string,
     isOpen: boolean,

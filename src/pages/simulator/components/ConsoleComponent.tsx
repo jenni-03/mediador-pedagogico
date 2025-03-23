@@ -160,8 +160,8 @@ export function ConsoleComponent({
                     className={
                         cmd.startsWith("Error:")
                             ? "text-red-500"
-                            : cmd == "Comando válido, procesando..." ? "text-yellow-400" 
-                            : "text-green-400"
+                            : cmd == "Comando válido, procesando..." ? "text-blue-500" 
+                            : "text-white"
                     }
                 >
                     {cmd}
@@ -169,7 +169,7 @@ export function ConsoleComponent({
             ))}
 
             <div className="flex">
-                <span className="text-green-400">$</span>
+                <span className="text-white">$</span>
                 <input
                     type="text"
                     className="bg-transparent border-none outline-none text-white ml-2 flex-1"

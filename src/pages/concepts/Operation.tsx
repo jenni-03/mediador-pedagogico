@@ -10,7 +10,7 @@ export function Operation() {
     const tipo = conceptosData[estructura].tipo;
 
     return (
-        <div>
+        <div className="p-4">
             <h1 className="text-2xl font-bold mb-1">{nombre.toUpperCase()}</h1>
             <h1 className="text-sm text-gray-500 mb-3">{tipo}</h1>
             <hr className="mt-2 mb-4" />

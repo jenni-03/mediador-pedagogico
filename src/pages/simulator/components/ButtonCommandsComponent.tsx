@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { CommandProps } from "../../../types";
 import { CustomModal } from "./CustomModal";
+import { AnimatedButtonModal } from "../../../shared/components/AnimatedButtonModal";
 
-export function ButtonCommandsComponent({ title, description, estructura, ejemplo }: CommandProps) {
+export function ButtonCommandsComponent({
+    title,
+    description,
+    estructura,
+    ejemplo,
+}: CommandProps) {
     const [isActive, setIsActive] = useState(false);
 
     return (
@@ -13,7 +19,12 @@ export function ButtonCommandsComponent({ title, description, estructura, ejempl
             example={ejemplo}
             onClose={() => setIsActive(false)} // Cuando el modal se cierra, cambia el estado a false
         >
-            <div
+            <AnimatedButtonModal
+                bgColor="#D02222"
+                text={title}
+                onClick={() => setIsActive(true)}
+            ></AnimatedButtonModal>
+            {/* <div
                 className={`flex items-center justify-center gap-1 rounded-2xl border-2 border-gray-300 bg-gray-100 px-3 py-1
                 transition duration-200 cursor-pointer ${
                     isActive 
@@ -22,9 +33,9 @@ export function ButtonCommandsComponent({ title, description, estructura, ejempl
                 }`}
                 onClick={() => setIsActive(true)} // Cambia el estado a true cuando se hace click en el botón
             >
-                <span className="text-sm font-medium text-gray-700">{title}</span>
-                <i className="pi pi-info-circle text-gray-500"></i>
-            </div>
+                <span className={`text-sm font-medium ${isActive ? "text-gray-700" : "text-red-500"}`}>{title}</span>
+                <i className={`pi pi-info-circle ${isActive ? "text-gray-700" : "text-red-500"}`}></i>
+            </div> */}
         </CustomModal>
     );
 }

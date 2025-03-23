@@ -10,7 +10,7 @@ export function Definition() {
     const tipo = conceptosData[estructura].tipo;
 
     return (
-        <div>
+        <div className="p-4">
             <h1 className="text-2xl font-bold mb-1">{nombre.toUpperCase()}</h1>
             <h1 className="text-sm text-gray-500 mb-3">{tipo}</h1>
             <hr className="mt-2 mb-4" />
@@ -18,7 +18,7 @@ export function Definition() {
                 <h1 className="text-xl font-bold mb-3">Descripción</h1>
                 <p className="text-gray-700 text-sm mb-5">{data.descripcion}</p>
                 <h1 className="text-xl font-bold mb-3">Características</h1>
-                <ul className="list-disc ml-6">
+                <ul className="list-disc marker:text-red-500 ml-6">
                     {data.caracteristicas.map(
                         (caracteristica: string, index: number) => (
                             <li key={index} className="text-sm text-gray-700">
