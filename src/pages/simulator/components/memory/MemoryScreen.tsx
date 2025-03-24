@@ -117,51 +117,60 @@ export function MemoryScreen({
         </div>
 
         {/* 📜 Contenido de memoria */}
-        <div className="w-full flex-1 overflow-y-auto px-2 pb-4 scrollbar-thin scrollbar-thumb-red-400 scrollbar-track-gray-200">
-          <MemoryDisplay
-            segment={selectedSegment}
-            searchTerm={searchTerm}
-            consolaRef={consolaRef}
-            memoryState={memoryState}
-          />
+        <div className="w-full flex-1 overflow-y-auto px-2 pb-4 pt-24 scrollbar-thin scrollbar-thumb-red-400 scrollbar-track-gray-200">
+        <MemoryDisplay
+  segment={selectedSegment}
+  searchTerm={searchTerm}
+  consolaRef={consolaRef}
+  memoryState={memoryState}
+  setMemoryState={setMemoryState}
+/>
         </div>
 
         {/* 🎮 Barra inferior de segmentos */}
-        <div className="w-full bg-[#f4f4f4] p-3 flex flex-wrap justify-center gap-2 border-t border-red-200 shadow-inner relative z-10">
-          {["boolean", "char", "byte", "short", "int", "long", "float", "double", "string"].map((seg) => (
-            <button
-              key={seg}
-              onClick={() => setSelectedSegment(seg)}
-              className={`
-                px-3 py-2 text-sm font-bold uppercase rounded-md transition-all duration-300 relative
-                ${
-                  selectedSegment === seg
-                    ? "text-red-600 border-b-4 border-red-500 bg-red-50 shadow-sm"
-                    : "text-neutral-800 hover:text-red-600"
-                }
-              `}
-            >
-              {seg.toUpperCase()}
-            </button>
-          ))}
-          <span className="mx-2 text-gray-300 font-bold select-none">|</span>
-          {["array", "object"].map((seg) => (
-            <button
-              key={seg}
-              onClick={() => setSelectedSegment(seg)}
-              className={`
-                px-3 py-2 text-sm font-bold uppercase rounded-md transition-all duration-300 relative
-                ${
-                  selectedSegment === seg
-                    ? "text-red-600 border-b-4 border-red-500 bg-red-50 shadow-sm"
-                    : "text-neutral-800 hover:text-red-600"
-                }
-              `}
-            >
-              {seg.toUpperCase()}
-            </button>
-          ))}
-        </div>
+<div className="w-full bg-[#f4f4f4] py-4 px-2 flex flex-wrap justify-center gap-3 border-t border-red-200 shadow-inner relative z-10">
+  {[
+    "boolean", "char", "byte", "short", "int",
+    "long", "float", "double", "string",
+  ].map((seg) => (
+    <button
+      key={seg}
+      onClick={() => setSelectedSegment(seg)}
+      className={`
+        px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
+        rounded-full border transition-all duration-300
+        ${
+          selectedSegment === seg
+            ? "bg-red-100 border-red-400 text-red-700 shadow"
+            : "bg-white border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
+        }
+      `}
+    >
+      {seg}
+    </button>
+  ))}
+
+  <span className="mx-3 hidden sm:inline-block text-gray-300 font-bold select-none">|</span>
+
+  {["array", "object"].map((seg) => (
+    <button
+      key={seg}
+      onClick={() => setSelectedSegment(seg)}
+      className={`
+        px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
+        rounded-full border transition-all duration-300
+        ${
+          selectedSegment === seg
+            ? "bg-red-100 border-red-400 text-red-700 shadow"
+            : "bg-white border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
+        }
+      `}
+    >
+      {seg}
+    </button>
+  ))}
+</div>
+
       </div>
 
       {/* 📌 Modal de prueba */}

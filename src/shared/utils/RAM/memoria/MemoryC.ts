@@ -154,3 +154,4 @@ export class MemoryC extends Memory {
     }
   }
 }
+export type { PrimitiveType };

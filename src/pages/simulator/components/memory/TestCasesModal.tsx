@@ -33,15 +33,38 @@ export function TestCasesModal({
 
   const loadPredefinedCases = () => {
     const cases = [
+      // Primitivos
       "insert int edad = 25;",
       "insert float temperatura = 36.7;",
       "insert string nombre = \"Carlos\";",
       "insert boolean activo = true;",
       "insert double precio = 99.99;",
       "insert char inicial = \"C\";",
+      "insert long poblacion = 7800000000;",
+      "insert short dia = 15;",
+      "insert byte codigo = 120;",
+  
+      // Arrays por tipo primitivo
+      "insert int[] edades = [20, 30, 40, 50];",
+      "insert float[] alturas = [1.65, 1.75, 1.80];",
+      "insert boolean[] flags = [true, false, true, false];",
+      "insert double[] medidas = [12.345, 67.89, 101.11];",
+      "insert char[] iniciales = [\"A\", \"B\", \"Z\"];", 
+      "insert string[] nombres = [\"Ana\", \"Luis\", \"Carlos\"];", 
+      "insert long[] cantidades = [1000000000, 2000000000];",
+      "insert short[] niveles = [1, 2, 3];",
+      "insert byte[] codigos = [12, 34, 56];",
+  
+      // Objetos con atributos primitivos y arrays
+      "insert object persona = (string nombre = \"Efrain\"; int edad = 24; float[] deudas = [21412.12, 234.12];);",
+      "insert object curso = (string nombre = \"Algoritmos\"; int[] calificaciones = [100, 95, 88]; boolean aprobado = true;);",
+      "insert object sistema = (boolean encendido = true; long memoria = 8000000000; string[] modulos = [\"RAM\", \"CPU\", \"SSD\"];);",
     ];
+  
     setTestCommands(cases);
   };
+  
+  
 
   const executeTestCases = async () => {
     const localResults: Result[] = [];
