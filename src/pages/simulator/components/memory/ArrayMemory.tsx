@@ -4,22 +4,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { VariableDetailsModal } from "./VariableDetailsModal";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
 
-interface PrimitiveMemoryProps {
-  type: string;
+interface ArrayMemoryProps {
   searchTerm: string;
   consolaRef: React.RefObject<Consola>;
   memoryState: Record<string, any[]>;
   setMemoryState: (newState: Record<string, any[]>) => void;
 }
 
-export function PrimitiveMemory({
-  type,
+export function ArrayMemory({
   searchTerm,
   consolaRef,
   memoryState,
   setMemoryState,
-}: PrimitiveMemoryProps) {
-  const memorySegment = memoryState[type] || [];
+}: ArrayMemoryProps) {
+  const memorySegment = memoryState["array"] || [];
 
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [tempValue, setTempValue] = useState("");
@@ -36,22 +34,6 @@ export function PrimitiveMemory({
     });
     setSizes(newSizes);
   }, [JSON.stringify(memorySegment)]);
-  
-
-  const getValueColor = (type: string) => {
-    switch (type) {
-      case "boolean": return "text-red-600";
-      case "char": return "text-black";
-      case "byte":
-      case "short":
-      case "int":
-      case "long": return "text-gray-700";
-      case "float":
-      case "double": return "text-gray-900";
-      case "string": return "text-red-800";
-      default: return "text-gray-500";
-    }
-  };
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -70,13 +52,12 @@ export function PrimitiveMemory({
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   setSelectedEntry(entry);
-                  setTempValue(entry.value);
+                  setTempValue(JSON.stringify(entry.value));
                 }}
                 className="relative bg-white p-5 rounded-2xl border border-gray-300 shadow-sm 
                            flex flex-col items-center justify-center text-center cursor-pointer 
                            hover:border-red-400 hover:shadow-md transition-all"
               >
-                {/* Dirección y tamaño */}
                 <div className="absolute top-2 left-2">
                   <span className="text-xs bg-red-500 text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
                     {entry.address}
@@ -100,14 +81,14 @@ export function PrimitiveMemory({
                 </div>
 
                 <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">{entry.name}</p>
-                <p className={`${getValueColor(entry.type)} text-base mt-1 truncate w-full px-2`}>
-                  {JSON.stringify(entry.value)}
+                <p className="text-gray-700 text-base mt-1 truncate w-full px-2">
+                  {Array.isArray(entry.value) ? `[${entry.value.join(", ")}]` : JSON.stringify(entry.value)}
                 </p>
               </motion.div>
             ))
         ) : (
           <p className="text-gray-500 col-span-full text-center text-lg font-semibold">
-            No hay datos en este segmento.
+            No hay arrays en este segmento.
           </p>
         )}
       </div>
@@ -115,16 +96,15 @@ export function PrimitiveMemory({
       <AnimatePresence>
         {selectedEntry && (
           <VariableDetailsModal
-          entry={selectedEntry}
-          tempValue={tempValue}
-          setTempValue={setTempValue}
-          onClose={() => setSelectedEntry(null)}
-          consolaRef={consolaRef}
-          memoryState={memoryState}
-          setMemoryState={setMemoryState}
-          size={sizes[selectedEntry.address] ?? "Desconocido"}
-        />
-        
+            entry={selectedEntry}
+            tempValue={tempValue}
+            setTempValue={setTempValue}
+            onClose={() => setSelectedEntry(null)}
+            consolaRef={consolaRef}
+            memoryState={memoryState}
+            setMemoryState={setMemoryState}
+            size={sizes[selectedEntry.address] ?? "Desconocido"}
+          />
         )}
       </AnimatePresence>
 
