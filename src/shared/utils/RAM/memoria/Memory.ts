@@ -737,6 +737,21 @@ class Memory {
       }
 
       entry.value = newValue;
+
+      // Verificar si forma parte de un array y actualizar el array padre
+      if (name.includes("_")) {
+        const [arrayName, indexStr] = name.split("_");
+        const index = Number(indexStr);
+
+        const arrayAddress = this.getAddressByName(arrayName);
+        if (arrayAddress) {
+          const [ok, arrayEntry] = this.getEntryByAddress(arrayAddress);
+          if (ok && arrayEntry.type === "array") {
+            arrayEntry.value[index] = newValue;
+          }
+        }
+      }
+
       return [
         true,
         `Valor de "${name}" actualizado correctamente a ${newValue}.`,
@@ -758,7 +773,6 @@ class Memory {
       }
 
       // Validar tipo del array usando sus elementos en memoria
-
 
       for (let i = 0; i < newValue.length; i++) {
         const elementName = `${name}_${i}`;
