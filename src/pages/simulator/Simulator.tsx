@@ -71,8 +71,8 @@ export function Simulator({
                     {structureName.toUpperCase() + " <int>"}
                 </h1>
             </div>
-            {/* <div className="flex-1 bg-custom-gray border-2 border-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden"> */}
-            <div className="flex-1 bg-red-300 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
+            <div className="flex-1 bg-custom-gray border-2 border-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
+            {/* <div className="flex-1 bg-red-300 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden"> */}
                 <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl my-3 mx-3 space-y-3">
                     {/* Muestra la estructura */}
                     <DataStructureInfo
