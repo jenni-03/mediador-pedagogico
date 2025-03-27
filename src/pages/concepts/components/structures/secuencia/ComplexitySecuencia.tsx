@@ -8,7 +8,7 @@ export function ComplexitySecuencia() {
                 COSTO OPERACIONAL Y COMPLEJIDAD
             </h1>
             <h1 className="text-sm text-gray-500 mb-3">Secuencia</h1>
-            <hr className="mt-2 mb-4" />
+            <hr className="mt-2 mb-4 border-red-500 border-t-2" />
             <div>
                 <h1 className="text-2xl font-bold mb-3">
                     Análisis Algorítmico
@@ -19,14 +19,14 @@ export function ComplexitySecuencia() {
                     Costo Operacional y Complejidad
                 </h1>
 
-                <p className="mb-4">
+                {/* <p className="mb-4">
                     <a
                         href="https://gitlab.com/Yoner_Silva/proyecto-seed/-/blob/master/src/ufps/util/colecciones_seed/Secuencia.java"
                         className="text-blue-600 hover:underline"
                     >
                         CODIGO FUENTE (SECUENCIAS)
                     </a>
-                </p>
+                </p> */}
 
                 <div className="bg-gray-50 p-4 text-gray-800 text-sm leading-6 rounded-md mb-6">
                     <p>
