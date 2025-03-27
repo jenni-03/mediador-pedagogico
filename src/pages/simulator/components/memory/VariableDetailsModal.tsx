@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Consola } from "../../../../shared/utils/RAM/Consola";
 
 interface VariableDetailsModalProps {
   entry: any;
   tempValue: string;
   setTempValue: (value: string) => void;
   onClose: () => void;
-  consolaRef: React.RefObject<Consola>;
+  consolaRef: React.RefObject<any>;
   memoryState: Record<string, any[]>;
   size: string;
   setMemoryState: (newState: Record<string, any[]>) => void;
@@ -24,24 +23,98 @@ export function VariableDetailsModal({
   setMemoryState
 }: VariableDetailsModalProps) {
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [arrayState, setArrayState] = useState<any[]>([]);
+
+  const isArray = entry.type.toLowerCase() === "array";
+  const emoji = isArray ? "📚" : "🧾";
+  const title = isArray ? "Detalles del Array" : "Detalles de la Variable";
+
+  const inferType = (sample: any): string => {
+    if (typeof sample === "number") return Number.isInteger(sample) ? "int" : "float";
+    if (typeof sample === "boolean") return "boolean";
+    if (typeof sample === "string") return "string";
+    return "string";
+  };
+
+  const baseType = isArray && entry.value.length > 0 ? inferType(entry.value[0]) : entry.type;
+
+  const parseByType = (value: string) => {
+    switch (baseType) {
+      case "int":
+        return isNaN(parseInt(value)) ? null : parseInt(value);
+      case "float":
+        return isNaN(parseFloat(value)) ? null : parseFloat(value);
+      case "boolean":
+        return value === "true" || value === "false" ? value === "true" : null;
+      case "string":
+      default:
+        return value;
+    }
+  };
+
+  useEffect(() => {
+    if (isArray && Array.isArray(entry.value)) {
+      setArrayState(entry.value);
+      setTempValue(JSON.stringify(entry.value));
+    }
+  }, [entry]);
+
+  const updateArrayValue = (index: number, newValue: string) => {
+    const parsed = parseByType(newValue);
+    const updated = [...arrayState];
+    updated[index] = parsed;
+    setArrayState(updated);
+  };
 
   const handleAccept = () => {
-    const result = consolaRef.current?.ejecutarComando(
-      `set address ${entry.address} value ${tempValue}`
-    );
+    if (isArray) {
+      const castedArray = arrayState.map((val) => parseByType(String(val)));
+      const invalidIndex = castedArray.findIndex((v) => v === null);
 
-    if (result) {
-      const [success, message, updatedState] = result;
-      setFeedback({ success, message });
+      if (invalidIndex !== -1) {
+        setFeedback({
+          success: false,
+          message: `Elemento ${invalidIndex} inválido en "${entry.name}": "${arrayState[invalidIndex]}" no es válido para ${baseType}.`
+        });
+        return;
+      }
 
-      if (success) {
-        setMemoryState(updatedState as Record<string, any[]>);
-        setTimeout(() => {
-          setFeedback(null);
-          onClose();
-        }, 2000);
-      } else {
-        setTimeout(() => setFeedback(null), 3000);
+      const result = consolaRef.current?.ejecutarComando(
+        `set address ${entry.address} value ${JSON.stringify(castedArray)}`
+      );
+
+      if (result) {
+        const [success, message, updatedState] = result;
+        setFeedback({ success, message });
+
+        if (success) {
+          setMemoryState(updatedState as Record<string, any[]>);
+          setTimeout(() => {
+            setFeedback(null);
+            onClose();
+          }, 2000);
+        } else {
+          setTimeout(() => setFeedback(null), 3000);
+        }
+      }
+    } else {
+      const result = consolaRef.current?.ejecutarComando(
+        `set address ${entry.address} value ${tempValue}`
+      );
+
+      if (result) {
+        const [success, message, updatedState] = result;
+        setFeedback({ success, message });
+
+        if (success) {
+          setMemoryState(updatedState as Record<string, any[]>);
+          setTimeout(() => {
+            setFeedback(null);
+            onClose();
+          }, 2000);
+        } else {
+          setTimeout(() => setFeedback(null), 3000);
+        }
       }
     }
   };
@@ -59,31 +132,60 @@ export function VariableDetailsModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -30 }}
         transition={{ duration: 0.1 }}
-        className="bg-white text-black p-6 rounded-2xl shadow-xl max-w-sm w-full border border-red-300"
+        className="bg-white text-black p-6 rounded-2xl shadow-xl border border-red-300 w-[90%] max-w-xl"
       >
-        <h2 className="text-xl font-bold text-red-600 mb-4 text-center">
-          🧾 Detalles de la Variable
+        <h2 className="text-2xl font-bold text-red-600 mb-5 text-center flex justify-center items-center gap-2">
+          {emoji} {title}
         </h2>
 
-        <div className="space-y-3 text-sm text-gray-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-5 text-gray-700">
           <p><span className="font-semibold text-red-500">🔹 Tipo:</span> {entry.type}</p>
           <p><span className="font-semibold text-red-500">🏷️ Nombre:</span> {entry.name}</p>
           <p><span className="font-semibold text-red-500">📍 Dirección:</span> {entry.address}</p>
           <p><span className="font-semibold text-red-500">📦 Tamaño:</span> {size}</p>
+        </div>
 
-          <div>
-            <label className="text-gray-700 block mb-1 font-medium">✏️ Nuevo Valor:</label>
+        {!isArray ? (
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-semibold mb-2">
+              ✏️ Nuevo Valor:
+            </label>
             <input
               type="text"
               value={tempValue}
               onChange={(e) => setTempValue(e.target.value)}
-              className="w-full p-2 rounded-lg bg-gray-100 border border-gray-300 
-                         focus:outline-none focus:ring-2 focus:ring-red-400 text-center"
+              className="w-full px-4 py-2 rounded-xl border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 text-sm transition"
+              placeholder="Nuevo valor"
             />
           </div>
-        </div>
+        ) : (
+          <div className="mb-4 overflow-x-auto border rounded-lg">
+            <table className="min-w-full text-sm text-left">
+              <thead className="bg-red-50 text-red-600">
+                <tr>
+                  <th className="px-4 py-2 border-b border-red-200">Índice</th>
+                  <th className="px-4 py-2 border-b border-red-200">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {arrayState.map((val: any, i: number) => (
+                  <tr key={i} className="even:bg-gray-50">
+                    <td className="px-4 py-2 border-b border-gray-200 text-gray-500">{i}</td>
+                    <td className="px-4 py-2 border-b border-gray-200">
+                      <input
+                        type="text"
+                        value={val}
+                        onChange={(e) => updateArrayValue(i, e.target.value)}
+                        className="w-full px-2 py-1 rounded-md border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-400 text-sm"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-        {/* Mensaje de feedback */}
         <AnimatePresence>
           {feedback && (
             <motion.div

@@ -1,5 +1,6 @@
 import { PrimitiveMemory } from "./PrimitiveMemory";
 import { ArrayMemory } from "./ArrayMemory"; 
+import { ObjectMemory } from "./ObjectMemory"; 
 import { Consola } from "../../../../shared/utils/RAM/Consola";
 
 interface MemoryDisplayProps {
@@ -39,6 +40,13 @@ export function MemoryDisplay({
         />
       ) : segment === "array" ? (
         <ArrayMemory
+          searchTerm={searchTerm}
+          consolaRef={consolaRef}
+          memoryState={memoryState}
+          setMemoryState={setMemoryState}
+        />
+      ) : segment === "object" ? (
+        <ObjectMemory
           searchTerm={searchTerm}
           consolaRef={consolaRef}
           memoryState={memoryState}

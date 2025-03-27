@@ -23,17 +23,39 @@ export function TestCasesModal({
   const [testCommands, setTestCommands] = useState<string[]>([]);
   const [executed, setExecuted] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const addCommand = () => {
-    if (input.trim() !== "") {
+    if (input.trim() === "") return;
+
+    if (editingIndex !== null) {
+      const updated = [...testCommands];
+      updated[editingIndex] = input.trim();
+      setTestCommands(updated);
+      setEditingIndex(null);
+    } else {
       setTestCommands((prev) => [...prev, input.trim()]);
-      setInput("");
     }
+
+    setInput("");
+  };
+
+  const toggleSelect = (index: number) => {
+    setSelected((prev) => {
+      const newSet = new Set(prev);
+      newSet.has(index) ? newSet.delete(index) : newSet.add(index);
+      return newSet;
+    });
+  };
+
+  const selectAll = () => {
+    const all = new Set(testCommands.map((_, i) => i));
+    setSelected(all);
   };
 
   const loadPredefinedCases = () => {
     const cases = [
-      // Primitivos
       "insert int edad = 25;",
       "insert float temperatura = 36.7;",
       "insert string nombre = \"Carlos\";",
@@ -43,33 +65,27 @@ export function TestCasesModal({
       "insert long poblacion = 7800000000;",
       "insert short dia = 15;",
       "insert byte codigo = 120;",
-  
-      // Arrays por tipo primitivo
       "insert int[] edades = [20, 30, 40, 50];",
       "insert float[] alturas = [1.65, 1.75, 1.80];",
       "insert boolean[] flags = [true, false, true, false];",
       "insert double[] medidas = [12.345, 67.89, 101.11];",
-      "insert char[] iniciales = [\"A\", \"B\", \"Z\"];", 
-      "insert string[] nombres = [\"Ana\", \"Luis\", \"Carlos\"];", 
+      "insert char[] iniciales = [\"A\", \"B\", \"Z\"];",
+      "insert string[] nombres = [\"Ana\", \"Luis\", \"Carlos\"];",
       "insert long[] cantidades = [1000000000, 2000000000];",
       "insert short[] niveles = [1, 2, 3];",
       "insert byte[] codigos = [12, 34, 56];",
-  
-      // Objetos con atributos primitivos y arrays
       "insert object persona = (string nombre = \"Efrain\"; int edad = 24; float[] deudas = [21412.12, 234.12];);",
       "insert object curso = (string nombre = \"Algoritmos\"; int[] calificaciones = [100, 95, 88]; boolean aprobado = true;);",
       "insert object sistema = (boolean encendido = true; long memoria = 8000000000; string[] modulos = [\"RAM\", \"CPU\", \"SSD\"];);",
     ];
-  
+
     setTestCommands(cases);
   };
-  
-  
 
-  const executeTestCases = async () => {
+  const executeTestCases = () => {
     const localResults: Result[] = [];
-
-    for (const cmd of testCommands) {
+    selected.forEach((index) => {
+      const cmd = testCommands[index];
       if (cmd) {
         const result = consolaRef.current?.ejecutarComando(cmd);
         if (result) {
@@ -80,7 +96,7 @@ export function TestCasesModal({
           });
         }
       }
-    }
+    });
 
     setResults(localResults);
     setExecuted(true);
@@ -97,7 +113,8 @@ export function TestCasesModal({
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
-        className="bg-white text-black p-6 rounded-xl shadow-xl max-w-xl w-full border border-red-200"
+        className="bg-white text-black p-6 rounded-xl shadow-xl border border-red-200 w-[90%] max-w-md sm:w-[70%] lg:w-[50%]"
+
       >
         <h2 className="text-2xl font-bold mb-5 text-red-600 text-center">
           🧪 Casos de Prueba
@@ -105,7 +122,6 @@ export function TestCasesModal({
 
         {!executed && (
           <>
-            {/* Input + Añadir */}
             <div className="flex gap-2 mb-4">
               <input
                 type="text"
@@ -119,36 +135,58 @@ export function TestCasesModal({
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-sm"
                 onClick={addCommand}
               >
-                Añadir
+                {editingIndex !== null ? "Actualizar" : "Añadir"}
               </motion.button>
             </div>
 
-            {/* Lista de comandos */}
             <ul className="space-y-2 max-h-40 overflow-y-auto pr-1">
               {testCommands.map((cmd, idx) => (
                 <li
                   key={idx}
-                  className="flex justify-between items-center bg-red-50 border border-red-200 text-red-800 rounded-full px-4 py-1 text-sm"
+                  className={`flex items-center gap-2 text-red-800 rounded-full px-4 py-1 text-sm cursor-pointer transition-all duration-200
+                    ${selected.has(idx)
+                      ? 'bg-red-50 border-red-500 border-2 ring-1 ring-red-400 shadow-sm'
+                      : 'bg-red-50 border-red-200'}
+                  `}
+                  
+                  onClick={() => toggleSelect(idx)}
                 >
                   <span className="truncate flex-1">{cmd}</span>
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setInput(cmd);
-                      setTestCommands((prev) =>
-                        prev.filter((_, i) => i !== idx)
-                      );
+                      setEditingIndex(idx);
                     }}
-                    className="text-red-500 hover:text-red-700 text-sm ml-2"
-                    title="Editar comando"
+                    className="text-red-500 hover:text-red-700 text-sm"
+                    title="Editar"
                   >
                     ✏️
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTestCommands((prev) => prev.filter((_, i) => i !== idx));
+                      setSelected((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(idx);
+                        return newSet;
+                      });
+                      if (editingIndex === idx) {
+                        setInput("");
+                        setEditingIndex(null);
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                    title="Eliminar"
+                  >
+                    ❌
                   </button>
                 </li>
               ))}
             </ul>
 
-            {/* Botones inferiores */}
-            <div className="flex justify-between mt-6">
+            <div className="flex justify-between mt-6 flex-wrap gap-2">
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={closeModal}
@@ -165,16 +203,23 @@ export function TestCasesModal({
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
-                onClick={executeTestCases}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-sm"
+                onClick={selectAll}
+                className="bg-purple-100 text-purple-600 hover:bg-purple-200 px-4 py-2 rounded-full text-sm font-semibold"
               >
-                Ejecutar
+                Seleccionar Todos
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={executeTestCases}
+                disabled={selected.size === 0}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-sm disabled:opacity-50"
+              >
+                Ejecutar Seleccionados
               </motion.button>
             </div>
           </>
         )}
 
-        {/* Resultados */}
         {executed && (
           <motion.div
             initial={{ opacity: 0 }}

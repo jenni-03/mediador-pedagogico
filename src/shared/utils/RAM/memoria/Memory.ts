@@ -300,73 +300,120 @@ class Memory {
     return [true];
   }
 
-  /**
-   * Elimina un dato de la memoria según su dirección.
-   * Si es un objeto o array, también elimina sus elementos internos.
-   * @param address Dirección de memoria a eliminar.
-   * @returns `[true, mensaje]` si se eliminó correctamente, `[false, mensaje]` si la dirección no existe.
-   */
-  removeByAddress(address: string): [true, string] | [false, string] {
+  removeByAddress(address: string, force: boolean = false): [true, string] | [false, string] {
     for (const [type, segment] of this.segments.entries()) {
-      if (segment.has(address)) {
-        const entry = segment.get(address)!;
-        let message = `Eliminado: ${entry.type.toUpperCase()} "${entry.name}" en dirección ${address}.`;
-
-        // Eliminar el nombre del ámbito global
-        MemoryValidator.removeGlobalName(entry.name);
-
-        // Si es un objeto, eliminar sus propiedades internas
-        if (entry.type === "object") {
-          const properties = entry.value as {
-            type: PrimitiveType;
-            key: string;
-            value: any;
-          }[];
-
-          let deletedProps: string[] = [];
-
-          for (const prop of properties) {
-            const propName = `${entry.name}_${prop.key}`;
-            const propAddress = this.getAddressByName(propName);
-
-            if (propAddress) {
-              this.removeByAddress(propAddress);
+      if (!segment.has(address)) continue;
+  
+      const entry = segment.get(address)!;
+      const { type: entryType, name } = entry;
+  
+      // 🔒 Validaciones educativas (solo si no es forzado)
+      if (!force) {
+        const isNested = name.includes("_");
+        const parentName = name.split("_")[0];
+        const parentAddress = this.getAddressByName(parentName);
+        const [parentOk, parentEntry] = parentAddress
+          ? this.getEntryByAddress(parentAddress)
+          : [false, null];
+  
+        if (isNested && parentOk && parentEntry!.type === "array") {
+          return [
+            false,
+            `No puedes eliminar el valor "${name}" porque pertenece al array "${parentEntry!.name}". Elimina el array completo si deseas remover sus elementos.`,
+          ];
+        }
+  
+        if (isNested && parentOk && parentEntry!.type === "object") {
+          return [
+            false,
+            `No puedes eliminar la propiedad "${name}" porque forma parte del objeto "${parentEntry!.name}". Elimina el objeto completo si deseas remover sus propiedades.`,
+          ];
+        }
+  
+        if (entryType === "array" && isNested) {
+          return [
+            false,
+            `No puedes eliminar el array "${name}" porque pertenece a un objeto. Elimina el objeto completo si deseas remover también sus arrays.`,
+          ];
+        }
+      }
+  
+      // ✅ Iniciar mensaje
+      let message = `Eliminado: ${entryType.toUpperCase()} "${name}" en dirección ${address}.`;
+  
+      // Eliminar nombre global si no es anidado
+      if (!name.includes("_")) {
+        MemoryValidator.removeGlobalName(name);
+      }
+  
+      // 🔄 Si es un objeto, eliminar sus propiedades internas
+      if (entryType === "object") {
+        const properties = entry.value as {
+          type: PrimitiveType;
+          key: string;
+          value: any;
+        }[];
+  
+        let deletedProps: string[] = [];
+  
+        for (const prop of properties) {
+          const propName = `${name}_${prop.key}`;
+          const propAddress = this.getAddressByName(propName);
+          if (propAddress) {
+            const [ok, propEntry] = this.getEntryByAddress(propAddress);
+            if (ok) {
+              // 🔁 Si es array, eliminar también elementos internos
+              if (propEntry.type === "array") {
+                const length = propEntry.value.length;
+                for (let i = 0; i < length; i++) {
+                  const elementName = `${propName}_${i}`;
+                  const elementAddress = this.getAddressByName(elementName);
+                  if (elementAddress) {
+                    this.removeByAddress(elementAddress, true);
+                    deletedProps.push(`"${elementName}" eliminado.`);
+                  }
+                }
+              }
+  
+              // Eliminar la propiedad en sí
+              this.removeByAddress(propAddress, true);
               deletedProps.push(`"${propName}" eliminada.`);
             }
           }
-
-          if (deletedProps.length > 0) {
-            message += `\nPropiedades eliminadas:\n${deletedProps.join("\n")}`;
-          }
         }
-
-        // Si es un array, eliminar cada elemento interno
-        if (entry.type === "array") {
-          const elements = entry.value as any[];
-          let deletedElements: string[] = [];
-
-          for (let i = 0; i < elements.length; i++) {
-            const elementName = `${entry.name}_${i}`;
-            const elementAddress = this.getAddressByName(elementName);
-
-            if (elementAddress) {
-              this.removeByAddress(elementAddress);
-              deletedElements.push(`"${elementName}" eliminado.`);
-            }
-          }
-
-          if (deletedElements.length > 0) {
-            message += `\ Elementos del array eliminados:\n${deletedElements.join("\n")}`;
-          }
+  
+        if (deletedProps.length > 0) {
+          message += `\nPropiedades eliminadas:\n${deletedProps.join("\n")}`;
         }
-
-        // Finalmente, eliminar la entrada principal
-        segment.delete(address);
-        return [true, message];
       }
+  
+      // 🔄 Si es un array, eliminar elementos internos
+      if (entryType === "array") {
+        const elements = entry.value as any[];
+        let deletedElements: string[] = [];
+  
+        for (let i = 0; i < elements.length; i++) {
+          const elementName = `${name}_${i}`;
+          const elementAddress = this.getAddressByName(elementName);
+          if (elementAddress) {
+            this.removeByAddress(elementAddress, true);
+            deletedElements.push(`"${elementName}" eliminado.`);
+          }
+        }
+  
+        if (deletedElements.length > 0) {
+          message += `\nElementos del array eliminados:\n${deletedElements.join("\n")}`;
+        }
+      }
+  
+      // ✅ Eliminar la entrada principal
+      segment.delete(address);
+      return [true, message];
     }
+  
     return [false, `No se encontró la dirección ${address}.`];
   }
+  
 
   /**
    * Busca la dirección de memoria de un dato a partir de su nombre.
@@ -710,12 +757,6 @@ class Memory {
     return [true, `${totalBits} bits`];
   }
 
-  /**
-   * Actualiza el valor de una dirección de memoria si es válido.
-   * @param address Dirección a actualizar.
-   * @param newValue Nuevo valor o array de valores.
-   * @returns Resultado de la operación.
-   */
   updateValueByAddress(
     address: string,
     newValue: any
@@ -738,19 +779,8 @@ class Memory {
 
       entry.value = newValue;
 
-      // Verificar si forma parte de un array y actualizar el array padre
-      if (name.includes("_")) {
-        const [arrayName, indexStr] = name.split("_");
-        const index = Number(indexStr);
-
-        const arrayAddress = this.getAddressByName(arrayName);
-        if (arrayAddress) {
-          const [ok, arrayEntry] = this.getEntryByAddress(arrayAddress);
-          if (ok && arrayEntry.type === "array") {
-            arrayEntry.value[index] = newValue;
-          }
-        }
-      }
+      // Verificar si forma parte de una estructura (array u objeto)
+      this.propagateValueToParent(name, newValue);
 
       return [
         true,
@@ -772,8 +802,7 @@ class Memory {
         ];
       }
 
-      // Validar tipo del array usando sus elementos en memoria
-
+      // Validar tipo de cada elemento
       for (let i = 0; i < newValue.length; i++) {
         const elementName = `${name}_${i}`;
         const elementAddress = this.getAddressByName(elementName);
@@ -796,7 +825,7 @@ class Memory {
         }
       }
 
-      // Si todo válido, actualizar el array completo
+      // Actualizar array y sus elementos internos
       entry.value = newValue;
       for (let i = 0; i < newValue.length; i++) {
         const elementName = `${name}_${i}`;
@@ -807,6 +836,9 @@ class Memory {
         }
       }
 
+      // Actualizar en caso de ser array dentro de un objeto
+      this.propagateValueToParent(name, newValue);
+
       return [true, `Array "${name}" actualizado correctamente.`];
     }
 
@@ -815,6 +847,54 @@ class Memory {
       false,
       `No se puede actualizar directamente un objeto completo ("${name}").`,
     ];
+  }
+
+  /**
+   * Sincroniza un cambio de valor con su estructura padre si pertenece a un objeto o array.
+   */
+  private propagateValueToParent(variableName: string, newValue: any): void {
+    const parts = variableName.split("_");
+    if (parts.length < 2) return;
+
+    const parentName = parts[0];
+    const childKey = parts[1];
+    const maybeIndex = parts[2]; // solo aplica si es array dentro de objeto
+
+    const parentAddress = this.getAddressByName(parentName);
+    if (!parentAddress) return;
+
+    const [ok, parentEntry] = this.getEntryByAddress(parentAddress);
+    if (!ok) return;
+
+    if (parentEntry.type === "array" && parts.length === 2) {
+      const index = Number(childKey);
+      if (!isNaN(index)) {
+        parentEntry.value[index] = newValue;
+      }
+    }
+
+    if (parentEntry.type === "object") {
+      const props = parentEntry.value as {
+        type: PrimitiveType;
+        key: string;
+        value: any;
+      }[];
+
+      const prop = props.find((p) => p.key === childKey);
+      if (prop) {
+        // Caso: propiedad simple
+        if (!maybeIndex) {
+          prop.value = newValue;
+        }
+        // Caso: propiedad es array y cambiaron sus elementos
+        else {
+          const index = Number(maybeIndex);
+          if (Array.isArray(prop.value)) {
+            prop.value[index] = newValue;
+          }
+        }
+      }
+    }
   }
 
   /**

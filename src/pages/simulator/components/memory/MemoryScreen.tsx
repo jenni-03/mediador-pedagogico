@@ -49,7 +49,7 @@
             "
           >
             <h3 className="text-neutral-900 text-2xl font-bold tracking-wider">
-              {selectedSegment.toUpperCase()} MEMORY SEGMENT
+            SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()} 
             </h3>
 
             <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-3xl mt-3">
