@@ -49,7 +49,7 @@ export function DataStructureInfo({
 
     return (
         <div className="flex-[4] flex flex-col bg-white rounded-3xl p-4 overflow-auto shadow-lg border border-gray-300">
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
                 {/* Sección izquierda (Código de asignación de memoria) */}
                 {memoryAddress && (
                     <div className="bg-gray-200 rounded-xl p-4 w-full max-w-[600px] shadow-md">
