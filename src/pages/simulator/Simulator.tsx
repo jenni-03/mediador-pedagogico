@@ -35,10 +35,11 @@ export function Simulator({
     const consoleRef = useRef<HTMLDivElement>(null);
 
     const handleCommand = (command: string, isValid: boolean) => {
-        if(!isValid) {
+        if (!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
-                    consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                    consoleRef.current!.scrollTop =
+                        consoleRef.current!.scrollHeight;
                 });
             }
 
@@ -62,18 +63,18 @@ export function Simulator({
             operations_code[action as keyof typeof operations_code]
         );
 
-        if(action === "create") {
+        if (action === "create") {
             setCodigoMemoria(memory_code[action as keyof typeof memory_code]);
-        }else {
+        } else {
             setCodigoMemoria("");
         }
 
         if (consoleRef.current) {
             requestAnimationFrame(() => {
-                consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                consoleRef.current!.scrollTop =
+                    consoleRef.current!.scrollHeight;
             });
         }
-
     };
 
     return (
@@ -89,7 +90,9 @@ export function Simulator({
                     <DataStructureInfo
                         structure={structureName}
                         structurePrueba={structure}
-                        {...(codigoMemoria && { memoryAddress: codigoMemoria })}
+                        {...(codigoMemoria && {
+                            memoryAddress: { message: codigoMemoria, id: Date.now() },
+                        })}
                     >
                         {children}
                     </DataStructureInfo>
@@ -97,11 +100,13 @@ export function Simulator({
                     <GroupCommandsComponent buttons={buttons} />
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
-                    <div ref={consoleRef}
-                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto max-h-[150px]">
-                        <ConsoleComponent 
+                    <div
+                        ref={consoleRef}
+                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto max-h-[150px]"
+                    >
+                        <ConsoleComponent
                             structureType={structureName}
-                            onCommand={handleCommand}   
+                            onCommand={handleCommand}
                             error={error}
                         />
                     </div>
