@@ -103,3 +103,9 @@ export type AnimationContextType = {
     isAnimating: boolean;
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
 };
+
+export type CodeAnalysisProps = {
+    code: string;
+    operationalCost: string;
+    complexity: string;
+}

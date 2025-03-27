@@ -1,29 +1,26 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
+// Importa todos los componentes que se pueden renderizar
+import { OperationSecuencia } from "./components/structures/secuencia/OperationSecuencia";
+
+// Mapea los nombres a sus respectivos componentes
+const componentMap: Record<string, React.FC> = {
+    Secuencia: OperationSecuencia, // Si nombre = "Secuencia", renderiza <DefinitionSecuencia />
+};
 
 export function Operation() {
     const route = getRouteApi("/conceptos/$estructura/operaciones");
 
     const { estructura } = route.useParams();
     const nombre = conceptosData[estructura].nombre;
-    const data = conceptosData[estructura].operaciones;
-    const tipo = conceptosData[estructura].tipo;
+
+    // Buscar el componente correspondiente en el mapeo, si no existe, usar un fallback
+    const DynamicComponent =
+        componentMap[nombre] || (() => <p>Componente no encontrado</p>);
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-1">{nombre.toUpperCase()}</h1>
-            <h1 className="text-sm text-gray-500 mb-3">{tipo}</h1>
-            <hr className="mt-2 mb-4" />
-            <div>
-                <h1 className="text-xl font-bold mb-3">Insertar</h1>
-                <p className="text-gray-700 text-sm mb-5">{data.insertar}</p>
-                <h1 className="text-xl font-bold mb-3">Editar</h1>
-                <p className="text-gray-700 text-sm mb-5">{data.editar}</p>
-                <h1 className="text-xl font-bold mb-3">Consultar</h1>
-                <p className="text-gray-700 text-sm mb-5">{data.consultar}</p>
-                <h1 className="text-xl font-bold mb-3">Eliminar</h1>
-                <p className="text-gray-700 text-sm mb-5">{data.eliminar}</p>
-            </div>
+        <div>
+            <DynamicComponent /> {/* Renderiza el componente dinámico aquí */}
         </div>
     );
 }

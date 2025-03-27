@@ -28,7 +28,7 @@ export function NavBar() {
                 </h1>
                 <a
                     href="#filters-section"
-                    className="text-lg font-semibold leading-6 "
+                    className="text-lg font-semibold leading-6"
                     onClick={handleScroll}
                 >
                     Ver Estructuras de Datos <span aria-hidden="true">&rarr;</span>
