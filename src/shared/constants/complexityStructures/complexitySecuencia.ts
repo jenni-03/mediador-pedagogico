@@ -1,7 +1,10 @@
 export const complexitySecuencia = [
     {
         title: "1. Constructor (Secuencia)",
-        operationalCost: "T(n) = 7",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1 + 1 + 1 + 1",
+            "T(n) = 7",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -28,7 +31,10 @@ export const complexitySecuencia = [
     },
     {
         title: "2. Insertar Elemento (insertar)",
-        operationalCost: "T(n) = 4",
+        operationalCost: [
+            "T(n) = 1 + 2 + 1",
+            "T(n) = 4",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -50,7 +56,12 @@ export const complexitySecuencia = [
     },
     {
         title: "3. Eliminar Elemento (eliminar)",
-        operationalCost: "T(n) = 9n + 10",
+        operationalCost: [
+            "T(n) = 1 + 1 + 2 + 1 + 1 + 1 + \\sum_{i=0}^{n-1}( 1 + 2 + 1 + 2 + 1 + 2 ) + 1 + 2",
+            "T(n) =  1 + 1 + 2 + 1 + 1 + 1 + n( 1 + 2 + 1 + 2 + 1 + 2 ) + 1 + 2",
+            "T(n) =  7 + n( 9 ) + 3",
+            "T(n) = 9n + 10",
+        ],
         complexity: "Big O = O(n)",
         javaCode: `
             /**
@@ -87,7 +98,12 @@ export const complexitySecuencia = [
     },
     {
         title: "4. Eliminar Elemento por Posición (eliminarP)",
-        operationalCost: "T(n) = 7n + 13",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 + 1 + \\sum_{i=0}^{n-1}( 1 + 1 + 2 + 1 + 2 ) + 1 + 2",
+            "T(n) = 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1 + 1 + n( 1 + 1 + 2 + 1 + 2 ) + 1 + 2",
+            "T(n) = 10 + n( 7 ) + 3",
+            "T(n) = 7n + 13",
+        ],
         complexity: "Big O = O(n)",
         javaCode: `
             /**
@@ -131,7 +147,12 @@ export const complexitySecuencia = [
     },
     {
         title: "5. Vaciar Contenido (vaciar)",
-        operationalCost: "T(n) = 4n + 4",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + \\sum_{i=0}^{n-1}( 1 + 1 + 2 ) + 1",
+            "T(n) = 1 + 1 + 1 + n( 1 + 1 + 2 ) + 1",
+            "T(n) = 3 + n( 4 ) + 1",
+            "T(n) = 4n + 4",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -151,7 +172,10 @@ export const complexitySecuencia = [
     },
     {
         title: "6. Obtener Elemento por Posición (get)",
-        operationalCost: "T(n) = 4",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1",
+            "T(n) = 4",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -175,7 +199,10 @@ export const complexitySecuencia = [
     },
     {
         title: "7. Modificar Elemento de una Posición (set)",
-        operationalCost: "T(n) = 5",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1 + 1",
+            "T(n) = 5",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -187,7 +214,7 @@ export const complexitySecuencia = [
 
             public void set(int i, T nuevo) {
                     1    1   1
-                if (i &lt; 0 || i &gt; this.cant) {
+                if (i < 0 || i > this.cant) {
                     //Mejor de los casos
                     System.err.println("Indíce fuera de rango!");
                     return;
@@ -207,7 +234,12 @@ export const complexitySecuencia = [
     },
     {
         title: "8. Consultar Existencia de un Elemento (esta)",
-        operationalCost: "T(n) = 5n + 4",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + \\sum_{i=0}^{n-1}( 2 + 1 + 2 ) + 1",
+            "T(n) = 1 + 1 + 1 + n( 2 + 1 + 2 ) + 1",
+            "T(n) = 3 + n( 5 ) + 1",
+            "T(n) = 5n + 4",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -232,7 +264,12 @@ export const complexitySecuencia = [
     },
     {
         title: "9. Obtener Indice de Posición de un Elemento (getIndice)",
-        operationalCost: "T(n) = 5n + 4",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + \\sum_{i=0}^{n-1}( 2 + 1 + 2 ) + 1",
+            "T(n) = 1 + 1 + 1 + n( 2 + 1 + 2 ) + 1",
+            "T(n) = 3 + n( 5 ) + 1",
+            "T(n) = 5n + 4",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -257,7 +294,9 @@ export const complexitySecuencia = [
     },
     {
         title: "10. Obtener la Cantidad Lógica Total de Elementos (getTamanio)",
-        operationalCost: "T(n) = 1",
+        operationalCost: [
+            "T(n) = 1",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -273,7 +312,10 @@ export const complexitySecuencia = [
     },
     {
         title: "11. Consultar Existencia de Elementos (esVacia)",
-        operationalCost: "T(n) = 2",
+        operationalCost: [
+            "T(n) = 1 + 1",
+            "T(n) = 2",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -289,7 +331,9 @@ export const complexitySecuencia = [
     },
     {
         title: "12. Obtener la Cantidad Real Total de Elementos (getCapacidad)",
-        operationalCost: "T(n) = 1",
+        operationalCost: [
+            "T(n) = 1",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -305,7 +349,12 @@ export const complexitySecuencia = [
     },
     {
         title: "13. Imprimir Contenido (toString)",
-        operationalCost: "T(n) = 7n + 9",
+        operationalCost: [
+            "T(n) = 2 + 1 + 1 + 1 + 1 + 1 + 1 + \\sum_{i=0}^{n-1}( 2 + 1 + 1 + 1 + 2) + 1",
+            "T(n) = 2 + 1 + 1 + 1 + 1 + 1 + 1 + n( 2 + 1 + 1 + 1 + 2) + 1",
+            "T(n) = 8 + n( 7 ) + 1",
+            "T(n) = 7n + 9",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
