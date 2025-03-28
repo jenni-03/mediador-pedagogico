@@ -16,7 +16,8 @@ export function Simulator({
     // Estado para el manejo de la visualización del código
     const [codigoEjecucion, setCodigoEjecucion] = useState("");
 
-    const { isAnimating, setIsAnimating } = useAnimation();
+    // Estado para el manejo de la animación
+    const { setIsAnimating } = useAnimation();
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
     const structureName = "secuencia";
@@ -25,15 +26,14 @@ export function Simulator({
     // Pseudocódigo de las operaciones de la estructura
     const operations_code = operations_pseudoCode[structureName];
 
-
     const consoleRef = useRef<HTMLDivElement>(null);
 
     const handleCommand = (command: string, isValid: boolean) => {
-
-        if(!isValid) {
+        if (!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
-                    consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                    consoleRef.current!.scrollTop =
+                        consoleRef.current!.scrollHeight;
                 });
             }
 
@@ -44,15 +44,20 @@ export function Simulator({
         const action = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
 
-        setIsAnimating(true);
+        if (action !== "create" && action !== "clean") {
+            setIsAnimating(true);
+        }
 
-        if (values.length === 2) { // update
+        if (values.length === 2) {
+            // update
             // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
-        } else if (values.length === 1) { // insert, delete, search, create
+        } else if (values.length === 1) {
+            // insert, delete, search, create
             // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
             (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
-        } else { // clean 
+        } else {
+            // clean
             // Aquí se debe buscar la manera de vaciar ese espacio de memoria, borrarlo
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
@@ -63,7 +68,8 @@ export function Simulator({
 
         if (consoleRef.current) {
             requestAnimationFrame(() => {
-                consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                consoleRef.current!.scrollTop =
+                    consoleRef.current!.scrollHeight;
             });
         }
     };
@@ -88,14 +94,15 @@ export function Simulator({
                     <GroupCommandsComponent buttons={buttons} />
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
-                    <div ref={consoleRef}
-                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto h-full">
-                        <ConsoleComponent 
+                    <div
+                        ref={consoleRef}
+                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto h-full"
+                    >
+                        <ConsoleComponent
                             structureType={structureName}
-                            onCommand={handleCommand}   
+                            onCommand={handleCommand}
                             error={error}
                         />
-                        
                     </div>
                     <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-auto">
                         <h1 className="font-medium text-center mt-2">

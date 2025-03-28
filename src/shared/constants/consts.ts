@@ -8,8 +8,8 @@ export const TYPE_FILTER = {
 export const SVG_SEQUENCE_VALUES = {
     MARGIN_LEFT: 20,
     MARGIN_RIGHT: 20,
-    ELEMENT_WIDTH: 70,
-    ELEMENT_HEIGHT: 70,
-    SPACING: 10,
-    HEIGHT: 120
+    ELEMENT_WIDTH: 65,
+    ELEMENT_HEIGHT: 65,
+    SPACING: 0,
+    HEIGHT: 230
 } as const 
