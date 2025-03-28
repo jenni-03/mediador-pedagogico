@@ -20,7 +20,8 @@ export function Simulator({
     // Estado para el manejo de la visualización de la asignación de memoria
     const [codigoMemoria, setCodigoMemoria] = useState("");
 
-    const { isAnimating, setIsAnimating } = useAnimation();
+    // Estado para el manejo de la animación
+    const { setIsAnimating } = useAnimation();
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
     const structureName = "secuencia";
@@ -36,6 +37,7 @@ export function Simulator({
 
     const handleCommand = (command: string, isValid: boolean) => {
         if (!isValid) {
+        if (!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
                     consoleRef.current!.scrollTop =
@@ -49,7 +51,10 @@ export function Simulator({
         const parts = command.trim().split(/\s+/);
         const action: string = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
-        setIsAnimating(true);
+
+        if (action !== "create" && action !== "clean") {
+            setIsAnimating(true);
+        }
 
         if (values.length === 2) {
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
@@ -122,4 +127,5 @@ export function Simulator({
             </div>
         </div>
     );
+}
 }
