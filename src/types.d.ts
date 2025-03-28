@@ -106,6 +106,6 @@ export type AnimationContextType = {
 
 export type CodeAnalysisProps = {
     code: string;
-    operationalCost: string;
+    operationalCost: string[];
     complexity: string;
 }

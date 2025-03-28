@@ -2,10 +2,12 @@ import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
 // Importa todos los componentes que se pueden renderizar
 import { OperationSecuencia } from "./components/structures/secuencia/OperationSecuencia";
+import { OperationCola } from "./components/structures/cola/OperationCola";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
-    Secuencia: OperationSecuencia, // Si nombre = "Secuencia", renderiza <DefinitionSecuencia />
+    "Secuencia": OperationSecuencia, // Si nombre = "Secuencia", renderiza <OperationSecuencia />
+    "Cola": OperationCola,
 };
 
 export function Operation() {

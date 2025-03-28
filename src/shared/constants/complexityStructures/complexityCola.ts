@@ -1,7 +1,10 @@
-export const complexityData = [
+export const complexityCola = [
     {
-        title: "1. Constructor (Secuencia)",
-        operationalCost: "T(n) = 7",
+        title: "1. Constructor (Cola)",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1 + 1",
+            "T(n) = 5",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -27,8 +30,11 @@ export const complexityData = [
         `
     },
     {
-        title: "2. Insertar Elemento (insertar)",
-        operationalCost: "T(n) = 4",
+        title: "2. Insertar Elemento (enColar)",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2",
+            "T(n) = 9",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -49,9 +55,12 @@ export const complexityData = [
         `
     },
     {
-        title: "3. Eliminar Elemento (eliminar)",
-        operationalCost: "T(n) = 9n + 10",
-        complexity: "Big O = O(n)",
+        title: "3. Eliminar Elemento (deColar)",
+        operationalCost: [
+            "T(n) = 5 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 1 + 1",
+            "T(n) = 18",
+        ],
+        complexity: "Big O = O(1)",
         javaCode: `
             /**
              * Metodo que elimina un elemento a la secuencia.
@@ -86,9 +95,12 @@ export const complexityData = [
         `
     },
     {
-        title: "4. Eliminar Elemento por Posición (eliminarP)",
-        operationalCost: "T(n) = 7n + 13",
-        complexity: "Big O = O(n)",
+        title: "4. Vaciar la Cola (vaciar)",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1",
+            "T(n) = 3",
+        ],
+        complexity: "Big O = O(1)",
         javaCode: `
             /**
              * Metodo que elimina un elemento a la secuencia dada su posicion.
@@ -130,8 +142,10 @@ export const complexityData = [
         `
     },
     {
-        title: "5. Vaciar Contenido (vaciar)",
-        operationalCost: "T(n) = 4n + 4",
+        title: "5. Obtener Primer Elemento (getInicio)",
+        operationalCost: [
+            "T(n) = 1",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -150,8 +164,10 @@ export const complexityData = [
         `
     },
     {
-        title: "6. Obtener Elemento por Posición (get)",
-        operationalCost: "T(n) = 4",
+        title: "6. Obtener Informacion Primer Elemento (getInfoInicio)",
+        operationalCost: [
+            "T(n) = 3",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -174,8 +190,10 @@ export const complexityData = [
         `
     },
     {
-        title: "7. Modificar Elemento de una Posición (set)",
-        operationalCost: "T(n) = 5",
+        title: "7. Aumentar Tamanio (aumentarTamanio)",
+        operationalCost: [
+            "T(n) = 2",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -206,8 +224,10 @@ export const complexityData = [
         `
     },
     {
-        title: "8. Consultar Existencia de un Elemento (esta)",
-        operationalCost: "T(n) = 5n + 4",
+        title: "8. Modificar Nodo Inicial (setInicio)",
+        operationalCost: [
+            "T(n) = 1",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -231,8 +251,10 @@ export const complexityData = [
         `
     },
     {
-        title: "9. Obtener Indice de Posición de un Elemento (getIndice)",
-        operationalCost: "T(n) = 5n + 4",
+        title: "9. Obtener Tamanio (getTamanio)",
+        operationalCost: [
+            "T(n) = 1",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -256,8 +278,11 @@ export const complexityData = [
         `
     },
     {
-        title: "10. Obtener la Cantidad Lógica Total de Elementos (getTamanio)",
-        operationalCost: "T(n) = 1",
+        title: "10. Consultar Existencia de Elementos (esVacia)",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1",
+            "T(n) = 3",
+        ],
         complexity: "Big O = O(1)",
         javaCode: `
             /**
@@ -272,9 +297,13 @@ export const complexityData = [
         `
     },
     {
-        title: "11. Consultar Existencia de Elementos (esVacia)",
-        operationalCost: "T(n) = 2",
-        complexity: "Big O = O(1)",
+        title: "11. Imprimir Contenido (toString)",
+        operationalCost: [
+            "T(n) = 1 + 1 + 1 + 1 + 1 + 1 + n(2 + 1 + 1 + 1 + 1 + 1 + 1) + 1 + 1",
+            "T(n) = 6 + n(8) + 2",
+            "T(n) = 8n + 8",
+        ],
+        complexity: "Big O = O(n)",
         javaCode: `
             /**
              * Metodo que permite conocer si la Secuencia esta vacia. <br>
@@ -284,50 +313,6 @@ export const complexityData = [
             public boolean esVacia() {
                     1            1
                 return (this.cant == 0);
-            }
-        `
-    },
-    {
-        title: "12. Obtener la Cantidad Real Total de Elementos (getCapacidad)",
-        operationalCost: "T(n) = 1",
-        complexity: "Big O = O(1)",
-        javaCode: `
-            /**
-             * Metodo que retorna el tamaño real de la secuencia, esto es, el length del vector con o sin elementos. <br>
-             * <b>post:</b> Se ha retornado la capacidad de la Secuencia para guardar elementos.<br>
-             * @return un tipo integer que contiene el tamaño real de la secuencia
-             */
-            public int getCapacidad() {
-                    1
-                return (this.vector.length);
-            }
-        `
-    },
-    {
-        title: "13. Imprimir Contenido (toString)",
-        operationalCost: "T(n) = 7n + 9",
-        complexity: "Big O = O(1)",
-        javaCode: `
-            /**
-             * Metodo que retorna el contenido de la secuencia en una cadena String. <br>
-             * <b>post:</b> Se retorno la representacion en String de la Secuencia. <br>
-             * @return de tipo String y contiene el String de datos de la secuencia
-             */
-            @Override
-            public String toString() {
-                        2      1
-                if (this.esVacia())
-                    //Mejor de los casos
-                    return "Secuencia vacia!";
-                //Peor de los casos
-                1        1         
-                String msg = "Secuencia -> | ";
-                    1    1      1             2
-                for (int i = 0; i < this.cant; i++)
-                        2                    1       1
-                    msg += this.vector[i].toString() + " | ";
-                    1
-                return (msg);
             }
         `
     },

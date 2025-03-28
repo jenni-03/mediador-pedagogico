@@ -1,13 +1,13 @@
-import { complexitySecuencia } from "../../../../../shared/constants/complexityStructures/complexitySecuencia";
+import { complexityCola } from "../../../../../shared/constants/complexityStructures/complexityCola";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
-export function ComplexitySecuencia() {
+export function ComplexityCola() {
     return (
         <div className="py-4 px-10">
             <h1 className="text-2xl font-bold mb-1">
                 COSTO OPERACIONAL Y COMPLEJIDAD
             </h1>
-            <h1 className="text-sm text-gray-500 mb-3">Secuencia</h1>
+            <h1 className="text-sm text-gray-500 mb-3">Cola</h1>
             <hr className="mt-2 mb-4 border-red-500 border-t-2" />
             <div>
                 <h1 className="text-2xl font-bold mb-3">
@@ -48,7 +48,7 @@ export function ComplexitySecuencia() {
                 </div>
 
                 <div className="space-y-6">
-                    {complexitySecuencia.map((method, index) => (
+                    {complexityCola.map((method, index) => (
                         <div key={index} className="border-b pb-4">
                             <h2 className="text-xl font-semibold mb-2">
                                 {method.title}
@@ -68,10 +68,10 @@ export function ComplexitySecuencia() {
                     <h2 className="text-xl font-bold mb-4">Conclusión</h2>
                     <p className="text-gray-700 text-sm leading-6">
                         En el análisis anterior se pudo observar que la
-                        estructura Secuencia opta en el mejor de los casos a ser
+                        estructura Cola obta en el mejor de los casos a ser
                         constante y en el peor de los casos a ser lineal.
                         Teniendo en cuenta que su comportamiento lineal es en
-                        base a "this.cant", este mismo se puede considerar su
+                        base a "this.tamanio", esté mismo se puede considerar su
                         "n" para saber el coste operacional de cada algoritmo.
                     </p>
                 </div>

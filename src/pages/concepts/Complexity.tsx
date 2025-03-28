@@ -2,10 +2,12 @@ import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
 // Importa todos los componentes que se pueden renderizar
 import { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
+import { ComplexityCola } from "./components/structures/cola/ComplexityCola";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
-    Secuencia: ComplexitySecuencia, // Si nombre = "Secuencia", renderiza <DefinitionSecuencia />
+    "Secuencia": ComplexitySecuencia, // Si nombre = "Secuencia", renderiza <ComplexitySecuencia />
+    "Cola": ComplexityCola,
 };
 
 export function Complexity() {

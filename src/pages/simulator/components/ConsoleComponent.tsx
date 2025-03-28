@@ -176,7 +176,7 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    // disabled={isAnimating}
+                    // disabled={isAnimating}   
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}

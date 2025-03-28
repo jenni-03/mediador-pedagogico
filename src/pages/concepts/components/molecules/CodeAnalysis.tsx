@@ -75,7 +75,11 @@ export function CodeAnalysis({
                         <div className="space-y-2">
                             <div className="bg-gray-200 p-2 rounded">
                                 <strong>Costo Operacional:</strong>
-                                {operationalCost}
+                                {operationalCost.map((cost, index) => (
+                                    <div key={index} className="mt-1">
+                                        {cost}
+                                    </div>
+                                ))}
                             </div>
                             <div className="bg-gray-200 p-2 rounded">
                                 <strong>Complejidad:</strong>
