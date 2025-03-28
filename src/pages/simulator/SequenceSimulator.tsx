@@ -22,7 +22,7 @@ export function SequenceSimulator() {
             structure={secuencia}
             actions={{
                 create: crearSecuencia,
-                insert: insertarElemento,
+                insert_last: insertarElemento,
                 delete: eliminarElemento,
                 search: buscarElemento,
                 clean: vaciarSecuencia,

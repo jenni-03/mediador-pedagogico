@@ -43,6 +43,7 @@ export function ConsoleComponent({
             setHistory([
                 ...history, `Error: ${error.message}`,
             ])
+            setIsAnimating(false); // Detener la animación
         }
     }, [error?.id]);
     
@@ -85,6 +86,7 @@ export function ConsoleComponent({
                         } else {
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
+
                             }
                             onCommand(input.trim(), true);
                             setHistory([
@@ -101,7 +103,6 @@ export function ConsoleComponent({
                             `$ ${input}`,
                             "Error: Comando no válido",
                         ]);
-                        
                     }
                 } else {
                     onCommand("", false);
@@ -160,8 +161,8 @@ export function ConsoleComponent({
                     className={
                         cmd.startsWith("Error:")
                             ? "text-red-500"
-                            : cmd == "Comando válido, procesando..." ? "text-yellow-400" 
-                            : "text-green-400"
+                            : cmd == "Comando válido, procesando..." ? "text-blue-500" 
+                            : "text-white"
                     }
                 >
                     {cmd}
@@ -169,14 +170,14 @@ export function ConsoleComponent({
             ))}
 
             <div className="flex">
-                <span className="text-green-400">$</span>
+                <span className="text-white">$</span>
                 <input
                     type="text"
                     className="bg-transparent border-none outline-none text-white ml-2 flex-1"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    disabled={isAnimating}
+                    disabled={isAnimating}   
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}

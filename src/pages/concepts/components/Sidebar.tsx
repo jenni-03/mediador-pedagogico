@@ -25,7 +25,7 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
 
             {/* Sidebar */}
             <div
-                className={`fixed md:relative top-0 left-0 w-60 h-screen bg-gray-100 p-4 transition-transform duration-300 z-40 
+                className={`fixed md:relative top-0 left-0 w-64 h-screen bg-custom-gray p-4 transition-transform duration-300 z-40 
           ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
             >
                 {/* Botón de cerrar en pantallas pequeñas */}
@@ -35,10 +35,12 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
                 >
                     <i className="pi pi-times"></i>
                 </button>
-
-                <h2 className="text-lg font-bold mb-4">SEED</h2>
+                <h1 className="text-2xl font-semibold">
+                    <span className="text-black">Mediador</span>
+                    <span className="text-red-600">Pedagógico</span>
+                </h1>
                 <hr className="mt-1 mb-4" />
-                <ul className="space-y-2">
+                <ul className="space-y-5">
                     {/* Muestra los elementos del menú */}
                     {menuItems.map((item) => (
                         <SidebarItem

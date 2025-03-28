@@ -2,18 +2,27 @@ import * as d3 from "d3";
 
 /**
  * Función encargada de renderizar la estructura base de la secuencia
- * @param svg Lienzo en el que se va a dibujar 
+ * @param svg Lienzo en el que se va a dibujar
  * @param secuencia Secuencia a dibujar
- * @param param2 Parámetros de configuración para elementos dentro del lienzo
+ * @param memoria Direcciones de memoria asociadas a cada elemento de la secuencia
+ * @param dims Dimensiones de los elementos dentro del lienzo
  * @returns 
  */
 export function drawBaseSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     secuencia: (number | null)[],
     memoria: number[],
-    { margin, elementWidth, elementHeight, spacing, height }:
-        { margin: { left: number, right: number }, elementWidth: number, elementHeight: number, spacing: number, height: number },
+    dims: {
+        margin: { left: number, right: number },
+        elementWidth: number,
+        elementHeight: number,
+        spacing: number,
+        height: number
+    },
 ) {
+    // Dimensiones del lienzo
+    const { margin, elementWidth, elementHeight, spacing, height } = dims;
+
     // Realizamos el data join usando el indice como key
     const groups = svg.selectAll<SVGGElement, number | null>("g.element")
         .data(secuencia, (_d, i) => i)
@@ -31,42 +40,71 @@ export function drawBaseSequence(
 
                 // Por cada grupo añadimos un contenedor rect
                 gEnter.append("rect")
+                    .attr("class", "sequence-rect")
                     .attr("width", 0)
                     .attr("height", 0)
-                    .attr("fill", "lightgray")
-                    .attr("stroke", "black")
+                    .attr("fill", "white")
+                    .attr("stroke", "gray")
                     .attr("stroke-width", 1)
-                    .attr("rx", 10)
-                    .attr("ry", 10)
                     .transition()
                     .duration(1000)
                     .attr("width", elementWidth)
                     .attr("height", elementHeight)
-                    .ease(d3.easeLinear);
+                    .ease(d3.easeQuad);
 
-                // Por cada grupo añadimos un elemento de texto
+                // Elemento de texto para el valor del elemento
                 gEnter.append("text")
                     .attr("x", elementWidth / 2)
                     .attr("y", elementHeight / 2)
                     .attr("dy", ".35em")
                     .attr("text-anchor", "middle")
                     .text("")
-                    .attr("fill", "black")
-                    .style("font-size", "18px");
+                    .attr("fill", "black");
 
-                // Dirección de memoria del elemento
+                // Contenedor rect para el texto de memoria
+                gEnter.append("rect")
+                    .attr("class", "memory-container")
+                    .attr("y", elementHeight + 10)
+                    .attr("width", 0)
+                    .attr("height", 0)
+                    .attr("fill", "#d1fae5")
+                    .attr("stroke", "gray")
+                    .attr("stroke-width", 1)
+                    .transition()
+                    .duration(1000)
+                    .attr("width", elementWidth)
+                    .attr("height", 20)
+                    .ease(d3.easeQuad);
+
+                // Elemento de texto para la dirección de memoria
                 gEnter.append("text")
                     .attr("class", "memory")
                     .attr("x", elementWidth / 2)
-                    .attr("y", elementHeight + 20)
+                    .attr("y", elementHeight + 25)
                     .attr("text-anchor", "middle")
                     .style("opacity", 0)
                     .text((_d, i) => memoria[i])
                     .attr("fill", "black")
                     .style("font-size", "14px")
+                    .style("font-weight", "500")
                     .transition()
                     .duration(2500)
-                    .style("opacity", 1)
+                    .style("opacity", 1);
+
+                // Elemento de texto para el indice del elemento
+                gEnter.append("text")
+                    .attr("class", "index")
+                    .attr("x", elementWidth / 2)
+                    .attr("y", -15)
+                    .attr("text-anchor", "middle")
+                    .style("opacity", 0)
+                    .text((_d, i) => i)
+                    .attr("fill", "black")
+                    .style("font-size", "14px")
+                    .style("font-weight", "500")
+                    .transition()
+                    .duration(2500)
+                    .style("opacity", 1);
 
                 return gEnter;
             },
@@ -78,22 +116,20 @@ export function drawBaseSequence(
                     return `translate(${x}, ${y})`;
                 });
 
-                // Actualizamos los atributos de todos los rectángulos existentes
-                update.select("rect")
-                    .attr("fill", d => d === null ? "lightgray" : "skyblue")
-                    .attr("stroke-width", 1)
-                    .attr("rx", 10)
-                    .attr("ry", 10);
+                // Actualización del rectángulo principal
+                update.select("rect.sequence-rect")
+                    .attr("fill", d => d === null ? "white" : "#fee2e2")
+                    .attr("stroke", "gray")
+                    .attr("stroke-width", 1);
 
-                // Actualizamos el texto correspondiente al valor del elemento
+                // Actualización del texto correspondiente al valor del elemento
                 update.select("text")
                     .text(d => d === null ? "" : d.toString())
-                    .style("opacity", 1)
-                    .style("font-size", "18px");
+                    .style("font-size", "16px");
 
-                // Actualizamos el texto correspondiente a la dirección de memoria
-                update.select("text.memory")
-                    .style("font-weight", "normal");
+                // Actualización del texto correspondiente al indice del elemento
+                update.select("text.index")
+                    .text((_d, i) => i);
 
                 return update;
             }
@@ -104,34 +140,119 @@ export function drawBaseSequence(
 
 /**
  * Función encargada de animar la inserción de un nuevo elemento a la secuencia
+ * @param svg Lienzo en el que se va a dibujar
  * @param targetGroup Grupo dentro del lienzo que se va a animar
+ * @param insertionValue Valor a insertar
+ * @param insertionIndex Indice del elemento donde se va a insertar el nuevo valor
+ * @param dims Dimensiones de los elementos dentro del lienzo
  * @param resetQueryValues Función que restablece los valores de las queries del usuario
+ * @param setIsAnimating Función que establece el estado de animación
  */
-export function animateInsertionSequence(
+export async function animateInsertionSequence(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    insertionValue: number,
+    insertionIndex: number,
+    dims: {
+        margin: { left: number, right: number },
+        elementWidth: number,
+        elementHeight: number,
+        spacing: number,
+        height: number
+    },
     resetQueryValues: () => void,
-    onAnimationEnd: () => void
-) {
-    // Resaltamos el elemento donde se realizó la inserción
-    targetGroup.select("rect")
-        .transition()
-        .delay(100)
-        .duration(800)
-        .attr("fill", "deepskyblue")
-        .attr("stroke-width", 2.5)
-        .ease(d3.easeBounce);
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+): Promise<void> {
+    // Dimensiones del lienzo
+    const { margin, elementWidth, elementHeight, spacing, height } = dims;
 
-    // Transición para la aparición del elemento insertado
+    // Posición de destino del nuevo elemento
+    const destX = margin.left + insertionIndex * (elementWidth + spacing);
+    const destY = (height - elementHeight) / 2;
+
+    // Posición incial del nuevo elemento
+    const startX = destX + elementWidth / 2;
+    const startY = 12;
+
+    // Reestablecimiento del texto del contenedor donde se va a insertar el elemento
     targetGroup.select("text")
-        .style("opacity", 0)
-        .transition()
+        .text("");
+
+    // Creación o reutilización de un grupo temporal para la inserción
+    let insertionGroup = svg.select<SVGGElement>("g#insertion-group");
+    if (insertionGroup.empty()) {
+        insertionGroup = svg.append("g")
+            .attr("id", "insertion-group");
+    }
+
+    // Limpieza de todos los elementos hijos previos en ese grupo
+    insertionGroup.selectAll("*").remove();
+
+    // Creación del elemento flecha que indica la dirección de inserción
+    const arrow = insertionGroup.append("path")
+        .attr("class", "insertion-arrow")
+        .attr("d", "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z")
+        .attr("fill", "red")
+        .attr("transform", `translate(${destX + elementWidth / 2}, ${destY - 40})`)
+        .style("opacity", 0);
+
+    // Transición del elemento flecha para que aparezca
+    await arrow.transition()
         .delay(100)
-        .duration(2000)
+        .duration(1000)
         .style("opacity", 1)
-        .on("end", function () {
-            resetQueryValues();
-            onAnimationEnd();
-        });
+        .end();
+
+    // Elemento de texto que representa el valor a insertar, 
+    // posicionado inicialmente justo arriba del indicador de inserción.
+    const newElement = insertionGroup.append("text")
+        .attr("x", startX)
+        .attr("y", startY)
+        .attr("text-anchor", "middle")
+        .attr("fill", "black")
+        .style("font-size", "16px")
+        .text(insertionValue)
+        .style("opacity", 0);
+
+    // Transición para la aparición del valor a insertar 
+    await newElement.transition()
+        .duration(1500)
+        .style("opacity", 1)
+        .end();
+
+    // Transición para el resaltado del contenedor donde se va a insertar el nuevo elemento
+    await targetGroup.select("rect.sequence-rect")
+        .transition()
+        .duration(500)
+        .attr("stroke", "#f87171")
+        .attr("stroke-width", 3)
+        .end();
+
+    // Transición para el desplazamiento del nuevo elemento al centro de la posición de destino
+    await newElement.transition()
+        .duration(2000)
+        .attr("x", destX + elementWidth / 2)
+        .attr("y", destY + 38)
+        .ease(d3.easePoly)
+        .end();
+
+    // Desvanecimiento del indicador de inserción
+    await arrow.transition()
+        .duration(500)
+        .style("opacity", 0)
+        .end();
+
+    // Reestablecemos el valor del texto del contenedor principal
+    targetGroup.select("text").text(insertionValue);
+
+    // Eliminamos el grupo de inserción
+    insertionGroup.remove();
+
+    // Restablecemos los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalizamos la animación
+    setIsAnimating(false);
 }
 
 /**
@@ -143,7 +264,8 @@ export function animateInsertionSequence(
 export function animateDeleteElementSequence(
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     resetQueryValues: () => void,
-    valueToDelete: number
+    valueToDelete: number,
+    onAnimationEnd: () => void
 ) {
     // Animamos el rectángulo: se desvanece (fade out) y luego se asigna el color de eliminación
     targetGroup.select("rect")
@@ -171,6 +293,7 @@ export function animateDeleteElementSequence(
             d3.select(this)
                 .text("")
             resetQueryValues()
+            onAnimationEnd()
         });
 }
 
@@ -263,41 +386,130 @@ export function animateTransformDeleteSequence(
 
 /**
  * Función encargada de animar la actualización de un elemento existente dentro de la secuencia
+ * @param svg Lienzo en el que se va a dibujar
  * @param targetGroup Grupo dentro del lienzo que se va a animar
- * @param resetQueryValues Función que restablece los valores de las queries del usuario
  * @param oldValue Valor del elemento antes de ser actualizado
  * @param newValue Valor del elemento luego de ser actualizado
+ * @param pos Posición del elemento dentro de la secuencia que se va a actualizar
+ * @param dims Dimensiones de los elementos dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de las queries del usuario
+ * @param setIsAnimating Función que establece el estado de animación 
  */
-export function animateUpdateSequence(
+export async function animateUpdateSequence(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
-    resetQueryValues: () => void,
     oldValue: number,
-    newValue: number
-) {
-    // Animación de resaltado
-    targetGroup.select("rect")
-        .transition()
+    newValue: number,
+    pos: number,
+    dims: {
+        margin: { left: number, right: number },
+        elementWidth: number,
+        elementHeight: number,
+        spacing: number,
+        height: number
+    },
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+): Promise<void> {
+    // Dimensiones del lienzo
+    const { margin, elementWidth, elementHeight, spacing, height } = dims;
+
+    // Posición de destino del nuevo elemento
+    const destX = margin.left + pos * (elementWidth + spacing);
+    const destY = (height - elementHeight) / 2;
+
+    // Posición incial del nuevo elemento
+    const startX = destX + elementWidth / 2;
+    const startY = 12;
+
+    // Reestablecimiento del valor original del texto del contenedor donde se va a actualizar el elemento
+    targetGroup.select("text")
+        .text(oldValue);
+
+    // Creación o reutilización de un grupo temporal para la actualización
+    let updatedGroup = svg.select<SVGGElement>("g#update-group");
+    if (updatedGroup.empty()) {
+        updatedGroup = svg.append("g")
+            .attr("id", "update-group");
+    }
+
+    // Limpieza de todos los elementos hijos previos en ese grupo
+    updatedGroup.selectAll("*").remove();
+
+    // Creación del elemento flecha que indica el elemento que se va actualizar
+    const arrow = updatedGroup.append("path")
+        .attr("class", "update-arrow")
+        .attr("d", "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z")
+        .attr("fill", "red")
+        .attr("transform", `translate(${destX + elementWidth / 2}, ${destY - 40})`)
+        .style("opacity", 0);
+
+    // Transición del elemento flecha para que aparezca
+    await arrow.transition()
+        .delay(100)
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+
+    // Elemento de texto que representa el nuevo valor del elemento, 
+    // posicionado inicialmente justo arriba del indicador de actualización.
+    const newElement = updatedGroup.append("text")
+        .attr("x", startX)
+        .attr("y", startY)
+        .attr("text-anchor", "middle")
+        .attr("fill", "black")
+        .style("font-size", "16px")
+        .text(newValue.toString())
+        .style("opacity", 0);
+
+    // Transición para la aparición del texto correspondiente al nuevo valor 
+    await newElement.transition()
         .duration(1500)
-        .attr("fill", "lightgreen")
-        .style("opacity", 0.5)
+        .style("opacity", 1)
+        .end();
+
+    // Transición para el resaltado del contenedor a actualizar
+    await targetGroup.select("rect.sequence-rect")
         .transition()
-        .duration(1500)
-        .attr("fill", "skyblue")
+        .duration(500)
+        .attr("stroke", "#f87171")
+        .attr("stroke-width", 3)
+        .end();
+
+    // Desvanecimiento del texto original
+    await targetGroup.select("text")
+        .transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .end();
+
+    // Transición para el desplazamiento del nuevo elemento al centro de la posición de destino
+    await newElement.transition()
+        .duration(2000)
+        .attr("x", destX + elementWidth / 2)
+        .attr("y", destY + 38)
+        .ease(d3.easePoly)
+        .end();
+
+    // Desvanecimiento del indicador de actualización
+    await arrow.transition()
+        .duration(500)
+        .style("opacity", 0)
+        .end();
+
+    // Reestablecemos el valor del texto del contenedor principal
+    targetGroup.select("text")
+        .text(newValue)
         .style("opacity", 1);
 
-    // Animación de actualización del elemento
-    targetGroup.select("text")
-        .text(oldValue.toString())
-        .transition()
-        .duration(1500)
-        .style("opacity", 0)
-        .transition()
-        .duration(1500)
-        .text(newValue.toString())
-        .style("opacity", 1)
-        .on("end", () => {
-            resetQueryValues();
-        });
+    // Eliminamos el grupo de actualización
+    updatedGroup.remove();
+
+    // Restablecemos los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalizamos la animación
+    setIsAnimating(false);
 }
 
 /**
@@ -305,54 +517,103 @@ export function animateUpdateSequence(
  * @param svg Lienzo donde se va a aplicar la animación
  * @param valueToSearch Valor a buscar
  */
-export function animateSearchSequence(
+export async function animateSearchSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    valueToSearch: number
-) {
+    valueToSearch: number,
+    dims: {
+        margin: { left: number, right: number },
+        elementWidth: number,
+        elementHeight: number,
+        spacing: number,
+        height: number
+    },
+    onAnimationEnd: () => void
+): Promise<void> {
+    // Extraemos las dimensiones
+    const { margin, elementWidth, elementHeight, spacing, height } = dims;
+
     // Seleccionamos los elementos
     const elements = svg.selectAll("g.element");
 
-    // Bandera para detener la animación
-    let found = false;
-
-    // Restablecemos todos los elementos a su color original antes de iniciar la animación
-    elements.each(function (d) {
-        d3.select(this).select("rect")
-            .attr("fill", d === null ? "lightgray" : "skyblue")
+    // Restablecemos los bordes de los contenedores antes de iniciar la animación
+    elements.each(function () {
+        d3.select(this).select("rect.sequence-rect")
+            .attr("stroke", "gray")
             .attr("stroke-width", 1);
-
-        d3.select(this).select("text.memory")
-            .style("font-weight", "normal");
     });
 
-    // Recorremos cada elemento
-    elements.each(function (d, i) {
+    // Creamos o reutilizamos una grupo temporal para la flecha indicatoria
+    let searchGroup = svg.select<SVGGElement>("g#search-group");
+    if (searchGroup.empty()) {
+        searchGroup = svg.append("g")
+            .attr("id", "search-group");
+    }
+
+    // Creamos la flecha indicatoria usando un path
+    const arrow = searchGroup.append("path")
+        .attr("class", "search-arrow")
+        .attr("d", "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z")
+        .attr("fill", "red")
+        .style("opacity", 0);
+
+    // Indicamos la posición inicial de la flecha (justo arriba del primer elemento)
+    const startX = margin.left + elementWidth / 2;
+    const startY = (height - elementHeight) / 2 - 40;
+    await arrow.transition()
+        .duration(500)
+        .style("opacity", 1)
+        .attr("transform", `translate(${startX}, ${startY})`)
+        .end();
+
+    // Variable de control
+    let found = false;
+    const elementsNodes = elements.nodes();
+
+    // Recorremos cada elemento de forma secuencial
+    for (let i = 0; i < elementsNodes.length; i++) {
         // Si se encuentra el elemento detenemos la ejecución
-        if (found) return;
+        if (found) break;
 
-        // Añadimos un retardo al procesamiento de cada elemento
-        setTimeout(() => {
-            // Evitamos que se procese el timeout si el elemento ya fue encontrado
-            if (found) return;
+        // Calculamos la posición del elemento actual
+        const xPos = margin.left + i * (elementWidth + spacing) - elementWidth / 2;
+        const yPos = (height - elementHeight) / 2 - 20;
 
-            // Selección del elemento actual
-            const el = d3.select(this);
+        // Movemos la flecha al elemento actual
+        await arrow.transition()
+            .duration(1000)
+            .attr("transform", `translate(${xPos}, ${yPos})`)
+            .end();
 
-            // Transición en cascada
-            el.select("rect")
-                .transition()
-                .duration(500)
+        // Resaltamos brevemente el rectángulo del elemento actual
+        const currentElement = d3.select(elementsNodes[i]);
+        await currentElement.select("rect")
+            .transition()
+            .duration(400)
+            .attr("fill", "violet")
+            .transition()
+            .duration(400)
+            .attr("fill", "lightgray")
+            .end();
+
+        // Verificar si el dato del elemento coincide con el valor buscado.
+        const d = currentElement.datum();
+        if (d === valueToSearch) {
+            // Resaltar el elemento encontrado de forma definitiva
+            currentElement.select("rect")
                 .attr("fill", "violet")
-                .transition()
-                .duration(500)
-                .attr("fill", d === valueToSearch ? "violet" : "skyblue")
-                .attr("stroke-width", d === valueToSearch ? 2 : 1);
+                .attr("stroke-width", 2);
+            currentElement.select("text.memory")
+                .style("font-weight", "bold");
+            found = true;
+            break;
+        }
+    }
 
-            // Si se encuentra el elemento, actualizamos el flag de busqueda
-            if (d === valueToSearch) {
-                el.select("text.memory").style("font-weight", "bold")
-                found = true;
-            }
-        }, i * 1200);
-    });
+    // Desvanecer la flecha y limpiar la capa overlay
+    await arrow.transition()
+        .duration(500)
+        .style("opacity", 0)
+        .end();
+    searchGroup.remove();
+    onAnimationEnd();
 }

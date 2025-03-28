@@ -15,7 +15,7 @@ export const operations_pseudoCode = {
                 cant ← 0
             fin función
         `,
-        insert: `
+        insert_last: `
             función insertar(elem):
                 si cant es mayor o igual a la longitud del vector entonces
                     lanzar error "No hay espacio para insertar el elemento {elem}"

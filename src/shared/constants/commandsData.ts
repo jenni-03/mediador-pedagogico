@@ -1,12 +1,12 @@
 export const commandsData: Record<string, any> = {
     secuencia: {
         buttons: [
-            { title: "Create", description: "Crear un nodo...", estructura: "Create valor", ejemplo: "Create 1" },
-            { title: "Insert", description: "Insertar un nodo...", estructura: "Insert valor", ejemplo: "Insert 1" },
-            { title: "Delete", description: "Borrar un nodo...", estructura: "Delete posición valor", ejemplo: "Delete 1 10" },
-            { title: "Search", description: "Buscar el nodo...", estructura: "Search valor", ejemplo: "Search 1" },
-            { title: "Update", description: "Actualizar el nodo...", estructura: "Update posición nuevo-valor", ejemplo: "Update 1 10"},
-            { title: "Clean", description: "Borrar la estructura...", estructura: "Clean", ejemplo: "Clean" },
+            { title: "Create", description: "Crear una Secuencia de acuerdo a una capacidad predefinida", estructura: "Create valor-capacidad", ejemplo: "Create 10" },
+            { title: "Insert_Last", description: "Insertar un nodo al final de la Secuencia", estructura: "Insert valor", ejemplo: "Insert 1" },
+            { title: "Delete", description: "Borrar un nodo de la Secuencia", estructura: "Delete posición", ejemplo: "Delete 0" },
+            { title: "Search", description: "Buscar un nodo en la Secuencia", estructura: "Search valor", ejemplo: "Search 1" },
+            { title: "Update", description: "Actualizar el valor de un nodo existente en la Secuencia", estructura: "Update posición nuevo-valor", ejemplo: "Update 0 10"},
+            { title: "Clean", description: "Borrar la estructura Secuencia", estructura: "Clean", ejemplo: "Clean" },
         ]
     },
     lista_simple: {

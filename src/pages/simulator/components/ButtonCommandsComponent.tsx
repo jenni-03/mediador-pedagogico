@@ -2,7 +2,12 @@ import { useState } from "react";
 import { CommandProps } from "../../../types";
 import { CustomModal } from "./CustomModal";
 
-export function ButtonCommandsComponent({ title, description, estructura, ejemplo }: CommandProps) {
+export function ButtonCommandsComponent({
+    title,
+    description,
+    estructura,
+    ejemplo,
+}: CommandProps) {
     const [isActive, setIsActive] = useState(false);
 
     return (
@@ -14,16 +19,15 @@ export function ButtonCommandsComponent({ title, description, estructura, ejempl
             onClose={() => setIsActive(false)} // Cuando el modal se cierra, cambia el estado a false
         >
             <div
-                className={`flex items-center justify-center gap-1 rounded-2xl border-2 border-gray-300 bg-gray-100 px-3 py-1
-                transition duration-200 cursor-pointer ${
-                    isActive 
-                        ? "shadow-[inset_4px_4px_6px_#b8b8b8,inset_-4px_-4px_6px_#ffffff]" 
-                        : "shadow-[6px_6px_10px_#b8b8b8,-6px_-6px_10px_#ffffff]"
-                }`}
-                onClick={() => setIsActive(true)} // Cambia el estado a true cuando se hace click en el botón
+                onClick={() => setIsActive(true)}
+                className={`flex items-center justify-center px-4 py-1 text-xs sm:text-sm font-semibold rounded-full border transition-all duration-300 ${
+                    isActive === true
+                        ? "bg-red-100 border-red-400 text-red-700 shadow"
+                        : "bg-white border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
+                }
+        `}
             >
-                <span className="text-sm font-medium text-gray-700">{title}</span>
-                <i className="pi pi-info-circle text-gray-500"></i>
+                {title}
             </div>
         </CustomModal>
     );

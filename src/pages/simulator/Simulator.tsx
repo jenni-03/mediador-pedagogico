@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { commandsData } from "../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../shared/constants/pseudoCode";
 import { useAnimation } from "../../shared/hooks/useAnimation";
+import { memory_address } from "../../shared/constants/memoryAddress";
 
 export function Simulator({
     structure: structure,
@@ -16,7 +17,11 @@ export function Simulator({
     // Estado para el manejo de la visualización del código
     const [codigoEjecucion, setCodigoEjecucion] = useState("");
 
-    const { isAnimating, setIsAnimating } = useAnimation();
+    // Estado para el manejo de la visualización de la asignación de memoria
+    const [codigoMemoria, setCodigoMemoria] = useState("");
+
+    // Estado para el manejo de la animación
+    const { setIsAnimating } = useAnimation();
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
     const structureName = "secuencia";
@@ -25,15 +30,17 @@ export function Simulator({
     // Pseudocódigo de las operaciones de la estructura
     const operations_code = operations_pseudoCode[structureName];
 
+    // Pseudocódigo de la asignación de memoria de la estructura
+    const memory_code = memory_address[structureName];
 
     const consoleRef = useRef<HTMLDivElement>(null);
 
     const handleCommand = (command: string, isValid: boolean) => {
-
-        if(!isValid) {
+        if (!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
-                    consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                    consoleRef.current!.scrollTop =
+                        consoleRef.current!.scrollHeight;
                 });
             }
 
@@ -41,19 +48,18 @@ export function Simulator({
         }
 
         const parts = command.trim().split(/\s+/);
-        const action = parts[0]?.toLowerCase();
+        const action: string = parts[0]?.toLowerCase();
         const values = parts.slice(1).map(Number); // Convierte los valores a números
 
-        setIsAnimating(true);
+        if (action !== "create" && action !== "clean") {
+            setIsAnimating(true);
+        }
 
-        if (values.length === 2) { // update
-            // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
+        if (values.length === 2) {
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
-        } else if (values.length === 1) { // insert, delete, search, create
-            // Aquí se debe enviar el espacio de memoria ocupado para que se guarde en algún lugar se la secuencia
+        } else if (values.length === 1) {
             (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
-        } else { // clean 
-            // Aquí se debe buscar la manera de vaciar ese espacio de memoria, borrarlo
+        } else {
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
 
@@ -61,26 +67,36 @@ export function Simulator({
             operations_code[action as keyof typeof operations_code]
         );
 
+        if (action === "create") {
+            setCodigoMemoria(memory_code[action as keyof typeof memory_code]);
+        } else {
+            setCodigoMemoria("");
+        }
+
         if (consoleRef.current) {
             requestAnimationFrame(() => {
-                consoleRef.current!.scrollTop = consoleRef.current!.scrollHeight;
+                consoleRef.current!.scrollTop =
+                    consoleRef.current!.scrollHeight;
             });
         }
     };
 
     return (
-        <div className="h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col overflow-y-auto">
             <div>
                 <h1 className="font-bold text-3xl text-center mt-2">
-                    {structureName.toUpperCase()}
+                    {structureName.toUpperCase() + " <int>"}
                 </h1>
             </div>
-            <div className="flex-1 bg-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
+            <div className="flex-1 bg-custom-gray border-2 border-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
                 <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl my-3 mx-3 space-y-3">
                     {/* Muestra la estructura */}
                     <DataStructureInfo
                         structure={structureName}
                         structurePrueba={structure}
+                        {...(codigoMemoria && {
+                            memoryAddress: { message: codigoMemoria, id: Date.now() },
+                        })}
                     >
                         {children}
                     </DataStructureInfo>
@@ -88,20 +104,21 @@ export function Simulator({
                     <GroupCommandsComponent buttons={buttons} />
                 </div>
                 <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
-                    <div ref={consoleRef}
-                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto h-full">
-                        <ConsoleComponent 
+                    <div
+                        ref={consoleRef}
+                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto max-h-[150px]"
+                    >
+                        <ConsoleComponent
                             structureType={structureName}
-                            onCommand={handleCommand}   
+                            onCommand={handleCommand}
                             error={error}
                         />
-                        
                     </div>
-                    <div className="flex-1 border-2 border-gray-300 bg-gray-100 rounded-xl overflow-auto">
-                        <h1 className="font-medium text-center mt-2">
+                    <div className="flex-1 bg-white rounded-xl max-h-[150px] overflow-auto">
+                        <h1 className="font-medium text-center mt-2 text-black">
                             CÓDIGO DE EJECUCIÓN
                         </h1>
-                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md bg-gray-100">
+                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md text-black">
                             {codigoEjecucion.trim()}
                         </pre>
                     </div>

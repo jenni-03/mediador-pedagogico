@@ -11,40 +11,61 @@
                 if (isNaN(num)) {
                     return { valid: false, message: "El argumento debe ser un número válido." };
                 }
-                if (num <= 0 || num > 20) {
-                    return { valid: false, message: "El número debe ser mayor que 0 y menor que 21." };
+                const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
+                if (!createPattern.test(parts[1])) {
+                    return { valid: false, message: "El valor debe ser un número entero mayor que 0 y menor que 21." };
                 }
-                return true; // Si todo está bien, solo devuelve `true`
-            case "insert": {
+                return true;
+
+            case "insert_last": {
                 if (parts.length !== 2) {
                     return { valid: false, message: "Debe proporcionar un número como argumento." };
                 }
-                const value = parts[1];
-                const pattern = /^(\d{1,3}|\d{1,2}\.\d{1})$/; // Regex para validar el formato permitido
-            
-                if (!pattern.test(value)) {
-                    return { valid: false, message: "El número debe ser un entero de hasta 3 dígitos o un decimal con máximo 2 dígitos enteros y 1 decimal." };
+                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+                if (!insertPattern.test(parts[1])) {
+                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
                 }
                 return true;
             }
+
             case "delete":
+                if (parts.length !== 2) {
+                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                }
+                if (isNaN(Number(parts[1]))) {
+                    return { valid: false, message: "El argumento deben ser un número válido." };
+                }
+                const positionDelPattern = /^-?\d+$/; // Número entero para la posición
+
+                if (!positionDelPattern.test(parts[1])) {
+                    return { valid: false, message: "La posición del valor a eliminar debe ser un número entero." };
+                }
+                return true;
+
             case "search":
-                return parts.length === 2 && !isNaN(Number(parts[1])); // Válida que solo venga el comando y el elemento, y además que el elemento sea un número
+                return parts.length === 2 && !isNaN(Number(parts[1])); 
+
             case "update":
                 if (parts.length !== 3) {
                     return { valid: false, message: "Debe proporcionar dos números como argumentos." };
                 }
                 if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
-                    return { valid: false, message: "Ambos argumentos deben ser números válidos" };
+                    return { valid: false, message: "Ambos argumentos deben ser números válidos." };
                 }
-                const value = parts[2];
-                const pattern = /^(\d{1,3}|\d{1,2}\.\d{1})$/; // Regex para validar el formato permitido
-                if (!pattern.test(value)) {
-                    return { valid: false, message: "El argumento debe ser un número entero de hasta 3 dígitos o un decimal con máximo 2 dígitos enteros y 1 decimal." };
+                const positionPattern = /^-?\d+$/; // Número entero para la posición
+                const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
+
+                if (!positionPattern.test(parts[1])) {
+                    return { valid: false, message: "La posición debe ser un número entero." };
+                }
+                if (!valuePattern.test(parts[2])) {
+                    return { valid: false, message: "El nuevo valor debe ser un número entero de hasta 4 dígitos." };
                 }
                 return true;
+
             case "clean":
                 return parts.length === 1;
+
             default:
                 return false;
         }

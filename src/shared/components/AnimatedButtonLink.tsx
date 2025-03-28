@@ -12,7 +12,7 @@ export function AnimatedButtonLink({
         <Link to={to} params={{ estructura: params }}>
             <motion.button
                 style={{ backgroundColor: bgColor }}
-                className={`rounded-full italic  w-24 py-1 text-center shadow-black shadow`}
+                className={`rounded-full italic  w-24 py-1 text-center`}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 300, damping: 10 }}
