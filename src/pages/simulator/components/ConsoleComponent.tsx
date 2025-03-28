@@ -43,12 +43,13 @@ export function ConsoleComponent({
             setHistory([
                 ...history, `Error: ${error.message}`,
             ])
+            setIsAnimating(false); // Detener la animación
         }
     }, [error?.id]);
     
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        // if (isAnimating) return;
+        if (isAnimating) return;
         if (e.key === "Enter" && input.trim() !== "") {
             e.preventDefault();
 
@@ -176,7 +177,7 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    // disabled={isAnimating}   
+                    disabled={isAnimating}   
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}

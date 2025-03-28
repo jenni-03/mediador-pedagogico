@@ -37,7 +37,6 @@ export function Simulator({
 
     const handleCommand = (command: string, isValid: boolean) => {
         if (!isValid) {
-        if (!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
                     consoleRef.current!.scrollTop =
@@ -127,5 +126,4 @@ export function Simulator({
             </div>
         </div>
     );
-}
 }
