@@ -307,7 +307,7 @@ class Memory {
       const entry = segment.get(address)!;
       const { type: entryType, name } = entry;
   
-      // 🔒 Validaciones educativas (solo si no es forzado)
+      // Validaciones educativas (solo si no es forzado)
       if (!force) {
         const isNested = name.includes("_");
         const parentName = name.split("_")[0];
@@ -338,7 +338,7 @@ class Memory {
         }
       }
   
-      // ✅ Iniciar mensaje
+      // Iniciar mensaje
       let message = `Eliminado: ${entryType.toUpperCase()} "${name}" en dirección ${address}.`;
   
       // Eliminar nombre global si no es anidado
@@ -346,7 +346,7 @@ class Memory {
         MemoryValidator.removeGlobalName(name);
       }
   
-      // 🔄 Si es un objeto, eliminar sus propiedades internas
+      // Si es un objeto, eliminar sus propiedades internas
       if (entryType === "object") {
         const properties = entry.value as {
           type: PrimitiveType;
@@ -362,7 +362,7 @@ class Memory {
           if (propAddress) {
             const [ok, propEntry] = this.getEntryByAddress(propAddress);
             if (ok) {
-              // 🔁 Si es array, eliminar también elementos internos
+              // Si es array, eliminar también elementos internos
               if (propEntry.type === "array") {
                 const length = propEntry.value.length;
                 for (let i = 0; i < length; i++) {
@@ -387,7 +387,7 @@ class Memory {
         }
       }
   
-      // 🔄 Si es un array, eliminar elementos internos
+      // Si es un array, eliminar elementos internos
       if (entryType === "array") {
         const elements = entry.value as any[];
         let deletedElements: string[] = [];
@@ -406,7 +406,7 @@ class Memory {
         }
       }
   
-      // ✅ Eliminar la entrada principal
+      // Eliminar la entrada principal
       segment.delete(address);
       return [true, message];
     }

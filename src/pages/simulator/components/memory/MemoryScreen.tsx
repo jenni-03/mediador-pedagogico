@@ -24,17 +24,19 @@
     return (
       <div className="w-full flex flex-col items-center px-4 mt-4 sm:mt-6 relative">
         <div
-    className="
-      w-full max-w-6xl
-      bg-[#f9f9f9]
-      border border-red-400
-      rounded-lg
-      shadow-[0px_0px_15px_rgba(0,0,0,0.05)]
-      flex flex-col
-      relative
-      max-h-[85vh]
-    "
-  >
+      className="
+        w-full max-w-6xl
+        bg-[#f9f9f9]
+        border border-red-400
+        rounded-lg
+        shadow-[0px_0px_15px_rgba(0,0,0,0.05)]
+        flex flex-col
+        relative
+        max-h-[85vh]
+        overflow-visible
+      "
+    >
+
 
           {/* 📢 Cabecera */}
           <div

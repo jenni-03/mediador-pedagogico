@@ -37,7 +37,7 @@ export function DeleteConfirmationModal({ address, consolaRef, onClose, setMemor
         exit={{ y: -30, opacity: 0 }}
       >
         <h2 className="text-lg font-bold text-red-600 mb-4">
-          ¿Eliminar variable en <span className="underline">{address}</span>?
+          ¿Eliminar la dirección <span className="underline">{address}</span>?
         </h2>
         {!feedback ? (
           <div className="flex justify-center gap-4 mt-4">
