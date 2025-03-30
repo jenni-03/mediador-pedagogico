@@ -3,11 +3,13 @@ import { conceptosData } from "../../shared/constants/conceptsData";
 // Importa todos los componentes que se pueden renderizar
 import { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
 import { ComplexityCola } from "./components/structures/cola/ComplexityCola";
+import { ComplexityColaPrioridad } from "./components/structures/cola_de_prioridad/ComplexityColaPrioridad";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
     "Secuencia": ComplexitySecuencia, // Si nombre = "Secuencia", renderiza <ComplexitySecuencia />
     "Cola": ComplexityCola,
+    "Cola de Prioridad": ComplexityColaPrioridad, 
 };
 
 export function Complexity() {

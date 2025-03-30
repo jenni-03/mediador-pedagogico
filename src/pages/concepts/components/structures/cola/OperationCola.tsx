@@ -1,9 +1,4 @@
-import img1 from "../../../../../assets/images/operacion_secuencia_1.png";
-import img2 from "../../../../../assets/images/operacion_secuencia_2.jpg";
-import img3 from "../../../../../assets/images/operacion_secuencia_3.jpg";
-import img4 from "../../../../../assets/images/operacion_secuencia_4.jpg";
-import img5 from "../../../../../assets/images/operacion_secuencia_5.jpg";
-import img6 from "../../../../../assets/images/operacion_secuencia_6.jpg";
+import img1 from "../../../../../assets/images/operacion_encolar_1.png";
 
 export function OperationCola() {
     return (
@@ -12,77 +7,104 @@ export function OperationCola() {
             <h1 className="text-sm text-gray-500 mb-3">Secuencia</h1>
             <hr className="mt-2 mb-4 border-red-500 border-t-2" />
             <div>
-                <h1 className="text-2xl font-bold mb-3">Insertar</h1>
+                <h1 className="text-2xl font-bold mb-3">Encolar (Enqueue)</h1>
                 <p className="text-gray-700 text-sm mb-5">
-                    Para esta operación solo basta con indicar el dato que se
-                    desea almacenar en la estructura y esta lo almacena
-                    consecutivamente en la posición acorde a la cantidad datos
-                    que posee la estrutura, teniendo en cuenta que no se
-                    desborde la capacidad de la Secuencia.
+                    Es la operación que agrega un elemento al final de la cola.
+                    Si la cola tiene espacio disponible, el nuevo elemento se
+                    almacena en la posición indicada por rear y este índice se
+                    incrementa.
                 </p>
-                <p className="text-sm text-gray-800 mt-3 leading-6">
-                    <span className="font-bold">Ejemplo de insertar: </span>
-                    Tenemos la secuencia
+                <img src={img1} alt="img 1" className="mx-auto w-40 sm:w-96 md:w-96"/>
+                <p className="text-sm text-gray-800 my-3 font-bold leading-6">
+                    Pasos del proceso:
                 </p>
-                <img src={img1} alt="img 1" />
-                <p className="text-sm text-gray-800 mt-3 leading-6">
-                    Se desea insertar el número 25 a la secuencia.
-                </p>
-                <img src={img2} alt="img 2" />
-                <p className="text-sm text-gray-800 mt-3 leading-6">
-                    Simplemente se agrega el índice (número en la posición
-                    elementos almacenados menos uno)
-                </p>
-                <img src={img3} alt="img 3" />
+                <ul className="space-y-3">
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Verificar si la cola está llena (en caso de tamaño
+                        fijo). Si está llena, se lanza un error de
+                        desbordamiento (overflow).
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Si la cola está vacía (front == -1), inicializar
+                        front = 0.
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Incrementar rear en 1 (rear = rear + 1).
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Insertar el nuevo elemento en queue [rear].
+                    </li>
+                </ul>
             </div>
             <div>
-                <h1 className="text-2xl font-bold mb-3">Editar</h1>
+                <h1 className="text-2xl font-bold my-4">Decolar (Dequeue)</h1>
                 <p className="text-gray-700 text-sm mb-5">
-                    En esta operación solo basta con indicar el dato que se
-                    desea almacenar en la estructura e indicar la posición que
-                    se desea editar de la estructura, esta recorre la cantidad
-                    de datos almacenados hasta encontrar la posición de la
-                    estructura que se desea modificar y cambia el valor de la
-                    posición por el nuevo dato, teniendo en cuenta que la
-                    posicion exista y posea un dato almacenado en Secuencia.
+                    Es la operación que elimina el primer elemento de la cola.
+                    Se accede al elemento en la posición front, se elimina y
+                    front se incrementa en 1.
                 </p>
+                <p className="text-sm text-gray-800 my-3 font-bold leading-6">
+                    Pasos del proceso:
+                </p>
+                <ul className="space-y-3">
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Verificar si la cola está vacía (front == -1 o front
+                        rear). Si está vacía, se lanza un error de
+                        subdesbordamiento (underflow).
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Guardar el elemento en queue[front] para devolverlo.
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Incrementar front en 1 (front = front + 1).
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Si front supera rear, restablecer la cola (front =
+                        rear = -1).
+                    </li>
+                </ul>
             </div>
             <div>
-                <h1 className="text-2xl font-bold mb-3">Buscar</h1>
+                <h1 className="text-2xl font-bold my-4">
+                    Consulta del Frente (Front/Peek)
+                </h1>
                 <p className="text-gray-700 text-sm mb-5">
-                    Se indica el dato que se desea consultar de la estructura,
-                    esta recorre la cantidad de datos almacenados hasta
-                    encontrar el dato que se está consultando, teniendo en
-                    cuenta que el dato se encuentre almacenado en la Secuencia.
+                    Es la operación que permite ver el primer elemento de la
+                    cola sin eliminarlo.
                 </p>
+                <p className="text-sm text-gray-800 my-3 font-bold leading-6">
+                    Pasos del proceso:
+                </p>
+                <ul className="space-y-3">
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Verificar si la cola está vacía (front == -1).
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Devolver el valor en queue[front] sin modificar la
+                        estructura.
+                    </li>
+                </ul>
             </div>
             <div>
-                <h1 className="text-2xl font-bold mb-3">Eliminar</h1>
+                <h1 className="text-2xl font-bold my-4">
+                    Consulta del Final (Rear/Peek Rear)
+                </h1>
                 <p className="text-gray-700 text-sm mb-5">
-                    Se debe indicar el dato que se desea eliminar de la
-                    estructura, esta lo borra y consecutivamente de ser
-                    necesario reajusta las posiciones de los datos siguientes al
-                    dato eliminado, teniendo en cuenta que el dato se encuentre
-                    almacenado en la Secuencia.
+                    Es la operación que permite ver el último elemento de la
+                    cola sin eliminarlo.
                 </p>
-                <p className="text-sm text-gray-800 mt-3 leading-6">
-                    <span className="font-bold">Ejemplo de eliminar: </span>
-                    Tenemos la Secuencia y se desea eliminar el número 02 de la
-                    Secuencia
+                <p className="text-sm text-gray-800 my-3 font-bold leading-6">
+                    Pasos del proceso:
                 </p>
-                <img src={img4} alt="img 4" />
-                <p className="text-sm text-gray-800 mt-3 leading-6">
-                    Al eliminarse el número 02 de la Secuencia automáticamente
-                    al poseer elementos posteriores al eliminado hace un
-                    corrimiento hacia la izquierda evitando dejar posiciones
-                    vacías entre los elementos que almacena la estructura.
-                </p>
-                <img src={img5} alt="img 5" />
-                <p className="text-sm text-gray-800 mt-3 leading-6">
-                    Manteniendo las propiedades de la Secuencia, la estructura
-                    queda de la siguiente manera:
-                </p>
-                <img src={img6} alt="img 6" />
+                <ul className="space-y-3">
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Verificar si la cola está vacía (front == -1).
+                    </li>
+                    <li className="text-sm text-gray-800 leading-6">
+                        ✨ Devolver el valor en queue[front] sin modificar la
+                        estructura.
+                    </li>
+                </ul>
             </div>
         </div>
     );
