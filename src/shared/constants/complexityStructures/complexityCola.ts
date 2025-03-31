@@ -8,24 +8,18 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Constructor con parametros de la clase secuencia. 
-             * post:  Se construye una Secuencia vacia. 
-             * @param n es de tipo integer que contiene el tamaño en capacidad de la Secuencia. 
+             * Constructor de la Clase Cola, por defecto el primer y ultimo nodo es NULL y su tamaño es 0. <br>
+             * <b>post: </b> Se construyo una Cola sin elementos.
              */
-            public Secuencia(int n) {
-                    1
-                if (n <= 0) {
-                    //Mejor de los casos
-                    System.err.println("Tamaño de secuencia no valido!");
-                    return;
-                }
-                //Peor de los casos
-                        1  1  1
-                Object r[] = new Object[n];
-                    1
-                cant = 0;
-                            1   1
-                this.vector = (T[]) r;
+            public Cola() {
+                            1    1
+                this.inicio = new NodoD < T > (null, null, null);
+                            1
+                this.inicio.setSig(inicio);
+                        1
+                inicio.setAnt(inicio);
+                            1
+                this.tamanio = 0;
             }
         `
     },
@@ -38,19 +32,19 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que inserta un nuevo elemento a la secuencia. 
-             * post: Se inserto un elemento en la Secuencia.
-             * @param elem es de tipo T que contiene el elemento a insertar
+             * Metodo que permite agregar un elemento a la Cola. <br>
+             * <b>post: </b> Se inserto un nuevo elemento a la Cola.<br>
+             * @param info es de tipo T y contiene la informacion a en colar
              */
-            public void insertar(T elem) {
-                            1
-                if (this.cant >= this.vector.length) 
-                    //Mejor de los casos
-                    System.err.println("No hay más espacio!");
-                else
-                    //Peor de los casos
-                                    2        1
-                    this.vector[this.cant++] = elem;
+            public void enColar(T info) {
+                    1        1    1                                 1
+                NodoD < T > x = new NodoD < T > (info, inicio, inicio.getAnt());
+                    1            1
+                inicio.getAnt().setSig(x);
+                    1
+                inicio.setAnt(x);
+                        2
+                this.aumentarTamanio();
             }
         `
     },
@@ -63,34 +57,29 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que elimina un elemento a la secuencia.
-             * post: Se elimino un elemento en la Secuencia.
-             * @param elem es de tipo T que contiene el elemento a eliminar
+             * Metodo que permite retirar el primer elemento que fue insertado en la Cola. <br>
+             * <b>post: </b> Se elimina el primer elemento que fue insertado en la cola.<br>
+             * @return un tipo T que contiene la informacion del nodo retirado.
              */
-            public void eliminar(T elem) {
-                    1     1
-                boolean e = false;
-                    2    1      1      1             2    
-                for (int i = 0, j = 0; i &lt; this.cant; i++) {
-                    //Peor de los casos
-                        1                 2
-                    if (!this.vector[i].equals(elem)) {
-                                    1
-                        this.vector[j] = vector[i];
-                        2
-                        j++;
-                    } else {
-                        //Mejor de los casos
-                        1
-                        e = true;
-                                    1
-                        this.vector[j] = null;
-                    }
-                }
+            public T deColar() {
+                        5
+                if (this.esVacia())
+                    //Mejor de los casos
+                    return (null);
+                    1        1            1
+                NodoD < T > x = this.inicio.getSig();
+                            1      1
+                this.inicio.setSig(x.getSig());
+                    1        1
+                x.getSig().setAnt(inicio);
                     1
-                if (e)
-                        2
-                    this.cant--;
+                x.setSig(null);
+                    1
+                x.setAnt(null);
+                    2
+                this.tamanio--;
+                    1         1
+                return (x.getInfo());
             }
         `
     },
@@ -103,41 +92,16 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que elimina un elemento a la secuencia dada su posicion.
-             * post: Se elimino un elemento en la Secuencia.
-             * @param pos es de tipo int que contiene la posicion del elemento a eliminar
+             * Metodo que permite elimar todos los datos que contiene la Cola. <br>
+             * <b>post: </b> Se elimino todos los datos que se encontraban en la Cola.<br>
              */
-            public void eliminarP(int pos) {
-                        1    1     1
-                if (pos &lt; 0 || pos &gt; this.cant) {
-                    //Mejor de los casos
-                    System.err.println("Indíce fuera de rango!");
-                    return;
-                }
-                //Peor de los casos
-                1      1
-                boolean e = false;
-                    2    1      1      1             2 
-                for (int i = 0, j = 0; i &lt; this.cant; i++) {
-                        1
-                    if (i != pos) {
-                        //Peor de los casos
-                                    1
-                        this.vector[j] = vector[i];
-                        2
-                        j++;
-                    } else {
-                        //Mejor de los casos
-                        1
-                        e = true;
-                                    1
-                        this.vector[j] = null;
-                    }
-                }
-                    1
-                if (e)
-                        2
-                    this.cant--;
+            public void vaciar() {
+                            1
+                this.inicio.setSig(this.inicio);
+                            1
+                this.inicio.setAnt(this.inicio);
+                            1
+                this.tamanio = 0;
             }
         `
     },
@@ -149,18 +113,14 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que vacia la secuencia. 
-             * post: La Secuencia se encuentra vacia.
+             * Metodo que permite conocer el primer elemento que fue insertado en la Cola. <br>
+             * <b>post: </b> Se obtiene el primer elemento que fue insertado en la Cola.<br>
+             * @return El primer elemento que fue insertado en la cola
              */
-            public void vaciar() {
-                //Peor de los casos
-                    1    1      1             2
-                for (int i = 0; i &lt; this.cant; i++)
-                                1
-                    this.vector[i] = null;
-                        1
-                this.cant = 0;
-            } 
+            protected NodoD < T > getInicio() {
+                    1
+                return this.inicio;
+            }
         `
     },
     {
@@ -171,21 +131,13 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que retorna un objeto tipo T de la secuencia dada la posición.
-             * post: Se ha retornado un elemento de la Secuencia dada su posición.
-             * @param i es de tipo integer y contiene la posicion en la secuencia. 
-             * @return un tipo T que contiene el elemento del nodo en la posicion indicada.
+             * Metodo que permite conocer el primer elemento que fue insertado en la Cola. <br>
+             * <b>post: </b> Se obtiene el primer elemento que fue insertado en la Cola.<br>
+             * @return El primer elemento que fue insertado en la cola
              */
-            public T get(int i) {
-                    1    1   1
-                if (i < 0 || i > this.cant) {
-                    //Mejor de los casos
-                    System.err.println("Indíce fuera de rango!");
-                    return (null);
-                } else
-                    //Peor de los casos
-                    1
-                    return (this.vector[i]);
+            public T getInfoInicio() {
+                    1               1        1
+                return this.inicio.getSig().getInfo();
             }
         `
     },
@@ -197,29 +149,11 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que cambia un elemento de la secuencia en la posición indicada , por otro. <br>
-             * <b>post:</b> Se ha modificado un elemento de la Secuencia.<br>
-             * @param i de tipo integer que contiene la posicion de la secuencia que se va ha cambiar.<br>
-             * @param nuevo Representa el nuevo objeto que reemplazara al objeto editado. <br>
+             * Metodo que permite aumentar el tamaño de la Cola para dar uso en Cola de Prioridad. <br>
              */
-
-            public void set(int i, T nuevo) {
-                    1    1   1
-                if (i &lt; 0 || i &gt; this.cant) {
-                    //Mejor de los casos
-                    System.err.println("Indíce fuera de rango!");
-                    return;
-                }
-                //Peor de los casos
-                        1
-                if (nuevo == null) {
-                    //Mejor de los casos
-                    System.err.println("No se pueden ingresar datos nulos!");
-                    return;
-                }
-                //Peor de los casos
-                            1
-                this.vector[i] = nuevo;
+            protected void aumentarTamanio() {
+                    2
+                this.tamanio++;
             }
         `
     },
@@ -231,22 +165,12 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que recibe un un elemento y comprueba si existe en la secuencia. <br>
-             * <b>post:</b> Se ha retornado true si el elemento se encuentra en la Secuencia.<br>
-             * @param elem es de tipo T y contiene el elemnto que se va ha buscar. <br>
-             * @return un tipo boolean, retorna true si el objeto existe y false en caso contrario.
+             * Metodo que permite modificar el Nodo inicial de la Cola para uso de la Cola de prioridad. <br>
+             * @param ini Representa el nuevo Nodo inicial de la cola.
              */
-            public boolean esta(T elem) {
-                //Peor de los casos
-                    1   1      1             2
-                for (int i = 0; i < this.cant; i++)
-                                        2
-                    if (this.vector[i].equals(elem))
-                        //Mejor de los casos
-                        return true;
-                //Mejor de los casos
-                    1
-                return false;
+            protected void setInicio(NodoD < T > ini) {
+                            1
+                this.inicio = ini;
             }
         `
     },
@@ -258,22 +182,13 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que permite conocer el indice de un Elemento dentro de la Secuencia. <br>
-             * <b>post:</b> Se ha retornado el indice del elemento dentro de la Secuencia. <br>
-             * @param elem Representa el elemento al cual se le quiere determinar el indice en la Secuencia. <br>
-             * @return Un objeto de tipo (int) con la posicion del elemento dentro de la Secuencia.
+             * Metodo que retorna el tamaño de la cola<br>
+             * <b>post: </b> Se retorno el numero de elementos existentes en la Cola.<br>
+             * @return un tipo integer qeu contiene el tamaño de la cola
              */
-            public int getIndice(T elem) {
-                //Peor de los casos
-                    1   1      1             2
-                for (int i = 0; i < this.cant; i++)
-                                        2
-                    if (this.vector[i].equals(elem))
-                        //Mejor de los casos
-                        return (i);
-                //Mejor de los casos
+            public int getTamanio() {
                     1
-                return (-1);
+                return (this.tamanio);
             }
         `
     },
@@ -286,13 +201,13 @@ export const complexityCola = [
         complexity: "Big O = O(1)",
         javaCode: `
             /**
-             * Metodo que retorna el tamaño lógico de la secuencia, esto es el numero de datos almacenados. <br>
-             * <b>post:</b> Se ha retornado el numero de elementos dentro de la secuencia.<br>
-             * @return un tipo integer que contiene el tamaño lógico de la secuencia
+             * Metodo que retorna si la cola esta vacia o no<br>
+             * <b>post: </b> Retorna si la Cola se encuentra vacia, retorna false si hay elementos en la Cola.<br>
+             * @return un tipo boolean, true si es vacio y false si contiene nodos
              */
-            public int getTamanio() {
-                    1
-                return this.cant;
+            public boolean esVacia() {
+                    1              1           1
+                return (this.getTamanio() == 0);
             }
         `
     },
@@ -306,13 +221,26 @@ export const complexityCola = [
         complexity: "Big O = O(n)",
         javaCode: `
             /**
-             * Metodo que permite conocer si la Secuencia esta vacia. <br>
-             * <b>post:</b> Se ha retornado true o false dependiendo si la Secuencia esta vacia.<br>
-             * @return de tipo boolean true indica que la Secuencia esta vacia.
+             * Convierte la pila a una cadena de String. <br>
+             * <b>post: </b> Se retorno la representacion en String de la pila. 
+             * El String tiene el formato "e1->e2->e3..->en", donde e1, e2, ..., en son los los elementos de la Pila. <br>
+             * @return La representacion en String de la Pila.
              */
-            public boolean esVacia() {
-                    1            1
-                return (this.cant == 0);
+            @Override
+            public String toString() {
+                    1       1
+                String msj = "";
+                    1          1            1
+                NodoD < T > c = this.inicio.getSig();
+                        1
+                while (c != inicio) {
+                        2        1         1      1
+                    msj += c.getInfo().toString() + "->";
+                        1      1
+                    c = c.getSig();
+                }
+                    1
+                return msj;
             }
         `
     },
