@@ -4,12 +4,14 @@ import { conceptosData } from "../../shared/constants/conceptsData";
 import { OperationSecuencia } from "./components/structures/secuencia/OperationSecuencia";
 import { OperationCola } from "./components/structures/cola/OperationCola";
 import { OperationColaPrioridad } from "./components/structures/cola_de_prioridad/OperationColaPrioridad";
+import { OperationArbolBinario } from "./components/structures/arbol_binario/OperationArbolBinario";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
     "Secuencia": OperationSecuencia, // Si nombre = "Secuencia", renderiza <OperationSecuencia />
     "Cola": OperationCola,
     "Cola de Prioridad": OperationColaPrioridad, 
+    "Árbol Binario" : OperationArbolBinario
 };
 
 export function Operation() {
