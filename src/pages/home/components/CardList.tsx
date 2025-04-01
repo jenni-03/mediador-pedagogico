@@ -7,7 +7,7 @@ export function CardList({ data, filter }: CardListProps) {
     const filteredData = useFilteredCard(data, filter);
 
     return (
-        <main className="max-w-[1200px] w-full grid grid-cols-auto-fit-400 m-auto justify-items-center gap-11 py-4">
+        <main className="max-w-[1200px] w-full grid grid-cols-auto-fit-400 m-auto justify-items-center gap-11 py-2">
             <AnimatePresence>
                 {filteredData.map((item) => (
                     <Card

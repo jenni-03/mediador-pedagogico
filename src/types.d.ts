@@ -17,6 +17,12 @@ export type AnimatedButtonLinkProps = {
     params: string
 }
 
+export type AnimatedButtonModalProps = {
+    bgColor: string,
+    text: string,
+    onClick?: () => void;
+}
+
 export type SideBarProps = {
     estructura: string,
     isOpen: boolean,
@@ -86,7 +92,7 @@ export type BaseQueryOperations = {
 
 export type BaseStructureActions = {
     create: (n: number) => void,
-    insert: (element: number) => void,
+    insert_last: (element: number) => void,
     delete: (element: number) => void,
     search: (element: number) => void,
     clean: () => void,
@@ -97,3 +103,9 @@ export type AnimationContextType = {
     isAnimating: boolean;
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
 };
+
+export type CodeAnalysisProps = {
+    code: string;
+    operationalCost: string[];
+    complexity: string;
+}

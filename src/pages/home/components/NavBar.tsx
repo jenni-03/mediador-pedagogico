@@ -1,55 +1,38 @@
-import { TiDelete } from "react-icons/ti";
-import { FilterTypeValue, NavBarProps } from "../../../types";
-import { TYPE_FILTER } from "../../../shared/constants/consts";
+export function NavBar() {
+    const handleScroll = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+        event.preventDefault(); // Evita el comportamiento por defecto del enlace
 
-export function NavBar({ filter, setFilter }: NavBarProps) {
+        const filtersSection = document.getElementById("filters-section");
+        if (filtersSection) {
+            filtersSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
+
     return (
         <header className="sticky top-0 w-full z-50 bg-white shadow">
             <div className="m-auto flex flex-col sm:flex-row sm:flex items-center sm:justify-between px-6 w-full  max-w-[1200px] bg-white h-32 sm:h-24 gap-2 sm:gap-10">
+                {/* <div className="flex flex-row items-center gap-2">
+                    <img
+                        className="hidden sm:block object-fill h-30 w-40 sm:h-16 sm:w-16"
+                        src="/assets/images/logo_ingsistemas.png"
+                        alt=""
+                    />
+                    <h1 className="text-2xl md:w-64 lg:w-72 font-semibold">
+                        <span className="text-black">Mediador</span>
+                        <span className="text-red-600">Pedagógico</span>
+                    </h1>
+                </div> */}
                 <h1 className="text-2xl md:w-64 lg:w-72 font-semibold">
-                    PROYECTO SEED
+                    <span className="text-black">Mediador</span>
+                    <span className="text-red-600">Pedagógico</span>
                 </h1>
-                <div className="flex min-w-64 lg:w-64 items-center bg-white p-1 border border-black rounded-full overflow-hidden">
-                    <input
-                        type="text"
-                        className="w-52 sm:w-52 px-2 lg:w-64 outline-none"
-                        value={filter.query}
-                        onChange={(e) =>
-                            setFilter((prev) => ({
-                                ...prev,
-                                query: e.target.value,
-                            }))
-                        }
-                        placeholder="Secuencia, Cola, Lista..."
-                    />
-                    <TiDelete
-                        className="cursor-pointer rounded-full"
-                        size={25}
-                        onClick={() =>
-                            setFilter((prev) => ({ ...prev, query: "" }))
-                        }
-                    />
-                </div>
-                <select
-                    onChange={(e) =>
-                        setFilter((prev) => ({
-                            ...prev,
-                            type: e.target.value as FilterTypeValue,
-                        }))
-                    }
-                    className="w-60 md:w-64 lg:w-72 p-1 border rounded"
+                <a
+                    href="#filters-section"
+                    className="text-lg font-semibold leading-6"
+                    onClick={handleScroll}
                 >
-                    <option value={TYPE_FILTER.NONE}>Por defecto</option>
-                    <option value={TYPE_FILTER.ESTRUCTURA_LINEAL}>
-                        Estructuras Lineales
-                    </option>
-                    <option value={TYPE_FILTER.ARBOL_BINARIO}>
-                        Árboles Binarios
-                    </option>
-                    <option value={TYPE_FILTER.ARBOL_ENEARIO}>
-                        Árboles Enearios
-                    </option>
-                </select>
+                    Ver Estructuras de Datos <span aria-hidden="true">&rarr;</span>
+                </a>
             </div>
         </header>
     );
