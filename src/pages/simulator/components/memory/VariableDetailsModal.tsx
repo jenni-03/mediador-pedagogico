@@ -7,7 +7,6 @@ interface VariableDetailsModalProps {
   setTempValue: (value: string) => void;
   onClose: () => void;
   consolaRef: React.RefObject<any>;
-  memoryState: Record<string, any[]>;
   size: string;
   setMemoryState: (newState: Record<string, any[]>) => void;
 }
@@ -18,7 +17,6 @@ export function VariableDetailsModal({
   setTempValue,
   onClose,
   consolaRef,
-  memoryState,
   size,
   setMemoryState
 }: VariableDetailsModalProps) {

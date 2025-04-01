@@ -20,7 +20,7 @@ export function ConsoleComponent({
     const [isCreated, setIsCreated] = useState<boolean>(false);
 
     // Estado para el manejo del error
-    const [visibleError, setVisibleError] = useState<string | null>();
+    // const [visibleError, setVisibleError] = useState<string | null>(null);
 
     const { isAnimating, setIsAnimating } = useAnimation();
 
@@ -39,7 +39,7 @@ export function ConsoleComponent({
 
     useEffect(() => {
         if (error) {
-            setVisibleError(error.message);
+            // setVisibleError(error?.message);
             setHistory([
                 ...history, `Error: ${error.message}`,
             ])
