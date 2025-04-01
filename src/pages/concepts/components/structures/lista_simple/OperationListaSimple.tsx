@@ -1,10 +1,3 @@
-import img1 from "../../../../../assets/images/operacion_secuencia_1.png";
-import img2 from "../../../../../assets/images/operacion_secuencia_2.jpg";
-import img3 from "../../../../../assets/images/operacion_secuencia_3.jpg";
-import img4 from "../../../../../assets/images/operacion_secuencia_4.jpg";
-import img5 from "../../../../../assets/images/operacion_secuencia_5.jpg";
-import img6 from "../../../../../assets/images/operacion_secuencia_6.jpg";
-
 export function OperationListaSimple() {
   return (
     <div className="py-4 px-10">

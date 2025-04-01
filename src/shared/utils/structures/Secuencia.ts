@@ -192,19 +192,3 @@ export class Secuencia {
 
 }
 
-const secuencia = new Secuencia(4);
-
-
-secuencia.insertar(1);
-secuencia.insertar(2);
-secuencia.insertar(1);
-secuencia.insertar(2);
-
-console.log(secuencia.getVector());
-console.log(secuencia.getTamanio());
-
-secuencia.eliminarPos(0);
-
-console.log(secuencia.getVector());
-console.log(secuencia.getTamanio());
-

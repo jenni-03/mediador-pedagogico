@@ -62,8 +62,8 @@ export function CodeAnalysis({
 
                 {showConsole && (
                     <div>
-                        <div className="code-container bg-gray-900 rounded-md p-4 mb-4 text-white font-mono">
-                            <div className="overflow-x-auto whitespace-pre-wrap break-all text-sm">
+                        <div className="bg-gray-900 rounded-md p-4 mb-4 text-white font-mono">
+                            <div className="overflow-x-auto whitespace-pre text-nowrap text-sm">
                                 {displayedLines.map((line, index) => (
                                     <div
                                         key={index}
@@ -80,7 +80,7 @@ export function CodeAnalysis({
                                 Análisis de Complejidad
                             </h3>
                             <div className="space-y-2">
-                                <div className="bg-gray-200 p-2 rounded">
+                                <div className="bg-gray-200 p-2 rounded overflow-x-auto">
                                     <strong>Costo Operacional:</strong>
                                     {operationalCost.map((cost, index) => (
                                         <div key={index} className="mt-1">
@@ -89,7 +89,7 @@ export function CodeAnalysis({
                                     ))}
                                 </div>
                                 <div className="bg-gray-200 p-2 rounded">
-                                    <strong>Complejidad:</strong>
+                                    <strong>Complejidad: </strong>
                                     {complexity}
                                 </div>
                             </div>

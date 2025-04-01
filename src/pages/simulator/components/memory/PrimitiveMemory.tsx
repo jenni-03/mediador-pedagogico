@@ -138,6 +138,15 @@ export function PrimitiveMemory({
             setMemoryState={setMemoryState}
             size={sizes[selectedEntry.address] ?? "Desconocido"}
           />
+          entry={selectedEntry}
+          tempValue={tempValue}
+          setTempValue={setTempValue}
+          onClose={() => setSelectedEntry(null)}
+          consolaRef={consolaRef}
+          setMemoryState={setMemoryState}
+          size={sizes[selectedEntry.address] ?? "Desconocido"}
+        />
+        
         )}
       </AnimatePresence>
 
