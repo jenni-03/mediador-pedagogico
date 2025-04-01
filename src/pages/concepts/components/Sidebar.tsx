@@ -33,7 +33,7 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
                     className="absolute top-4 right-4 text-3xl md:hidden"
                     onClick={() => setIsOpen(false)}
                 >
-                    <i className="pi pi-times"></i>
+                    {/* <i className="pi pi-times"></i> */}
                 </button>
                 <h1 className="text-2xl font-semibold">
                     <span className="text-black">Mediador</span>
