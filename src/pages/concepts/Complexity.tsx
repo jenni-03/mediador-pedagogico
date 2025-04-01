@@ -5,6 +5,7 @@ import { ComplexitySecuencia } from "./components/structures/secuencia/Complexit
 import { ComplexityCola } from "./components/structures/cola/ComplexityCola";
 import { ComplexityColaPrioridad } from "./components/structures/cola_de_prioridad/ComplexityColaPrioridad";
 import { ComplexityListaSimple } from "./components/structures/lista_simple/ComplexityListaSimple";
+import { ComplexityArbolBinario } from "./components/structures/arbol_binario/ComplexityArbolBinario";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -12,6 +13,7 @@ const componentMap: Record<string, React.FC> = {
     "Cola": ComplexityCola,
     "Cola de Prioridad": ComplexityColaPrioridad, 
     "Lista Simplemente Enlazada": ComplexityListaSimple, 
+    "Árbol Binario" : ComplexityArbolBinario,
 };
 
 export function Complexity() {

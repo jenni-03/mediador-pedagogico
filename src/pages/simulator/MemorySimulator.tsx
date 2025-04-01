@@ -1,43 +1,54 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ConsoleComponent } from "./components/memory/ConsoleComponent";
-import { ScreenComponent } from "./components/memory/ScreenComponent";
-import { StateComponent } from "./components/memory/StateComponent";
-import { BackgroundEffect } from "./components/memory/Background";
+import { MemoryScreen } from "./components/memory/MemoryScreen";
 import { TitleComponent } from "./components/memory/TitleComponent";
-import Simulador from "../../shared/utils/RAM/Simulador";
+import { Consola } from "../../shared/utils/RAM/Consola"; 
+import { FloatingCommandPanel } from "./components/memory/FloatingCommandPanel";
 
 export function MemorySimulator() {
-    const sim = Simulador.getInstance();
-    const [screenMessage, setScreenMessage] = useState("Estado de la memoria: Vacía");
-    const [stateInfo, setStateInfo] = useState("Memoria sin datos.");
-    const [segmentInfo, setSegmentInfo] = useState("Segmento vacío.");
+  const consolaRef = useRef(new Consola());
+  const [consoleOutput, setConsoleOutput] = useState<string>("");
+  const [isSuccess, setIsSuccess] = useState<boolean>(true);
+  const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
 
-    const handleCommand = (command: string) => {
-        console.log(`Comando recibido: ${command}`);
-        
-        try {
-            const { estadoMemoria, segmentoMemoria, descripcion } = sim.allocateWithDetails(command);
-            
-            setScreenMessage(JSON.stringify(estadoMemoria, null, 2)); // Estado completo en ScreenComponent
-            setStateInfo(JSON.stringify(segmentoMemoria, null, 2)); // Segmento de memoria en StateComponent
-        } catch (error) {
-            setScreenMessage(`Error: ${(error as Error).message}`);
-        }
-    };
+  const handleCommand = (command: string) => {
+    try {
+      const resultado = consolaRef.current.ejecutarComando(command);
+      if (!resultado[0]) {
+        setConsoleOutput(resultado[1]);
+        setIsSuccess(false);
+      } else {
+        setConsoleOutput(resultado[1]);
+        setIsSuccess(true);
+        setMemoryState(resultado[2]);
+      }
+    } catch (error) {
+      setConsoleOutput(`Error inesperado: ${(error as Error).message}`);
+      setIsSuccess(false);
+    }
+  };
 
-    return (
-        <div className="h-screen flex flex-col bg-transparent relative">
-            <BackgroundEffect /> 
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50 relative">
+      <TitleComponent />
+      
+      <MemoryScreen 
+        consolaRef={consolaRef} 
+        memoryState={memoryState} 
+        setMemoryState={setMemoryState}
+      />
+      
 
-            <TitleComponent />
+  <ConsoleComponent 
+    onCommand={handleCommand} 
+    outputMessage={consoleOutput} 
+    isSuccess={isSuccess} 
+  />
+  
+  <FloatingCommandPanel />
 
-            {/* 🔹 Estado completo de la memoria en ScreenComponent */}
-            <ScreenComponent content={screenMessage} />
 
-            <ConsoleComponent onCommand={handleCommand} />
 
-            {/* 🔹 Segmento específico en StateComponent */}
-            <StateComponent stateInfo={stateInfo} />
-        </div>
-    );
+    </div>
+  );
 }
