@@ -174,7 +174,7 @@ export async function animateInsertionSequence(
     const startX = destX + elementWidth / 2;
     const startY = 12;
 
-    // Reestablecimiento del texto del contenedor donde se va a insertar el elemento
+    // Restablecimiento del texto del contenedor donde se va a insertar el elemento
     targetGroup.select("text")
         .text("");
 
@@ -242,146 +242,250 @@ export async function animateInsertionSequence(
         .style("opacity", 0)
         .end();
 
-    // Reestablecemos el valor del texto del contenedor principal
+    // Restablecimiento del valor del texto del contenedor principal
     targetGroup.select("text").text(insertionValue);
 
-    // Eliminamos el grupo de inserción
+    // Limpieza del grupo de inserción
     insertionGroup.remove();
 
-    // Restablecemos los valores de las queries del usuario
+    // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
 
-    // Finalizamos la animación
+    // Finalización de la animación
     setIsAnimating(false);
 }
 
 /**
- * Función encargada de animar la eliminación de un elemento existente dentro de la secuencia
+ * Función encargada de animar la eliminación del ultimo elemento con valor dentro de la secuencia
+ * @param svg Lienzo en el que se va a dibujar 
  * @param targetGroup Grupo dentro del lienzo que se va a animar
+ * @param deletedValue Valor del elemento eliminado 
+ * @param deletedIndex Indice del elemento eliminado
+ * @param dims Dimensiones de los elementos dentro del lienzo
  * @param resetQueryValues Función que restablece los valores de las queries del usuario
- * @param valueToDelete Valor del elemento a ser eliminado
+ * @param setIsAnimating Función que establece el estado de animación
  */
-export function animateDeleteElementSequence(
+export async function animateDeleteLastElementSequence(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     targetGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    deletedValue: number,
+    deletedIndex: number,
+    dims: {
+        margin: { left: number, right: number },
+        elementWidth: number,
+        elementHeight: number,
+        spacing: number,
+        height: number
+    },
     resetQueryValues: () => void,
-    valueToDelete: number,
-    onAnimationEnd: () => void
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Animamos el rectángulo: se desvanece (fade out) y luego se asigna el color de eliminación
-    targetGroup.select("rect")
-        .transition()
-        .duration(1500)
-        .attr("fill", "gray")
-        .style("opacity", 0)
-        .ease(d3.easeBack)
-        .on("end", function () {
-            d3.select(this)
-                .transition()
-                .duration(1000)
-                .attr("fill", "lightgray")
-                .style("opacity", 1);
-        });
+    // Dimensiones del lienzo
+    const { margin, elementWidth, elementHeight, spacing, height } = dims;
 
-    // Animación para desvanecimiento del texto
+    // Posición del elemento a eliminar
+    const destX = margin.left + deletedIndex * (elementWidth + spacing);
+    const destY = (height - elementHeight) / 2;
+
+    // Restablecimiento del texto original del contenedor del elemento eliminado
     targetGroup.select("text")
-        .text(valueToDelete)
+        .text(deletedValue);
+
+    // Restablecimiento del color original de fondo para el contenedor del elemento eliminado
+    targetGroup.select("rect.sequence-rect")
+        .attr("fill", "#fee2e2");
+
+    // Creación o reutilización de un grupo temporal para la eliminación
+    let deleteGroup = svg.select<SVGGElement>("g#delete-group");
+    if (deleteGroup.empty()) {
+        deleteGroup = svg.append("g")
+            .attr("id", "delete-group");
+    }
+
+    // Limpieza de todos los elementos hijos previos en ese grupo
+    deleteGroup.selectAll("*").remove();
+
+    // Creación del elemento flecha que indica la dirección de eliminación
+    const arrow = deleteGroup.append("path")
+        .attr("class", "insertion-arrow")
+        .attr("d", "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z")
+        .attr("fill", "red")
+        .attr("transform", `translate(${destX + elementWidth / 2}, ${destY - 40})`)
+        .style("opacity", 0);
+
+    // Transición de aparición del elemento flecha
+    await arrow.transition()
+        .delay(100)
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+
+    // Desvanecimiento del texto original
+    await targetGroup.select("text")
         .transition()
         .delay(100)
         .duration(1500)
+        .ease(d3.easeBack)
         .style("opacity", 0)
-        .on("end", function () {
-            d3.select(this)
-                .text("")
-            resetQueryValues()
-            onAnimationEnd()
-        });
+        .end();
+
+    // Transición para el cambio de fondo del contenedor del elemento eliminado
+    await targetGroup.select("rect.sequence-rect")
+        .transition()
+        .delay(100)
+        .duration(2000)
+        .ease(d3.easeBounce)
+        .attr("fill", "white")
+        .end();
+
+    // Restablecimiento del texto resultante de la operación de eliminación
+    targetGroup.select("text")
+        .text("")
+        .style("opacity", 1);
+
+    // Desvanecimiento del indicador de eliminación
+    await arrow.transition()
+        .duration(500)
+        .style("opacity", 0)
+        .end();
+
+    // Limpieza del grupo de eliminación
+    deleteGroup.remove();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
 }
 
 /**
- * Función encargada de animar la reestructuración de los elementos afectados por una eliminación
- * @param deletedGroup Grupo dentro del lienzo referente al elemento eliminado
- * @param affectedGroups Grupos del lienzo afectados por la eliminación
- * @param nullGroup Grupo del lienzo que termina sin valor
- * @param resetQueryValues Función que restablece los valores de las queries del usuario
- * @param valueToDelete Valor eliminado
- * @param actualValue Valor que reemplaza al valor eliminado
- * @param lastValue Ultimo valor afectado por la eliminación
+ * Función encargada de animar la eliminación de un elemento que requiere el desplazamiento de otros elementos
+ * @param svg Lienzo en el que se va a dibujar
+ * @param affectedGroups Grupos dentro del lienzo afectados por la eliminación
+ * @param nullGroup Grupo dentro del lienzo que termina sin valor
+ * @param prevSequence Estado previo de la secuencia
+ * @param deletedIndexElement Indice del elemento eliminado
+ * @param firstNullIndex Indice del elemento que termina sin valor
+ * @param dims Dimensiones de los elementos dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de las queries del usuario 
+ * @param setIsAnimating Función que establece el estado de animación
  */
-export function animateTransformDeleteSequence(
-    deletedGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+export async function animateDeleteElementWithDisplacement(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     affectedGroups: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
     nullGroup: d3.Selection<SVGGElement, number | null, SVGSVGElement, unknown>,
+    prevSequence: (number | null)[],
+    deletedIndexElement: number,
+    firstNullIndex: number,
+    dims: {
+        margin: { left: number, right: number },
+        elementWidth: number,
+        elementHeight: number,
+        spacing: number,
+        height: number
+    },
     resetQueryValues: () => void,
-    valueToDelete: number,
-    actualValue: number | null,
-    lastValue: number
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Transición para el rectángulo: fade-out y luego cambio a lightgray
-    const rectTransition = deletedGroup.select("rect")
-        .transition()
-        .duration(1500)
-        .attr("fill", "gray")
-        .style("opacity", 0)
-        .ease(d3.easeBack)
-        .transition()
-        .duration(1000)
-        .attr("fill", "lightgray")
-        .style("opacity", 1)
-        .end()
+    // Dimensiones del lienzo
+    const { margin, elementWidth, elementHeight, spacing, height } = dims;
 
-    // Transición para el texto: fade-out y cambio final de texto
-    const textTransition = deletedGroup.select("text")
-        .text(valueToDelete)
-        .transition()
+    // Ocultamos el texto de los elementos originales afectados
+    affectedGroups.select("text")
+        .style("opacity", 0);
+
+    // Devolvemos el color original al grupo que termina sin valor
+    nullGroup.select("rect")
+        .attr("fill", "#fee2e2");
+
+    // Creación o reutilización de una capa overlay para animar el desplazamiento
+    let displacementGroup = svg.select<SVGGElement>("g#displacement-group");
+    if (displacementGroup.empty()) {
+        displacementGroup = svg.append("g")
+            .attr("id", "displacement-group");
+    }
+
+    // Limpieza de la capa overlay de elementos previos
+    displacementGroup.selectAll("*").remove();
+
+    // Uso del estado previo de la secuencia para construir el overlay
+    // Por cada índice afectado, posicionamos un <text> en el overlay con el valor correspondiente.
+    for (let i = deletedIndexElement; i <= firstNullIndex; i++) {
+        const xPos = margin.left + i * (elementWidth + spacing) + elementWidth / 2;
+        const yPos = ((height - elementHeight) / 2) + 38;
+        const value = prevSequence[i] ?? "";
+        displacementGroup.append("text")
+            .attr("x", xPos)
+            .attr("y", yPos)
+            .attr("text-anchor", "middle")
+            .attr("fill", "black")
+            .style("font-size", "16px")
+            .text(value);
+    }
+
+    // Creación del elemento flecha que indica la dirección del elemento a eliminar
+    const arrow = displacementGroup.append("path")
+        .attr("class", "insertion-arrow")
+        .attr("d", "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z")
+        .attr("fill", "red")
+        .attr("transform", `translate(${margin.left + deletedIndexElement * (elementWidth + spacing) + elementWidth / 2}, ${((height - elementHeight) / 2) - 40})`)
+        .style("opacity", 0);
+
+    // Transición para la aparición del elemento flecha
+    await arrow.transition()
         .delay(100)
-        .duration(1500)
-        .style("opacity", 0)
-        .on("end", function () {
-            d3.select(this).text(actualValue);
-        })
+        .duration(1000)
+        .style("opacity", 1)
         .end();
 
-    // Una vez que ambas transiciones han finalizado, se lanza la segunda animación
-    Promise.all([rectTransition, textTransition]).then(() => {
-        affectedGroups.select("rect")
-            .transition()
-            .duration(1000)
-            .attr("fill", "skyblue");
+    // Obtención del elemento de texto dentro del overlay correspondiente al elemento a eliminar
+    const textElements = displacementGroup.selectAll("text").nodes();
+    const deletedTextElement = d3.select(textElements[0]);
 
-        affectedGroups.select("text")
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .transition()
-            .duration(5500)
-            .style("opacity", 1)
-            .on("end", resetQueryValues);
+    // Transición de desvanecimiento del texto a eliminar
+    await deletedTextElement.transition()
+        .duration(1500)
+        .style("opacity", 0)
+        .ease(d3.easeBounce)
+        .end();
 
-        nullGroup.select("rect")
-            .transition()
-            .duration(1500)
-            .style("opacity", 0)
-            .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .attr("fill", "lightgray");
+    // Desplazamiento de los elementos de texto dentro del overlay hacia la izquierda
+    await displacementGroup.selectAll("text")
+        .transition()
+        .duration(2000)
+        .attr("x", function () {
+            return +d3.select(this).attr("x") - (elementWidth + spacing);
+        })
+        .ease(d3.easeBack)
+        .end();
 
-        nullGroup.select("text")
-            .transition()
-            .duration(1500)
-            .style("opacity", 0)
-            .on("end", function () {
-                d3.select(this)
-                    .text("")
-            });
-    });
+    // Restablecimiento del color del contenedor del grupo que termina sin valor
+    await nullGroup.select("rect")
+        .transition()
+        .duration(1000)
+        .attr("fill", "white")
+        .ease(d3.easeBounce)
+        .end();
 
-    // Elementos necesarios antes de comenzar la eliminación
-    nullGroup.select("rect")
-        .attr("fill", "skyblue")
+    // Devolvemos la opacidad a los elementos de texto originales
+    affectedGroups.select("text")
+        .style("opacity", 1);
 
-    nullGroup.select("text")
-        .text(lastValue);
+    // Desvanecimiento del indicador de eliminación
+    await arrow.transition()
+        .duration(500)
+        .style("opacity", 0)
+        .end();
+
+    // Limpieza del grupo de inserción
+    displacementGroup.remove();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Fin de la animación
+    setIsAnimating(false);
 }
 
 /**
@@ -422,7 +526,7 @@ export async function animateUpdateSequence(
     const startX = destX + elementWidth / 2;
     const startY = 12;
 
-    // Reestablecimiento del valor original del texto del contenedor donde se va a actualizar el elemento
+    // Restablecimiento del valor original del texto del contenedor donde se va a actualizar el elemento
     targetGroup.select("text")
         .text(oldValue);
 
@@ -497,18 +601,18 @@ export async function animateUpdateSequence(
         .style("opacity", 0)
         .end();
 
-    // Reestablecemos el valor del texto del contenedor principal
+    // Restablecimiento del valor del texto del contenedor principal
     targetGroup.select("text")
         .text(newValue)
         .style("opacity", 1);
 
-    // Eliminamos el grupo de actualización
+    // Limpieza del grupo de actualización
     updatedGroup.remove();
 
-    // Restablecemos los valores de las queries del usuario
+    // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
 
-    // Finalizamos la animación
+    // Finalización de la animación
     setIsAnimating(false);
 }
 
@@ -516,6 +620,9 @@ export async function animateUpdateSequence(
  * Función encargada de animar la búsqueda de un elemento dentro de la secuencia
  * @param svg Lienzo donde se va a aplicar la animación
  * @param valueToSearch Valor a buscar
+ * @param dims Dimensiones de los elementos dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de las queries del usuario
+ * @param setIsAnimating Función que establece el estado de animación
  */
 export async function animateSearchSequence(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -527,46 +634,48 @@ export async function animateSearchSequence(
         spacing: number,
         height: number
     },
-    onAnimationEnd: () => void
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ): Promise<void> {
-    // Extraemos las dimensiones
+    // Dimensiones del lienzo
     const { margin, elementWidth, elementHeight, spacing, height } = dims;
 
-    // Seleccionamos los elementos
+    // Selección de los elementos
     const elements = svg.selectAll("g.element");
 
-    // Restablecemos los bordes de los contenedores antes de iniciar la animación
-    elements.each(function () {
-        d3.select(this).select("rect.sequence-rect")
-            .attr("stroke", "gray")
-            .attr("stroke-width", 1);
-    });
+    // Restablecimiento de los bordes y fondos de los contenedores antes de iniciar la animación
+    elements.select("rect.sequence-rect")
+        .attr("fill", d => d === null ? "white" : "#fee2e2")
+        .attr("stroke", "gray")
+        .attr("stroke-width", 1);
 
-    // Creamos o reutilizamos una grupo temporal para la flecha indicatoria
+    // Creación o reutilización de un grupo temporal para la flecha indicatoria
     let searchGroup = svg.select<SVGGElement>("g#search-group");
     if (searchGroup.empty()) {
         searchGroup = svg.append("g")
             .attr("id", "search-group");
     }
 
-    // Creamos la flecha indicatoria usando un path
+    // Creacíon de la flecha indicatoria usando un path
     const arrow = searchGroup.append("path")
         .attr("class", "search-arrow")
         .attr("d", "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z")
         .attr("fill", "red")
         .style("opacity", 0);
 
-    // Indicamos la posición inicial de la flecha (justo arriba del primer elemento)
+    // Posición inicial de la flecha (justo arriba del primer elemento)
     const startX = margin.left + elementWidth / 2;
     const startY = (height - elementHeight) / 2 - 40;
     await arrow.transition()
-        .duration(500)
+        .duration(600)
         .style("opacity", 1)
         .attr("transform", `translate(${startX}, ${startY})`)
         .end();
 
     // Variable de control
     let found = false;
+
+    // Obtención de los nodos de los elementos en forma de array
     const elementsNodes = elements.nodes();
 
     // Recorremos cada elemento de forma secuencial
@@ -574,46 +683,57 @@ export async function animateSearchSequence(
         // Si se encuentra el elemento detenemos la ejecución
         if (found) break;
 
-        // Calculamos la posición del elemento actual
-        const xPos = margin.left + i * (elementWidth + spacing) - elementWidth / 2;
-        const yPos = (height - elementHeight) / 2 - 20;
+        // Calculo de la posición del elemento actual
+        const xPos = margin.left + i * (elementWidth + spacing) + elementWidth / 2;
+        const yPos = (height - elementHeight) / 2 - 40;
 
-        // Movemos la flecha al elemento actual
+        // Transición de la flecha indicatoria a la posición del elemento actual
         await arrow.transition()
             .duration(1000)
             .attr("transform", `translate(${xPos}, ${yPos})`)
+            .ease(d3.easeCubicInOut)
             .end();
 
-        // Resaltamos brevemente el rectángulo del elemento actual
+        // Resaltado breve del rectángulo del elemento actual
         const currentElement = d3.select(elementsNodes[i]);
         await currentElement.select("rect")
             .transition()
-            .duration(400)
-            .attr("fill", "violet")
+            .duration(600)
+            .attr("stroke", "#f87171")
+            .attr("stroke-width", 3)
             .transition()
-            .duration(400)
-            .attr("fill", "lightgray")
+            .duration(600)
+            .attr("stroke", "gray")
+            .attr("stroke-width", 1)
             .end();
 
-        // Verificar si el dato del elemento coincide con el valor buscado.
+        // Data vinculada al elemento actual
         const d = currentElement.datum();
+
+        // Verificamos si el dato del elemento coincide con el valor buscado.
         if (d === valueToSearch) {
-            // Resaltar el elemento encontrado de forma definitiva
-            currentElement.select("rect")
-                .attr("fill", "violet")
-                .attr("stroke-width", 2);
-            currentElement.select("text.memory")
-                .style("font-weight", "bold");
+            // Resaltado definitivo del elemento encontrado
+            await currentElement.select("rect")
+                .transition()
+                .duration(500)
+                .attr("stroke", "#f87171")
+                .attr("stroke-width", 4)
+                .end();
             found = true;
             break;
         }
     }
 
-    // Desvanecer la flecha y limpiar la capa overlay
+    // Desvanecimiento de la flecha indicatoria y limpieza de la capa overlay
     await arrow.transition()
-        .duration(500)
+        .duration(600)
         .style("opacity", 0)
         .end();
     searchGroup.remove();
-    onAnimationEnd();
+
+    // Restablecimiento de las consultas del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
 }
