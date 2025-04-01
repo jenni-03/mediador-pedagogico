@@ -101,7 +101,6 @@ export function ArrayMemory({
             setTempValue={setTempValue}
             onClose={() => setSelectedEntry(null)}
             consolaRef={consolaRef}
-            memoryState={memoryState}
             setMemoryState={setMemoryState}
             size={sizes[selectedEntry.address] ?? "Desconocido"}
           />
