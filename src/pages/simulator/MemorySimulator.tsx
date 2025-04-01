@@ -29,7 +29,7 @@ export function MemorySimulator() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 relative">
+    <div className="min-h-[100dvh] bg-gray-140 relative flex flex-col pb-64">
       <TitleComponent />
       
       <MemoryScreen 

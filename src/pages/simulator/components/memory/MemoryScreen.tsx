@@ -24,37 +24,39 @@
     return (
       <div className="w-full flex flex-col items-center px-4 mt-4 sm:mt-6 relative">
         <div
-      className="
-        w-full max-w-6xl
-        bg-[#f9f9f9]
-        border border-red-400
-        rounded-lg
-        shadow-[0px_0px_15px_rgba(0,0,0,0.05)]
-        flex flex-col
-        relative
-        max-h-[85vh]
-        overflow-visible
-      "
-    >
+  className="
+    w-full max-w-6xl
+    bg-white
+    border-2 border-red-400
+    rounded-3xl
+    shadow-xl shadow-red-100
+    flex flex-col
+    relative
+    max-h-[85vh]
+    overflow-visible
+    transition-all duration-300
+  "
+>
+
 
 
           {/* 📢 Cabecera */}
-          <div
-            className="
-              sticky top-0 left-0 w-full
-              bg-[#f9f9f9]
-              p-4
-              z-20
-              text-center
-              border-b border-red-200
-              flex flex-col items-center
-            "
-          >
-            <h3 className="text-neutral-900 text-2xl font-bold tracking-wider">
-            SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()} 
-            </h3>
+<div
+  className="
+    sticky top-0 left-0 w-full
+    bg-[#f9f9f9]
+    p-4 z-20
+    text-center
+    border-b border-red-200
+    flex flex-col items-center
+    rounded-t-3xl shadow
+  "
+>
+  <h3 className="text-neutral-900 text-2xl font-bold tracking-wider">
+    SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()}
+  </h3>
 
-            <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-3xl mt-3">
+  <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-3xl mt-3">
     {/* Botón Limpiar */}
     <motion.button
       whileTap={{ scale: 0.95 }}
@@ -115,9 +117,8 @@
       🧪 <span>Casos de Prueba</span>
     </motion.button>
   </div>
+</div>
 
-
-          </div>
 
           {/* 📜 Contenido de memoria */}
           <div className="w-full flex-1 min-h-0 overflow-y-auto px-2 pt-4 pb-28 scrollbar-thin scrollbar-thumb-red-400 scrollbar-track-gray-200">
@@ -134,7 +135,8 @@
           </div>
 
           {/* 🎮 Barra inferior de segmentos */}
-  <div className="w-full bg-[#f4f4f4] py-4 px-2 flex flex-wrap justify-center gap-3 border-t border-red-200 shadow-inner relative z-10">
+<div className="w-full bg-[#f4f4f4] border-t border-red-200 shadow-inner rounded-b-3xl relative z-10">
+  <div className="w-full max-w-6xl mx-auto px-2 py-4 flex flex-wrap justify-center gap-3">
     {[
       "boolean", "char", "byte", "short", "int",
       "long", "float", "double", "string",
@@ -142,15 +144,13 @@
       <button
         key={seg}
         onClick={() => setSelectedSegment(seg)}
-        className={`
-          px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
+        className={`px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
           rounded-full border transition-all duration-300
           ${
             selectedSegment === seg
               ? "bg-red-100 border-red-400 text-red-700 shadow"
               : "bg-white border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
-          }
-        `}
+          }`}
       >
         {seg}
       </button>
@@ -162,20 +162,21 @@
       <button
         key={seg}
         onClick={() => setSelectedSegment(seg)}
-        className={`
-          px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
+        className={`px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
           rounded-full border transition-all duration-300
           ${
             selectedSegment === seg
               ? "bg-red-100 border-red-400 text-red-700 shadow"
               : "bg-white border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
-          }
-        `}
+          }`}
       >
         {seg}
       </button>
     ))}
   </div>
+</div>
+
+
 
         </div>
 
