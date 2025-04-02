@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { infoStructures } from "../../../shared/constants/infoStructures";
-import { FaSpinner } from "react-icons/fa"; // Icono de carga animado
+import { infoStructures } from "../../../../shared/constants/infoStructures";
+import { FaSpinner } from "react-icons/fa";
 
 export function DataStructureInfo({
     children,
