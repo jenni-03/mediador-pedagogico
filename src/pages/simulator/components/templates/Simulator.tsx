@@ -1,12 +1,12 @@
-import { ConsoleComponent } from "./components/ConsoleComponent";
-import { DataStructureInfo } from "./components/DataStructureInfo";
-import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
-import { SimulatorProps } from "../../types";
+import { ConsoleComponent } from "../atoms/ConsoleComponent";
+import { DataStructureInfo } from "../atoms/DataStructureInfo";
+import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
+import { SimulatorProps } from "../../../../types";
 import { useRef, useState } from "react";
-import { commandsData } from "../../shared/constants/commandsData";
-import { operations_pseudoCode } from "../../shared/constants/pseudoCode";
-import { useAnimation } from "../../shared/hooks/useAnimation";
-import { memory_address } from "../../shared/constants/memoryAddress";
+import { commandsData } from "../../../../shared/constants/commandsData";
+import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
+import { useAnimation } from "../../../../shared/hooks/useAnimation";
+import { memory_address } from "../../../../shared/constants/memoryAddress";
 
 export function Simulator({
     structure: structure,
@@ -84,10 +84,12 @@ export function Simulator({
     return (
         <div className="min-h-screen flex flex-col overflow-y-auto">
             <div>
-                <h1 className="
+                <h1
+                    className="
     text-xl sm:text-3xl font-extrabold tracking-wide uppercase text-center mt-2 
     text-red-600 drop-shadow-[2px_2px_2px_rgba(0,0,0,0.5)]
-  ">
+  "
+                >
                     {structureName.toUpperCase() + " <int>"}
                 </h1>
             </div>
@@ -98,7 +100,10 @@ export function Simulator({
                         structure={structureName}
                         structurePrueba={structure}
                         {...(codigoMemoria && {
-                            memoryAddress: { message: codigoMemoria, id: Date.now() },
+                            memoryAddress: {
+                                message: codigoMemoria,
+                                id: Date.now(),
+                            },
                         })}
                     >
                         {children}

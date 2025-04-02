@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Consola } from "../../../../shared/utils/RAM/Consola";
 import { motion, AnimatePresence } from "framer-motion";
 import { ObjectDetailsModal } from "./ObjectDetailsModal";
-import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
+import { DeleteConfirmationModal } from "../atoms/DeleteConfirmationModal";
 
 interface ObjectMemoryProps {
     searchTerm: string;

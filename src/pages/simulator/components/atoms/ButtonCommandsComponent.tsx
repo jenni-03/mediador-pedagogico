@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { CommandProps } from "../../../types";
-import { CustomModal } from "./CustomModal";
+import { CommandProps } from "../../../../types";
+import { CustomModal } from "../molecules/CustomModal";
 
 export function ButtonCommandsComponent({
     title,
