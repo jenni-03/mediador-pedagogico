@@ -28,7 +28,6 @@ export function PrimitiveMemory({
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [changeTypeTarget, setChangeTypeTarget] = useState<string | null>(null);
 
-  // Calcula los tamaños de cada variable en el segmento actual
   useEffect(() => {
     const newSizes: Record<string, string> = {};
     memorySegment.forEach((entry) => {
@@ -40,7 +39,6 @@ export function PrimitiveMemory({
     setSizes(newSizes);
   }, [JSON.stringify(memorySegment)]);
 
-  // Retorna una clase de color según el tipo de dato
   const getValueColor = (type: string) => {
     switch (type) {
       case "boolean": return "text-red-600";
@@ -58,8 +56,7 @@ export function PrimitiveMemory({
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Grid de tarjetas de variables */}
-      <div className="w-full max-w-7xl grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 p-4 sm:gap-5 sm:p-6">
+      <div className="w-full max-w-7xl grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4 p-4 sm:gap-5 sm:p-6">
         {memorySegment.length > 0 ? (
           memorySegment
             .filter((entry) => (searchTerm ? entry.address.includes(searchTerm) : true))
@@ -77,10 +74,9 @@ export function PrimitiveMemory({
                   setTempValue(entry.value);
                 }}
                 className="relative bg-white p-5 rounded-2xl border border-gray-300 shadow-sm 
-                           flex flex-col items-center justify-center text-center cursor-pointer 
-                           hover:border-red-400 hover:shadow-md transition-all"
+                  flex flex-col items-center text-center cursor-pointer 
+                  hover:border-red-400 hover:shadow-md transition-all"
               >
-                {/* Dirección de memoria y botón para cambiar tipo */}
                 <div className="absolute top-2 left-2 flex items-center gap-1">
                   <span className="text-xs bg-red-500 text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
                     {entry.address}
@@ -97,7 +93,6 @@ export function PrimitiveMemory({
                   </button>
                 </div>
 
-                {/* Tamaño de variable y botón de eliminación */}
                 <div className="absolute top-2 right-2 flex items-center gap-2">
                   <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full font-medium shadow-sm">
                     {sizes[entry.address] ?? "…"}
@@ -114,11 +109,28 @@ export function PrimitiveMemory({
                   </button>
                 </div>
 
-                {/* Nombre y valor de la variable */}
                 <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">{entry.name}</p>
-                <p className={`${getValueColor(entry.type)} text-base mt-1 truncate w-full px-2`}>
-                  {JSON.stringify(entry.value)}
-                </p>
+
+                <div className="mt-4 w-full overflow-x-auto">
+                  <table className="min-w-full border border-gray-200 text-sm rounded-xl overflow-hidden">
+                    <thead className="bg-red-50 text-red-700 text-xs uppercase tracking-wider">
+                      <tr>
+                        <th className="py-2 px-3 border-b border-red-200">Tipo</th>
+                        <th className="py-2 px-3 border-b border-red-200">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="even:bg-gray-50 hover:bg-red-50 transition-all">
+                        <td className="px-3 py-2 border-b border-gray-200 text-center text-gray-600 font-semibold">
+                          {entry.type}
+                        </td>
+                        <td className={`px-3 py-2 border-b border-gray-200 text-center font-semibold ${getValueColor(entry.type)}`}>
+                          {typeof entry.value === "object" ? JSON.stringify(entry.value) : String(entry.value)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </motion.div>
             ))
         ) : (
@@ -128,7 +140,6 @@ export function PrimitiveMemory({
         )}
       </div>
 
-      {/* Modal de detalles de variable */}
       <AnimatePresence>
         {selectedEntry && (
           <VariableDetailsModal
@@ -143,7 +154,6 @@ export function PrimitiveMemory({
         )}
       </AnimatePresence>
 
-      {/* Modal de confirmación de eliminación */}
       <AnimatePresence>
         {deleteTarget && (
           <DeleteConfirmationModal
@@ -155,7 +165,6 @@ export function PrimitiveMemory({
         )}
       </AnimatePresence>
 
-      {/* Modal de cambio de tipo */}
       <AnimatePresence>
         {changeTypeTarget && (
           <ChangeTypeModal
