@@ -3,6 +3,7 @@ import { Consola } from "../../../../shared/utils/RAM/Consola";
 import { motion, AnimatePresence } from "framer-motion";
 import { ObjectDetailsModal } from "./ObjectDetailsModal";
 import { DeleteConfirmationModal } from "../atoms/DeleteConfirmationModal";
+import { ChangeTypeModal } from "./ChangeTypeModal";
 
 interface ObjectMemoryProps {
     searchTerm: string;
@@ -22,8 +23,21 @@ export function ObjectMemory({
     const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
     const [sizes, setSizes] = useState<Record<string, string>>({});
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+    const [changeTypeTarget, setChangeTypeTarget] = useState<string | null>(
+        null
+    );
 
-    // Calcular tamaño de cada objeto al montar o actualizar el segmento
+    // Actualizar selectedEntry si memoryState cambia
+    useEffect(() => {
+        if (selectedEntry) {
+            const updated = memoryState["object"].find(
+                (obj) => obj.address === selectedEntry.address
+            );
+            if (updated) setSelectedEntry(updated);
+        }
+    }, [memoryState]);
+
+    // Calcular tamaños
     useEffect(() => {
         const newSizes: Record<string, string> = {};
         memorySegment.forEach((entry) => {
@@ -37,7 +51,6 @@ export function ObjectMemory({
         setSizes(newSizes);
     }, [JSON.stringify(memorySegment)]);
 
-    // Colores por tipo de dato
     const colorByType = (type: string) => {
         switch (type) {
             case "int":
@@ -61,7 +74,6 @@ export function ObjectMemory({
 
     return (
         <div className="w-full flex flex-col items-center">
-            {/* Grid de tarjetas de objetos */}
             <div className="w-full max-w-7xl grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4 p-4 sm:gap-5 sm:p-6">
                 {memorySegment.length > 0 ? (
                     memorySegment
@@ -87,14 +99,14 @@ export function ObjectMemory({
                            flex flex-col items-center justify-center text-center cursor-pointer 
                            hover:border-red-400 hover:shadow-md transition-all"
                             >
-                                {/* Dirección de memoria */}
+                                {/* Dirección */}
                                 <div className="absolute top-2 left-2">
                                     <span className="text-xs bg-red-500 text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
                                         {entry.address}
                                     </span>
                                 </div>
 
-                                {/* Tamaño y botón eliminar */}
+                                {/* Tamaño y eliminar */}
                                 <div className="absolute top-2 right-2 flex items-center gap-2">
                                     <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full font-medium shadow-sm">
                                         {sizes[entry.address] ?? "…"}
@@ -111,23 +123,26 @@ export function ObjectMemory({
                                     </button>
                                 </div>
 
-                                {/* Nombre del objeto */}
+                                {/* Nombre */}
                                 <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">
                                     {entry.name}
                                 </p>
 
-                                {/* Tabla de atributos del objeto */}
+                                {/* Tabla */}
                                 <div className="w-full mt-4 overflow-x-auto">
-                                    <table className="min-w-full text-sm text-left border border-gray-300 rounded-lg overflow-hidden">
-                                        <thead className="bg-gray-100 text-gray-700 font-semibold">
+                                    <table className="min-w-full text-sm text-left border border-gray-300 rounded-2xl overflow-hidden shadow-sm">
+                                        <thead className="bg-red-50 text-red-700 uppercase text-xs tracking-wider">
                                             <tr>
-                                                <th className="px-4 py-2 border-b border-gray-300">
+                                                <th className="px-4 py-2 border-b border-red-200">
+                                                    Dirección
+                                                </th>
+                                                <th className="px-4 py-2 border-b border-red-200">
                                                     Tipo
                                                 </th>
-                                                <th className="px-4 py-2 border-b border-gray-300">
+                                                <th className="px-4 py-2 border-b border-red-200">
                                                     Key
                                                 </th>
-                                                <th className="px-4 py-2 border-b border-gray-300">
+                                                <th className="px-4 py-2 border-b border-red-200">
                                                     Valor
                                                 </th>
                                             </tr>
@@ -137,32 +152,56 @@ export function ObjectMemory({
                                                 (group: any[], i: number) => {
                                                     const type =
                                                         group.find(
-                                                            (attr: any) =>
-                                                                attr.key ===
-                                                                "type"
+                                                            (a: any) =>
+                                                                a.key === "type"
                                                         )?.value || "unknown";
                                                     const key =
                                                         group.find(
-                                                            (attr: any) =>
-                                                                attr.key ===
-                                                                "key"
+                                                            (a: any) =>
+                                                                a.key === "key"
                                                         )?.value || "";
                                                     const value =
                                                         group.find(
-                                                            (attr: any) =>
-                                                                attr.key ===
+                                                            (a: any) =>
+                                                                a.key ===
                                                                 "value"
                                                         )?.value ?? "";
+                                                    const cmd = `address of ${entry.name}_${key}`;
+                                                    const result =
+                                                        consolaRef.current?.ejecutarComando(
+                                                            cmd
+                                                        );
+                                                    const address =
+                                                        result && result[0]
+                                                            ? result[1]
+                                                            : "—";
 
                                                     return (
                                                         <tr
                                                             key={i}
-                                                            className="even:bg-gray-50"
+                                                            className="even:bg-white odd:bg-gray-50 hover:bg-red-50 transition-all"
                                                         >
-                                                            <td className="px-4 py-2 border-b border-gray-200 text-gray-500">
-                                                                {type}
+                                                            <td className="px-4 py-2 border-b border-gray-200 text-xs text-gray-600 font-mono">
+                                                                {address}
                                                             </td>
-                                                            <td className="px-4 py-2 border-b border-gray-200 font-medium">
+                                                            <td className="px-4 py-2 border-b border-gray-200 text-gray-600 flex items-center gap-2">
+                                                                {type}
+                                                                <button
+                                                                    onClick={(
+                                                                        e
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        setChangeTypeTarget(
+                                                                            address
+                                                                        );
+                                                                    }}
+                                                                    className="bg-red-100 hover:bg-red-200 text-red-600 px-2 py-1 rounded-full text-xs font-bold shadow-sm"
+                                                                    title="Cambiar tipo"
+                                                                >
+                                                                    ⚙️
+                                                                </button>
+                                                            </td>
+                                                            <td className="px-4 py-2 border-b border-gray-200 font-semibold text-black">
                                                                 {key}
                                                             </td>
                                                             <td
@@ -193,7 +232,7 @@ export function ObjectMemory({
                 )}
             </div>
 
-            {/* Modal de detalles del objeto */}
+            {/* Modales */}
             <AnimatePresence>
                 {selectedEntry && (
                     <ObjectDetailsModal
@@ -206,7 +245,6 @@ export function ObjectMemory({
                 )}
             </AnimatePresence>
 
-            {/* Modal de confirmación de eliminación */}
             <AnimatePresence>
                 {deleteTarget && (
                     <DeleteConfirmationModal
@@ -214,6 +252,17 @@ export function ObjectMemory({
                         consolaRef={consolaRef}
                         onClose={() => setDeleteTarget(null)}
                         setMemoryState={setMemoryState}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {changeTypeTarget && (
+                    <ChangeTypeModal
+                        address={changeTypeTarget}
+                        consolaRef={consolaRef}
+                        setMemoryState={setMemoryState}
+                        onClose={() => setChangeTypeTarget(null)}
                     />
                 )}
             </AnimatePresence>
