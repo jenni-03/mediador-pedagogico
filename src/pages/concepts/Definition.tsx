@@ -21,7 +21,6 @@ export function Definition() {
 
     const { estructura } = route.useParams();
     const nombre: string = conceptosData[estructura].nombre;
-    console.log("nombre", nombre);
 
     // Buscar el componente correspondiente en el mapeo, si no existe, usar un fallback
     const DynamicComponent = componentMap[nombre] || (() => <p>Componente no encontrado</p>);

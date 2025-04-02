@@ -72,31 +72,29 @@ export function DefinitionSecuencia() {
                     funcionamiento de estas el estudiante puede implementar de
                     creer necesario las demás dimensiones.
                 </p>
-                <p>
-                    <h1 className="text-xl font-bold my-4">
-                        Secuencia unidimensional
-                    </h1>
-                    <p className="text-gray-800 text-sm mt-3 leading-6">
-                        Es un conjunto de elementos del mismo tipo.
-                    </p>
-                    {[
-                        "Declaración: Tipo nombre_Secuencia[Tamaño];",
-                        "Tipo: Hace referencia al tipo de los datos contenidos en el vector.",
-                        "Tamaño: Hace referencia al número de elementos máximos que puede contener la Secuencia. OJO: Este tamaño se define al crear la estructura y no puede modificarse a lo largo de la operabilidad de la misma.",
-                    ].map((element: string, index: number) => {
-                        const partes: string[] = element.split(":"); // Divide en dos partes
-
-                        return (
-                            <p
-                                key={index}
-                                className="text-sm text-gray-800 mt-3 leading-6"
-                            >
-                                <span className="font-bold">{partes[0]}:</span>
-                                {partes.slice(1).join(":")}
-                            </p>
-                        );
-                    })}
+                <h1 className="text-xl font-bold my-4">
+                    Secuencia unidimensional
+                </h1>
+                <p className="text-gray-800 text-sm mt-3 leading-6">
+                    Es un conjunto de elementos del mismo tipo.
                 </p>
+                {[
+                    "Declaración: Tipo nombre_Secuencia[Tamaño];",
+                    "Tipo: Hace referencia al tipo de los datos contenidos en el vector.",
+                    "Tamaño: Hace referencia al número de elementos máximos que puede contener la Secuencia. OJO: Este tamaño se define al crear la estructura y no puede modificarse a lo largo de la operabilidad de la misma.",
+                ].map((element: string, index: number) => {
+                    const partes: string[] = element.split(":"); // Divide en dos partes
+
+                    return (
+                        <p
+                            key={index}
+                            className="text-sm text-gray-800 mt-3 leading-6"
+                        >
+                            <span className="font-bold">{partes[0]}:</span>
+                            {partes.slice(1).join(":")}
+                        </p>
+                    );
+                })}
             </div>
         </div>
     );

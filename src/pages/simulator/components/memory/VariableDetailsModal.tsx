@@ -7,7 +7,6 @@ interface VariableDetailsModalProps {
   setTempValue: (value: string) => void;
   onClose: () => void;
   consolaRef: React.RefObject<any>;
-  memoryState: Record<string, any[]>;
   size: string;
   setMemoryState: (newState: Record<string, any[]>) => void;
 }
@@ -18,7 +17,6 @@ export function VariableDetailsModal({
   setTempValue,
   onClose,
   consolaRef,
-  memoryState,
   size,
   setMemoryState
 }: VariableDetailsModalProps) {
@@ -29,6 +27,7 @@ export function VariableDetailsModal({
   const emoji = isArray ? "📚" : "🧾";
   const title = isArray ? "Detalles del Array" : "Detalles de la Variable";
 
+  // Deducción de tipo base para arrays
   const inferType = (sample: any): string => {
     if (typeof sample === "number") return Number.isInteger(sample) ? "int" : "float";
     if (typeof sample === "boolean") return "boolean";
@@ -38,6 +37,7 @@ export function VariableDetailsModal({
 
   const baseType = isArray && entry.value.length > 0 ? inferType(entry.value[0]) : entry.type;
 
+  // Conversión de valor desde string al tipo correcto
   const parseByType = (value: string) => {
     switch (baseType) {
       case "int":
@@ -52,6 +52,7 @@ export function VariableDetailsModal({
     }
   };
 
+  // Inicializa el estado del array si corresponde
   useEffect(() => {
     if (isArray && Array.isArray(entry.value)) {
       setArrayState(entry.value);
@@ -59,6 +60,7 @@ export function VariableDetailsModal({
     }
   }, [entry]);
 
+  // Actualiza el valor de un índice específico del array
   const updateArrayValue = (index: number, newValue: string) => {
     const parsed = parseByType(newValue);
     const updated = [...arrayState];
@@ -66,6 +68,7 @@ export function VariableDetailsModal({
     setArrayState(updated);
   };
 
+  // Ejecuta el comando para actualizar el valor
   const handleAccept = () => {
     if (isArray) {
       const castedArray = arrayState.map((val) => parseByType(String(val)));
@@ -134,10 +137,12 @@ export function VariableDetailsModal({
         transition={{ duration: 0.1 }}
         className="bg-white text-black p-6 rounded-2xl shadow-xl border border-red-300 w-[90%] max-w-xl"
       >
+        {/* Título con ícono y tipo */}
         <h2 className="text-2xl font-bold text-red-600 mb-5 text-center flex justify-center items-center gap-2">
           {emoji} {title}
         </h2>
 
+        {/* Información de variable */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-5 text-gray-700">
           <p><span className="font-semibold text-red-500">🔹 Tipo:</span> {entry.type}</p>
           <p><span className="font-semibold text-red-500">🏷️ Nombre:</span> {entry.name}</p>
@@ -145,6 +150,7 @@ export function VariableDetailsModal({
           <p><span className="font-semibold text-red-500">📦 Tamaño:</span> {size}</p>
         </div>
 
+        {/* Campo para editar valor primitivo */}
         {!isArray ? (
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-semibold mb-2">
@@ -159,6 +165,7 @@ export function VariableDetailsModal({
             />
           </div>
         ) : (
+          // Tabla editable para arrays
           <div className="mb-4 overflow-x-auto border rounded-lg">
             <table className="min-w-full text-sm text-left">
               <thead className="bg-red-50 text-red-600">
@@ -186,6 +193,7 @@ export function VariableDetailsModal({
           </div>
         )}
 
+        {/* Mensaje de retroalimentación */}
         <AnimatePresence>
           {feedback && (
             <motion.div
@@ -203,6 +211,7 @@ export function VariableDetailsModal({
           )}
         </AnimatePresence>
 
+        {/* Botones de acción */}
         <div className="flex justify-end gap-2 mt-6">
           <motion.button
             whileTap={{ scale: 0.95 }}
