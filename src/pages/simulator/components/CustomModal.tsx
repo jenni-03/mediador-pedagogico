@@ -20,39 +20,40 @@ export function CustomModal({
 
     return (
         <>
-            <div onClick={openModal} className="cursor-pointer">
-                {children}
-            </div>
-            {isOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-                    <div
-                        className="rounded-2xl p-6 w-10/12 md:w-1/2 lg:w-1/4
-                        bg-white/20 backdrop-blur-md border border-white/30 shadow-lg"
-                    >
-                        <div className="flex flex-col items-center">
-                            <h2 className="text-2xl font-bold mb-4 text-black">
-                                {title}
-                            </h2>
-                        </div>
-                        <p className="mb-2 text-black">
-                            <strong>Funcionalidad:</strong> {description}
-                        </p>
-                        <p className="mb-2 text-black">
-                            <strong>Estructura del comando:</strong> {structure}
-                        </p>
-                        <p className="mb-4 text-black">
-                            <strong>Ejemplo de uso:</strong> {example}
-                        </p>
-                        <div className="text-center">
-                            <AnimatedButtonModal
-                                bgColor="#ef233c"
-                                text="Aceptar"
-                                onClick={closeModal}
-                            ></AnimatedButtonModal>
-                        </div>
-                    </div>
+          <div onClick={openModal} className="cursor-pointer">
+            {children}
+          </div>
+      
+          {isOpen && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <div className="bg-white border border-red-300 rounded-2xl shadow-2xl p-6 w-11/12 sm:w-4/5 md:w-2/3 lg:w-[30%] max-w-lg">
+                <div className="flex flex-col items-center">
+                  <h2 className="text-2xl font-extrabold text-red-600 drop-shadow-sm mb-4">
+                    {title}
+                  </h2>
+                  <div className="text-sm sm:text-base text-gray-800 space-y-3">
+                    <p>
+                      <span className="font-semibold text-red-500">🧠 Funcionalidad:</span> {description}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-red-500">🛠️ Estructura del comando:</span> {structure}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-red-500">📌 Ejemplo de uso:</span> {example}
+                    </p>
+                  </div>
                 </div>
-            )}
+      
+                <div className="mt-6 text-center">
+                  <AnimatedButtonModal
+                    bgColor="#ef233c"
+                    text="Aceptar"
+                    onClick={closeModal}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </>
-    );
+      );      
 }
