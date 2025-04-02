@@ -3,7 +3,7 @@ import { Consola } from "../../../../shared/utils/RAM/Consola";
 import { motion, AnimatePresence } from "framer-motion";
 import { ObjectDetailsModal } from "./ObjectDetailsModal";
 import { DeleteConfirmationModal } from "../atoms/DeleteConfirmationModal";
-import { ChangeTypeModal } from "./ChangeTypeModal";
+import { ChangeTypeModal } from "../atoms/ChangeTypeModal";
 
 interface ObjectMemoryProps {
     searchTerm: string;

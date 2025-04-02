@@ -59,15 +59,15 @@ export function FloatingCommandPanel() {
                                 {selected.title.toUpperCase()}
                             </h3>
                             <p className="mb-3 text-sm text-gray-700">
-                                <strong>Funcionalidad:</strong>{" "}
+                                <strong>🧠 Funcionalidad:</strong>{" "}
                                 {selected.description}
                             </p>
                             <p className="mb-3 text-sm text-gray-700">
-                                <strong>Estructura del comando:</strong>{" "}
+                                <strong>📌 Estructura del comando:</strong>{" "}
                                 {selected.estructura}
                             </p>
                             <p className="mb-5 text-sm text-gray-700">
-                                <strong>Ejemplo de uso:</strong>{" "}
+                                <strong>🛠️ Ejemplo de uso:</strong>{" "}
                                 {selected.ejemplo}
                             </p>
                             <div className="text-center">
