@@ -84,8 +84,11 @@ export function Simulator({
     return (
         <div className="min-h-screen flex flex-col overflow-y-auto">
             <div>
-                <h1 className="font-bold text-3xl text-center mt-2">
-                    {structureName.toUpperCase() + " <int>"}    
+                <h1 className="
+    text-xl sm:text-3xl font-extrabold tracking-wide uppercase text-center mt-2 
+    text-red-600 drop-shadow-[2px_2px_2px_rgba(0,0,0,0.5)]
+  ">
+                    {structureName.toUpperCase() + " <int>"}
                 </h1>
             </div>
             <div className="flex-1 bg-custom-gray border-2 border-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">

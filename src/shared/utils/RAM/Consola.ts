@@ -16,6 +16,10 @@ export class Consola {
   ejecutarComando(command: string): [true, ...any[]] | [false, string] {
     command = command.trim();
 
+    if (command === "help") {
+      return this.ejecutarHelp();
+    }
+
     if (command.startsWith("insert ")) {
       return this.ejecutarInsert(command.substring(7).trim());
     }
@@ -40,7 +44,27 @@ export class Consola {
       return this.ejecutarSet(command.substring(12).trim());
     }
 
+    if (command.startsWith("address of ")) {
+      return this.ejecutarAddressOf(command.substring(11).trim());
+    }
+
+    if (command.startsWith("type address ")) {
+      return this.ejecutarType(command.substring(13).trim());
+    }
+
     return [false, "Comando no reconocido."];
+  }
+
+  /**
+   * Ejecuta el comando "address of <nombre>" para obtener la dirección de una variable.
+   */
+  private ejecutarAddressOf(
+    name: string
+  ): [true, string, object] | [false, string] {
+    const address = this.memoria.getAddressByName(name);
+    if (!address)
+      return [false, `No se encontró una variable con el nombre "${name}".`];
+    return [true, address, this.memoria.printMemory()];
   }
 
   /**
@@ -129,6 +153,41 @@ export class Consola {
     if (!result[0]) {
       return [false, result[1]];
     }
+
+    return [true, result[1], this.memoria.printMemory()];
+  }
+
+  /**
+   * Ejecuta el comando "help" para listar los comandos disponibles.
+   */
+  private ejecutarHelp(): [true, string, object] {
+    const helpMsg = [
+      "Comandos disponibles:",
+      "",
+      "• insert --> Insertar un dato primitivo, array u objeto en memoria.",
+      "• delete address <direccion> --> Eliminar un valor por su dirección.",
+      "• clear memory --> Borra completamente toda la memoria.",
+      "• convert address <direccion> to <tipo> --> Cambia el tipo de una variable (int, float, etc).",
+      "• size address <direccion> --> Muestra el tamaño en memoria de un valor.",
+      "• set address <direccion> value <nuevo_valor> --> Cambia el valor de una dirección existente.",
+      "• address of <nombre_variable> --> Muestra la dirección de una variable por su nombre.",
+      "• type address <direccion> --> Muestra el tipo del valor en la dirección dada.",
+      "• help --> Muestra esta lista de comandos."
+    ].join("\n");
+  
+    return [true, helpMsg, this.memoria.printMemory()];
+  }
+  
+
+  /**
+   * Ejecuta el comando "type address <direccion>" para obtener el tipo de dato.
+   */
+  private ejecutarType(
+    address: string
+  ): [true, string, object] | [false, string] {
+    const result = this.memoria.getTypeByAddress(address);
+
+    if (!result[0]) return [false, result[1]];
 
     return [true, result[1], this.memoria.printMemory()];
   }

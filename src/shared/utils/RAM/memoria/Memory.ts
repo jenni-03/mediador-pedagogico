@@ -300,14 +300,17 @@ class Memory {
     return [true];
   }
 
-  removeByAddress(address: string, force: boolean = false): [true, string] | [false, string] {
+  removeByAddress(
+    address: string,
+    force: boolean = false
+  ): [true, string] | [false, string] {
     for (const [type, segment] of this.segments.entries()) {
-      console.log(type)
+      console.log(type);
       if (!segment.has(address)) continue;
-  
+
       const entry = segment.get(address)!;
       const { type: entryType, name } = entry;
-  
+
       // Validaciones educativas (solo si no es forzado)
       if (!force) {
         const isNested = name.includes("_");
@@ -316,21 +319,21 @@ class Memory {
         const [parentOk, parentEntry] = parentAddress
           ? this.getEntryByAddress(parentAddress)
           : [false, null];
-  
+
         if (isNested && parentOk && parentEntry!.type === "array") {
           return [
             false,
             `No puedes eliminar el valor "${name}" porque pertenece al array "${parentEntry!.name}". Elimina el array completo si deseas remover sus elementos.`,
           ];
         }
-  
+
         if (isNested && parentOk && parentEntry!.type === "object") {
           return [
             false,
             `No puedes eliminar la propiedad "${name}" porque forma parte del objeto "${parentEntry!.name}". Elimina el objeto completo si deseas remover sus propiedades.`,
           ];
         }
-  
+
         if (entryType === "array" && isNested) {
           return [
             false,
@@ -338,15 +341,15 @@ class Memory {
           ];
         }
       }
-  
+
       // Iniciar mensaje
       let message = `Eliminado: ${entryType.toUpperCase()} "${name}" en dirección ${address}.`;
-  
+
       // Eliminar nombre global si no es anidado
       if (!name.includes("_")) {
         MemoryValidator.removeGlobalName(name);
       }
-  
+
       // Si es un objeto, eliminar sus propiedades internas
       if (entryType === "object") {
         const properties = entry.value as {
@@ -354,9 +357,9 @@ class Memory {
           key: string;
           value: any;
         }[];
-  
+
         let deletedProps: string[] = [];
-  
+
         for (const prop of properties) {
           const propName = `${name}_${prop.key}`;
           const propAddress = this.getAddressByName(propName);
@@ -375,24 +378,24 @@ class Memory {
                   }
                 }
               }
-  
+
               // Eliminar la propiedad en sí
               this.removeByAddress(propAddress, true);
               deletedProps.push(`"${propName}" eliminada.`);
             }
           }
         }
-  
+
         if (deletedProps.length > 0) {
           message += `\nPropiedades eliminadas:\n${deletedProps.join("\n")}`;
         }
       }
-  
+
       // Si es un array, eliminar elementos internos
       if (entryType === "array") {
         const elements = entry.value as any[];
         let deletedElements: string[] = [];
-  
+
         for (let i = 0; i < elements.length; i++) {
           const elementName = `${name}_${i}`;
           const elementAddress = this.getAddressByName(elementName);
@@ -401,27 +404,26 @@ class Memory {
             deletedElements.push(`"${elementName}" eliminado.`);
           }
         }
-  
+
         if (deletedElements.length > 0) {
           message += `\nElementos del array eliminados:\n${deletedElements.join("\n")}`;
         }
       }
-  
+
       // Eliminar la entrada principal
       segment.delete(address);
       return [true, message];
     }
-  
+
     return [false, `No se encontró la dirección ${address}.`];
   }
-  
 
   /**
    * Busca la dirección de memoria de un dato a partir de su nombre.
    * @param name Nombre de la variable a buscar.
    * @returns Dirección de memoria o `null` si no se encuentra.
    */
-  private getAddressByName(name: string): string | null {
+  getAddressByName(name: string): string | null {
     for (const segment of this.segments.values()) {
       for (const [address, entry] of segment.entries()) {
         if (entry.name === name) {
@@ -488,12 +490,6 @@ class Memory {
     ];
   }
 
-  /**
-   * Cambia el tipo de dato primitivo de una variable si la conversión es válida.
-   * @param address Dirección de memoria de la variable a convertir.
-   * @param newType Nuevo tipo de dato al que se desea convertir.
-   * @returns `[true, mensaje]` si se convierte, `[false, mensaje de error]` si no.
-   */
   convertPrimitiveType(
     address: string,
     newType: PrimitiveType
@@ -502,9 +498,13 @@ class Memory {
     if (!ok) return [false, entryOrError];
 
     const entry = entryOrError;
-    const originalType = entry.type as PrimitiveType;
+    const isNested = entry.name.includes("_");
+    const parentName = entry.name.split("_")[0];
+    const parentAddress = this.getAddressByName(parentName);
+    const [parentOk, parentEntry] = parentAddress
+      ? this.getEntryByAddress(parentAddress)
+      : [false, null];
 
-    // Tipos primitivos válidos para conversión
     const convertibleTypes: PrimitiveType[] = [
       "char",
       "byte",
@@ -524,82 +524,193 @@ class Memory {
       long: 64,
       float: 32,
       double: 64,
-      string: 0, // no convertible
+      string: 0,
     };
 
-    // Verificar que ambos tipos sean primitivos convertibles
-    if (!convertibleTypes.includes(originalType)) {
-      return [false, `No se puede convertir desde tipo ${originalType}.`];
-    }
-
-    if (!convertibleTypes.includes(newType)) {
-      return [false, `No se puede convertir hacia tipo ${newType}.`];
-    }
-
-    // Validar si es un valor primitivo dentro de un array u objeto (por nombre)
-    const isNested = entry.name.includes("_");
-    if (!isNested && (entry.type === "object" || entry.type === "array")) {
+    // 🚫 No se permite convertir elementos individuales de arrays
+    if (isNested && parentOk && parentEntry?.type === "array") {
       return [
         false,
-        `No se puede convertir la estructura completa (${entry.type}), solo variables primitivas.`,
+        `No se puede convertir "${entry.name}" porque pertenece al array "${parentEntry.name}". Debes convertir el array completo.`,
       ];
     }
 
-    const fromSize = sizeInBits[originalType];
-    const toSize = sizeInBits[newType];
+    // ✅ Conversión de un array completo
+    if (entry.type === "array") {
+      const values = entry.value as any[];
+      const firstElementName = `${entry.name}_0`;
+      const firstAddress = this.getAddressByName(firstElementName);
+      if (!firstAddress)
+        return [false, "No se encontró el primer elemento del array."];
 
-    if (toSize < fromSize) {
+      const [okElem, elemEntry] = this.getEntryByAddress(firstAddress);
+      if (!okElem) return [false, elemEntry];
+      const oldType = elemEntry.type as PrimitiveType;
+
+      if (
+        !convertibleTypes.includes(oldType) ||
+        !convertibleTypes.includes(newType)
+      ) {
+        return [
+          false,
+          `Conversión no válida. Solo se permiten tipos numéricos o char.`,
+        ];
+      }
+
+      if (sizeInBits[newType] < sizeInBits[oldType]) {
+        return [
+          false,
+          `No se puede convertir de ${oldType} a ${newType} por posible pérdida de datos.`,
+        ];
+      }
+
+      const converted: any[] = [];
+      for (let i = 0; i < values.length; i++) {
+        try {
+          let val = values[i];
+          let newVal: any;
+          switch (newType) {
+            case "byte":
+            case "short":
+            case "int":
+            case "long":
+              newVal = parseInt(val);
+              break;
+            case "float":
+            case "double":
+              newVal = parseFloat(val);
+              break;
+            case "char":
+              newVal = String.fromCharCode(Number(val));
+              break;
+          }
+
+          const validation = MemoryValidator.validateValueByType(
+            newType,
+            newVal
+          );
+          if (validation !== true)
+            return [false, `Error en la posición ${i}: ${validation[1]}`];
+          converted.push(newVal);
+        } catch {
+          return [false, `Error al convertir valor en la posición ${i}.`];
+        }
+      }
+
+      // 🔁 Reemplazo limpio
+      this.forceDeleteArrayWithElements(entry.name, values.length);
+      const [stored, msg] = this.storeArray(
+        newType,
+        entry.name,
+        converted,
+        isNested
+      );
+      if (!stored) return [false, msg];
+
+      // ✅ Sincronizar con objeto padre si es necesario
+      if (isNested && parentOk && parentEntry!.type === "object") {
+        const propKey = entry.name.split("_")[1];
+        const objProps = parentEntry!.value as {
+          type: PrimitiveType;
+          key: string;
+          value: any;
+        }[];
+        const prop = objProps.find((p) => p.key === propKey);
+        if (prop) {
+          prop.type = newType;
+          prop.value = converted;
+        }
+      }
+
+      return [true, `Array "${entry.name}" convertido a tipo ${newType}.`];
+    }
+
+    // ✅ Conversión de variable primitiva (incluye propiedad de objeto)
+    const originalType = entry.type as PrimitiveType;
+    if (
+      !convertibleTypes.includes(originalType) ||
+      !convertibleTypes.includes(newType)
+    ) {
+      return [false, `Conversión no permitida entre tipos no numéricos.`];
+    }
+
+    if (sizeInBits[newType] < sizeInBits[originalType]) {
       return [
         false,
-        `No se puede convertir de ${originalType} a ${newType} por posible pérdida de datos (overflow).`,
+        `No se puede convertir de ${originalType} a ${newType} por posible pérdida de datos.`,
       ];
     }
 
-    let convertedValue: any;
-
+    let newValue: any;
     try {
       switch (newType) {
         case "byte":
         case "short":
         case "int":
         case "long":
-          convertedValue = parseInt(entry.value);
+          newValue = parseInt(entry.value);
           break;
         case "float":
         case "double":
-          convertedValue = parseFloat(entry.value);
+          newValue = parseFloat(entry.value);
           break;
         case "char":
-          convertedValue = String.fromCharCode(Number(entry.value));
+          newValue = String.fromCharCode(Number(entry.value));
           break;
       }
-
-      const validation = MemoryValidator.validateValueByType(
-        newType,
-        convertedValue
-      );
-      if (validation !== true) return [false, validation[1]];
-
-      // Eliminar la entrada antigua
-      this.removeByAddress(address);
-
-      // Guardar la nueva entrada
-      const [storedOk, msg] = this.storePrimitive(
-        newType,
-        entry.name,
-        convertedValue,
-        isNested
-      );
-
-      if (!storedOk) return [false, msg];
-
-      return [
-        true,
-        `Variable "${entry.name}" de tipo ${originalType} fue convertida exitosamente a tipo ${newType}.`,
-      ];
-    } catch (err) {
-      return [false, `Error durante la conversión: ${(err as Error).message}`];
+    } catch {
+      return [false, `Error al intentar convertir el valor.`];
     }
+
+    const validation = MemoryValidator.validateValueByType(newType, newValue);
+    if (validation !== true) return [false, validation[1]];
+
+    this.forceDeleteEntryByName(entry.name);
+    const [stored, msg] = this.storePrimitive(
+      newType,
+      entry.name,
+      newValue,
+      isNested
+    );
+    if (!stored) return [false, msg];
+
+    // ✅ Actualizar en objeto padre
+    if (isNested && parentOk && parentEntry!.type === "object") {
+      const propKey = entry.name.split("_")[1];
+      const objProps = parentEntry!.value as {
+        type: PrimitiveType;
+        key: string;
+        value: any;
+      }[];
+      const prop = objProps.find((p) => p.key === propKey);
+      if (prop) {
+        prop.type = newType;
+        prop.value = newValue;
+      }
+    }
+
+    return [
+      true,
+      `Variable "${entry.name}" de tipo ${originalType} convertida a tipo ${newType}.`,
+    ];
+  }
+
+  private forceDeleteEntryByName(name: string) {
+    for (const [_type, segment] of this.segments.entries()) {
+      for (const [address, entry] of segment.entries()) {
+        if (entry.name === name) {
+          segment.delete(address);
+          return;
+        }
+      }
+    }
+  }
+
+  private forceDeleteArrayWithElements(arrayName: string, length: number) {
+    for (let i = 0; i < length; i++) {
+      this.forceDeleteEntryByName(`${arrayName}_${i}`);
+    }
+    this.forceDeleteEntryByName(arrayName);
   }
 
   /**
@@ -613,15 +724,60 @@ class Memory {
 
     const entry = entryOrMsg;
 
+    let sizeBits: number;
+
     if (entry.type === "object") {
-      return this.getObjectSize(entry.name, entry.value);
+      const [ok, readable] = this.getObjectSize(entry.name, entry.value);
+      if (!ok) return [false, readable];
+      sizeBits = this.parseSizeToBits(readable);
+    } else if (entry.type === "array") {
+      const [ok, readable] = this.getArraySize(entry.name, entry.value);
+      if (!ok) return [false, readable];
+      sizeBits = this.parseSizeToBits(readable);
+    } else {
+      const [ok, readable] = this.getPrimitiveSize(
+        entry.value,
+        entry.type as PrimitiveType
+      );
+      if (!ok) return [false, readable];
+      sizeBits = this.parseSizeToBits(readable);
     }
 
-    if (entry.type === "array") {
-      return this.getArraySize(entry.name, entry.value);
-    }
+    return [true, this.formatBitsToReadableSize(sizeBits)];
+  }
+  /**
+   * Convierte un string tipo "16 bits", "4 bytes" a cantidad de bits.
+   */
+  private parseSizeToBits(sizeStr: string): number {
+    const [numStr, unit] = sizeStr.split(" ");
+    const num = parseFloat(numStr);
 
-    return this.getPrimitiveSize(entry.value, entry.type as PrimitiveType);
+    switch (unit.toLowerCase()) {
+      case "bit":
+      case "bits":
+        return num;
+      case "byte":
+      case "bytes":
+        return num * 8;
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * Convierte un valor en bits a una representación legible como KB, MB, GB...
+   */
+  private formatBitsToReadableSize(bits: number): string {
+    const bytes = bits / 8;
+    const KB = 1024;
+    const MB = KB * 1024;
+    const GB = MB * 1024;
+
+    if (bytes < 1) return `${bits} bits`;
+    if (bytes < KB) return `${bytes.toFixed(2)} bytes`;
+    if (bytes < MB) return `${(bytes / KB).toFixed(2)} KB`;
+    if (bytes < GB) return `${(bytes / MB).toFixed(2)} MB`;
+    return `${(bytes / GB).toFixed(2)} GB`;
   }
 
   /**
@@ -896,6 +1052,32 @@ class Memory {
         }
       }
     }
+  }
+  
+  getTypeByAddress(address: string): [true, string] | [false, string] {
+    const [ok, entryOrError] = this.getEntryByAddress(address);
+    if (!ok) return [false, entryOrError];
+
+    const entry = entryOrError;
+
+    if (entry.type === "object") return [true, "null"];
+
+    if (entry.type === "array") {
+      const values = entry.value as any[];
+      if (values.length === 0) return [true, "unknown[]"];
+
+      const firstElementName = `${entry.name}_0`;
+      const firstAddress = this.getAddressByName(firstElementName);
+      if (!firstAddress)
+        return [false, `No se encontró el primer elemento del array.`];
+
+      const [ok, firstEntry] = this.getEntryByAddress(firstAddress);
+      if (!ok) return [false, firstEntry];
+
+      return [true, `${firstEntry.type}[]`];
+    }
+
+    return [true, entry.type];
   }
 
   /**

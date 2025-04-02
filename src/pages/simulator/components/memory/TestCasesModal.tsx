@@ -26,6 +26,7 @@ export function TestCasesModal({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
+  // Añadir o actualizar un comando en la lista
   const addCommand = () => {
     if (input.trim() === "") return;
 
@@ -41,6 +42,7 @@ export function TestCasesModal({
     setInput("");
   };
 
+  // Alternar selección individual de comandos
   const toggleSelect = (index: number) => {
     setSelected((prev) => {
       const newSet = new Set(prev);
@@ -49,11 +51,13 @@ export function TestCasesModal({
     });
   };
 
+  // Seleccionar todos los comandos
   const selectAll = () => {
     const all = new Set(testCommands.map((_, i) => i));
     setSelected(all);
   };
 
+  // Cargar comandos predefinidos
   const loadPredefinedCases = () => {
     const cases = [
       "insert int edad = 25;",
@@ -82,6 +86,7 @@ export function TestCasesModal({
     setTestCommands(cases);
   };
 
+  // Ejecutar comandos seleccionados
   const executeTestCases = () => {
     const localResults: Result[] = [];
     selected.forEach((index) => {
@@ -114,12 +119,12 @@ export function TestCasesModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
         className="bg-white text-black p-6 rounded-xl shadow-xl border border-red-200 w-[90%] max-w-md sm:w-[70%] lg:w-[50%]"
-
       >
         <h2 className="text-2xl font-bold mb-5 text-red-600 text-center">
           🧪 Casos de Prueba
         </h2>
 
+        {/* Formulario y lista de comandos si aún no se han ejecutado */}
         {!executed && (
           <>
             <div className="flex gap-2 mb-4">
@@ -139,6 +144,7 @@ export function TestCasesModal({
               </motion.button>
             </div>
 
+            {/* Lista de comandos añadidos */}
             <ul className="space-y-2 max-h-40 overflow-y-auto pr-1">
               {testCommands.map((cmd, idx) => (
                 <li
@@ -146,9 +152,7 @@ export function TestCasesModal({
                   className={`flex items-center gap-2 text-red-800 rounded-full px-4 py-1 text-sm cursor-pointer transition-all duration-200
                     ${selected.has(idx)
                       ? 'bg-red-50 border-red-500 border-2 ring-1 ring-red-400 shadow-sm'
-                      : 'bg-red-50 border-red-200'}
-                  `}
-                  
+                      : 'bg-red-50 border-red-200'}`}
                   onClick={() => toggleSelect(idx)}
                 >
                   <span className="truncate flex-1">{cmd}</span>
@@ -186,6 +190,7 @@ export function TestCasesModal({
               ))}
             </ul>
 
+            {/* Botones de acciones adicionales */}
             <div className="flex justify-between mt-6 flex-wrap gap-2">
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -220,6 +225,7 @@ export function TestCasesModal({
           </>
         )}
 
+        {/* Resultados luego de ejecución */}
         {executed && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -241,6 +247,7 @@ export function TestCasesModal({
               </div>
             ))}
 
+            {/* Botón para cerrar el modal después de ejecutar */}
             <div className="text-center mt-5">
               <motion.button
                 whileTap={{ scale: 0.95 }}
