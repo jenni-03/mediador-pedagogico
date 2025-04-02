@@ -6,11 +6,15 @@ import { Consola } from "../../shared/utils/RAM/Consola";
 import { FloatingCommandPanel } from "./components/memory/FloatingCommandPanel";
 
 export function MemorySimulator() {
+  // Referencia a la consola para ejecutar comandos
   const consolaRef = useRef(new Consola());
+
+  // Estado para salida de consola, estado de éxito y estado de la memoria
   const [consoleOutput, setConsoleOutput] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState<boolean>(true);
   const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
 
+  // Maneja la ejecución de comandos desde la consola
   const handleCommand = (command: string) => {
     try {
       const resultado = consolaRef.current.ejecutarComando(command);
@@ -29,26 +33,26 @@ export function MemorySimulator() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 relative">
+    <div className="min-h-[100dvh] bg-gray-140 relative flex flex-col pb-64">
+      {/* Título principal del simulador */}
       <TitleComponent />
       
+      {/* Pantalla de visualización de la memoria */}
       <MemoryScreen 
         consolaRef={consolaRef} 
         memoryState={memoryState} 
         setMemoryState={setMemoryState}
       />
-      
 
-  <ConsoleComponent 
-    onCommand={handleCommand} 
-    outputMessage={consoleOutput} 
-    isSuccess={isSuccess} 
-  />
-  
-  <FloatingCommandPanel />
+      {/* Consola de comandos */}
+      <ConsoleComponent 
+        onCommand={handleCommand} 
+        outputMessage={consoleOutput} 
+        isSuccess={isSuccess} 
+      />
 
-
-
+      {/* Panel Comandos */}
+      <FloatingCommandPanel />
     </div>
   );
 }

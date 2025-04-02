@@ -23,6 +23,7 @@ export function ObjectMemory({
     const [sizes, setSizes] = useState<Record<string, string>>({});
     const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
+    // Calcular tamaño de cada objeto al montar o actualizar el segmento
     useEffect(() => {
         const newSizes: Record<string, string> = {};
         memorySegment.forEach((entry) => {
@@ -36,6 +37,7 @@ export function ObjectMemory({
         setSizes(newSizes);
     }, [JSON.stringify(memorySegment)]);
 
+    // Colores por tipo de dato
     const colorByType = (type: string) => {
         switch (type) {
             case "int":
@@ -59,6 +61,7 @@ export function ObjectMemory({
 
     return (
         <div className="w-full flex flex-col items-center">
+            {/* Grid de tarjetas de objetos */}
             <div className="w-full max-w-7xl grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4 p-4 sm:gap-5 sm:p-6">
                 {memorySegment.length > 0 ? (
                     memorySegment
@@ -84,12 +87,14 @@ export function ObjectMemory({
                            flex flex-col items-center justify-center text-center cursor-pointer 
                            hover:border-red-400 hover:shadow-md transition-all"
                             >
+                                {/* Dirección de memoria */}
                                 <div className="absolute top-2 left-2">
                                     <span className="text-xs bg-red-500 text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
                                         {entry.address}
                                     </span>
                                 </div>
 
+                                {/* Tamaño y botón eliminar */}
                                 <div className="absolute top-2 right-2 flex items-center gap-2">
                                     <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full font-medium shadow-sm">
                                         {sizes[entry.address] ?? "…"}
@@ -106,10 +111,12 @@ export function ObjectMemory({
                                     </button>
                                 </div>
 
+                                {/* Nombre del objeto */}
                                 <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">
                                     {entry.name}
                                 </p>
 
+                                {/* Tabla de atributos del objeto */}
                                 <div className="w-full mt-4 overflow-x-auto">
                                     <table className="min-w-full text-sm text-left border border-gray-300 rounded-lg overflow-hidden">
                                         <thead className="bg-gray-100 text-gray-700 font-semibold">
@@ -186,6 +193,7 @@ export function ObjectMemory({
                 )}
             </div>
 
+            {/* Modal de detalles del objeto */}
             <AnimatePresence>
                 {selectedEntry && (
                     <ObjectDetailsModal
@@ -198,6 +206,7 @@ export function ObjectMemory({
                 )}
             </AnimatePresence>
 
+            {/* Modal de confirmación de eliminación */}
             <AnimatePresence>
                 {deleteTarget && (
                     <DeleteConfirmationModal

@@ -3,6 +3,7 @@ import { Consola } from "../../../../shared/utils/RAM/Consola";
 import { motion, AnimatePresence } from "framer-motion";
 import { VariableDetailsModal } from "./VariableDetailsModal";
 import { DeleteConfirmationModal } from "./DeleteConfirmationModal";
+import { ChangeTypeModal } from "./ChangeTypeModal";
 
 interface PrimitiveMemoryProps {
   type: string;
@@ -25,7 +26,9 @@ export function PrimitiveMemory({
   const [tempValue, setTempValue] = useState("");
   const [sizes, setSizes] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [changeTypeTarget, setChangeTypeTarget] = useState<string | null>(null);
 
+  // Calcula los tamaños de cada variable en el segmento actual
   useEffect(() => {
     const newSizes: Record<string, string> = {};
     memorySegment.forEach((entry) => {
@@ -36,8 +39,8 @@ export function PrimitiveMemory({
     });
     setSizes(newSizes);
   }, [JSON.stringify(memorySegment)]);
-  
 
+  // Retorna una clase de color según el tipo de dato
   const getValueColor = (type: string) => {
     switch (type) {
       case "boolean": return "text-red-600";
@@ -55,6 +58,7 @@ export function PrimitiveMemory({
 
   return (
     <div className="w-full flex flex-col items-center">
+      {/* Grid de tarjetas de variables */}
       <div className="w-full max-w-7xl grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4 p-4 sm:gap-5 sm:p-6">
         {memorySegment.length > 0 ? (
           memorySegment
@@ -76,13 +80,24 @@ export function PrimitiveMemory({
                            flex flex-col items-center justify-center text-center cursor-pointer 
                            hover:border-red-400 hover:shadow-md transition-all"
               >
-                {/* Dirección y tamaño */}
-                <div className="absolute top-2 left-2">
+                {/* Dirección de memoria y botón para cambiar tipo */}
+                <div className="absolute top-2 left-2 flex items-center gap-1">
                   <span className="text-xs bg-red-500 text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
                     {entry.address}
                   </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setChangeTypeTarget(entry.address);
+                    }}
+                    className="bg-gray-100 text-xl w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-100 hover:text-red-600 transition shadow-sm"
+                    title="Cambiar tipo de dato"
+                  >
+                    ⚙️
+                  </button>
                 </div>
 
+                {/* Tamaño de variable y botón de eliminación */}
                 <div className="absolute top-2 right-2 flex items-center gap-2">
                   <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded-full font-medium shadow-sm">
                     {sizes[entry.address] ?? "…"}
@@ -99,6 +114,7 @@ export function PrimitiveMemory({
                   </button>
                 </div>
 
+                {/* Nombre y valor de la variable */}
                 <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">{entry.name}</p>
                 <p className={`${getValueColor(entry.type)} text-base mt-1 truncate w-full px-2`}>
                   {JSON.stringify(entry.value)}
@@ -112,27 +128,40 @@ export function PrimitiveMemory({
         )}
       </div>
 
+      {/* Modal de detalles de variable */}
       <AnimatePresence>
         {selectedEntry && (
           <VariableDetailsModal
-          entry={selectedEntry}
-          tempValue={tempValue}
-          setTempValue={setTempValue}
-          onClose={() => setSelectedEntry(null)}
-          consolaRef={consolaRef}
-          setMemoryState={setMemoryState}
-          size={sizes[selectedEntry.address] ?? "Desconocido"}
-        />
-        
+            entry={selectedEntry}
+            tempValue={tempValue}
+            setTempValue={setTempValue}
+            onClose={() => setSelectedEntry(null)}
+            consolaRef={consolaRef}
+            setMemoryState={setMemoryState}
+            size={sizes[selectedEntry.address] ?? "Desconocido"}
+          />
         )}
       </AnimatePresence>
 
+      {/* Modal de confirmación de eliminación */}
       <AnimatePresence>
         {deleteTarget && (
           <DeleteConfirmationModal
             address={deleteTarget}
             consolaRef={consolaRef}
             onClose={() => setDeleteTarget(null)}
+            setMemoryState={setMemoryState}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Modal de cambio de tipo */}
+      <AnimatePresence>
+        {changeTypeTarget && (
+          <ChangeTypeModal
+            address={changeTypeTarget}
+            consolaRef={consolaRef}
+            onClose={() => setChangeTypeTarget(null)}
             setMemoryState={setMemoryState}
           />
         )}
