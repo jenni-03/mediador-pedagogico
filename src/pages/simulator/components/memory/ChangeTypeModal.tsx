@@ -6,7 +6,6 @@ interface ChangeTypeModalProps {
   address: string;
   onClose: () => void;
   consolaRef: React.RefObject<Consola>;
-  memoryState: Record<string, any[]>;
   setMemoryState: (newState: Record<string, any[]>) => void;
 }
 
@@ -19,7 +18,6 @@ export function ChangeTypeModal({
   address,
   onClose,
   consolaRef,
-  memoryState,
   setMemoryState
 }: ChangeTypeModalProps) {
   const [selectedType, setSelectedType] = useState<string>("");
