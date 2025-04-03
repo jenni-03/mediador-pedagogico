@@ -17,7 +17,7 @@
                 }
                 return true;
 
-            case "insert_last": {
+            case "insertlast": {
                 if (parts.length !== 2) {
                     return { valid: false, message: "Debe proporcionar un número como argumento." };
                 }

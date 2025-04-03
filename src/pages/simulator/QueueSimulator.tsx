@@ -2,7 +2,7 @@ import { useSequence } from "./hooks/estructures/secuencia/useSequence";
 import { Simulator } from "./components/templates/Simulator";
 import { SequenceRender } from "./components/estructures/secuencia/SequenceRender";
 
-export function SequenceSimulator() {
+export function QueueSimulator() {
     const {
         secuencia,
         query,
@@ -11,7 +11,6 @@ export function SequenceSimulator() {
         insertarElemento,
         eliminarElemento,
         buscarElemento,
-        actualizarElemento,
         vaciarSecuencia,
         resetQueryValues,
         getMemoria,
@@ -19,7 +18,7 @@ export function SequenceSimulator() {
 
     return (
         <Simulator
-            structureName="secuencia"
+            structureName="cola"
             structure={secuencia}
             actions={{
                 create: crearSecuencia,
@@ -27,7 +26,6 @@ export function SequenceSimulator() {
                 delete: eliminarElemento,
                 search: buscarElemento,
                 clean: vaciarSecuencia,
-                update: actualizarElemento,
             }}
             query={query}
             reset={resetQueryValues}

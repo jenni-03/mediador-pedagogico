@@ -68,7 +68,8 @@ export function Welcome() {
                 <div className="flex justify-center items-center">
                     <img
                         className="w-4/4 h-auto"
-                        src="/assets/images/logo_ingsistemas.png"
+                        // src="/assets/images/logo_home.jpg"
+                        src="/assets/images/logo_ufps.png"
                         alt=""
                     />
                 </div>
