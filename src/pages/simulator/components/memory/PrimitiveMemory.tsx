@@ -31,7 +31,9 @@ export function PrimitiveMemory({
   useEffect(() => {
     const newSizes: Record<string, string> = {};
     memorySegment.forEach((entry) => {
-      const result = consolaRef.current?.ejecutarComando(`size address ${entry.address}`);
+      const result = consolaRef.current?.ejecutarComando(
+        `size address ${entry.address}`
+      );
       if (result && result[0]) {
         newSizes[entry.address] = result[1];
       }
@@ -41,16 +43,22 @@ export function PrimitiveMemory({
 
   const getValueColor = (type: string) => {
     switch (type) {
-      case "boolean": return "text-red-600";
-      case "char": return "text-black";
+      case "boolean":
+        return "text-red-600";
+      case "char":
+        return "text-black";
       case "byte":
       case "short":
       case "int":
-      case "long": return "text-gray-700";
+      case "long":
+        return "text-gray-700";
       case "float":
-      case "double": return "text-gray-900";
-      case "string": return "text-red-800";
-      default: return "text-gray-500";
+      case "double":
+        return "text-gray-900";
+      case "string":
+        return "text-red-800";
+      default:
+        return "text-gray-500";
     }
   };
 
@@ -59,7 +67,9 @@ export function PrimitiveMemory({
       <div className="w-full max-w-7xl grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4 p-4 sm:gap-5 sm:p-6">
         {memorySegment.length > 0 ? (
           memorySegment
-            .filter((entry) => (searchTerm ? entry.address.includes(searchTerm) : true))
+            .filter((entry) =>
+              searchTerm ? entry.address.includes(searchTerm) : true
+            )
             .map((entry, index) => (
               <motion.div
                 key={entry.address}
@@ -109,14 +119,20 @@ export function PrimitiveMemory({
                   </button>
                 </div>
 
-                <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">{entry.name}</p>
+                <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2">
+                  {entry.name}
+                </p>
 
                 <div className="mt-4 w-full overflow-x-auto">
                   <table className="min-w-full border border-gray-200 text-sm rounded-xl overflow-hidden">
                     <thead className="bg-red-50 text-red-700 text-xs uppercase tracking-wider">
                       <tr>
-                        <th className="py-2 px-3 border-b border-red-200">Tipo</th>
-                        <th className="py-2 px-3 border-b border-red-200">Valor</th>
+                        <th className="py-2 px-3 border-b border-red-200">
+                          Tipo
+                        </th>
+                        <th className="py-2 px-3 border-b border-red-200">
+                          Valor
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -124,8 +140,12 @@ export function PrimitiveMemory({
                         <td className="px-3 py-2 border-b border-gray-200 text-center text-gray-600 font-semibold">
                           {entry.type}
                         </td>
-                        <td className={`px-3 py-2 border-b border-gray-200 text-center font-semibold ${getValueColor(entry.type)}`}>
-                          {typeof entry.value === "object" ? JSON.stringify(entry.value) : String(entry.value)}
+                        <td
+                          className={`px-3 py-2 border-b border-gray-200 text-center font-semibold ${getValueColor(entry.type)}`}
+                        >
+                          {typeof entry.value === "object"
+                            ? JSON.stringify(entry.value)
+                            : String(entry.value)}
                         </td>
                       </tr>
                     </tbody>
