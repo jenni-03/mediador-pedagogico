@@ -9,10 +9,10 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Create 10",
       },
       {
-        title: "Insert_Last",
+        title: "InsertLast",
         description: "Insertar un nodo al final de la Secuencia",
-        estructura: "Insert valor",
-        ejemplo: "Insert 1",
+        estructura: "InsertLast valor",
+        ejemplo: "InsertLast 1",
       },
       {
         title: "Delete",

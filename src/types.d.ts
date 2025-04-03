@@ -92,7 +92,7 @@ export type BaseQueryOperations = {
 
 export type BaseStructureActions = {
     create: (n: number) => void,
-    insert_last: (element: number) => void,
+    insertlast: (element: number) => void,
     delete: (element: number) => void,
     search: (element: number) => void,
     clean: () => void,

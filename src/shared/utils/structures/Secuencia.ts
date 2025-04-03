@@ -77,6 +77,10 @@ export class Secuencia {
      * Método que vacía la secuencia
      */
     vaciar(): void {
+        // for (let i = 0; i < this.cant; i++) {
+        //     this.vector[i] = null;
+        // }
+        // this.cant = 0;
         this.vector = [];
     }
 
