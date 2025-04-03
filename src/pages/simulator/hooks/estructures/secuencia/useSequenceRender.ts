@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react"
-import { BaseQueryOperations } from "../../../types";
+import { BaseQueryOperations } from "../../../../../types";
 import * as d3 from "d3";
-import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, animateDeleteLastElementSequence, animateSearchSequence, animateDeleteElementWithDisplacement } from "../../../shared/utils/sequenceDrawActions";
-import { usePrevious } from "../../../shared/hooks/usePrevious";
-import { SVG_SEQUENCE_VALUES } from "../../../shared/constants/consts";
-import { useAnimation } from "../../../shared/hooks/useAnimation";
+import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, animateDeleteLastElementSequence, animateSearchSequence, animateDeleteElementWithDisplacement } from "../../../../../shared/utils/draw/sequenceDrawActions";
+import { usePrevious } from "../../../../../shared/hooks/usePrevious";
+import { SVG_SEQUENCE_VALUES } from "../../../../../shared/constants/consts";
+import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 
 export function useSequenceRender(secuencia: (number | null)[], memoria: number[], query: BaseQueryOperations, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
