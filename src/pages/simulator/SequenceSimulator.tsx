@@ -1,6 +1,6 @@
-import { useSequence } from "./hooks/useSequence";
-import { Simulator } from "./Simulator";
-import { SequenceRender } from "./SequenceRender";
+import { useSequence } from "./hooks/estructures/secuencia/useSequence";
+import { Simulator } from "./components/templates/Simulator";
+import { SequenceRender } from "./components/estructures/secuencia/SequenceRender";
 
 export function SequenceSimulator() {
     const {
@@ -14,7 +14,7 @@ export function SequenceSimulator() {
         actualizarElemento,
         vaciarSecuencia,
         resetQueryValues,
-        getMemoria
+        getMemoria,
     } = useSequence();
 
     return (

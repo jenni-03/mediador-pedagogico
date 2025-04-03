@@ -2,12 +2,18 @@ import { useEffect, useRef, useState } from "react";
 
 interface ConsoleComponentProps {
     onCommand: (command: string) => void;
-    outputMessage: string;  // Mensaje a mostrar en la consola
-    isSuccess: boolean;     // Define si el mensaje es exitoso o error
+    outputMessage: string; // Mensaje a mostrar en la consola
+    isSuccess: boolean; // Define si el mensaje es exitoso o error
 }
 
-export function ConsoleComponent({ onCommand, outputMessage, isSuccess }: ConsoleComponentProps) {
-    const [history, setHistory] = useState<{ command: string; response: string; success: boolean }[]>([]);
+export function ConsoleComponent({
+    onCommand,
+    outputMessage,
+    isSuccess,
+}: ConsoleComponentProps) {
+    const [history, setHistory] = useState<
+        { command: string; response: string; success: boolean }[]
+    >([]);
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const consoleRef = useRef<HTMLDivElement>(null);
@@ -34,14 +40,20 @@ export function ConsoleComponent({ onCommand, outputMessage, isSuccess }: Consol
         if (e.key === "Enter" && input.trim() !== "") {
             e.preventDefault();
 
-            if (input.trim().toLowerCase() === "clear" || input.trim().toLowerCase() === "cls") {
+            if (
+                input.trim().toLowerCase() === "clear" ||
+                input.trim().toLowerCase() === "cls"
+            ) {
                 setHistory([]); // Limpiar historial
                 setInput("");
             } else {
                 const commandText = `$ ${input}`;
 
                 //Agregar comando inmediatamente al historial, la respuesta se actualizará con `useEffect`
-                setHistory((prev) => [...prev, { command: commandText, response: "", success: true }]);
+                setHistory((prev) => [
+                    ...prev,
+                    { command: commandText, response: "", success: true },
+                ]);
 
                 //Ejecutar el comando
                 onCommand(input.trim());
@@ -51,16 +63,24 @@ export function ConsoleComponent({ onCommand, outputMessage, isSuccess }: Consol
         } else if (e.key === "ArrowUp") {
             e.preventDefault();
             if (history.length > 0) {
-                const newIndex = historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1);
+                const newIndex =
+                    historyIndex === -1
+                        ? history.length - 1
+                        : Math.max(0, historyIndex - 1);
                 setHistoryIndex(newIndex);
                 setInput(history[newIndex].command.replace("$ ", ""));
             }
         } else if (e.key === "ArrowDown") {
             e.preventDefault();
             if (history.length > 0) {
-                const newIndex = historyIndex === history.length - 1 ? -1 : historyIndex + 1;
+                const newIndex =
+                    historyIndex === history.length - 1 ? -1 : historyIndex + 1;
                 setHistoryIndex(newIndex);
-                setInput(newIndex === -1 ? "" : history[newIndex].command.replace("$ ", ""));
+                setInput(
+                    newIndex === -1
+                        ? ""
+                        : history[newIndex].command.replace("$ ", "")
+                );
             }
         }
     };
@@ -82,7 +102,15 @@ export function ConsoleComponent({ onCommand, outputMessage, isSuccess }: Consol
                     <div key={index}>
                         <div className="text-green-400">{entry.command}</div>
                         {entry.response && (
-                            <div className={entry.success ? "text-green-400" : "text-red-500"}>→ {entry.response}</div>
+                            <div
+                                className={
+                                    entry.success
+                                        ? "text-green-400"
+                                        : "text-red-500"
+                                }
+                            >
+                                → {entry.response}
+                            </div>
                         )}
                     </div>
                 ))}

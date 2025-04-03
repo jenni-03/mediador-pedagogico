@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { Secuencia } from "../../../shared/utils/structures/Secuencia"
-import { BaseQueryOperations } from "../../../types";
+import { useState } from "react";
+import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
+import { BaseQueryOperations } from "../../../../../types";
 
 export function useSequence() {
     // Estado para manejar la secuencia

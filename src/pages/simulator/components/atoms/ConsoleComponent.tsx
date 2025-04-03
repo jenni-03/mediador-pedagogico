@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { commandRules } from "../../../shared/constants/commandRules";
-import { useAnimation } from "../../../shared/hooks/useAnimation";
+import { commandRules } from "../../../../shared/constants/commandRules";
+import { useAnimation } from "../../../../shared/hooks/useAnimation";
 
 interface ConsoleComponentProps {
     structureType: string;
     onCommand: (command: string, isValid: boolean) => void;
-    error: {message: string, id: number} | null;
+    error: { message: string; id: number } | null;
 }
 
 export function ConsoleComponent({
     structureType,
     onCommand,
-    error
+    error,
 }: ConsoleComponentProps) {
     const [history, setHistory] = useState<string[]>([]);
     const [commandHistory, setCommandHistory] = useState<string[]>([]); // Solo comandos válidos
@@ -31,22 +31,18 @@ export function ConsoleComponent({
             const timeout = setTimeout(() => {
                 inputRef.current?.focus(); // Hace que el input obtenga el foco después de 1 segundo
             }, 1000); // 1000 ms = 1 segundo
-    
+
             return () => clearTimeout(timeout); // Limpia el timeout si el componente se desmonta o el estado cambia
         }
     }, [isAnimating]);
-    
 
     useEffect(() => {
         if (error) {
             // setVisibleError(error?.message);
-            setHistory([
-                ...history, `Error: ${error.message}`,
-            ])
+            setHistory([...history, `Error: ${error.message}`]);
             setIsAnimating(false); // Detener la animación
         }
     }, [error?.id]);
-    
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (isAnimating) return;
@@ -86,7 +82,6 @@ export function ConsoleComponent({
                         } else {
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
-
                             }
                             onCommand(input.trim(), true);
                             setHistory([
@@ -114,10 +109,7 @@ export function ConsoleComponent({
                 }
 
                 //Guardamos el comando en el historial
-                setCommandHistory([
-                    ...commandHistory,
-                    input.trim(),
-                ]);
+                setCommandHistory([...commandHistory, input.trim()]);
 
                 setInput("");
                 setHistoryIndex(-1); // Reiniciamos el índice del historial
@@ -152,17 +144,16 @@ export function ConsoleComponent({
     };
 
     return (
-        <div
-            className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono"
-        >
+        <div className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono">
             {history.map((cmd, index) => (
                 <div
                     key={index}
                     className={
                         cmd.startsWith("Error:")
                             ? "text-red-500"
-                            : cmd == "Comando válido, procesando..." ? "text-blue-500" 
-                            : "text-white"
+                            : cmd == "Comando válido, procesando..."
+                              ? "text-blue-500"
+                              : "text-white"
                     }
                 >
                     {cmd}
@@ -177,7 +168,7 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    disabled={isAnimating}   
+                    disabled={isAnimating}
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}

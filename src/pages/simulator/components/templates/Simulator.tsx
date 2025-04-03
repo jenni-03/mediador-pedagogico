@@ -1,12 +1,12 @@
-import { ConsoleComponent } from "./components/ConsoleComponent";
-import { DataStructureInfo } from "./components/DataStructureInfo";
-import { GroupCommandsComponent } from "./components/GroupCommandsComponent";
-import { SimulatorProps } from "../../types";
+import { ConsoleComponent } from "../atoms/ConsoleComponent";
+import { DataStructureInfo } from "../atoms/DataStructureInfo";
+import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
+import { SimulatorProps } from "../../../../types";
 import { useRef, useState } from "react";
-import { commandsData } from "../../shared/constants/commandsData";
-import { operations_pseudoCode } from "../../shared/constants/pseudoCode";
-import { useAnimation } from "../../shared/hooks/useAnimation";
-import { memory_address } from "../../shared/constants/memoryAddress";
+import { commandsData } from "../../../../shared/constants/commandsData";
+import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
+import { useAnimation } from "../../../../shared/hooks/useAnimation";
+import { memory_address } from "../../../../shared/constants/memoryAddress";
 
 export function Simulator({
     structure: structure,
