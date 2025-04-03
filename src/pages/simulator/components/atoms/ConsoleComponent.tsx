@@ -19,9 +19,6 @@ export function ConsoleComponent({
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
     const [isCreated, setIsCreated] = useState<boolean>(false);
 
-    // Estado para el manejo del error
-    // const [visibleError, setVisibleError] = useState<string | null>(null);
-
     const { isAnimating, setIsAnimating } = useAnimation();
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +41,14 @@ export function ConsoleComponent({
         }
     }, [error?.id]);
 
+    // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos 
+    const structuresRequiringCreate = [
+        "secuencia",
+        "lista_simple",
+        "lista_circular",
+        "lista_circular_doble",
+    ];
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (isAnimating) return;
         if (e.key === "Enter" && input.trim() !== "") {
@@ -54,13 +59,19 @@ export function ConsoleComponent({
                 setInput("");
             } else {
                 const parts = input.trim().split(/\s+/);
+
                 const commandValidation = commandRules[structureType](parts);
 
                 if (typeof commandValidation === "boolean") {
                     if (commandValidation) {
                         const command = parts[0]?.toLowerCase();
+
+                        // Verificar si la estructura necesita "create"
+                        const needsCreate =
+                            structuresRequiringCreate.includes(structureType);
+
                         // Si la estructura no ha sido creada solo se permite el cmd create
-                        if (!isCreated && command !== "create") {
+                        if (needsCreate && !isCreated && command !== "create") {
                             onCommand("", false);
                             setHistory([
                                 ...history,

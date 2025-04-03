@@ -7,7 +7,7 @@ export const data = [
         bgCard: '#D02222',
         bgButton: '#E97F7F',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/simulador/secuencia',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Lista Simplemente Enlazada',

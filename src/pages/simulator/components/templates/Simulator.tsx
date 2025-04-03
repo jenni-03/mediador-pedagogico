@@ -6,32 +6,28 @@ import { useRef, useState } from "react";
 import { commandsData } from "../../../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
-import { memory_address } from "../../../../shared/constants/memoryAddress";
 
-export function Simulator({
-    structure: structure,
+export function Simulator<T extends string>({
+    structureName,
+    structure,
     actions,
     error,
     children,
-}: SimulatorProps) {
+}: SimulatorProps<T>) {
     // Estado para el manejo de la visualización del código
     const [codigoEjecucion, setCodigoEjecucion] = useState("");
 
     // Estado para el manejo de la visualización de la asignación de memoria
-    const [codigoMemoria, setCodigoMemoria] = useState("");
+    const [codigoMemoria, setCodigoMemoria] = useState(false);
 
     // Estado para el manejo de la animación
     const { setIsAnimating } = useAnimation();
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
-    const structureName = "secuencia";
     const buttons = commandsData[structureName].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
     const operations_code = operations_pseudoCode[structureName];
-
-    // Pseudocódigo de la asignación de memoria de la estructura
-    const memory_code = memory_address[structureName];
 
     const consoleRef = useRef<HTMLDivElement>(null);
 
@@ -68,9 +64,9 @@ export function Simulator({
         );
 
         if (action === "create") {
-            setCodigoMemoria(memory_code[action as keyof typeof memory_code]);
+            setCodigoMemoria(true);
         } else {
-            setCodigoMemoria("");
+            setCodigoMemoria(false);
         }
 
         if (consoleRef.current) {
@@ -99,12 +95,7 @@ export function Simulator({
                     <DataStructureInfo
                         structure={structureName}
                         structurePrueba={structure}
-                        {...(codigoMemoria && {
-                            memoryAddress: {
-                                message: codigoMemoria,
-                                id: Date.now(),
-                            },
-                        })}
+                        memoryAddress={codigoMemoria}
                     >
                         {children}
                     </DataStructureInfo>

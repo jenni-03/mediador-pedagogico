@@ -15,6 +15,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as SimuladorSecuenciaImport } from './routes/simulador/secuencia'
 import { Route as SimuladorPilaImport } from './routes/simulador/pila'
 import { Route as SimuladorMemoriaImport } from './routes/simulador/memoria'
+import { Route as SimuladorEstructuraImport } from './routes/simulador/$estructura'
 import { Route as ConceptosEstructuraImport } from './routes/conceptos/$estructura'
 import { Route as ConceptosEstructuraOperacionesImport } from './routes/conceptos/$estructura/operaciones'
 import { Route as ConceptosEstructuraDefinicionImport } from './routes/conceptos/$estructura/definicion'
@@ -43,6 +44,12 @@ const SimuladorPilaRoute = SimuladorPilaImport.update({
 const SimuladorMemoriaRoute = SimuladorMemoriaImport.update({
   id: '/simulador/memoria',
   path: '/simulador/memoria',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SimuladorEstructuraRoute = SimuladorEstructuraImport.update({
+  id: '/simulador/$estructura',
+  path: '/simulador/$estructura',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -89,6 +96,13 @@ declare module '@tanstack/react-router' {
       path: '/conceptos/$estructura'
       fullPath: '/conceptos/$estructura'
       preLoaderRoute: typeof ConceptosEstructuraImport
+      parentRoute: typeof rootRoute
+    }
+    '/simulador/$estructura': {
+      id: '/simulador/$estructura'
+      path: '/simulador/$estructura'
+      fullPath: '/simulador/$estructura'
+      preLoaderRoute: typeof SimuladorEstructuraImport
       parentRoute: typeof rootRoute
     }
     '/simulador/memoria': {
@@ -156,6 +170,7 @@ const ConceptosEstructuraRouteWithChildren =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
+  '/simulador/$estructura': typeof SimuladorEstructuraRoute
   '/simulador/memoria': typeof SimuladorMemoriaRoute
   '/simulador/pila': typeof SimuladorPilaRoute
   '/simulador/secuencia': typeof SimuladorSecuenciaRoute
@@ -167,6 +182,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
+  '/simulador/$estructura': typeof SimuladorEstructuraRoute
   '/simulador/memoria': typeof SimuladorMemoriaRoute
   '/simulador/pila': typeof SimuladorPilaRoute
   '/simulador/secuencia': typeof SimuladorSecuenciaRoute
@@ -179,6 +195,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/conceptos/$estructura': typeof ConceptosEstructuraRouteWithChildren
+  '/simulador/$estructura': typeof SimuladorEstructuraRoute
   '/simulador/memoria': typeof SimuladorMemoriaRoute
   '/simulador/pila': typeof SimuladorPilaRoute
   '/simulador/secuencia': typeof SimuladorSecuenciaRoute
@@ -192,6 +209,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/conceptos/$estructura'
+    | '/simulador/$estructura'
     | '/simulador/memoria'
     | '/simulador/pila'
     | '/simulador/secuencia'
@@ -202,6 +220,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/conceptos/$estructura'
+    | '/simulador/$estructura'
     | '/simulador/memoria'
     | '/simulador/pila'
     | '/simulador/secuencia'
@@ -212,6 +231,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/conceptos/$estructura'
+    | '/simulador/$estructura'
     | '/simulador/memoria'
     | '/simulador/pila'
     | '/simulador/secuencia'
@@ -224,6 +244,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConceptosEstructuraRoute: typeof ConceptosEstructuraRouteWithChildren
+  SimuladorEstructuraRoute: typeof SimuladorEstructuraRoute
   SimuladorMemoriaRoute: typeof SimuladorMemoriaRoute
   SimuladorPilaRoute: typeof SimuladorPilaRoute
   SimuladorSecuenciaRoute: typeof SimuladorSecuenciaRoute
@@ -232,6 +253,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConceptosEstructuraRoute: ConceptosEstructuraRouteWithChildren,
+  SimuladorEstructuraRoute: SimuladorEstructuraRoute,
   SimuladorMemoriaRoute: SimuladorMemoriaRoute,
   SimuladorPilaRoute: SimuladorPilaRoute,
   SimuladorSecuenciaRoute: SimuladorSecuenciaRoute,
@@ -252,6 +274,8 @@ export const routeTree = rootRoute
         "/simulador/memoria",
         "/simulador/pila",
         "/simulador/secuencia"
+        "/simulador/$estructura",
+        "/simulador/memoria"
       ]
     },
     "/": {
@@ -264,6 +288,9 @@ export const routeTree = rootRoute
         "/conceptos/$estructura/definicion",
         "/conceptos/$estructura/operaciones"
       ]
+    },
+    "/simulador/$estructura": {
+      "filePath": "simulador/$estructura.tsx"
     },
     "/simulador/memoria": {
       "filePath": "simulador/memoria.tsx"
