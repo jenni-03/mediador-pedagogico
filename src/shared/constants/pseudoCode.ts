@@ -1,4 +1,4 @@
-export const operations_pseudoCode = {
+export const operations_pseudoCode: Record<string, any> = {
     secuencia: {
         create: `
             función constructor(n):

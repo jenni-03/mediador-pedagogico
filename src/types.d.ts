@@ -55,9 +55,10 @@ export type CustomModalProps = {
     onClose: () => void; // Función que se llama al cerrar el modal
 }
 
-export type SimulatorProps = {
+export type SimulatorProps<T extends string> = {
+    structureName: T,
     structure: any,
-    actions: BaseStructureActions;
+    actions: BaseStructureActions<T>;
     query: BaseQueryOperations;
     error: { message: string, id: number } | null;
     reset: () => void;
@@ -90,14 +91,23 @@ export type BaseQueryOperations = {
     toUpdate?: number | [number, number] | []
 }
 
-export type BaseStructureActions = {
-    create: (n: number) => void,
-    insertlast: (element: number) => void,
-    delete: (element: number) => void,
-    search: (element: number) => void,
-    clean: () => void,
-    update: (pos: number, element: number) => void
-}
+export type BaseStructureActions<T extends string> = 
+    T extends "secuencia" ? {
+        create: (n: number) => void;
+        insertlast: (element: number) => void;
+        delete: (element: number) => void;
+        search: (element: number) => void;
+        clean: () => void;
+        update: (pos: number, element: number) => void;
+    } :
+    T extends "cola" ? {
+        create: (n: number) => void;
+        insertlast: (element: number) => void;
+        delete: (element: number) => void;
+        search: (element: number) => void;
+        clean: () => void;
+    } :
+    Record<string, (...args: any[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
     isAnimating: boolean;

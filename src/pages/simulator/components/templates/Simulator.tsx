@@ -7,12 +7,13 @@ import { commandsData } from "../../../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 
-export function Simulator({
+export function Simulator<T extends string>({
+    structureName,
     structure,
     actions,
     error,
     children,
-}: SimulatorProps) {
+}: SimulatorProps<T>) {
     // Estado para el manejo de la visualización del código
     const [codigoEjecucion, setCodigoEjecucion] = useState("");
 
@@ -23,7 +24,6 @@ export function Simulator({
     const { setIsAnimating } = useAnimation();
 
     //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
-    const structureName = "secuencia";
     const buttons = commandsData[structureName].buttons;
 
     // Pseudocódigo de las operaciones de la estructura

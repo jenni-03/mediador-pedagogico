@@ -40,7 +40,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  lista_simple: {
+  listasimple: {
     buttons: [
       {
         title: "Create",
@@ -49,22 +49,22 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Create 1",
       },
       {
-        title: "Insert_First",
+        title: "InsertFirst",
         description: "Insertar al inicio...",
-        estructura: "Insert_First valor",
-        ejemplo: "Insert_First 1",
+        estructura: "InsertFirst valor",
+        ejemplo: "InsertFirst 1",
       },
       {
-        title: "Insert_Last",
+        title: "InsertLast",
         description: "Insertar al final...",
-        estructura: "Insert_Last valor",
-        ejemplo: "Insert_Last 1",
+        estructura: "InsertLast valor",
+        ejemplo: "InsertLast 1",
       },
       {
-        title: "Insert_At",
+        title: "InsertAt",
         description: "Insertar en una posición específica...",
-        estructura: "Insert_At valor",
-        ejemplo: "Insert_At 1",
+        estructura: "InsertAt valor",
+        ejemplo: "InsertAt 1",
       },
       {
         title: "Delete",
@@ -98,7 +98,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  lista_doble: {
+  listadoble: {
     buttons: [
       {
         title: "Create",
@@ -107,22 +107,22 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Create 1",
       },
       {
-        title: "Insert_First",
+        title: "InsertFirst",
         description: "Insertar al inicio...",
-        estructura: "Insert_First valor",
-        ejemplo: "Insert_First 1",
+        estructura: "InsertFirst valor",
+        ejemplo: "InsertFirst 1",
       },
       {
-        title: "Insert_Last",
+        title: "InsertLast",
         description: "Insertar al final...",
-        estructura: "Insert_Last valor",
-        ejemplo: "Insert_Last 1",
+        estructura: "InsertLast valor",
+        ejemplo: "InsertLast 1",
       },
       {
-        title: "Insert_At",
+        title: "InsertAt",
         description: "Insertar en una posición específica...",
-        estructura: "Insert_At valor",
-        ejemplo: "Insert_At 1",
+        estructura: "InsertAt valor",
+        ejemplo: "InsertAt 1",
       },
       {
         title: "Delete",
@@ -149,20 +149,20 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Clean",
       },
       {
-        title: "Traverse_F",
+        title: "TraverseF",
         description: "Recorrer la lista hacia adelante...",
-        estructura: "Traverse_F valor",
-        ejemplo: "Traverse_F 1",
+        estructura: "TraverseF valor",
+        ejemplo: "TraverseF 1",
       },
       {
-        title: "Traverse_B",
+        title: "TraverseB",
         description: "Recorrer la lista hacia atrás...",
-        estructura: "Traverse_B valor",
-        ejemplo: "Traverse_B 1",
+        estructura: "TraverseB valor",
+        ejemplo: "TraverseB 1",
       },
     ],
   },
-  lista_circular: {
+  listacircular: {
     buttons: [
       {
         title: "Create",
@@ -171,22 +171,22 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Create 1",
       },
       {
-        title: "Insert_First",
+        title: "InsertFirst",
         description: "Insertar al inicio...",
-        estructura: "Insert_First valor",
-        ejemplo: "Insert_First 1",
+        estructura: "InsertFirst valor",
+        ejemplo: "InsertFirst 1",
       },
       {
-        title: "Insert_Last",
+        title: "InsertLast",
         description: "Insertar al final...",
-        estructura: "Insert_Last valor",
-        ejemplo: "Insert_Last 1",
+        estructura: "InsertLast valor",
+        ejemplo: "InsertLast 1",
       },
       {
-        title: "Insert_At",
+        title: "InsertAt",
         description: "Insertar en una posición específica...",
-        estructura: "Insert_At valor",
-        ejemplo: "Insert_At 1",
+        estructura: "InsertAt valor",
+        ejemplo: "InsertAt 1",
       },
       {
         title: "Delete",
@@ -220,7 +220,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  lista_circular_doble: {
+  listacirculardoble: {
     buttons: [
       {
         title: "Create",
@@ -229,22 +229,22 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Create 1",
       },
       {
-        title: "Insert_First",
+        title: "InsertFirst",
         description: "Insertar al inicio...",
-        estructura: "Insert_First valor",
-        ejemplo: "Insert_First 1",
+        estructura: "InsertFirst valor",
+        ejemplo: "InsertFirst 1",
       },
       {
-        title: "Insert_Last",
+        title: "InsertLast",
         description: "Insertar al final...",
-        estructura: "Insert_Last valor",
-        ejemplo: "Insert_Last 1",
+        estructura: "InsertLast valor",
+        ejemplo: "InsertLast 1",
       },
       {
-        title: "Insert_At",
+        title: "InsertAt",
         description: "Insertar en una posición específica...",
-        estructura: "Insert_At valor",
-        ejemplo: "Insert_At 1",
+        estructura: "InsertAt valor",
+        ejemplo: "InsertAt 1",
       },
       {
         title: "Delete",
@@ -271,16 +271,16 @@ export const commandsData: Record<string, any> = {
         ejemplo: "Clean",
       },
       {
-        title: "Traverse_F",
+        title: "TraverseF",
         description: "Recorrer la lista hacia adelante...",
-        estructura: "Traverse_F valor",
-        ejemplo: "Traverse_F 1",
+        estructura: "TraverseF valor",
+        ejemplo: "TraverseF 1",
       },
       {
-        title: "Traverse_B",
+        title: "TraverseB",
         description: "Recorrer la lista hacia atrás...",
-        estructura: "Traverse_B valor",
-        ejemplo: "Traverse_B 1",
+        estructura: "TraverseB valor",
+        ejemplo: "TraverseB 1",
       },
     ],
   },
@@ -346,7 +346,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  cola_de_prioridad: {
+  coladeprioridad: {
     buttons: [
       {
         title: "Enqueue",
@@ -380,7 +380,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  tabla_hash: {
+  tablahash: {
     buttons: [
       {
         title: "Insert",
@@ -533,7 +533,7 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  roji_negro: {
+  rojinegro: {
     buttons: [
       {
         title: "Insert",
@@ -656,7 +656,7 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  arbol_eneario: {
+  arboleneario: {
     buttons: [
       {
         title: "Insert",
@@ -691,7 +691,7 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  arbol_b: {
+  arbolb: {
     buttons: [
       {
         title: "Insert",
@@ -726,7 +726,7 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  arbol_b_plus: {
+  arbolbplus: {
     buttons: [
       {
         title: "Insert",
@@ -785,7 +785,7 @@ export const commandsData: Record<string, any> = {
       {
         title: "Convert Type",
         description: "Convertir una variable primitiva a otro tipo compatible.",
-        estructura: "convert address <direccion> to <nuevo_tipo>",
+        estructura: "convert address <direccion> to <nuevotipo>",
         ejemplo: "convert address 4x001 to long",
       },
       {
@@ -798,7 +798,7 @@ export const commandsData: Record<string, any> = {
       {
         title: "Update Value",
         description: "Actualizar el valor de una variable o array existente.",
-        estructura: "update address <direccion> value <nuevo_valor>",
+        estructura: "update address <direccion> value <nuevovalor>",
         ejemplo: "update address 4x003 value 99",
       },
     ],
