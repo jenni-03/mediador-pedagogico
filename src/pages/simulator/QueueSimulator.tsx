@@ -1,27 +1,24 @@
 import { useSequence } from "./hooks/estructures/secuencia/useSequence";
 import { Simulator } from "./components/templates/Simulator";
 import { SequenceRender } from "./components/estructures/secuencia/SequenceRender";
-import { Secuencia } from "../../shared/utils/structures/Secuencia";
 
-export function SequenceSimulator() {
-    const structure = new Secuencia(0);
-
-    const { sequence, query, error, operations } = useSequence(structure);
-
+export function QueueSimulator() {
     const {
-        createSequence,
-        insertElement,
-        deleteElementByPos,
-        updateElement,
-        searchElement,
-        clearSequence,
-        getMemory,
+        secuencia,
+        query,
+        error,
+        crearSecuencia,
+        insertarElemento,
+        eliminarElemento,
+        buscarElemento,
+        vaciarSecuencia,
         resetQueryValues,
-    } = operations;
+        getMemoria,
+    } = useSequence();
 
     return (
         <Simulator
-            structureName="secuencia"
+            structureName="cola"
             structure={secuencia}
             actions={{
                 create: crearSecuencia,
@@ -29,15 +26,14 @@ export function SequenceSimulator() {
                 delete: eliminarElemento,
                 search: buscarElemento,
                 clean: vaciarSecuencia,
-                update: actualizarElemento,
             }}
             query={query}
             reset={resetQueryValues}
             error={error}
         >
             <SequenceRender
-                sequence={sequence.getVector()}
-                memory={getMemory()}
+                sequence={secuencia.getVector()}
+                memoria={getMemoria()}
                 query={query}
                 resetQueryValues={resetQueryValues}
             />
