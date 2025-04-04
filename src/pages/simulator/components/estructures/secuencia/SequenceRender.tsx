@@ -1,20 +1,20 @@
-import { BaseQueryOperations } from "../../../../../types";
+import { SequenceOperations } from "../../../../../types";
 import { useSequenceRender } from "../../../hooks/estructures/secuencia/useSequenceRender";
 
 export function SequenceRender({
     sequence,
-    memoria,
+    memory,
     query,
     resetQueryValues,
 }: {
     sequence: (number | null)[];
-    memoria: number[];
-    query: BaseQueryOperations;
+    memory: number[];
+    query: SequenceOperations;
     resetQueryValues: () => void;
 }) {
     const { svgRef } = useSequenceRender(
         sequence,
-        memoria,
+        memory,
         query,
         resetQueryValues
     );

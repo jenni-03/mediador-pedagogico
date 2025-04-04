@@ -82,15 +82,15 @@ export interface CardData {
     toPracticar: string;
 }
 
-export type BaseQueryOperations = {
+export type SequenceOperations = {
     create: number | null,
     toAdd: number | null,
     toDelete: number | null,
     toSearch: number | null,
-    toUpdate?: number | [number, number] | []
+    toUpdate?: [number, number] | []
 }
 
-export type BaseStructureActions = {
+export type SequenceActions = {
     create: (n: number) => void,
     insert_last: (element: number) => void,
     delete: (element: number) => void,

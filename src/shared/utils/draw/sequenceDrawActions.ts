@@ -325,7 +325,7 @@ export async function animateDeleteLastElementSequence(
         .transition()
         .delay(100)
         .duration(1500)
-        .ease(d3.easeBack)
+        .ease(d3.easeBounce)
         .style("opacity", 0)
         .end();
 

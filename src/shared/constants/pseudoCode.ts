@@ -37,11 +37,10 @@ export const operations_pseudoCode = {
             fin función
         `,
         delete: `
-            función eliminar(elem):
-                indice ← getIndice(elem)
-                si indice es igual a -1 entonces
-                    lanzar error "El elemento {elem} no está en la secuencia"
-                fin si
+            función eliminarPos(pos):
+                Si pos < 0 O pos >= cant Entonces
+                    Lanzar error("La posición " + pos + " no existe, está fuera de rango")
+                FinSi
 
                 // Mover los elementos hacia la izquierda
                 para i desde indice hasta cant - 2 hacer:
