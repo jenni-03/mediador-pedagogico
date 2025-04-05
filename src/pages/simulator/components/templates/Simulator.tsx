@@ -75,8 +75,8 @@ export function Simulator<T extends string>({
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] pt-[160px] sm:pt-24 pb-6">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 xl:px-10">
+      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+        <div className="flex flex-col gap-6 w-full">
           {/* Título */}
           <h1 className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6">
             {structureName.toUpperCase()}{" "}
