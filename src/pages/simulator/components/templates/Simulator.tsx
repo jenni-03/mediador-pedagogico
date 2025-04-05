@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { commandsData } from "../../../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
+import { Header } from "../molecules/Header";
 
 export function Simulator<T extends string>({
     structureName,
@@ -75,14 +76,16 @@ export function Simulator<T extends string>({
         }
     };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
-            <div className="flex flex-col gap-6 w-full">
-                {/* Título */}
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2">
-                    {structureName.toUpperCase()}{" "}
-                    <span className="text-[#D72638]">&lt;Integer&gt;</span>
-                </h1>
+  return (
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+        <div className="flex flex-col gap-6 w-full">
+          {/* Título */}
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6">
+            {structureName.toUpperCase()}{" "}
+            <span className="text-[#D72638]">&lt;Integer&gt;</span>
+          </h1>
 
                 {/* Contenedor principal */}
                 <div className="w-full bg-[#1A1A1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 px-4 py-6">
@@ -130,13 +133,14 @@ export function Simulator<T extends string>({
                             />
                         </div>
 
-                        {/* Comandos */}
-                        <div className="sm:w-[40%]">
-                            <GroupCommandsComponent buttons={buttons} />
-                        </div>
-                    </div>
-                </div>
+              {/* Comandos */}
+              <div className="sm:w-[40%]">
+                <GroupCommandsComponent buttons={buttons} />
+              </div>
             </div>
+          </div>
         </div>
-    );
+      </div>
+    </>
+  );
 }

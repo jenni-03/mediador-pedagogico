@@ -4,6 +4,7 @@ import { MemoryScreen } from "./components/molecules/MemoryScreen";
 import { TitleComponent } from "./components/atoms/TitleComponent";
 import { Consola } from "../../shared/utils/RAM/Consola";
 import { FloatingCommandPanel } from "./components/molecules/FloatingCommandPanel";
+import { Header } from "../simulator/components/molecules/Header";
 
 export function MemorySimulator() {
     // Referencia a la consola para ejecutar comandos
@@ -33,10 +34,9 @@ export function MemorySimulator() {
     };
 
     return (
+        <>
+        <Header />
         <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
-
-
-
             {/* Título principal del simulador */}
             <TitleComponent />
 
@@ -57,5 +57,6 @@ export function MemorySimulator() {
             {/* Panel Comandos */}
             <FloatingCommandPanel />
         </div>
+        </>
     );
 }
