@@ -4,7 +4,10 @@ import { Consola } from "../../../../shared/utils/RAM/Consola";
 
 interface TestCasesModalProps {
   consolaRef: React.RefObject<Consola>;
-  setMemoryState: (newState: Record<string, any[]>) => void;
+  setMemoryState: (
+    newState: Record<string, any[]>,
+    typeInserted?: string
+  ) => void;
   closeModal: () => void;
 }
 
@@ -81,6 +84,8 @@ export function TestCasesModal({
 
   const executeTestCases = () => {
     const localResults: Result[] = [];
+    let lastTypeInserted: string | undefined = undefined;
+
     selected.forEach((index) => {
       const cmd = testCommands[index];
       if (cmd) {
@@ -91,6 +96,16 @@ export function TestCasesModal({
             message: result[1],
             isSuccess: result[0],
           });
+
+          // Detectar tipo insertado si es un comando "insert"
+          if (cmd.trim().startsWith("insert ")) {
+            const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
+            if (match) {
+              lastTypeInserted = match[1].toLowerCase();
+              if (match[2]) lastTypeInserted = "array";
+              if (lastTypeInserted === "object") lastTypeInserted = "object";
+            }
+          }
         }
       }
     });
@@ -100,7 +115,7 @@ export function TestCasesModal({
 
     const printResult = consolaRef.current?.ejecutarPrintMemory();
     if (printResult && printResult[0]) {
-      setMemoryState(printResult[1] as Record<string, any[]>);
+      setMemoryState(printResult[1] as Record<string, any[]>, lastTypeInserted);
     }
   };
 

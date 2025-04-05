@@ -599,6 +599,7 @@ class Memory {
 
       // 🔁 Reemplazo limpio
       this.forceDeleteArrayWithElements(entry.name, values.length);
+      MemoryValidator.removeGlobalName(entry.name); // Elimina nombre del registro global
       const [stored, msg] = this.storeArray(
         newType,
         entry.name,
@@ -666,12 +667,14 @@ class Memory {
     if (validation !== true) return [false, validation[1]];
 
     this.forceDeleteEntryByName(entry.name);
+    MemoryValidator.removeGlobalName(entry.name); // Elimina nombre del registro global
     const [stored, msg] = this.storePrimitive(
       newType,
       entry.name,
       newValue,
       isNested
     );
+
     if (!stored) return [false, msg];
 
     // ✅ Actualizar en objeto padre
@@ -1053,7 +1056,7 @@ class Memory {
       }
     }
   }
-  
+
   getTypeByAddress(address: string): [true, string] | [false, string] {
     const [ok, entryOrError] = this.getEntryByAddress(address);
     if (!ok) return [false, entryOrError];

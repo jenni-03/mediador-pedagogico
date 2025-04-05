@@ -30,7 +30,6 @@ export function VariableDetailsModal({
   const emoji = isArray ? "📚" : "🧾";
   const title = isArray ? "Detalles del Array" : "Detalles de la Variable";
 
-  // Deducción de tipo base para arrays
   const inferType = (sample: any): string => {
     if (typeof sample === "number")
       return Number.isInteger(sample) ? "int" : "float";
@@ -42,7 +41,6 @@ export function VariableDetailsModal({
   const baseType =
     isArray && entry.value.length > 0 ? inferType(entry.value[0]) : entry.type;
 
-  // Conversión de valor desde string al tipo correcto
   const parseByType = (value: string) => {
     switch (baseType) {
       case "int":
@@ -57,7 +55,6 @@ export function VariableDetailsModal({
     }
   };
 
-  // Inicializa el estado del array si corresponde
   useEffect(() => {
     if (isArray && Array.isArray(entry.value)) {
       setArrayState(entry.value);
@@ -65,7 +62,6 @@ export function VariableDetailsModal({
     }
   }, [entry]);
 
-  // Actualiza el valor de un índice específico del array
   const updateArrayValue = (index: number, newValue: string) => {
     const parsed = parseByType(newValue);
     const updated = [...arrayState];
@@ -73,7 +69,6 @@ export function VariableDetailsModal({
     setArrayState(updated);
   };
 
-  // Ejecuta el comando para actualizar el valor
   const handleAccept = () => {
     if (isArray) {
       const castedArray = arrayState.map((val) => parseByType(String(val)));
@@ -82,7 +77,7 @@ export function VariableDetailsModal({
       if (invalidIndex !== -1) {
         setFeedback({
           success: false,
-          message: `Elemento ${invalidIndex} inválido en "${entry.name}": "${arrayState[invalidIndex]}" no es válido para ${baseType}.`,
+          message: `Elemento ${invalidIndex} inválido: "${arrayState[invalidIndex]}" no es válido para ${baseType}.`,
         });
         return;
       }
@@ -96,7 +91,7 @@ export function VariableDetailsModal({
         setFeedback({ success, message });
 
         if (success) {
-          setMemoryState(updatedState as Record<string, any[]>);
+          setMemoryState(updatedState);
           setTimeout(() => {
             setFeedback(null);
             onClose();
@@ -115,7 +110,7 @@ export function VariableDetailsModal({
         setFeedback({ success, message });
 
         if (success) {
-          setMemoryState(updatedState as Record<string, any[]>);
+          setMemoryState(updatedState);
           setTimeout(() => {
             setFeedback(null);
             onClose();
@@ -132,80 +127,72 @@ export function VariableDetailsModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <motion.div
         layout
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -30 }}
-        transition={{ duration: 0.1 }}
-        className="bg-white text-black p-6 rounded-2xl shadow-xl border border-red-300 w-[90%] max-w-xl"
+        transition={{ duration: 0.2 }}
+        className="bg-[#1A1A1A] text-[#E0E0E0] p-6 rounded-2xl shadow-2xl border border-red-400 w-[90%] max-w-xl"
       >
-        {/* Título con ícono y tipo */}
-        <h2 className="text-2xl font-bold text-red-600 mb-5 text-center flex justify-center items-center gap-2">
+        <h2 className="text-2xl font-bold text-red-500 mb-5 text-center flex items-center justify-center gap-2">
           {emoji} {title}
         </h2>
 
-        {/* Información de variable */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-5 text-gray-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-5 text-gray-300">
           <p>
-            <span className="font-semibold text-red-500">🔹 Tipo:</span>{" "}
+            <span className="font-semibold text-red-400">🔹 Tipo:</span>{" "}
             {entry.type}
           </p>
           <p>
-            <span className="font-semibold text-red-500">🏷️ Nombre:</span>{" "}
+            <span className="font-semibold text-red-400">🏷️ Nombre:</span>{" "}
             {entry.name}
           </p>
           <p>
-            <span className="font-semibold text-red-500">📍 Dirección:</span>{" "}
+            <span className="font-semibold text-red-400">📍 Dirección:</span>{" "}
             {entry.address}
           </p>
           <p>
-            <span className="font-semibold text-red-500">📦 Tamaño:</span>{" "}
+            <span className="font-semibold text-red-400">📦 Tamaño:</span>{" "}
             {size}
           </p>
         </div>
 
-        {/* Campo para editar valor primitivo */}
         {!isArray ? (
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-semibold mb-2">
+            <label className="block text-sm font-semibold text-red-400 mb-2">
               ✏️ Nuevo Valor:
             </label>
-            <div className="w-full overflow-x-auto rounded-xl border border-gray-300 bg-white shadow-sm focus-within:ring-2 focus-within:ring-red-400 transition">
-              <input
-                type="text"
-                value={tempValue}
-                onChange={(e) => setTempValue(e.target.value)}
-                className="w-full min-w-full px-4 py-2 text-sm bg-transparent outline-none"
-                placeholder="Nuevo valor"
-                style={{ whiteSpace: "nowrap" }}
-              />
-            </div>
+            <input
+              type="text"
+              value={tempValue}
+              onChange={(e) => setTempValue(e.target.value)}
+              className="w-full px-4 py-2 rounded-md border border-[#333] bg-[#262626] text-[#F0F0F0] outline-none focus:ring-2 focus:ring-red-500 shadow-sm"
+            />
           </div>
         ) : (
-          // Tabla editable para arrays
-          <div className="mb-4 overflow-x-auto border rounded-lg">
-            <table className="min-w-full text-sm text-left">
-              <thead className="bg-red-50 text-red-600">
+          <div className="mb-4 overflow-x-auto border border-[#2E2E2E] rounded-xl">
+            <table className="min-w-full text-sm text-left text-[#E0E0E0]">
+              <thead className="bg-[#2E2E2E] text-red-400 text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-2 border-b border-red-200">Índice</th>
-                  <th className="px-4 py-2 border-b border-red-200">Valor</th>
+                  <th className="px-4 py-2 border-b border-[#444]">Índice</th>
+                  <th className="px-4 py-2 border-b border-[#444]">Valor</th>
                 </tr>
               </thead>
               <tbody>
                 {arrayState.map((val: any, i: number) => (
-                  <tr key={i} className="even:bg-gray-50">
-                    <td className="px-4 py-2 border-b border-gray-200 text-gray-500">
+                  <tr key={i} className="even:bg-[#1F1F1F] odd:bg-[#262626]">
+                    <td className="px-4 py-2 border-b border-[#333] text-xs text-[#999] font-mono">
                       {i}
                     </td>
-                    <td className="px-4 py-2 border-b border-gray-200">
+                    <td className="px-4 py-2 border-b border-[#333]">
                       <input
                         type="text"
                         value={val}
                         onChange={(e) => updateArrayValue(i, e.target.value)}
-                        className="w-full px-2 py-1 rounded-md border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-red-400 text-sm"
+                        className="w-full px-2 py-1 rounded-md border border-[#444] bg-[#2A2A2A] text-[#E0E0E0] focus:outline-none focus:ring-1 focus:ring-red-500 text-sm shadow-sm"
                       />
                     </td>
                   </tr>
@@ -215,17 +202,16 @@ export function VariableDetailsModal({
           </div>
         )}
 
-        {/* Mensaje de retroalimentación */}
         <AnimatePresence>
           {feedback && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium text-center transition-all duration-300 max-w-full break-words whitespace-pre-wrap overflow-y-auto max-h-[100px] ${
+              className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium text-center transition-all duration-300 ${
                 feedback.success
-                  ? "bg-green-100 text-green-700 border border-green-300"
-                  : "bg-red-100 text-red-700 border border-red-300"
+                  ? "bg-green-600/20 text-green-400 border border-green-600"
+                  : "bg-red-600/20 text-red-400 border border-red-600"
               }`}
             >
               {feedback.message}
@@ -233,7 +219,6 @@ export function VariableDetailsModal({
           )}
         </AnimatePresence>
 
-        {/* Botones de acción */}
         <div className="flex justify-end gap-2 mt-6">
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -245,7 +230,7 @@ export function VariableDetailsModal({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleAccept}
-            className="px-4 py-2 bg-black hover:bg-gray-900 text-white rounded-full text-sm font-semibold"
+            className="px-4 py-2 bg-white hover:bg-gray-100 text-black rounded-full text-sm font-semibold"
           >
             Aceptar
           </motion.button>

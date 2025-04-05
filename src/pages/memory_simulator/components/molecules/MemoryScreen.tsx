@@ -8,44 +8,36 @@ import { motion } from "framer-motion";
 interface MemoryScreenProps {
   consolaRef: React.RefObject<Consola>;
   memoryState: Record<string, any[]>;
-  setMemoryState: (newState: Record<string, any[]>) => void;
+  setMemoryState: (
+    newState: Record<string, any[]>,
+    typeInserted?: string
+  ) => void;
+  selectedSegment: string;
+  setSelectedSegment: (segment: string) => void;
 }
 
 export function MemoryScreen({
   consolaRef,
   memoryState,
   setMemoryState,
+  selectedSegment,
+  setSelectedSegment,
 }: MemoryScreenProps) {
-  const [selectedSegment, setSelectedSegment] = useState<string>("int");
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
 
+  const handleUpdateMemory = (
+    newState: Record<string, any[]>,
+    lastInsertedType?: string
+  ) => {
+    setMemoryState(newState, lastInsertedType);
+  };
+
   return (
-    <div className="w-full flex flex-col items-center px-4 lg:px-8 mt-4 sm:mt-6 relative">
-      <div
-        className="
-          w-full
-          bg-[#1A1A1A]
-          border border-[#2E2E2E]
-          rounded-3xl
-          shadow-xl shadow-black/50
-          flex flex-col
-          max-h-[85vh]
-          overflow-visible
-          transition-all duration-300
-        "
-      >
+    <div className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative">
+      <div className="w-full bg-[#1A1A1A] border border-[#2E2E2E] rounded-3xl shadow-xl shadow-black/50 flex flex-col max-h-[85vh] overflow-visible transition-all duration-300">
         {/* Cabecera */}
-        <div
-          className="
-            sticky top-0 left-0 w-full
-            bg-[#1A1A1A]
-            p-4 z-20
-            border-b border-[#2E2E2E]
-            flex flex-col items-center
-            rounded-t-3xl shadow
-          "
-        >
+        <div className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow">
           <h3 className="text-[#E0E0E0] text-2xl font-bold tracking-wider text-center">
             SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()}
           </h3>
@@ -57,38 +49,24 @@ export function MemoryScreen({
               whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 300 }}
               onClick={() => {
-                const result = consolaRef.current?.ejecutarComando("clear memory");
+                const result =
+                  consolaRef.current?.ejecutarComando("clear memory");
                 if (result && result[0]) {
-                  setMemoryState(result[2] as Record<string, any[]>);
+                  handleUpdateMemory(result[2]);
                 }
               }}
-              className="
-                px-5 py-2 text-sm font-bold uppercase
-                text-[#D72638] border border-[#D72638]
-                rounded-full hover:bg-[#2E2E2E]
-                transition-colors duration-200
-                flex items-center gap-2
-              "
+              className="px-5 py-2 text-sm font-bold uppercase text-[#D72638] border border-[#D72638] rounded-full hover:bg-[#2E2E2E] transition-colors duration-200 flex items-center gap-2"
             >
               🧹 <span>Limpiar Memoria</span>
             </motion.button>
 
             {/* Buscador */}
-            <div
-              className="
-                flex items-center flex-1 min-w-[180px]
-                bg-[#262626] border border-[#2E2E2E]
-                rounded-full px-4 py-2 shadow-sm
-              "
-            >
+            <div className="flex items-center flex-1 min-w-[180px] bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 shadow-sm">
               <FaSearch className="text-[#A0A0A0] mr-2" />
               <input
                 type="text"
                 placeholder="Buscar dirección..."
-                className="
-                  w-full bg-transparent text-sm text-[#E0E0E0]
-                  placeholder-[#A0A0A0] outline-none
-                "
+                className="w-full bg-transparent text-sm text-[#E0E0E0] placeholder-[#A0A0A0] outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -100,13 +78,7 @@ export function MemoryScreen({
               whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 300 }}
               onClick={() => setShowModal(true)}
-              className="
-                px-5 py-2 text-sm font-bold uppercase
-                text-[#D72638] border border-[#D72638]
-                rounded-full hover:bg-[#2E2E2E]
-                transition-colors duration-200
-                flex items-center gap-2
-              "
+              className="px-5 py-2 text-sm font-bold uppercase text-[#D72638] border border-[#D72638] rounded-full hover:bg-[#2E2E2E] transition-colors duration-200 flex items-center gap-2"
             >
               🧪 <span>Casos de Prueba</span>
             </motion.button>
@@ -153,7 +125,9 @@ export function MemoryScreen({
               </button>
             ))}
 
-            <span className="mx-3 hidden sm:inline-block text-[#444] font-bold select-none">|</span>
+            <span className="mx-3 hidden sm:inline-block text-[#444] font-bold select-none">
+              |
+            </span>
 
             {["array", "object"].map((seg) => (
               <button
@@ -174,10 +148,11 @@ export function MemoryScreen({
         </div>
       </div>
 
+      {/* Modal de Casos de Prueba */}
       {showModal && (
         <TestCasesModal
           consolaRef={consolaRef}
-          setMemoryState={setMemoryState}
+          setMemoryState={handleUpdateMemory}
           closeModal={() => setShowModal(false)}
         />
       )}
