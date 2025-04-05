@@ -42,10 +42,10 @@
                 }
                 return true;
 
-            case "search":
+            case "get":
                 return parts.length === 2 && !isNaN(Number(parts[1])); 
 
-            case "update":
+            case "set":
                 if (parts.length !== 3) {
                     return { valid: false, message: "Debe proporcionar dos números como argumentos." };
                 }

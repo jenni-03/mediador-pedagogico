@@ -96,13 +96,20 @@ export type BaseQueryOperations<T extends string> =
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
         create: (n: number) => void;
+        insertLast: (element: number) => void;
+        delete: (element: number) => void;
+        get: (element: number) => void;
+        clean: () => void;
+        set: (pos: number, element: number) => void;
+    } :
+    T extends "cola" ? {
+        create: (n: number) => void;
         insertlast: (element: number) => void;
         delete: (element: number) => void;
         search: (element: number) => void;
         clean: () => void;
-        update: (pos: number, element: number) => void;
     } :
-    T extends "cola" ? {
+    T extends "pila" ? {
         create: (n: number) => void;
         insertlast: (element: number) => void;
         delete: (element: number) => void;

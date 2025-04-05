@@ -1,21 +1,22 @@
 export const operations_pseudoCode: Record<string, any> = {
     secuencia: {
         create: `
-            función constructor(n):
-                si n <= 0 entonces
-                    vector ← arreglo vacío
-                    cant ← 0
-                    retornar
-                fin si
-
-                vector ← nuevo arreglo de tamaño n
-                para i desde 0 hasta n - 1 hacer:
-                    vector[i] ← null
-                fin para
-                cant ← 0
-            fin función
+            /**
+             * Constructor con parametros de la clase secuencia. <br>
+             * <b>post: </b> Se construye una Secuencia vacia. <br>
+             * @param n es de tipo integer que contiene el tamaño en capacidad de la Secuencia. <br>
+             */
+            public Secuencia(int n){        
+                if (n<=0){
+                    System.err.println("Tamaño de secuencia no valido!");
+                    return;
+                }    
+                Object r[]=new Object[n];
+                cant=0;
+                this.vector=(T[])r;
+            }
         `,
-        insertlast: `
+        insertLast: `
             función insertar(elem):
                 si cant es mayor o igual a la longitud del vector entonces
                     lanzar error "No hay espacio para insertar el elemento {elem}"
@@ -25,7 +26,7 @@ export const operations_pseudoCode: Record<string, any> = {
                 cant ← cant + 1
             fin función
         `,
-        update: `
+        set: `
             función set(i, nuevo):
                 si i < 0 o i >= cant entonces
                     lanzar error "Índice fuera de rango!"
@@ -52,7 +53,7 @@ export const operations_pseudoCode: Record<string, any> = {
                 cant ← cant - 1
             fin función
         `,
-        search: `
+        get: `
             función esta(elem):
                 si el vector contiene elem entonces
                     retornar true

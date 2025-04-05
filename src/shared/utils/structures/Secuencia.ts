@@ -63,8 +63,14 @@ export class Secuencia {
      * @param pos Posición del elemento a eliminar
      */
     eliminarPos(pos: number) {
+        if (this.cant === 0) {
+            throw new Error("No se puede eliminar: la estructura está vacía (tamaño actual: 0).");
+        }
+
         if (pos < 0 || pos >= this.cant) {
-            throw new Error(`La posición ${pos} no existe, está fuera de rango`);
+            throw new Error(
+                `Posición inválida: se intentó acceder a la posición ${pos}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`
+            );
         }
         for (let i = pos; i < this.cant - 1; i++) {
             this.vector[i] = this.vector[i + 1];
@@ -80,7 +86,7 @@ export class Secuencia {
         // for (let i = 0; i < this.cant; i++) {
         //     this.vector[i] = null;
         // }
-        // this.cant = 0;
+        this.cant = 0;
         this.vector = [];
     }
 
@@ -104,7 +110,9 @@ export class Secuencia {
      */
     set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
-            throw new Error(`Indíce ${i} fuera de rango!`);
+            throw new Error(
+                `Posición inválida: se intentó acceder a la posición ${i}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`
+            );
         }
         this.vector[i] = nuevo;
     }

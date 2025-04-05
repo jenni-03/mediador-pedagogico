@@ -82,7 +82,7 @@ export const data = [
     {
         title: 'Tabla Hash',
         id: 9,
-        img: '/assets/images/tabla_hash.jpg',
+        img: '/assets/images/tabla_hash.png',
         type: 'estructura_lineal',
         bgCard: '#D02222',
         bgButton: '#E97F7F',
