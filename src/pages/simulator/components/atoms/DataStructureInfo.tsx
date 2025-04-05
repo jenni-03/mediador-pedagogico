@@ -15,36 +15,39 @@ export function DataStructureInfo({
     const info = infoStructures[structure].info;
 
     return (
-        <div className="flex-[4] flex flex-col bg-white rounded-3xl p-4 overflow-auto shadow-lg border border-gray-300">
+        <div className="flex-[4] flex flex-col bg-[#2a2a40] rounded-3xl p-4 overflow-auto shadow-lg border border-gray-600 text-white">
             <div className="flex flex-col md:flex-row gap-3">
-                {/* Sección izquierda (Código de asignación de memoria) */}
-                {memoryAddress && (
+                {/* Visualización de memoria */}
+                {/* {memoryAddress && (
                     <MemoryAllocationVisualizer
                         n={structurePrueba.vector.length}
                         direccionBase={structurePrueba.direccionBase}
                         tamanioNodo={structurePrueba.tamanioNodo}
                     />
-                )}
+                )} */}
 
-                {/* Sección derecha (Info de estructura) */}
+                {/* Info de la estructura */}
                 <div className="ml-auto flex flex-col items-end h-full">
                     {info.map((infoKey: string, index: number) => (
                         <h1
                             key={index}
-                            className="font-medium text-right text-md"
+                            className="font-medium text-right text-sm text-white"
                         >
-                            {`${infoKey.toUpperCase()}: ${
-                                infoKey === "Tamaño"
-                                    ? structurePrueba.getTamanio()
-                                    : infoKey === "Capacidad"
-                                      ? structurePrueba.vector.length
-                                      : "N/A"
-                            }`}
+                            <span>{infoKey.toUpperCase() + ": "}</span>
+                            {infoKey === "Tamaño"
+                                ? structurePrueba.getTamanio()
+                                : infoKey === "Capacidad"
+                                  ? structurePrueba.vector.length
+                                  : "N/A"}
                         </h1>
                     ))}
                 </div>
             </div>
-            <div className="flex-1 flex items-center">{children}</div>
+
+            {/* <div className="flex-1 flex items-center mt-4">{children}</div> */}
+            <div className="flex-1 flex items-center mt-4 overflow-x-auto scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
+                {children}
+            </div>
         </div>
     );
 }

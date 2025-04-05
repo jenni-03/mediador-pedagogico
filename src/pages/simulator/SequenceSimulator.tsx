@@ -23,11 +23,11 @@ export function SequenceSimulator() {
             structure={secuencia}
             actions={{
                 create: crearSecuencia,
-                insertlast: insertarElemento,
+                insertLast: insertarElemento,
                 delete: eliminarElemento,
-                search: buscarElemento,
+                get: buscarElemento,
                 clean: vaciarSecuencia,
-                update: actualizarElemento,
+                set: actualizarElemento,
             }}
             query={query}
             reset={resetQueryValues}
