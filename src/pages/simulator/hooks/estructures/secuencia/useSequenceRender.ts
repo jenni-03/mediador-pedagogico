@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react"
-import { SequenceOperations } from "../../../../../types";
+import { BaseQueryOperations } from "../../../../../types";
 import * as d3 from "d3";
 import { drawBaseSequence, animateInsertionSequence, animateUpdateSequence, animateDeleteLastElementSequence, animateSearchSequence, animateDeleteElementWithDisplacement } from "../../../../../shared/utils/draw/sequenceDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../../../shared/constants/consts";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 
-export function useSequenceRender(sequence: (number | null)[], memory: number[], query: SequenceOperations, resetQueryValues: () => void) {
+export function useSequenceRender(sequence: (number | null)[], memory: number[], query: BaseQueryOperations<"secuencia">, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 

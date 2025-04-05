@@ -57,7 +57,7 @@ export type CustomModalProps = {
 
 export type SimulatorProps<T extends string> = {
     structureName: T,
-    structure: any,
+    structure: unknown,
     actions: BaseStructureActions<T>;
     query: BaseQueryOperations;
     error: { message: string, id: number } | null;
@@ -83,13 +83,15 @@ export interface CardData {
     toPracticar: string;
 }
 
-export type SequenceOperations = {
-    create: number | null,
-    toAdd: number | null,
-    toDelete: number | null,
-    toSearch: number | null,
-    toUpdate?: [number, number] | []
-}
+export type BaseQueryOperations<T extends string> =
+    T extends "secuencia" ? {
+        create: number | null,
+        toAdd: number | null,
+        toDelete: number | null,
+        toSearch: number | null,
+        toUpdate: [number, number] | []
+    } : Record<string, unknown>;
+
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
@@ -107,7 +109,7 @@ export type BaseStructureActions<T extends string> =
         search: (element: number) => void;
         clean: () => void;
     } :
-    Record<string, (...args: any[]) => void>; // Fallback para otros casos
+    Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
     isAnimating: boolean;

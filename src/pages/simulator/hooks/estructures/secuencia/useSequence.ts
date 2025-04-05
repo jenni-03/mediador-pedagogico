@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
-import { SequenceOperations } from "../../../../../types";
+import { BaseQueryOperations } from "../../../../../types";
 
 export function useSequence(structure: Secuencia) {
     // Estado para manejar la secuencia
@@ -10,7 +10,7 @@ export function useSequence(structure: Secuencia) {
     const [error, setError] = useState<{ message: string, id: number } | null>(null);
 
     // Estado para manejar la operación solicitada por el usuario
-    const [query, setQuery] = useState<SequenceOperations>({
+    const [query, setQuery] = useState<BaseQueryOperations<"secuencia">>({
         create: null,
         toAdd: null,
         toDelete: null,

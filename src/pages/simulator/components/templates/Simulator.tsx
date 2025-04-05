@@ -15,22 +15,24 @@ export function Simulator<T extends string>({
     children,
 }: SimulatorProps<T>) {
     // Estado para el manejo de la visualización del código
-    const [codigoEjecucion, setCodigoEjecucion] = useState("");
+    const [executionCode, setExecutionCode] = useState("");
 
     // Estado para el manejo de la visualización de la asignación de memoria
-    const [codigoMemoria, setCodigoMemoria] = useState(false);
+    const [memoryCode, setMemoryCode] = useState(false);
 
     // Estado para el manejo de la animación
     const { setIsAnimating } = useAnimation();
 
-    //ASIGNAR EL NOMBRE DE LA ESTRUCTURA AQUI
+    // Botones de comandos propios de la estructura
     const buttons = commandsData[structureName].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
     const operations_code = operations_pseudoCode[structureName];
 
+    // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);
 
+    // Función para manejar los comandos ingresados en la consola
     const handleCommand = (command: string, isValid: boolean) => {
         if (!isValid) {
             if (consoleRef.current) {
@@ -45,7 +47,7 @@ export function Simulator<T extends string>({
 
         const parts = command.trim().split(/\s+/);
         const action: string = parts[0]?.toLowerCase();
-        const values = parts.slice(1).map(Number); // Convierte los valores a números
+        const values = parts.slice(1).map(Number);
 
         if (action !== "create" && action !== "clean") {
             setIsAnimating(true);
@@ -59,14 +61,14 @@ export function Simulator<T extends string>({
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
 
-        setCodigoEjecucion(
+        setExecutionCode(
             operations_code[action as keyof typeof operations_code]
         );
 
         if (action === "create") {
-            setCodigoMemoria(true);
+            setMemoryCode(true);
         } else {
-            setCodigoMemoria(false);
+            setMemoryCode(false);
         }
 
         if (consoleRef.current) {
@@ -95,7 +97,7 @@ export function Simulator<T extends string>({
                     <DataStructureInfo
                         structure={structureName}
                         structurePrueba={structure}
-                        memoryAddress={codigoMemoria}
+                        memoryAddress={memoryCode}
                     >
                         {children}
                     </DataStructureInfo>
@@ -118,7 +120,7 @@ export function Simulator<T extends string>({
                             CÓDIGO DE EJECUCIÓN
                         </h1>
                         <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md text-black">
-                            {codigoEjecucion.trim()}
+                            {executionCode.trim()}
                         </pre>
                     </div>
                 </div>
