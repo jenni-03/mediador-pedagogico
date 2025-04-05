@@ -98,7 +98,7 @@ export function Simulator<T extends string>({
                                 <DataStructureInfo
                                     structure={structureName}
                                     structurePrueba={structure}
-                                    memoryAddress={codigoMemoria}
+                                    memoryAddress={memoryCode}
                                 >
                                     {children}
                                 </DataStructureInfo>
@@ -111,7 +111,7 @@ export function Simulator<T extends string>({
                                 </span>
                                 <div className="flex-1 bg-[#1F1F22] rounded-xl p-4 overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
                                     <pre className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md text-[#A0A0A0]">
-                                        {codigoEjecucion.trim()}
+                                        {executionCode.trim()}
                                     </pre>
                                 </div>
                             </div>
