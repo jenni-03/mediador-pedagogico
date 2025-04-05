@@ -132,9 +132,12 @@ export function drawBaseSequence(
         // Actualización del rectángulo principal
         update
           .select("rect.sequence-rect")
-          .attr("fill", (d) => (d === null ? "#1A1A1A" : "#1F1F2D")) // Mantén el mismo color del enter
-          .attr("stroke", "#d7263899")
-          .attr("stroke-width", 1.2);
+          .attr("fill", (d) => (d === null ? "#1A1A1A" : "#1F1F2D"))
+          .attr("stroke", "#D72638") // mismo rojo intenso
+          .attr("stroke-width", 2) // mismo grosor del borde
+          .attr("rx", 6)
+          .attr("ry", 6)
+          .attr("opacity", 0.9);
 
         // Actualización del texto correspondiente al valor del elemento
         update
@@ -307,7 +310,7 @@ export async function animateDeleteLastElementSequence(
     .select("rect.sequence-rect")
     .attr("fill", "#1F1F2D") // fondo oscuro estándar
     .attr("stroke", "#D72638") // Borde rojo intenso
-    .attr("stroke-width", 2)
+    .attr("stroke-width", 2);
 
   // Creación o reutilización de un grupo temporal para la eliminación
   let deleteGroup = svg.select<SVGGElement>("g#delete-group");
