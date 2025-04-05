@@ -107,6 +107,13 @@ export type BaseStructureActions<T extends string> =
         search: (element: number) => void;
         clean: () => void;
     } :
+    T extends "pila" ? {
+        create: (n: number) => void;
+        insertlast: (element: number) => void;
+        delete: (element: number) => void;
+        search: (element: number) => void;
+        clean: () => void;
+    } :
     Record<string, (...args: any[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {

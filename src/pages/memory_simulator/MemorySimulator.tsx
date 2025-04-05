@@ -33,7 +33,10 @@ export function MemorySimulator() {
     };
 
     return (
-        <div className="min-h-[100dvh] bg-gray-140 relative flex flex-col pb-64">
+        <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
+
+
+
             {/* Título principal del simulador */}
             <TitleComponent />
 

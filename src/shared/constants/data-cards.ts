@@ -57,7 +57,7 @@ export const data = [
         bgCard: '#D02222',
         bgButton: '#E97F7F',
         toConceptos: '/conceptos/$estructura',
-        toPracticar: '/simulador/Pila',
+        toPracticar: '/simulador/$estructura',
     },
     {
         title: 'Cola',

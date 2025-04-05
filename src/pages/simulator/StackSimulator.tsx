@@ -19,14 +19,14 @@ export function StackSimulator() {
 
     return (
         <Simulator
+            structureName="pila"
             structure={secuencia}
             actions={{
                 create: crearSecuencia,
-                insert_last: insertarElemento,
+                insertlast: insertarElemento,
                 delete: eliminarElemento,
                 search: buscarElemento,
                 clean: vaciarSecuencia,
-                update: actualizarElemento,
             }}
             query={query}
             reset={resetQueryValues}

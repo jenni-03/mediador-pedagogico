@@ -17,7 +17,10 @@ export default {
       gridTemplateColumns: {
         'auto-fill-400': 'repeat(auto-fill, minmax(336px, 1fr))',
         'auto-fit-400': 'repeat(auto-fit, minmax(336px, 1fr))',
-      }
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      },
     },
   },
   plugins: [],
