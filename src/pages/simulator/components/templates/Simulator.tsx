@@ -31,7 +31,7 @@ export function Simulator<T extends string>({
 
     const consoleRef = useRef<HTMLDivElement>(null);
 
-    const handleCommand = (command: string, isValid: boolean) => {
+    const handleCommand = (command: string[], isValid: boolean) => {
         if (!isValid) {
             if (consoleRef.current) {
                 requestAnimationFrame(() => {
@@ -39,13 +39,11 @@ export function Simulator<T extends string>({
                         consoleRef.current!.scrollHeight;
                 });
             }
-
             return;
         }
 
-        const parts = command.trim().split(/\s+/);
-        const action: string = parts[0]?.toLowerCase();
-        const values = parts.slice(1).map(Number); // Convierte los valores a números
+        const action = command[0];
+        const values = command.slice(1).map(Number);
 
         if (action !== "create" && action !== "clean") {
             setIsAnimating(true);
@@ -76,50 +74,63 @@ export function Simulator<T extends string>({
             });
         }
     };
-
+    
     return (
-        <div className="min-h-screen flex flex-col overflow-y-auto">
-            <div>
-                <h1
-                    className="
-    text-xl sm:text-3xl font-extrabold tracking-wide uppercase text-center mt-2 
-    text-red-600 drop-shadow-[2px_2px_2px_rgba(0,0,0,0.5)]
-  "
-                >
-                    {structureName.toUpperCase() + " <int>"}
+        <div className="min-h-screen flex flex-col bg-[#0e0e11] text-white py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+            <div className="flex flex-col gap-6 w-full">
+                {/* Título */}
+                <h1 className="text-2xl sm:text-4xl font-bold text-center text-white drop-shadow mt-2">
+                    {structureName.toUpperCase()}{" "}
+                    <span className="text-gray-300">&lt;Integer&gt;</span>
                 </h1>
-            </div>
-            <div className="flex-1 bg-custom-gray border-2 border-gray-200 mx-6 my-3 flex flex-col rounded-xl px-3 overflow-hidden">
-                <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl my-3 mx-3 space-y-3">
-                    {/* Muestra la estructura */}
-                    <DataStructureInfo
-                        structure={structureName}
-                        structurePrueba={structure}
-                        memoryAddress={codigoMemoria}
-                    >
-                        {children}
-                    </DataStructureInfo>
-                    {/* Muestra los comandos */}
-                    <GroupCommandsComponent buttons={buttons} />
-                </div>
-                <div className="flex-[1] flex flex-col sm:flex-row justify-center sm:justify-start rounded-xl my-3 mx-3 space-y-3 sm:space-y-0 sm:space-x-4 overflow-hidden">
-                    <div
-                        ref={consoleRef}
-                        className="flex-1 bg-gray-900 mr-2 rounded-xl p-1 overflow-y-auto max-h-[150px]"
-                    >
-                        <ConsoleComponent
-                            structureType={structureName}
-                            onCommand={handleCommand}
-                            error={error}
-                        />
+
+                {/* Contenedor principal */}
+                <div className="flex-1 w-full bg-[#1a1a1f] border border-gray-700 rounded-2xl shadow-lg px-4 py-6">
+                    {/* Parte superior: estructura y código */}
+
+                    <div className="flex flex-col lg:flex-row gap-6 mb-6 overflow-hidden">
+                        {/* Lado izquierdo - Estructura de datos */}
+                        <div className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 lg:space-y-0 rounded-xl space-y-3 overflow-hidden">
+                            <DataStructureInfo
+                                structure={structureName}
+                                structurePrueba={structure}
+                                memoryAddress={codigoMemoria}
+                            >
+                                {children}
+                            </DataStructureInfo>
+                        </div>
+
+                        {/* Lado derecho - Código de ejecución */}
+                        <div className="w-full lg:w-[40%] flex flex-col">
+                            <span className="w-full text-center font-medium rounded-xl bg-[#1f1f22] text-gray-100 border border-gray-600 mb-3 px-3 py-1">
+                                CÓDIGO DE EJECUCIÓN
+                            </span>
+                            <div className="flex-1 bg-[#1f1f22] rounded-xl p-4 overflow-auto border border-gray-700 scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent">
+                                <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md text-gray-100">
+                                    {codigoEjecucion.trim()}
+                                </pre>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex-1 bg-white rounded-xl max-h-[150px] overflow-auto">
-                        <h1 className="font-medium text-center mt-2 text-black">
-                            CÓDIGO DE EJECUCIÓN
-                        </h1>
-                        <pre className="font-mono text-md py-3 px-6 whitespace-pre rounded-md text-black">
-                            {codigoEjecucion.trim()}
-                        </pre>
+
+                    {/* Parte inferior: consola y comandos */}
+                    <div className="flex flex-col sm:flex-row gap-4 w-full">
+                        {/* Consola */}
+                        <div
+                            ref={consoleRef}
+                            className="flex-1 bg-[#101014] border border-gray-700 rounded-2xl px-4 py-2 max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-white scrollbar-track-transparent"
+                        >
+                            <ConsoleComponent
+                                structureType={structureName}
+                                onCommand={handleCommand}
+                                error={error}
+                            />
+                        </div>
+
+                        {/* Comandos */}
+                        <div className="sm:w-[40%]">
+                            <GroupCommandsComponent buttons={buttons} />
+                        </div>
                     </div>
                 </div>
             </div>
