@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function MemoryAllocationVisualizer({
     n,
@@ -9,17 +9,16 @@ export default function MemoryAllocationVisualizer({
     direccionBase: number;
     tamanioNodo: number;
 }) {
-    const [memory, setMemory] = useState<{ index: number; address: number }[]>(
-        []
-    );
-    const [currentLine, setCurrentLine] = useState(-1);
-    
-    // Código explicado línea por línea
+    const [step, setStep] = useState(0);
+
+    const memory = Array.from({ length: n }, (_, i) => ({
+        index: i,
+        address: direccionBase + i * tamanioNodo,
+    }));
+
     const codeLines = [
-        `// Se define la dirección base: 
-        // dirBase = ${direccionBase}`,
-        `// Se define el tamaño de cada nodo en bytes: 
-        // tamNodo = ${tamanioNodo}`,
+        `// Se define la dirección base: dirBase = ${direccionBase}`,
+        `// Se define el tamaño de cada nodo en bytes: tamNodo = ${tamanioNodo}`,
         `for (let i = 0; i < ${n}; i++) {`,
         `    vectorMemoria[i] = dirBase + (i * tamNodo);`,
         `    // Ejm: vectorMemoria[i] = ${direccionBase} + (i * ${tamanioNodo})`,
@@ -27,88 +26,69 @@ export default function MemoryAllocationVisualizer({
         `// Fin del proceso.`,
     ];
 
-    const [, setIndex] = useState(0);
+    const isShowingCode = step === 0;
+    const isShowingMemory = step > 0 && step <= n;
 
+    // 👇 Se reinicia el paso cuando cambian las props (nuevo proceso)
     useEffect(() => {
-        setMemory([]); // Reinicia la memoria antes de empezar
-        setIndex(0); // Asegura que index empiece en 0
-
-        const interval = setInterval(() => {
-            setIndex((prevIndex) => {
-                if (prevIndex < n) {
-                    setMemory((prev) => [
-                        ...prev,
-                        {
-                            index: prevIndex, // Ahora sí toma el 0
-                            address: direccionBase + prevIndex * tamanioNodo,
-                        },
-                    ]);
-                    setCurrentLine(prevIndex + 2);
-                    return prevIndex + 1;
-                } else {
-                    clearInterval(interval);
-                    return prevIndex; // Retorna el mismo valor para evitar cambios innecesarios
-                }
-            });
-        }, 700);
-
-        return () => clearInterval(interval);
+        setStep(0);
     }, [n, direccionBase, tamanioNodo]);
 
+    const handleNext = () => {
+        if (step < n) setStep((prev) => prev + 1);
+    };
+
+    const handlePrev = () => {
+        if (step > 0) setStep((prev) => prev - 1);
+    };
+
     return (
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 p-4 bg-gray-900 text-white rounded-lg shadow-md w-full max-w-3xl">
-            {/* Sección del código */}
-            <div className="md:w-2/3 w-full">
-                <h1 className="text-lg font-bold text-center mb-2">
-                    Código Dirección Base
-                </h1>
-                <pre className="bg-gray-800 p-3 rounded-md text-white overflow-auto">
+        <div className="flex flex-col bg-[#1F1F22] text-[#E0E0E0] rounded-2xl p-6 border border-[#2E2E2E] space-y-6">
+            <h2 className="text-xl font-semibold text-[#A0A0A0] text-center">
+                Visualización Paso a Paso de Asignación de Memoria
+            </h2>
+
+            {isShowingCode && (
+                <pre className="bg-[#2E2E2E] p-4 rounded-lg text-sm leading-6">
                     {codeLines.map((line, index) => (
-                        <div
-                            key={index}
-                            className={`transition-all duration-300 ${
-                                index === currentLine
-                                    ? "text-white font-bold" // Línea actual en blanco y negrita
-                                    : index < currentLine
-                                      ? "text-blue-400" // Líneas anteriores en azul
-                                      : "text-white" // Líneas futuras siguen blancas
-                            }`}
-                        >
+                        <div key={index} className="text-[#40B4C4]">
                             {line}
                         </div>
                     ))}
                 </pre>
-            </div>
+            )}
 
-            {/* Tabla de direcciones de memoria */}
-            <div className="md:w-1/3 w-full max-h-96 overflow-y-auto">
-                <h1 className="text-lg font-bold text-center mb-2">
-                    Direcciones de Memoria
-                </h1>
-                <table className="w-full border-collapse border border-gray-500 text-sm">
-                    <thead>
-                        <tr className="bg-gray-700">
-                            <th className="border border-gray-500 p-2">
-                                Índice
-                            </th>
-                            <th className="border border-gray-500 p-2">
-                                Dirección
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {memory.map(({ index, address }) => (
-                            <tr key={index} className="bg-gray-800">
-                                <td className="border border-gray-500 p-2 text-center">
-                                    {index}
-                                </td>
-                                <td className="border border-gray-500 p-2 text-center">
-                                    {address}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {isShowingMemory && (
+                <div className="flex justify-center gap-4">
+                    {memory.slice(0, step).map(({ index, address }) => (
+                        <div
+                            key={index}
+                            className="min-w-[90px] flex flex-col items-center justify-center bg-[#2E2E2E] rounded-xl p-2 border border-[#3A3A3A] text-center shadow transition-all duration-300"
+                        >
+                            <span className="text-xs text-[#A0A0A0]">Índice</span>
+                            <span className="text-sm font-bold">{index}</span>
+                            <span className="text-xs mt-1 text-[#A0A0A0]">Dirección</span>
+                            <span className="text-sm text-[#40B4C4]">{address}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="flex justify-center gap-4 mt-4">
+                <button
+                    onClick={handlePrev}
+                    disabled={step === 0}
+                    className="px-4 py-2 rounded-lg bg-[#2E2E2E] border border-[#3A3A3A] hover:bg-[#3A3A3A] disabled:opacity-40 transition"
+                >
+                    Anterior
+                </button>
+                <button
+                    onClick={handleNext}
+                    disabled={step >= n}
+                    className="px-4 py-2 rounded-lg bg-[#D72638] text-white hover:bg-[#b71c2e] disabled:opacity-40 transition"
+                >
+                    Siguiente
+                </button>
             </div>
         </div>
     );

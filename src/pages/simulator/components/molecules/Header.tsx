@@ -30,9 +30,8 @@ export function Header() {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-[#1a1a1a] border-b border-[#2a2a2a] shadow-lg">
+    <header className="sticky top-0 left-0 w-full z-50 bg-[#1a1a1a] border-b border-[#2a2a2a] shadow-lg">
       <div className="max-w-7xl mx-auto px-4 pt-4 pb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        
         {/* Fila izquierda: navegación */}
         <div className="flex items-center gap-2 justify-center sm:justify-start">
           <button
@@ -65,20 +64,28 @@ export function Header() {
         </div>
 
         {/* Botones de navegación */}
-        <nav className="flex items-center justify-center gap-6 sm:justify-end">
+        <nav className="flex items-center justify-center gap-3 sm:gap-6 sm:justify-end">
+          <Link
+            to="/simulador/memoria"
+            className="font-semibold text-white border border-white/20 px-3 py-1 rounded hover:bg-white/10 transition"
+          >
+            Simulador Memoria
+          </Link>
+
           <button
             onClick={() => setMenuType(menuType === "sim" ? null : "sim")}
-            className={`font-semibold transition hover:text-red-400 ${
+            className={`font-semibold px-2 py-1 transition hover:text-red-400 ${
               menuType === "sim" ? "text-red-400" : "text-white"
             }`}
           >
-            Simuladores
+            Simuladores de Estructuras
           </button>
+
           <button
             onClick={() =>
               setMenuType(menuType === "concepts" ? null : "concepts")
             }
-            className={`font-semibold transition hover:text-red-400 ${
+            className={`font-semibold px-2 py-1 transition hover:text-red-400 ${
               menuType === "concepts" ? "text-red-400" : "text-white"
             }`}
           >
