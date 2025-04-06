@@ -5,6 +5,13 @@ export const TYPE_FILTER = {
     ARBOL_ENEARIO: 'arbol_eneario'
 } as const
 
+export const STRUCTURE_NAME = {
+    SEQUENCE: 'secuencia',
+    QUEUE: 'cola',
+    PRIORITY_QUEUE: 'cola de prioridad',
+    STACK: 'pila',
+} as const
+
 export const SVG_SEQUENCE_VALUES = {
     MARGIN_LEFT: 20,
     MARGIN_RIGHT: 20,

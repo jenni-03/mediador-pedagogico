@@ -176,7 +176,10 @@ export function ConsoleComponent({
     };
 
     return (
-        <div className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono">
+        <div
+            id="console"
+            className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono"
+        >
             {history.map((cmd, index) => (
                 <div
                     key={index}

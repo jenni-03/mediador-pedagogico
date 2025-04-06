@@ -6,12 +6,12 @@ import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../../../shared/constants/consts";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 
-export function useSequenceRender(secuencia: (number | null)[], memoria: number[], query: BaseQueryOperations, resetQueryValues: () => void) {
+export function useSequenceRender(sequence: (number | null)[], memory: number[], query: BaseQueryOperations<"secuencia">, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
     // Estado previo de la secuencia
-    const prevSecuencia = usePrevious(secuencia);
+    const prevSequence = usePrevious(sequence);
 
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
@@ -19,7 +19,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
     // Renderizado de la secuencia
     useEffect(() => {
         // Verificamos que la secuencia sea válida y que la referencia al SVG se haya establecido
-        if (!secuencia || !svgRef.current) return;
+        if (!sequence || !svgRef.current) return;
 
         // Margenes para el SVG
         const margin = { left: SVG_SEQUENCE_VALUES.MARGIN_LEFT, right: SVG_SEQUENCE_VALUES.MARGIN_RIGHT };
@@ -32,7 +32,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
         const spacing = SVG_SEQUENCE_VALUES.SPACING;
 
         // Ancho y alto del SVG dependiendo del número de elementos de la secuencia
-        const width = margin.left + secuencia.length * (elementWidth + spacing) - spacing;
+        const width = margin.left + sequence.length * (elementWidth + spacing) - spacing;
         const height = SVG_SEQUENCE_VALUES.HEIGHT;
 
         // Configuración del contenedor SVG
@@ -42,19 +42,19 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
 
         // Renderizado de la estructura base de la secuencia en el SVG
         drawBaseSequence(svg,
-            secuencia,
-            memoria,
+            sequence,
+            memory,
             { margin, elementWidth, elementHeight, spacing, height }
         );
-    }, [secuencia]);
+    }, [sequence]);
 
     // Operación de inserción
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!secuencia || !svgRef.current || query.toAdd === null || !prevSecuencia) return;
+        if (!sequence || !svgRef.current || query.toAdd === null || !prevSequence) return;
 
         // Indice donde se insertó el nuevo elemento
-        const newElementIndex = secuencia.findIndex((valorActual, i) => valorActual !== prevSecuencia[i]);
+        const newElementIndex = sequence.findIndex((actualValue, i) => actualValue !== prevSequence[i]);
 
         // Si hubo una inserción
         if (newElementIndex !== -1) {
@@ -90,16 +90,16 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
     // Operación de eliminación por posición
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!secuencia || !svgRef.current || query.toDelete === null || !prevSecuencia) return;
+        if (!sequence || !svgRef.current || query.toDelete === null || !prevSequence) return;
 
         // Indice del elemento eliminado
         const deletedIndexElement = query.toDelete;
 
         // Valor del elemento eliminado
-        const deletedElement = prevSecuencia[deletedIndexElement] ?? -1;
+        const deletedElement = prevSequence[deletedIndexElement] ?? -1;
 
         // Indice correspondiente al elemento vacio producto de la eliminación
-        const firstNullIndex = secuencia.findIndex(val => val === null);
+        const firstNullIndex = sequence.findIndex(val => val === null);
 
         // Si se encontró una posición nula
         if (firstNullIndex !== -1) {
@@ -145,7 +145,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
                     svg,
                     affectedGroups,
                     nullGroup,
-                    prevSecuencia,
+                    prevSequence,
                     deletedIndexElement,
                     firstNullIndex,
                     dims,
@@ -159,7 +159,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
     // Operación de actualización
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!secuencia || !svgRef.current || !query.toUpdate || !prevSecuencia) return;
+        if (!sequence || !svgRef.current || !query.toUpdate || !prevSequence) return;
 
         // Verificamos la estructura de la query del usuario
         if (!Array.isArray(query.toUpdate) || query.toUpdate.length !== 2) return;
@@ -168,7 +168,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
         const [pos, newVal] = query.toUpdate;
 
         // Guardamos el valor previo a su actualización para su uso en la transición
-        const oldVal = prevSecuencia[pos] ?? -1;
+        const oldVal = prevSequence[pos] ?? -1;
 
         // Seleccionamos el elemento SVG de acuerdo a su referencia
         const svg = d3.select(svgRef.current);
@@ -203,7 +203,7 @@ export function useSequenceRender(secuencia: (number | null)[], memoria: number[
     // Operación de búsqueda
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!secuencia || !svgRef.current || query.toSearch === null) return;
+        if (!sequence || !svgRef.current || query.toSearch === null) return;
 
         // Seleccionamos el elemento SVG de acuerdo a su referencia
         const svg = d3.select(svgRef.current);

@@ -2,15 +2,15 @@ import { useState } from "react";
 import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
 import { BaseQueryOperations } from "../../../../../types";
 
-export function useSequence() {
+export function useSequence(structure: Secuencia) {
     // Estado para manejar la secuencia
-    const [secuencia, setSecuencia] = useState(new Secuencia(0));
+    const [sequence, setSequence] = useState(structure);
 
-    //Estado para manejar el error
+    // Estado para manejar el error
     const [error, setError] = useState<{ message: string, id: number } | null>(null);
 
-    // Estado para manejar las query del usuario
-    const [query, setQuery] = useState<BaseQueryOperations>({
+    // Estado para manejar la operación solicitada por el usuario
+    const [query, setQuery] = useState<BaseQueryOperations<"secuencia">>({
         create: null,
         toAdd: null,
         toDelete: null,
@@ -18,14 +18,15 @@ export function useSequence() {
         toUpdate: []
     });
 
-    const insertarElemento = (elemento: number) => {
+    // Operación de inserción
+    const insertElement = (element: number) => {
         try {
-            const nuevaSecuencia = secuencia.clonar();
-            nuevaSecuencia.insertar(elemento);
-            setSecuencia(nuevaSecuencia);
+            const newSequence = sequence.clonar();
+            newSequence.insertar(element);
+            setSequence(newSequence);
             setQuery((prev) => ({
                 ...prev,
-                toAdd: elemento
+                toAdd: element
             }));
             setError(null);
         } catch (error: any) {
@@ -33,11 +34,12 @@ export function useSequence() {
         }
     }
 
-    const eliminarElemento = (pos: number) => {
+    // Operación de eliminación
+    const deleteElementByPos = (pos: number) => {
         try {
-            const nuevaSecuencia = secuencia.clonar();
-            nuevaSecuencia.eliminarPos(pos);
-            setSecuencia(nuevaSecuencia);
+            const newSequence = sequence.clonar();
+            newSequence.eliminarPos(pos);
+            setSequence(newSequence);
             setQuery((prev) => ({
                 ...prev,
                 toDelete: pos
@@ -48,12 +50,13 @@ export function useSequence() {
         }
     }
 
-    const buscarElemento = (elemento: number) => {
+    // Operación de búsqueda
+    const searchElement = (element: number) => {
         try {
-            if (secuencia.esta(elemento)) {
+            if (sequence.esta(element)) {
                 setQuery((prev) => ({
                     ...prev,
-                    toSearch: elemento
+                    toSearch: element
                 }));
             }
         } catch (error: any) {
@@ -61,14 +64,15 @@ export function useSequence() {
         }
     };
 
-    const actualizarElemento = (pos: number, elemento: number) => {
+    // Operación de actualización
+    const updateElement = (pos: number, element: number) => {
         try {
-            const nuevaSecuencia = secuencia.clonar();
-            nuevaSecuencia.set(pos, elemento);
-            setSecuencia(nuevaSecuencia);
+            const newSequence = sequence.clonar();
+            newSequence.set(pos, element);
+            setSequence(newSequence);
             setQuery((prev) => ({
                 ...prev,
-                toUpdate: [pos, elemento]
+                toUpdate: [pos, element]
             }));
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
@@ -76,21 +80,24 @@ export function useSequence() {
 
     }
 
-    const crearSecuencia = (n: number) => {
-        const nuevaSecuencia = new Secuencia(n);
-        setSecuencia(nuevaSecuencia);
+    // Operación de creación de una secuencia con elementos vacíos
+    const createSequence = (n: number) => {
+        const newSecuencia = new Secuencia(n);
+        setSequence(newSecuencia);
         setQuery((prev) => ({
             ...prev,
             create: n
         }));
     }
 
-    const vaciarSecuencia = () => {
-        const nuevaSecuencia = secuencia.clonar();
-        nuevaSecuencia.vaciar();
-        setSecuencia(nuevaSecuencia);
+    // Operación para vaciar la secuencia
+    const clearSequence = () => {
+        const newSequence = sequence.clonar();
+        newSequence.vaciar();
+        setSequence(newSequence);
     }
 
+    // Función de restablecimiento de las queries del usuario
     const resetQueryValues = () => {
         setQuery({
             create: null,
@@ -101,21 +108,24 @@ export function useSequence() {
         })
     }
 
-    const getMemoria = () => {
-        return secuencia.getVectorMemoria();
+    // Obtención de las direcciones de memoria de cada elemento dentro de la secuencia
+    const getMemory = () => {
+        return sequence.getVectorMemoria();
     }
 
     return {
-        secuencia,
+        sequence,
         query,
         error,
-        insertarElemento,
-        eliminarElemento,
-        buscarElemento,
-        actualizarElemento,
-        crearSecuencia,
-        vaciarSecuencia,
-        resetQueryValues,
-        getMemoria
+        operations: {
+            createSequence,
+            insertElement,
+            deleteElementByPos,
+            searchElement,
+            updateElement,
+            clearSequence,
+            getMemory,
+            resetQueryValues
+        }
     }
 }
