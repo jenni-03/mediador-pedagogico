@@ -71,6 +71,8 @@ export function ConsoleComponent({
                         `$ ${input}`,
                         `Error: ${parsed.error}`,
                     ]);
+                    //Guardamos el comando en el historial
+                    setCommandHistory([...commandHistory, input.trim()]);
                     setInput("");
                     setHistoryIndex(-1);
                     return;

@@ -1,8 +1,14 @@
 export const infoStructures: Record<string, any> = {
     secuencia: {
         info: [
-            "Tamaño",
-            "Capacidad"
+            {
+                key: "Tamaño",
+                description: "Cantidad actual de elementos almacenados en la secuencia."
+            },
+            {
+                key: "Capacidad",
+                description: "Número máximo de elementos que puede contener la secuencia sin necesidad de redimensionar el arreglo."
+            }
         ]
     },
     lista_simple: {
