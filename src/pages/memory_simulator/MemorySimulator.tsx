@@ -27,7 +27,10 @@ export function MemorySimulator() {
   };
 
   // ✅ Función para actualizar la memoria y seleccionar segmento automáticamente
-  const updateMemoryState = (newState: Record<string, any[]>, tipoInsertado?: string) => {
+  const updateMemoryState = (
+    newState: Record<string, any[]>,
+    tipoInsertado?: string
+  ) => {
     setMemoryState(newState);
     if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
       setSelectedSegment(tipoInsertado);
@@ -47,7 +50,7 @@ export function MemorySimulator() {
         setIsSuccess(true);
 
         const tipo = detectarTipoInsertado(command);
-        updateMemoryState(resultado[2], tipo); // 👈 ahora funciona correctamente
+        updateMemoryState(resultado[2], tipo);
       }
     } catch (error) {
       setConsoleOutput(`Error inesperado: ${(error as Error).message}`);
