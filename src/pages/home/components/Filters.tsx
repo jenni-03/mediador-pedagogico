@@ -2,55 +2,56 @@ import { TiDelete } from "react-icons/ti";
 import { FilterTypeValue, NavBarProps } from "../../../types";
 import { TYPE_FILTER } from "../../../shared/constants/consts";
 
-export function Filters({ filter, setFilter }: NavBarProps){
-    return (
-        <div id="filters-section" className="m-auto flex flex-col sm:flex-row sm:flex items-center sm:justify-between px-6 w-full max-w-[1200px] h-32 sm:h-24 gap-2 sm:gap-10 scroll-mt-24">
-                <div className="flex min-w-[300px] lg:w-80 items-center bg-white p-1 border border-red-300 rounded-full overflow-hidden">
-                    <input
-                        type="text"
-                        className="w-72 px-2 lg:w-80 outline-none"
-                        value={filter.query}
-                        onChange={(e) =>
-                            setFilter((prev) => ({
-                                ...prev,
-                                query: e.target.value,
-                            }))
-                        }
-                        placeholder="Secuencia, Cola, Lista..."
-                    />
-                    <TiDelete
-                        className="cursor-pointer rounded-full text-red-500"
-                        size={25}
-                        onClick={() =>
-                            setFilter((prev) => ({ ...prev, query: "" }))
-                        }
-                    />
-                </div>
-                <div className="relative w-60 md:w-64 lg:w-72">
-                    <select
-                        onChange={(e) =>
-                            setFilter((prev) => ({
-                                ...prev,
-                                type: e.target.value as FilterTypeValue,
-                            }))
-                        }
-                        className="w-60 md:w-64 lg:w-72 p-1 border rounded border border-red-300 outline-none appearance-none"
-                    >
-                        <option value={TYPE_FILTER.NONE}>Por defecto</option>
-                        <option value={TYPE_FILTER.ESTRUCTURA_LINEAL}>
-                            Estructuras Lineales
-                        </option>
-                        <option value={TYPE_FILTER.ARBOL_BINARIO}>
-                            Árboles Binarios
-                        </option>
-                        <option value={TYPE_FILTER.ARBOL_ENEARIO}>
-                            Árboles Enearios
-                        </option>
-                    </select>
-                    <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                        <i className="pi pi-chevron-down text-red-500"></i>
-                    </div>
-                </div>
-            </div>
-    );
+export function Filters({ filter, setFilter }: NavBarProps) {
+  return (
+    <div
+      id="filters-section"
+      className="scroll-mt-24 px-6 py-6 max-w-[1400px] mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4"
+    >
+      {/* Input de búsqueda */}
+      <div className="flex items-center w-full sm:max-w-md bg-[#1A1A1A] border border-red-500 rounded-full px-4 py-2 shadow-md">
+        <input
+          type="text"
+          value={filter.query}
+          onChange={(e) =>
+            setFilter((prev) => ({
+              ...prev,
+              query: e.target.value,
+            }))
+          }
+          placeholder="Secuencia, Cola, Lista..."
+          className="w-full bg-transparent text-white placeholder-gray-400 outline-none text-sm"
+        />
+        <TiDelete
+          size={22}
+          onClick={() => setFilter((prev) => ({ ...prev, query: "" }))}
+          className="cursor-pointer text-red-400 hover:text-red-500 transition"
+        />
+      </div>
+
+      {/* Selector de tipo */}
+      <div className="relative w-full sm:max-w-sm">
+        <select
+          value={filter.type}
+          onChange={(e) =>
+            setFilter((prev) => ({
+              ...prev,
+              type: e.target.value as FilterTypeValue,
+            }))
+          }
+          className="w-full bg-[#1A1A1A] text-white border border-red-500 rounded-full px-4 py-2 appearance-none pr-10 text-sm shadow-md outline-none"
+        >
+          <option value={TYPE_FILTER.NONE}>Por defecto</option>
+          <option value={TYPE_FILTER.ESTRUCTURA_LINEAL}>
+            Estructuras Lineales
+          </option>
+          <option value={TYPE_FILTER.ARBOL_BINARIO}>Árboles Binarios</option>
+          <option value={TYPE_FILTER.ARBOL_ENEARIO}>Árboles Enearios</option>
+        </select>
+        <div className="pointer-events-none absolute right-4 top-2/4 -translate-y-1/2 text-red-400">
+          ▼
+        </div>
+      </div>
+    </div>
+  );
 }
