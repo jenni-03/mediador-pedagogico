@@ -12,7 +12,6 @@ interface CustomTourProps {
 }
 
 const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
-  // ✅ Memoiza los pasos del tour para evitar re-render infinitos
   const tourSteps: TourStep[] = useMemo(
     () => getTourDescriptions(tipo),
     [tipo]
@@ -26,7 +25,6 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
   const step = tourSteps[currentStep];
 
-  // ✅ Solo se ejecuta una vez al montar
   useEffect(() => {
     setIsActive(true);
     setCurrentStep(0);
@@ -35,6 +33,7 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
   useEffect(() => {
     if (!isActive || !step) return;
 
+    // Paso tipo info
     if (step.type === "info") {
       setCurrentTarget(null);
       setHighlightStyle({
@@ -47,6 +46,24 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       return;
     }
 
+    // Paso tipo action
+    if (step.type === "action" && step.id) {
+      const el = document.querySelector<HTMLElement>(
+        step.id.startsWith(".") ? step.id : `[data-tour="${step.id}"]`
+      );
+      el?.click(); // Ejecutar acción
+
+      setTimeout(() => {
+        if (currentStep < tourSteps.length - 1) {
+          setCurrentStep((prev) => prev + 1);
+        } else {
+          setIsActive(false);
+        }
+      }, 300); // Delay para permitir que se ejecute visualmente
+      return;
+    }
+
+    // Paso tipo element
     if (step.type === "element" && step.id) {
       const el = document.querySelector<HTMLElement>(
         `[data-tour="${step.id}"]`
@@ -92,7 +109,7 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
   return (
     <>
-      {isActive && step && (
+      {isActive && step && step.type !== "action" && (
         <>
           <TourOverlay />
 
@@ -107,7 +124,7 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
           )}
 
           <TourTooltip
-            description={step.description}
+            description={step.description || ""}
             highlightStyle={highlightStyle}
             onPrev={prevStep}
             onNext={nextStep}
