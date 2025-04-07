@@ -8,6 +8,7 @@ import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
+import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
 
 export function Simulator<T extends string>({
     structureName,
@@ -116,11 +117,7 @@ export function Simulator<T extends string>({
                                     data-tour="execution-code"
                                     className="flex-1 bg-[#1F1F22] rounded-xl p-4 overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
                                 >
-                                    <pre className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md text-[#A0A0A0]">
-                                        {executionCode.map((line, index) => (
-                                            <div key={index}>{line}</div>
-                                        ))}
-                                    </pre>
+                                    <PseudoCodeRunner lines={executionCode} />
                                 </div>
                             </div>
                         </div>
@@ -130,7 +127,7 @@ export function Simulator<T extends string>({
                             <div
                                 ref={consoleRef}
                                 className="flex-1 bg-[#101014] border border-[#2E2E2E] rounded-2xl px-4 py-2 max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
-                                data-tour = "console"
+                                data-tour="console"
                             >
                                 <ConsoleComponent
                                     structureType={structureName}
