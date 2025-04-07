@@ -3,72 +3,72 @@ import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityListaSimple() {
   return (
-    <div className="py-4 px-10">
-      <h1 className="text-2xl font-bold mb-1">
-        COSTO OPERACIONAL Y COMPLEJIDAD
+    <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen">
+      <h1 className="text-3xl font-extrabold text-white mb-1">
+        Costo Operacional y Complejidad
       </h1>
-      <h1 className="text-sm text-gray-500 mb-3">Lista Simple</h1>
-      <hr className="mt-2 mb-4 border-red-500 border-t-2" />
-      <div>
-        <h1 className="text-2xl font-bold mb-3">Análisis Algorítmico</h1>
-      </div>
-      <div>
-        <h1 className="text-lg font-bold mb-4">
-          Costo Operacional y Complejidad
-        </h1>
+      <h2 className="text-sm text-red-400 mb-4">Lista Simple</h2>
+      <hr className="border-t-2 border-red-500 mb-6 w-full" />
 
-        {/* <p className="mb-4">
-                    <a
-                        href="https://gitlab.com/Yoner_Silva/proyecto-seed/-/blob/master/src/ufps/util/colecciones_seed/Secuencia.java"
-                        className="text-blue-600 hover:underline"
-                    >
-                        CODIGO FUENTE (SECUENCIAS)
-                    </a>
-                </p> */}
+      <section className="mb-10">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
+          Análisis Algorítmico
+        </h2>
 
-        <div className="bg-gray-50 p-4 text-gray-800 text-sm leading-6 rounded-md mb-6">
-          <p>
+        <div className="bg-[#1f1f1f] text-gray-300 text-sm leading-6 rounded-xl p-5 shadow-md border border-gray-700">
+          <p className="mb-2">
             Los análisis que se harán a continuación son para el peor de los
-            casos Big(O) con la siguiente nomenclatura:
+            casos
+            <strong> Big(O)</strong> con la siguiente nomenclatura:
           </p>
-          <ul className="list-disc list-inside ml-4">
-            <li>KTE - Constante</li>
-            <li>n - Tamaño de la estructura</li>
-            <li>Número - Número de operaciones elementales</li>
+          <ul className="list-disc list-inside ml-4 space-y-1">
+            <li>
+              <strong>KTE</strong> – Constante
+            </li>
+            <li>
+              <strong>n</strong> – Tamaño de la estructura
+            </li>
+            <li>
+              <strong>Número</strong> – Número de operaciones elementales
+            </li>
           </ul>
-          <p className="mt-2">Cada instrucción se revisa línea a línea</p>
-          <p>
-            Métodos de la misma clase que son llamados en otros métodos, tienen
-            su hipervínculo.
+          <p className="mt-4">
+            Cada instrucción se revisa línea por línea. Métodos de la misma
+            clase que son llamados en otros métodos tienen su hipervínculo para
+            un análisis más detallado.
           </p>
         </div>
+      </section>
 
-        <div className="space-y-6">
-          {complexitySecuencia.map((method, index) => (
-            <div key={index} className="border-b pb-4">
-              <h2 className="text-xl font-semibold mb-2">{method.title}</h2>
-              <div>
-                <CodeAnalysis
-                  code={method.javaCode}
-                  operationalCost={method.operationalCost}
-                  complexity={method.complexity}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+      <section className="space-y-8">
+        {complexitySecuencia.map((method, index) => (
+          <div key={index} className="border-b border-gray-700 pb-4">
+            <h3 className="text-xl font-semibold text-red-400 mb-3">
+              {method.title}
+            </h3>
+            <CodeAnalysis
+              code={method.javaCode}
+              operationalCost={method.operationalCost}
+              complexity={method.complexity}
+            />
+          </div>
+        ))}
+      </section>
 
-        <div className="mt-6 bg-gray-50 p-4 rounded-md">
-          <h2 className="text-xl font-bold mb-4">Conclusión</h2>
-          <p className="text-gray-700 text-sm leading-6">
-            En el análisis anterior se pudo observar que la estructura Secuencia
-            obta en el mejor de los casos a ser constante y en el peor de los
-            casos a ser lineal. Teniendo en cuenta que su comportamiento lineal
-            es en base a "this.cant", esté mismo se puede considerar su "n" para
-            saber el coste operacional de cada algoritmo.
-          </p>
-        </div>
-      </div>
+      <section className="mt-10 bg-[#1a1a1a] p-5 rounded-xl border border-gray-700 shadow-inner">
+        <h3 className="text-xl font-bold text-red-500 mb-3">Conclusión</h3>
+        <p className="text-sm text-gray-300 leading-6">
+          En el análisis anterior se pudo observar que la estructura{" "}
+          <strong>Secuencia</strong> opta en el mejor de los casos a ser{" "}
+          <span className="text-green-400">constante</span> y en el peor de los
+          casos a ser <span className="text-yellow-400">lineal</span>. Teniendo
+          en cuenta que su comportamiento lineal depende de{" "}
+          <code className="bg-gray-800 px-1 rounded">this.cant</code>, este
+          mismo puede considerarse como{" "}
+          <code className="bg-gray-800 px-1 rounded">n</code> para evaluar el
+          coste operacional de cada algoritmo.
+        </p>
+      </section>
     </div>
   );
 }
