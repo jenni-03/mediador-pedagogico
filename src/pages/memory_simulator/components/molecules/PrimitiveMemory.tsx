@@ -51,7 +51,7 @@ export function PrimitiveMemory({
       case "short":
       case "int":
       case "long":
-        return "text-[#A0A0A0]";
+        return "text-[#F59E0B]"; // amarillo cálido para enteros
       case "float":
       case "double":
         return "text-[#1E88E5]";
@@ -90,8 +90,12 @@ export function PrimitiveMemory({
              flex flex-col items-center text-center cursor-pointer
              transition-all"
               >
+                {/* Dirección */}
                 <div className="absolute top-2 left-2 flex items-center gap-1">
-                  <span className="text-xs bg-[#D72638] text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
+                  <span
+                    title="Dirección de memoria"
+                    className="text-xs bg-[#D72638] text-white px-2.5 py-0.5 rounded-full font-semibold shadow"
+                  >
                     {entry.address}
                   </span>
                   <button
@@ -106,8 +110,12 @@ export function PrimitiveMemory({
                   </button>
                 </div>
 
+                {/* Tamaño */}
                 <div className="absolute top-2 right-2 flex items-center gap-2">
-                  <span className="text-xs bg-[#333] text-[#A0A0A0] px-2.5 py-0.5 rounded-full font-medium shadow-sm">
+                  <span
+                    title="Tamaño ocupado en memoria"
+                    className="text-xs bg-[#4B4B4B] text-white px-2.5 py-0.5 rounded-full font-medium shadow-sm"
+                  >
                     {sizes[entry.address] ?? "…"}
                   </span>
                   <button
@@ -122,10 +130,12 @@ export function PrimitiveMemory({
                   </button>
                 </div>
 
+                {/* Nombre de la variable */}
                 <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2 text-[#E0E0E0]">
                   {entry.name}
                 </p>
 
+                {/* Tabla tipo/valor */}
                 <div className="mt-4 w-full overflow-x-auto">
                   <table className="min-w-full border border-[#2E2E2E] text-sm rounded-xl overflow-hidden">
                     <thead className="bg-[#1F1F1F] text-[#D72638] text-xs uppercase tracking-wider">
@@ -140,9 +150,10 @@ export function PrimitiveMemory({
                     </thead>
                     <tbody>
                       <tr className="hover:bg-[#2B2B2B] transition-all">
-                        <td className="px-3 py-2 border-b border-[#2E2E2E] text-center text-[#A0A0A0] font-semibold">
+                        <td className="px-3 py-2 border-b border-[#2E2E2E] text-center font-semibold text-[#CCCCCC]">
                           {entry.type}
                         </td>
+
                         <td
                           className={`px-3 py-2 border-b border-[#2E2E2E] text-center font-semibold ${getValueColor(entry.type)}`}
                         >

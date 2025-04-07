@@ -2,6 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* html, body {
+html, body {
   @apply bg-[#0A0A0D] text-[#E0E0E0] overflow-x-hidden;
-} */
+}
