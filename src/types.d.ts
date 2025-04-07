@@ -57,7 +57,7 @@ export type CustomModalProps = {
 
 export type SimulatorProps<T extends string> = {
     structureName: T,
-    structure: any,
+    structure: unknown,
     actions: BaseStructureActions<T>;
     query: BaseQueryOperations;
     error: { message: string, id: number } | null;
@@ -83,22 +83,24 @@ export interface CardData {
     toPracticar: string;
 }
 
-export type BaseQueryOperations = {
-    create: number | null,
-    toAdd: number | null,
-    toDelete: number | null,
-    toSearch: number | null,
-    toUpdate?: number | [number, number] | []
-}
+export type BaseQueryOperations<T extends string> =
+    T extends "secuencia" ? {
+        create: number | null,
+        toAdd: number | null,
+        toDelete: number | null,
+        toSearch: number | null,
+        toUpdate: [number, number] | []
+    } : Record<string, unknown>;
 
-export type BaseStructureActions<T extends string> = 
+
+export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
         create: (n: number) => void;
-        insertlast: (element: number) => void;
+        insertLast: (element: number) => void;
         delete: (element: number) => void;
-        search: (element: number) => void;
+        get: (element: number) => void;
         clean: () => void;
-        update: (pos: number, element: number) => void;
+        set: (pos: number, element: number) => void;
     } :
     T extends "cola" ? {
         create: (n: number) => void;
@@ -107,7 +109,14 @@ export type BaseStructureActions<T extends string> =
         search: (element: number) => void;
         clean: () => void;
     } :
-    Record<string, (...args: any[]) => void>; // Fallback para otros casos
+    T extends "pila" ? {
+        create: (n: number) => void;
+        insertlast: (element: number) => void;
+        delete: (element: number) => void;
+        search: (element: number) => void;
+        clean: () => void;
+    } :
+    Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
     isAnimating: boolean;

@@ -1,34 +1,37 @@
 import { useState } from "react";
 import { CommandProps } from "../../../../types";
 import { CustomModal } from "../molecules/CustomModal";
+import { motion } from "framer-motion";
 
 export function ButtonCommandsComponent({
-    title,
-    description,
-    estructura,
-    ejemplo,
+  title,
+  description,
+  estructura,
+  ejemplo,
 }: CommandProps) {
-    const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(false);
 
-    return (
-        <CustomModal
-            title={title.toUpperCase()}
-            description={description}
-            structure={estructura}
-            example={ejemplo}
-            onClose={() => setIsActive(false)} // Cuando el modal se cierra, cambia el estado a false
-        >
-            <div
-                onClick={() => setIsActive(true)}
-                className={`flex items-center justify-center px-4 py-1 text-xs sm:text-sm font-semibold rounded-full border transition-all duration-300 ${
-                    isActive === true
-                        ? "bg-red-100 border-red-400 text-red-700 shadow"
-                        : "bg-white border-gray-300 text-gray-700 hover:bg-red-50 hover:text-red-600"
-                }
-        `}
-            >
-                {title}
-            </div>
-        </CustomModal>
-    );
+  return (
+    <CustomModal
+      title={title.toUpperCase()}
+      description={description}
+      structure={estructura}
+      example={ejemplo}
+      onClose={() => setIsActive(false)}
+    >
+      <motion.div
+        onClick={() => setIsActive(true)}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.1 }}
+        className={`flex items-center justify-center px-5 py-2 text-sm sm:text-base font-bold tracking-wide rounded-full border transition-all duration-300 cursor-pointer
+    ${
+      isActive
+        ? "bg-[#292944] border-[#4f4f78] text-[#A0A0FF] shadow-lg ring-2 ring-[#6366f1]/40"
+        : "bg-[#ff2323] border-[#3C3C5C] text-[#F0F0F0] hover:bg-[#ff3e38] hover:text-white hover:ring-1 hover:ring-[#6366f1]/20 hover:shadow-md"
+    }`}
+      >
+        {title}
+      </motion.div>
+    </CustomModal>
+  );
 }

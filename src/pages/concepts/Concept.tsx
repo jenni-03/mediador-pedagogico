@@ -1,48 +1,52 @@
 import { getRouteApi, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SideBar } from "./components/Sidebar";
+import { Header } from "../simulator/components/molecules/Header";
 
 export function Concept() {
-    const route = getRouteApi("/conceptos/$estructura");
+  const route = getRouteApi("/conceptos/$estructura");
 
-    const { estructura } = route.useParams();
-    const navigate = useNavigate();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { estructura } = route.useParams();
+  const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // Redirige a /definicion si la URL es /conceptos/:estructura
-    useEffect(() => {
-        navigate({ to: `/conceptos/${estructura}/definicion`, replace: true });
-    }, [estructura, navigate]);
+  // Redirige a /definicion si la URL es /conceptos/:estructura
+  useEffect(() => {
+    navigate({ to: `/conceptos/${estructura}/definicion`, replace: true });
+  }, [estructura, navigate]);
 
-    // Hace que el botón "Atrás" del navegador redirija al home "/"
-    useEffect(() => {
-        const handlePopState = (event: PopStateEvent) => {
-            event.preventDefault();
-            navigate({ to: "/", replace: true });
-        };
+  // Hace que el botón "Atrás" del navegador redirija al home "/"
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault();
+      navigate({ to: "/", replace: true });
+    };
 
-        window.addEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handlePopState);
 
-        return () => {
-            window.removeEventListener("popstate", handlePopState);
-        };
-    }, [navigate]);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [navigate]);
 
-    return (
-        <div className="flex h-screen">
-            {/* Sidebar dinámico, dependiendo del tamaño de la pantalla*/}
-            <div
-                className={`transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-10"} md:w-64`}
-            >
-                <SideBar
-                    estructura={estructura}
-                    isOpen={isSidebarOpen}
-                    setIsOpen={setIsSidebarOpen}
-                />
-            </div>
-            <div className="flex-1 overflow-y-auto">
-                <Outlet /> {/* Renderiza las subrutas */}
-            </div>
+  return (
+    <>
+      <Header />
+      <div className="flex h-screen">
+        {/* Sidebar dinámico, dependiendo del tamaño de la pantalla*/}
+        <div
+          className={`transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-10"} md:w-64`}
+        >
+          <SideBar
+            estructura={estructura}
+            isOpen={isSidebarOpen}
+            setIsOpen={setIsSidebarOpen}
+          />
         </div>
-    );
+        <div className="flex-1 overflow-y-auto">
+          <Outlet /> {/* Renderiza las subrutas */}
+        </div>
+      </div>
+    </>
+  );
 }

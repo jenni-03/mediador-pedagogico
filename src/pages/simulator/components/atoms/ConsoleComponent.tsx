@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { commandRules } from "../../../../shared/constants/commandRules";
+import { commandRules } from "../../../../shared/constants/console/commandRules";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
+import { parseCommand } from "../../../../shared/constants/console/parseCommand";
 
 interface ConsoleComponentProps {
     structureType: string;
-    onCommand: (command: string, isValid: boolean) => void;
+    onCommand: (command: string[], isValid: boolean) => void;
     error: { message: string; id: number } | null;
 }
 
@@ -41,7 +42,7 @@ export function ConsoleComponent({
         }
     }, [error?.id]);
 
-    // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos 
+    // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos
     const structuresRequiringCreate = [
         "secuencia",
         "lista_simple",
@@ -58,7 +59,28 @@ export function ConsoleComponent({
                 setHistory([]);
                 setInput("");
             } else {
-                const parts = input.trim().split(/\s+/);
+                // Verifica si el comando es válido con el formato de metodos para java
+                // Si no es válido, no se ejecuta el comando
+                const parsed = parseCommand(input.trim(), structureType);
+
+                if ("error" in parsed) {
+                    console.log("Error en el comando:", parsed.error);
+                    onCommand([], false);
+                    setHistory([
+                        ...history,
+                        `$ ${input}`,
+                        `Error: ${parsed.error}`,
+                    ]);
+                    //Guardamos el comando en el historial
+                    setCommandHistory([...commandHistory, input.trim()]);
+                    setInput("");
+                    setHistoryIndex(-1);
+                    return;
+                }
+
+                const parts = parsed;
+
+                console.log("Comando parseado:", parts);
 
                 const commandValidation = commandRules[structureType](parts);
 
@@ -72,14 +94,14 @@ export function ConsoleComponent({
 
                         // Si la estructura no ha sido creada solo se permite el cmd create
                         if (needsCreate && !isCreated && command !== "create") {
-                            onCommand("", false);
+                            onCommand([], false);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Error: Debe crear la estructura primero con 'create'",
                             ]);
                         } else if (isCreated && command == "clean") {
-                            onCommand(input.trim(), true);
+                            onCommand(parsed, true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
@@ -94,7 +116,7 @@ export function ConsoleComponent({
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
                             }
-                            onCommand(input.trim(), true);
+                            onCommand(parsed, true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
@@ -102,8 +124,7 @@ export function ConsoleComponent({
                             ]);
                         }
                     } else {
-                        onCommand("", false);
-
+                        onCommand([], false);
                         setHistory([
                             ...history,
                             `$ ${input}`,
@@ -111,7 +132,7 @@ export function ConsoleComponent({
                         ]);
                     }
                 } else {
-                    onCommand("", false);
+                    onCommand([], false);
                     setHistory([
                         ...history,
                         `$ ${input}`,
@@ -155,7 +176,9 @@ export function ConsoleComponent({
     };
 
     return (
-        <div className="flex-1 bg-gray-900 text-white p-4 mr-2 rounded-xl font-mono">
+        <div
+            className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono"
+        >
             {history.map((cmd, index) => (
                 <div
                     key={index}

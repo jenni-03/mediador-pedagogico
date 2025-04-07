@@ -1,27 +1,29 @@
 import { BaseQueryOperations } from "../../../../../types";
 import { useSequenceRender } from "../../../hooks/estructures/secuencia/useSequenceRender";
 
-export function SequenceRender({
+export function SequenceRender<T extends string>({
+    structureName,
     sequence,
-    memoria,
+    memory,
     query,
     resetQueryValues,
 }: {
+    structureName: T;
     sequence: (number | null)[];
-    memoria: number[];
-    query: BaseQueryOperations;
+    memory: number[];
+    query: BaseQueryOperations<T>;
     resetQueryValues: () => void;
 }) {
     const { svgRef } = useSequenceRender(
         sequence,
-        memoria,
+        memory,
         query,
         resetQueryValues
     );
 
     return (
         <div>
-            <svg id="sequence-svg" ref={svgRef}></svg>
+            <svg id={`${structureName}-svg`} ref={svgRef}></svg>
         </div>
     );
 }
