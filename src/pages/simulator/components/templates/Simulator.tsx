@@ -130,6 +130,7 @@ export function Simulator<T extends string>({
                             <div
                                 ref={consoleRef}
                                 className="flex-1 bg-[#101014] border border-[#2E2E2E] rounded-2xl px-4 py-2 max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
+                                data-tour = "console"
                             >
                                 <ConsoleComponent
                                     structureType={structureName}
