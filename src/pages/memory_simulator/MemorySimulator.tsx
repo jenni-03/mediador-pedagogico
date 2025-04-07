@@ -5,6 +5,7 @@ import { TitleComponent } from "./components/atoms/TitleComponent";
 import { Consola } from "../../shared/utils/RAM/Consola";
 import { FloatingCommandPanel } from "./components/molecules/FloatingCommandPanel";
 import { Header } from "../simulator/components/molecules/Header";
+import CustomTour from "./components/tour/CustomTour"; // ajusta la ruta si es necesario
 
 export function MemorySimulator() {
   const consolaRef = useRef(new Consola());
@@ -14,7 +15,6 @@ export function MemorySimulator() {
   const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
   const [selectedSegment, setSelectedSegment] = useState<string>("int");
 
-  // 🔍 Detecta tipo desde el comando "insert"
   const detectarTipoInsertado = (cmd: string): string | undefined => {
     const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
     if (match) {
@@ -26,7 +26,6 @@ export function MemorySimulator() {
     return undefined;
   };
 
-  // ✅ Función para actualizar la memoria y seleccionar segmento automáticamente
   const updateMemoryState = (
     newState: Record<string, any[]>,
     tipoInsertado?: string
@@ -37,7 +36,6 @@ export function MemorySimulator() {
     }
   };
 
-  // ⚙ Comando desde consola
   const handleCommand = (command: string) => {
     try {
       const resultado = consolaRef.current.ejecutarComando(command);
@@ -61,13 +59,14 @@ export function MemorySimulator() {
   return (
     <>
       <Header />
+
       <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
         <TitleComponent />
 
         <MemoryScreen
           consolaRef={consolaRef}
           memoryState={memoryState}
-          setMemoryState={updateMemoryState} // 👈 usamos la función universal
+          setMemoryState={updateMemoryState}
           selectedSegment={selectedSegment}
           setSelectedSegment={setSelectedSegment}
         />
@@ -80,6 +79,7 @@ export function MemorySimulator() {
 
         <FloatingCommandPanel />
       </div>
+      <CustomTour tipo="memoria" />
     </>
   );
 }

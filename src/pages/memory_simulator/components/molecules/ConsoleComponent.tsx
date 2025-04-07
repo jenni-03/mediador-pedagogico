@@ -96,6 +96,7 @@ export function ConsoleComponent({
                 ref={consoleRef}
                 className="relative w-full sm:w-[40%] max-w-screen-md h-40 sm:h-52 lg:h-60 bg-black text-green-400 p-4 rounded-lg font-mono overflow-y-auto border-2 border-gray-600"
                 onClick={focusInput}
+                data-tour="consola"
             >
                 {/* Renderiza el historial de comandos con mensajes debajo */}
                 {history.map((entry, index) => (

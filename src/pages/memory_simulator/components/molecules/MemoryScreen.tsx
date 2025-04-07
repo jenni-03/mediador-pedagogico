@@ -34,16 +34,24 @@ export function MemoryScreen({
   };
 
   return (
-    <div className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative">
+    <div
+      className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative"
+    >
       <div className="w-full bg-[#1A1A1A] border border-[#2E2E2E] rounded-3xl shadow-xl shadow-black/50 flex flex-col max-h-[85vh] overflow-visible transition-all duration-300">
-        {/* Cabecera */}
-        <div className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow">
+        {/* 🧠 Título principal */}
+        <div
+          className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow"
+
+        >
           <h3 className="text-[#E0E0E0] text-2xl font-bold tracking-wider text-center">
             SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()}
           </h3>
 
-          <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-5xl mt-3">
-            {/* Botón limpiar */}
+          {/* 🎯 Segment buttons */}
+          <div
+            className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-5xl mt-3"
+          >
+            {/* 🧹 Limpiar memoria */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.03 }}
@@ -56,12 +64,16 @@ export function MemoryScreen({
                 }
               }}
               className="px-5 py-2 text-sm font-bold uppercase text-[#D72638] border border-[#D72638] rounded-full hover:bg-[#2E2E2E] transition-colors duration-200 flex items-center gap-2"
+              data-tour="limpiar"
             >
               🧹 <span>Limpiar Memoria</span>
             </motion.button>
 
-            {/* Buscador */}
-            <div className="flex items-center flex-1 min-w-[180px] bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 shadow-sm">
+            {/* 🔍 Buscador de memoria */}
+            <div
+              className="flex items-center flex-1 min-w-[180px] bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 shadow-sm"
+              data-tour = "buscador"
+            >
               <FaSearch className="text-[#A0A0A0] mr-2" />
               <input
                 type="text"
@@ -72,20 +84,21 @@ export function MemoryScreen({
               />
             </div>
 
-            {/* Botón casos de prueba */}
+            {/* 🧪 Casos de prueba */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 300 }}
               onClick={() => setShowModal(true)}
               className="px-5 py-2 text-sm font-bold uppercase text-[#D72638] border border-[#D72638] rounded-full hover:bg-[#2E2E2E] transition-colors duration-200 flex items-center gap-2"
+              data-tour="casosPrueba"
             >
               🧪 <span>Casos de Prueba</span>
             </motion.button>
           </div>
         </div>
 
-        {/* Área de visualización */}
+        {/* 💾 Área de visualización de variables */}
         <div className="w-full flex-1 min-h-0 overflow-y-auto px-2 pt-4 pb-28 scrollbar-thin scrollbar-thumb-[#D72638] scrollbar-track-[#2E2E2E]">
           <MemoryDisplay
             segment={selectedSegment}
@@ -96,8 +109,11 @@ export function MemoryScreen({
           />
         </div>
 
-        {/* Barra de segmentos */}
-        <div className="w-full bg-[#1A1A1A] border-t border-[#2E2E2E] shadow-inner rounded-b-3xl relative z-10">
+        {/* 🧭 Barra de segmentos */}
+        <div
+          className="w-full bg-[#1A1A1A] border-t border-[#2E2E2E] shadow-inner rounded-b-3xl relative z-10"
+          data-tour="segment-buttons"
+        >
           <div className="w-full px-2 py-4 flex flex-wrap justify-center gap-3">
             {[
               "boolean",
@@ -148,7 +164,7 @@ export function MemoryScreen({
         </div>
       </div>
 
-      {/* Modal de Casos de Prueba */}
+      {/* 🧪 Modal de Casos de Prueba */}
       {showModal && (
         <TestCasesModal
           consolaRef={consolaRef}

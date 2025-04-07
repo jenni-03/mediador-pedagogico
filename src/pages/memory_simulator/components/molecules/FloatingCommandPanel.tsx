@@ -17,7 +17,8 @@ export function FloatingCommandPanel() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full flex justify-center sm:justify-end px-4 sm:px-10 mt-6 sm:-mt-60"
       >
-        <div className="w-full sm:w-[40%] max-w-screen-md bg-[#1F1F1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 p-5">
+        <div className="w-full sm:w-[40%] max-w-screen-md bg-[#1F1F1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 p-5"
+        data-tour="comandos">
           <h2 className="text-center font-bold text-sm text-[#D72638] tracking-wide mb-4">
             COMANDOS DEL SIMULADOR DE MEMORIA
           </h2>
