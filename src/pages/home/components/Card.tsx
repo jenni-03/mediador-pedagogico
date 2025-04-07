@@ -3,43 +3,66 @@ import { motion } from "framer-motion";
 import { AnimatedButtonLink } from "../../../shared/components/AnimatedButtonLink";
 
 export function Card({
-    bgCard,
-    img,
-    title,
-    id,
-    bgButton,
-    toConceptos,
-    toPracticar,
+  bgCard,
+  img,
+  title,
+  id,
+  bgButton,
+  toConceptos,
+  toPracticar,
 }: CardData) {
-    return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            style={{ backgroundColor: bgCard }}
-            className="rounded-2xl w-[21rem] p-4 flex flex-col gap-4 items-center justify-center"
-        >
-            <h3 className="font-bold text-white text-lg">{title}</h3>
-            <img
-                className="rounded-2xl object-fill h-44 w-full"
-                src={img}
-                alt="Imagen de estructura"
-            />
-            <div className="flex justify-between items-center w-full text-white">
-                <AnimatedButtonLink
-                    bgColor={bgButton}
-                    text={"Conceptos"}
-                    to={toConceptos}
-                    params={id.toString()}
-                />
-                <AnimatedButtonLink
-                    bgColor={bgButton}
-                    text={"Practicar"}
-                    to={toPracticar}
-                    params={id.toString()}
-                />
-            </div>
-        </motion.div>
-    );
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{
+        scale: 1.02,
+        boxShadow: `
+          0 0 15px ${bgCard}cc,
+          0 0 30px ${bgCard}99,
+          0 0 60px ${bgCard}66
+        `,
+      }}
+      transition={{ type: "spring", stiffness: 200 }}
+      style={{
+        backgroundColor: "#1e1e1e",
+        boxShadow: `
+          0 0 10px ${bgCard}88,
+          0 0 20px ${bgCard}44
+        `,
+      }}
+      className="rounded-2xl w-[21rem] min-h-[24rem] p-5 flex flex-col gap-5 items-center justify-between border border-white/10 transition-all duration-300"
+    >
+      <div className="w-full flex justify-between items-center">
+
+      </div>
+
+      <h3 className="text-xl font-bold tracking-wide text-white text-center">
+        {title.toUpperCase()}
+      </h3>
+
+      <img
+        className="rounded-xl object-contain h-40 w-full bg-white p-2"
+        src={img}
+        alt={`Estructura ${title}`}
+      />
+
+      <div className="flex justify-between gap-4 w-full">
+        <AnimatedButtonLink
+          bgColor={bgButton}
+          text={"Conceptos"}
+          to={toConceptos}
+          params={id.toString()}
+        />
+        <AnimatedButtonLink
+          bgColor={bgButton}
+          text={"Practicar"}
+          to={toPracticar}
+          params={id.toString()}
+        />
+      </div>
+    </motion.div>
+  );
 }
