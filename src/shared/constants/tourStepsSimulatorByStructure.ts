@@ -1,4 +1,4 @@
-import { TourStep } from "../../constants/tourDescriptions";
+import { TourStep } from "./tourDescriptions";
 
 export const tourStepsByStructure: Record<string, TourStep[]> = {
     secuencia: [

@@ -1,5 +1,5 @@
 import { TourType } from "../tour/CustomTour";
-import { getTourSteps } from "../utils/tour/tourStepsSimulatorByStructure";
+import { getTourSteps } from "./tourStepsSimulatorByStructure";
 
 // types
 export type TourStep = {
