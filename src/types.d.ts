@@ -90,8 +90,7 @@ export type BaseQueryOperations<T extends string> =
         toDelete: number | null,
         toSearch: number | null,
         toUpdate: [number, number] | []
-    } : Record<string, unknown>;
-
+    } : never;
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
