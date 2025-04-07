@@ -1,6 +1,7 @@
 import { SideBarProps } from "../../../types";
 import { SidebarItem } from "./SidebarItem";
 
+
 export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
   const menuItems = [
     { to: "/conceptos/$estructura/definicion", label: "Definición" },
@@ -10,6 +11,7 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
 
   return (
     <>
+    
       {/* Botón abrir menú en móviles */}
       {!isOpen && (
         <button
@@ -24,7 +26,7 @@ export function SideBar({ estructura, isOpen, setIsOpen }: SideBarProps) {
       <div
         className={`
           ${isOpen ? "fixed" : "hidden"} 
-          md:block md:relative 
+          md:block md:static
           top-0 left-0 w-64 h-full md:h-screen 
           bg-[#1a1a1a] border-r border-red-500 p-6
           transition-transform duration-300 z-[90] shadow-xl
