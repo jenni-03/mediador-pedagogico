@@ -149,18 +149,21 @@ export function TestCasesModal({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="flex-1 bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 text-sm placeholder-[#888] text-white focus:outline-none focus:ring-2 focus:ring-[#D72638]"
+                data-tour="inputCasos"
               />
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 className="bg-[#D72638] hover:bg-[#c01f30] text-white px-4 py-2 rounded-full text-sm font-semibold transition"
                 onClick={addCommand}
+                data-tour="botonAñadirCasos"
               >
                 {editingIndex !== null ? "Actualizar" : "Añadir"}
               </motion.button>
             </div>
 
             {/* Lista de comandos */}
-            <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <ul className="space-y-2 max-h-48 overflow-y-auto pr-1"
+            data-tour="listaComandos">
               {testCommands.map((cmd, idx) => (
                 <li
                   key={idx}
@@ -217,6 +220,7 @@ export function TestCasesModal({
                 whileTap={{ scale: 0.95 }}
                 onClick={closeModal}
                 className="bg-[#333] text-white hover:bg-[#444] px-4 py-2 rounded-full text-sm font-semibold"
+                data-tour="botonCerrarModalPruebas"
               >
                 Cancelar
               </motion.button>
@@ -224,6 +228,7 @@ export function TestCasesModal({
                 whileTap={{ scale: 0.95 }}
                 onClick={loadPredefinedCases}
                 className="bg-[#333] text-[#D72638] hover:bg-[#444] px-4 py-2 rounded-full text-sm font-semibold"
+                data-tour="botonCargarPruebas"
               >
                 Cargar Pruebas
               </motion.button>
@@ -231,6 +236,7 @@ export function TestCasesModal({
                 whileTap={{ scale: 0.95 }}
                 onClick={selectAll}
                 className="bg-[#333] text-purple-400 hover:bg-[#444] px-4 py-2 rounded-full text-sm font-semibold"
+                data-tour="botonSeleccionarPruebas"
               >
                 Seleccionar Todos
               </motion.button>
@@ -239,6 +245,7 @@ export function TestCasesModal({
                 onClick={executeTestCases}
                 disabled={selected.size === 0}
                 className="bg-[#D72638] hover:bg-[#c01f30] text-white px-4 py-2 rounded-full text-sm font-semibold shadow-sm disabled:opacity-40"
+                data-tour="botonEjecutarPruebas"
               >
                 Ejecutar Seleccionados
               </motion.button>
@@ -251,6 +258,7 @@ export function TestCasesModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="mt-4 space-y-2 max-h-60 overflow-y-auto pr-1"
+            data-tour="resultadosComandos"
           >
             {results.map((res, i) => (
               <div
@@ -273,6 +281,7 @@ export function TestCasesModal({
                 whileTap={{ scale: 0.95 }}
                 onClick={closeModal}
                 className="bg-[#333] hover:bg-[#444] text-white px-4 py-2 rounded-full text-sm font-semibold"
+                data-tour="cerrarModalPruebas"
               >
                 Finalizar
               </motion.button>

@@ -34,23 +34,16 @@ export function MemoryScreen({
   };
 
   return (
-    <div
-      className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative"
-    >
+    <div className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative">
       <div className="w-full bg-[#1A1A1A] border border-[#2E2E2E] rounded-3xl shadow-xl shadow-black/50 flex flex-col max-h-[85vh] overflow-visible transition-all duration-300">
         {/* 🧠 Título principal */}
-        <div
-          className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow"
-
-        >
+        <div className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow">
           <h3 className="text-[#E0E0E0] text-2xl font-bold tracking-wider text-center">
             SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()}
           </h3>
 
           {/* 🎯 Segment buttons */}
-          <div
-            className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-5xl mt-3"
-          >
+          <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-5xl mt-3">
             {/* 🧹 Limpiar memoria */}
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -72,7 +65,7 @@ export function MemoryScreen({
             {/* 🔍 Buscador de memoria */}
             <div
               className="flex items-center flex-1 min-w-[180px] bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 shadow-sm"
-              data-tour = "buscador"
+              data-tour="buscador"
             >
               <FaSearch className="text-[#A0A0A0] mr-2" />
               <input
@@ -99,7 +92,10 @@ export function MemoryScreen({
         </div>
 
         {/* 💾 Área de visualización de variables */}
-        <div className="w-full flex-1 min-h-0 overflow-y-auto px-2 pt-4 pb-28 scrollbar-thin scrollbar-thumb-[#D72638] scrollbar-track-[#2E2E2E]">
+        <div
+          className="w-full flex-1 min-h-0 overflow-y-auto px-2 pt-4 pb-28 scrollbar-thin scrollbar-thumb-[#D72638] scrollbar-track-[#2E2E2E]"
+          data-tour="visualizacionVariables"
+        >
           <MemoryDisplay
             segment={selectedSegment}
             searchTerm={searchTerm}
@@ -149,6 +145,7 @@ export function MemoryScreen({
               <button
                 key={seg}
                 onClick={() => setSelectedSegment(seg)}
+                data-tour="botonArray"
                 className={`px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
                   rounded-full border transition-all duration-300
                   ${
