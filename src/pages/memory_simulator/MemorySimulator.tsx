@@ -5,81 +5,81 @@ import { TitleComponent } from "./components/atoms/TitleComponent";
 import { Consola } from "../../shared/utils/RAM/Consola";
 import { FloatingCommandPanel } from "./components/molecules/FloatingCommandPanel";
 import { Header } from "../simulator/components/molecules/Header";
-import CustomTour from "./components/tour/CustomTour"; // ajusta la ruta si es necesario
+import CustomTour from "../../shared/tour/CustomTour";
 
 export function MemorySimulator() {
-  const consolaRef = useRef(new Consola());
+    const consolaRef = useRef(new Consola());
 
-  const [consoleOutput, setConsoleOutput] = useState<string>("");
-  const [isSuccess, setIsSuccess] = useState<boolean>(true);
-  const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
-  const [selectedSegment, setSelectedSegment] = useState<string>("int");
+    const [consoleOutput, setConsoleOutput] = useState<string>("");
+    const [isSuccess, setIsSuccess] = useState<boolean>(true);
+    const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
+    const [selectedSegment, setSelectedSegment] = useState<string>("int");
 
-  const detectarTipoInsertado = (cmd: string): string | undefined => {
-    const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
-    if (match) {
-      let tipo = match[1].toLowerCase();
-      if (match[2]) tipo = "array";
-      if (tipo === "object") return "object";
-      return tipo;
-    }
-    return undefined;
-  };
+    const detectarTipoInsertado = (cmd: string): string | undefined => {
+        const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
+        if (match) {
+            let tipo = match[1].toLowerCase();
+            if (match[2]) tipo = "array";
+            if (tipo === "object") return "object";
+            return tipo;
+        }
+        return undefined;
+    };
 
-  const updateMemoryState = (
-    newState: Record<string, any[]>,
-    tipoInsertado?: string
-  ) => {
-    setMemoryState(newState);
-    if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
-      setSelectedSegment(tipoInsertado);
-    }
-  };
+    const updateMemoryState = (
+        newState: Record<string, any[]>,
+        tipoInsertado?: string
+    ) => {
+        setMemoryState(newState);
+        if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
+            setSelectedSegment(tipoInsertado);
+        }
+    };
 
-  const handleCommand = (command: string) => {
-    try {
-      const resultado = consolaRef.current.ejecutarComando(command);
+    const handleCommand = (command: string) => {
+        try {
+            const resultado = consolaRef.current.ejecutarComando(command);
 
-      if (!resultado[0]) {
-        setConsoleOutput(resultado[1]);
-        setIsSuccess(false);
-      } else {
-        setConsoleOutput(resultado[1]);
-        setIsSuccess(true);
+            if (!resultado[0]) {
+                setConsoleOutput(resultado[1]);
+                setIsSuccess(false);
+            } else {
+                setConsoleOutput(resultado[1]);
+                setIsSuccess(true);
 
-        const tipo = detectarTipoInsertado(command);
-        updateMemoryState(resultado[2], tipo);
-      }
-    } catch (error) {
-      setConsoleOutput(`Error inesperado: ${(error as Error).message}`);
-      setIsSuccess(false);
-    }
-  };
+                const tipo = detectarTipoInsertado(command);
+                updateMemoryState(resultado[2], tipo);
+            }
+        } catch (error) {
+            setConsoleOutput(`Error inesperado: ${(error as Error).message}`);
+            setIsSuccess(false);
+        }
+    };
 
-  return (
-    <>
-      <Header />
+    return (
+        <>
+            <Header />
 
-      <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
-        <TitleComponent />
+            <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
+                <TitleComponent />
 
-        <MemoryScreen
-          consolaRef={consolaRef}
-          memoryState={memoryState}
-          setMemoryState={updateMemoryState}
-          selectedSegment={selectedSegment}
-          setSelectedSegment={setSelectedSegment}
-        />
+                <MemoryScreen
+                    consolaRef={consolaRef}
+                    memoryState={memoryState}
+                    setMemoryState={updateMemoryState}
+                    selectedSegment={selectedSegment}
+                    setSelectedSegment={setSelectedSegment}
+                />
 
-        <ConsoleComponent
-          onCommand={handleCommand}
-          outputMessage={consoleOutput}
-          isSuccess={isSuccess}
-        />
+                <ConsoleComponent
+                    onCommand={handleCommand}
+                    outputMessage={consoleOutput}
+                    isSuccess={isSuccess}
+                />
 
-        <FloatingCommandPanel />
-      </div>
-      <CustomTour tipo="memoria" />
-    </>
-  );
+                <FloatingCommandPanel />
+            </div>
+            <CustomTour tipo="memoria" />
+        </>
+    );
 }

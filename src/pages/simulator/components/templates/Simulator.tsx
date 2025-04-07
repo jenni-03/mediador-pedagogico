@@ -7,6 +7,7 @@ import { commandsData } from "../../../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
+import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 
 export function Simulator<T extends string>({
     structureName,
@@ -84,7 +85,7 @@ export function Simulator<T extends string>({
                 <div className="flex flex-col gap-6 w-full">
                     {/* Título */}
                     <h1
-                        id="structure-title"
+                        data-tour="structure-title"
                         className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6"
                     >
                         {structureName.toUpperCase()}{" "}
@@ -112,7 +113,7 @@ export function Simulator<T extends string>({
                                     CÓDIGO DE EJECUCIÓN
                                 </span>
                                 <div
-                                    id="execution-code"
+                                    data-tour="execution-code"
                                     className="flex-1 bg-[#1F1F22] rounded-xl p-4 overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
                                 >
                                     <pre className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md text-[#A0A0A0]">
@@ -144,6 +145,7 @@ export function Simulator<T extends string>({
                     </div>
                 </div>
             </div>
+            <CustomTour tipo={structureName as TourType} />
         </>
     );
 }

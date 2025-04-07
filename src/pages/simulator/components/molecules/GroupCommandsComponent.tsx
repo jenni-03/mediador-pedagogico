@@ -4,7 +4,7 @@ import { ButtonCommandsComponent } from "../atoms/ButtonCommandsComponent";
 export function GroupCommandsComponent({ buttons }: GroupCommandProps) {
     return (
         <div
-            id="command-buttons"
+            data-tour="command-buttons"
             className="flex-1 flex items-center flex-col rounded-xl"
         >
             <span

@@ -18,7 +18,7 @@ export function DataStructureInfo({
     return (
         <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] overflow-x-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
             <div
-                id="structure-info"
+                data-tour="structure-info"
                 className="flex flex-col md:flex-row gap-4 items-start justify-between"
             >
                 {/* Info lateral izquierda en cards */}
@@ -82,7 +82,10 @@ export function DataStructureInfo({
             </div>
 
             {/* Contenido visual (estructura de datos) */}
-            <div id="main-canvas" className="flex-1 flex items-center mt-5">
+            <div
+                data-tour="main-canvas"
+                className="flex-1 flex items-center mt-5"
+            >
                 {children}
             </div>
         </div>

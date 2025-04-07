@@ -1,3 +1,6 @@
+import { TourType } from "../tour/CustomTour";
+import { getTourSteps } from "../utils/tour/tourStepsSimulatorByStructure";
+
 // types
 export type TourStep = {
   id?: string; // opcional porque solo lo necesitan los pasos tipo "element"
@@ -94,14 +97,8 @@ export const estructurasDescriptions: TourStep[] = [
 
 // Función para obtener por tipo
 export const getTourDescriptions = (
-  tipo: "memoria" | "estructuras"
+  tipo: TourType
 ): TourStep[] => {
-  switch (tipo) {
-    case "memoria":
-      return memoriaDescriptions;
-    case "estructuras":
-      return estructurasDescriptions;
-    default:
-      return [];
-  }
+  if (tipo === "memoria") { return memoriaDescriptions; }
+  else { return getTourSteps(tipo); };
 };
