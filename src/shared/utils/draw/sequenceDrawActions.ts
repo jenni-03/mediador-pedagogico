@@ -44,12 +44,11 @@ export function drawBaseSequence(
           .attr("class", "sequence-rect")
           .attr("width", 0)
           .attr("height", 0)
-          .attr("rx", 6) // Bordes redondeados
+          .attr("rx", 6)
           .attr("ry", 6)
-          .attr("fill", "#1A1A1A") // Fondo oscuro elegante
-          .attr("stroke", "#D72638") // Borde rojo intenso
-          .attr("stroke-width", 2)
-          .attr("opacity", 0.9)
+          .attr("fill", "#1A1A1A")
+          .attr("stroke", "#D72638")
+          .attr("stroke-width", 1.2)
           .transition()
           .duration(1000)
           .attr("width", elementWidth)
@@ -67,7 +66,12 @@ export function drawBaseSequence(
           .attr("fill", "#E0E0E0")
           .style("font-weight", "600")
           .style("font-size", "16px")
-          .style("letter-spacing", "0.5px");
+          .style("letter-spacing", "0.5px")
+          .style("opacity", 0)
+          .transition()
+          .duration(2500)
+          .style("opacity", 1)
+          .ease(d3.easeQuad);
 
         // Fondo del bloque de dirección de memoria
         gEnter
@@ -78,7 +82,7 @@ export function drawBaseSequence(
           .attr("height", 0)
           .attr("rx", 4)
           .attr("ry", 4)
-          .attr("fill", "#2E2E2E") // Contraste oscuro
+          .attr("fill", "#2E2E2E")
           .attr("stroke", "#555")
           .attr("stroke-width", 1)
           .transition()
@@ -134,10 +138,9 @@ export function drawBaseSequence(
           .select("rect.sequence-rect")
           .attr("fill", (d) => (d === null ? "#1A1A1A" : "#1F1F2D"))
           .attr("stroke", "#D72638") // mismo rojo intenso
-          .attr("stroke-width", 2) // mismo grosor del borde
+          .attr("stroke-width", 1.2) // mismo grosor del borde
           .attr("rx", 6)
-          .attr("ry", 6)
-          .attr("opacity", 0.9);
+          .attr("ry", 6);
 
         // Actualización del texto correspondiente al valor del elemento
         update
@@ -228,7 +231,6 @@ export async function animateInsertionSequence(
     .style("font-size", "16px")
     .style("font-weight", "600")
     .style("letter-spacing", "0.5px")
-    .style("text-shadow", "0 0 6px rgba(215, 38, 56, 0.4)")
     .text(insertionValue)
     .style("opacity", 0);
 
@@ -240,9 +242,9 @@ export async function animateInsertionSequence(
     .select("rect.sequence-rect")
     .transition()
     .duration(500)
-    .attr("stroke", "#D72638") // rojo puro, sin opacidad
-    .attr("stroke-width", 3.5) // borde más grueso
-    .attr("fill", "#1F1F2D") // ligeramente más contrastado
+    .attr("stroke", "#D72638")
+    .attr("stroke-width", 3)
+    .attr("fill", "#1F1F2D")
     .end();
 
   // Transición para el desplazamiento del nuevo elemento al centro de la posición de destino
@@ -310,7 +312,7 @@ export async function animateDeleteLastElementSequence(
     .select("rect.sequence-rect")
     .attr("fill", "#1F1F2D") // fondo oscuro estándar
     .attr("stroke", "#D72638") // Borde rojo intenso
-    .attr("stroke-width", 2);
+    .attr("stroke-width", 1.2);
 
   // Creación o reutilización de un grupo temporal para la eliminación
   let deleteGroup = svg.select<SVGGElement>("g#delete-group");
@@ -350,13 +352,18 @@ export async function animateDeleteLastElementSequence(
     .delay(100)
     .duration(2000)
     .ease(d3.easeBounce)
-    .attr("fill", "#1A1A1A") // celda vacía
-    .attr("stroke", "#d7263866")
-    .attr("stroke-width", 2)
+    .attr("fill", "#1A1A1A") // fondo negro
+    .attr("stroke", "#D72638") // borde rojo intenso
+    .attr("stroke-width", 1.2)
     .end();
 
   // Restablecimiento del texto resultante de la operación de eliminación
-  targetGroup.select("text").text("NULL").style("opacity", 1);
+  await targetGroup.select("text")
+    .transition()
+    .duration(500)
+    .text("NULL")
+    .style("opacity", 1)
+    .end();
 
   // Desvanecimiento del indicador de eliminación
   await arrow.transition().duration(500).style("opacity", 0).end();
@@ -414,9 +421,9 @@ export async function animateDeleteElementWithDisplacement(
   // Devolvemos el color original al grupo que termina sin valor
   nullGroup
     .select("rect")
-    .attr("fill", "#1F1F2D") // fondo neutral elegante
-    .attr("stroke", "#d7263866") // borde tenue
-    .attr("stroke-width", 2);
+    .attr("fill", "#1F1F2D")
+    .attr("stroke", "#D72638")
+    .attr("stroke-width", 1.2);
 
   // Creación o reutilización de una capa overlay para animar el desplazamiento
   let displacementGroup = svg.select<SVGGElement>("g#displacement-group");
@@ -438,7 +445,7 @@ export async function animateDeleteElementWithDisplacement(
       .attr("x", xPos)
       .attr("y", yPos)
       .attr("text-anchor", "middle")
-      .attr("fill", "#E0E0E0") // texto claro
+      .attr("fill", "#E0E0E0")
       .style("font-size", "16px")
       .style("font-weight", "600")
       .text(value);
@@ -488,13 +495,17 @@ export async function animateDeleteElementWithDisplacement(
     .transition()
     .duration(1000)
     .attr("fill", "#1A1A1A")
-    .attr("stroke", "#d7263866")
-    .attr("stroke-width", 2)
+    .attr("stroke", "#D72638")
+    .attr("stroke-width", 1.2)
     .ease(d3.easeBounce)
     .end();
 
   // Devolvemos la opacidad a los elementos de texto originales
-  affectedGroups.select("text").style("opacity", 1);
+  await affectedGroups.select("text")
+    .transition()
+    .duration(500)
+    .style("opacity", 1)
+    .end();
 
   // Desvanecimiento del indicador de eliminación
   await arrow.transition().duration(500).style("opacity", 0).end();
@@ -591,9 +602,9 @@ export async function animateUpdateSequence(
     .select("rect.sequence-rect")
     .transition()
     .duration(500)
-    .attr("stroke", "#D72638") // rojo puro, sin opacidad
-    .attr("stroke-width", 3.5) // borde más grueso
-    .attr("fill", "#1F1F2D") // ligeramente más contrastado
+    .attr("stroke", "#D72638")
+    .attr("stroke-width", 3)
+    .attr("fill", "#1F1F2D")
     .end();
 
   // Desvanecimiento del texto original

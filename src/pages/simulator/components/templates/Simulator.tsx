@@ -7,8 +7,6 @@ import { commandsData } from "../../../../shared/constants/commandsData";
 import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
-import { getTourSteps } from "../../../../shared/utils/tour/tourStepsSimulatorByStructure";
-import Joyride, { CallBackProps, STATUS } from "react-joyride";
 
 export function Simulator<T extends string>({
     structureName,
@@ -25,9 +23,6 @@ export function Simulator<T extends string>({
 
     // Estado para el manejo de la animación
     const { setIsAnimating } = useAnimation();
-
-    // Estado para el manejo del tour dentro de la UI
-    const [runTour, setRunTour] = useState(true);
 
     // Botones de comandos propios de la estructura
     const buttons = commandsData[structureName].buttons;
@@ -82,34 +77,8 @@ export function Simulator<T extends string>({
         }
     };
 
-    // Función para manejar la finalización del tour
-    const handleJoyrideCallback = (data: CallBackProps) => {
-        const { status } = data;
-        if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
-            setRunTour(false);
-        }
-    };
-
     return (
         <>
-            {/* Tour de la UI */}
-            <Joyride
-                steps={getTourSteps(structureName)}
-                run={runTour}
-                disableCloseOnEsc
-                hideCloseButton
-                continuous
-                scrollToFirstStep
-                showProgress
-                showSkipButton
-                styles={{
-                    options: {
-                        zIndex: 10000,
-                        primaryColor: "#ef4444", // rojo suave
-                    },
-                }}
-                callback={handleJoyrideCallback}
-            />
             <Header />
             <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
                 <div className="flex flex-col gap-6 w-full">
