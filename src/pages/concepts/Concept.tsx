@@ -5,7 +5,6 @@ import { Header } from "../simulator/components/molecules/Header";
 
 export function Concept() {
   const route = getRouteApi("/conceptos/$estructura");
-
   const { estructura } = route.useParams();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -21,32 +20,36 @@ export function Concept() {
       event.preventDefault();
       navigate({ to: "/", replace: true });
     };
-
     window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
+    return () => window.removeEventListener("popstate", handlePopState);
   }, [navigate]);
 
   return (
-    <>
+    // Contenedor general que ocupa el 100vh
+    <div className="h-screen flex flex-col">
+      {/* El Header se integra en la columna (tendrá su altura natural) */}
       <Header />
-      <div className="flex h-screen">
-        {/* Sidebar dinámico, dependiendo del tamaño de la pantalla*/}
-        <div
-          className={`transition-all duration-300 ${isSidebarOpen ? "w-64" : "w-10"} md:w-64`}
-        >
+
+      {/* Área de contenido que se expande y se hace scroll si es necesario */}
+      <div className="flex flex-1">
+        {/* Sidebar: se muestra fijo en desktop y como drawer en móvil */}
+        <div className="transition-all duration-300">
           <SideBar
             estructura={estructura}
             isOpen={isSidebarOpen}
             setIsOpen={setIsSidebarOpen}
           />
         </div>
-        <div className="flex-1 overflow-y-auto">
-          <Outlet /> {/* Renderiza las subrutas */}
+
+        {/* Contenedor del Outlet:
+            - flex-1 para ocupar el espacio restante.
+            - overflow-y-auto para que se active el scroll en caso de contenido extenso.
+            - md:ml-64 para que en desktop se separe del sidebar fijo.
+         */}
+        <div className="flex-1 overflow-y-auto md:ml-64">
+          <Outlet />
         </div>
       </div>
-    </>
+    </div>
   );
 }

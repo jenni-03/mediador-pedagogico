@@ -51,15 +51,38 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       const el = document.querySelector<HTMLElement>(
         step.id.startsWith(".") ? step.id : `[data-tour="${step.id}"]`
       );
-      el?.click(); // Ejecutar acción
+      el?.click();
+      setTimeout(nextStep, 300);
+      return;
+    }
 
-      setTimeout(() => {
-        if (currentStep < tourSteps.length - 1) {
-          setCurrentStep((prev) => prev + 1);
-        } else {
-          setIsActive(false);
-        }
-      }, 300); // Delay para permitir que se ejecute visualmente
+    // Paso tipo write
+    if (step.type === "write" && step.id && step.text !== undefined) {
+      const input = document.querySelector<
+        HTMLInputElement | HTMLTextAreaElement
+      >(step.id.startsWith("#") ? step.id : `[data-tour="${step.id}"]`);
+      if (input) {
+        input.value = step.text;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      setTimeout(nextStep, 500);
+      return;
+    }
+
+    // Paso tipo enter
+    if (step.type === "enter" && step.id) {
+      const input = document.querySelector<HTMLElement>(
+        step.id.startsWith("#") ? step.id : `[data-tour="${step.id}"]`
+      );
+      if (input) {
+        const event = new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          bubbles: true,
+        });
+        input.dispatchEvent(event);
+      }
+      setTimeout(nextStep, 500);
       return;
     }
 
@@ -109,32 +132,34 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
   return (
     <>
-      {isActive && step && step.type !== "action" && (
-        <>
-          <TourOverlay />
+      {isActive &&
+        step &&
+        !["action", "write", "enter"].includes(step.type) && (
+          <>
+            <TourOverlay />
 
-          {showHighlight && (
-            <>
-              <HighlightBox style={highlightStyle} />
-              <ArrowPointer
-                position={arrowPosition}
-                highlightStyle={highlightStyle}
-              />
-            </>
-          )}
+            {showHighlight && (
+              <>
+                <HighlightBox style={highlightStyle} />
+                <ArrowPointer
+                  position={arrowPosition}
+                  highlightStyle={highlightStyle}
+                />
+              </>
+            )}
 
-          <TourTooltip
-            description={step.description || ""}
-            highlightStyle={highlightStyle}
-            onPrev={prevStep}
-            onNext={nextStep}
-            isFirst={currentStep === 0}
-            isLast={currentStep === tourSteps.length - 1}
-            isInfo={step.type === "info"}
-            onClose={() => setIsActive(false)}
-          />
-        </>
-      )}
+            <TourTooltip
+              description={step.description || ""}
+              highlightStyle={highlightStyle}
+              onPrev={prevStep}
+              onNext={nextStep}
+              isFirst={currentStep === 0}
+              isLast={currentStep === tourSteps.length - 1}
+              isInfo={step.type === "info"}
+              onClose={() => setIsActive(false)}
+            />
+          </>
+        )}
 
       {!isActive && (
         <button

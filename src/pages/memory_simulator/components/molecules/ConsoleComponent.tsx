@@ -128,6 +128,7 @@ export function ConsoleComponent({
                         onKeyDown={handleKeyDown}
                         autoFocus
                         spellCheck={false}
+                        data-tour="inputConsola"
                     />
                 </div>
             </div>
