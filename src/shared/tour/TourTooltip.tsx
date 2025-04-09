@@ -19,10 +19,10 @@ type Props = {
   viewportDimensions: ViewportDimensions;
 };
 
-// Función utilitaria para convertir a número
 const toNum = (val: string | number | undefined): number =>
   typeof val === "number" ? val : parseInt((val as string) || "0", 10);
 
+// Lógica principal del tooltip
 const TourTooltip: React.FC<Props> = ({
   description,
   highlightStyle,
@@ -37,17 +37,16 @@ const TourTooltip: React.FC<Props> = ({
   const [visible, setVisible] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
-  const margin = 8; // margen entre tooltip y borde/elemento
 
-  // Función para limitar (clamp) un valor dentro de un rango, pero con un margen mínimo.
-  const clamp = (value: number, min: number, max: number) => {
-    return Math.max(min, Math.min(value, max));
-  };
+  const margin = 8; // margen mínimo
 
-  // Calcula la posición del tooltip basándose en el espacio disponible vertical
-  // y posiciona el tooltip preferiblemente "encima" o "debajo" del elemento resaltado.
+  // Función para limitar (clamp) un valor dentro de un rango
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(value, max));
+
   const calculatePosition = () => {
     if (isInfo) {
+      // Paso "info": simplemente centramos en el viewport
       setTooltipPos({
         top: viewportDimensions.height / 2,
         left: viewportDimensions.width / 2,
@@ -55,7 +54,10 @@ const TourTooltip: React.FC<Props> = ({
       return;
     }
 
-    // Obtenemos la posición y dimensiones del elemento resaltado (highlight)
+    if (!tooltipRef.current) return;
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+
+    // Información del elemento resaltado
     const targetRect = {
       top: toNum(highlightStyle.top),
       left: toNum(highlightStyle.left),
@@ -63,58 +65,122 @@ const TourTooltip: React.FC<Props> = ({
       height: toNum(highlightStyle.height),
     };
 
-    if (!tooltipRef.current) return;
-    const tooltipRect = tooltipRef.current.getBoundingClientRect();
-
-    // Calculamos espacio disponible arriba y abajo
+    // Calculamos espacio disponible en cada dirección:
     const spaceAbove = targetRect.top;
     const spaceBelow =
       viewportDimensions.height - (targetRect.top + targetRect.height);
+    const spaceLeft = targetRect.left;
+    const spaceRight =
+      viewportDimensions.width - (targetRect.left + targetRect.width);
 
-    let proposedTop: number;
-    // Posición horizontal: centramos respecto al elemento
+    // Validación extra:
+    // Si no hay suficiente espacio (margen) ni arriba, ni abajo, ni a los lados,
+    // entonces se posiciona DENTRO del div, centrado.
+    if (
+      spaceAbove < tooltipRect.height + margin &&
+      spaceBelow < tooltipRect.height + margin &&
+      spaceLeft < tooltipRect.width + margin &&
+      spaceRight < tooltipRect.width + margin
+    ) {
+      const insideTop =
+        targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
+      const insideLeft =
+        targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+      setTooltipPos({ top: insideTop, left: insideLeft });
+      return;
+    }
+
+    // Posición horizontal inicial (centrado respecto al componente)
     let proposedLeft =
       targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
 
-    // Si hay suficiente espacio arriba para colocar el tooltip completo más un margen, lo ponemos arriba.
+    let proposedTop: number;
+
+    // 1. ¿Cabe arriba?
     if (spaceAbove >= tooltipRect.height + margin) {
       proposedTop = targetRect.top - tooltipRect.height - margin;
+      proposedLeft = clamp(
+        proposedLeft,
+        margin,
+        viewportDimensions.width - tooltipRect.width - margin
+      );
+      setTooltipPos({ top: proposedTop, left: proposedLeft });
+      return;
     }
-    // Si no, si cabe abajo, lo colocamos debajo.
-    else if (spaceBelow >= tooltipRect.height + margin) {
+
+    // 2. ¿Cabe abajo?
+    if (spaceBelow >= tooltipRect.height + margin) {
       proposedTop = targetRect.top + targetRect.height + margin;
-    }
-    // De lo contrario, elegimos el lado que ofrezca más espacio y
-    // forzamos el tooltip dentro del viewport
-    else {
-      if (spaceAbove >= spaceBelow) {
-        proposedTop = margin; // pegamos al borde superior, dejando el margen
-      } else {
-        proposedTop = viewportDimensions.height - tooltipRect.height - margin;
-      }
+      proposedLeft = clamp(
+        proposedLeft,
+        margin,
+        viewportDimensions.width - tooltipRect.width - margin
+      );
+      setTooltipPos({ top: proposedTop, left: proposedLeft });
+      return;
     }
 
-    // Clampeamos la posición horizontal para evitar que se desborde
-    proposedLeft = clamp(
-      proposedLeft,
-      margin,
-      viewportDimensions.width - tooltipRect.width - margin
-    );
+    // 3. ¿Cabe a la izquierda? (para cuando no cabe ni arriba ni abajo)
+    if (spaceLeft >= tooltipRect.width + margin) {
+      const proposedTop =
+        targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
+      const leftPos = targetRect.left - tooltipRect.width - margin;
+      setTooltipPos({
+        top: clamp(
+          proposedTop,
+          margin,
+          viewportDimensions.height - tooltipRect.height - margin
+        ),
+        left: clamp(
+          leftPos,
+          margin,
+          viewportDimensions.width - tooltipRect.width - margin
+        ),
+      });
+      return;
+    }
 
-    setTooltipPos({ top: proposedTop, left: proposedLeft });
+    // 4. ¿Cabe a la derecha?
+    if (spaceRight >= tooltipRect.width + margin) {
+      const proposedTop =
+        targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
+      const leftPos = targetRect.left + targetRect.width + margin;
+      setTooltipPos({
+        top: clamp(
+          proposedTop,
+          margin,
+          viewportDimensions.height - tooltipRect.height - margin
+        ),
+        left: clamp(
+          leftPos,
+          margin,
+          viewportDimensions.width - tooltipRect.width - margin
+        ),
+      });
+      return;
+    }
+
+    // 5. Fallback (por seguridad): centrado dentro del componente
+    const insideTop =
+      targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
+    const insideLeft =
+      targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+    setTooltipPos({ top: insideTop, left: insideLeft });
   };
 
-  // Activamos la animación al montar el componente
+  // Activamos la animación de opacidad al montar
   useEffect(() => {
-    const timeout = setTimeout(() => setVisible(true), 10);
-    return () => clearTimeout(timeout);
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
   }, []);
 
-  // Recalcula la posición del tooltip cuando cambian el highlight, el modo info o las dimensiones del viewport
+  // Recalcula cuando cambian highlightStyle, isInfo o viewportDimensions
   useEffect(() => {
     calculatePosition();
     window.addEventListener("resize", calculatePosition);
-    return () => window.removeEventListener("resize", calculatePosition);
+    return () => {
+      window.removeEventListener("resize", calculatePosition);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightStyle, isInfo, viewportDimensions]);
 
@@ -128,25 +194,25 @@ const TourTooltip: React.FC<Props> = ({
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              transition: "all 0.5s ease-out",
               opacity: visible ? 1 : 0,
+              transition: "all 0.5s ease-out",
             }
           : {
               position: "absolute",
               top: tooltipPos.top,
               left: tooltipPos.left,
-              transition: "all 0.5s ease-out",
               opacity: visible ? 1 : 0,
+              transition: "all 0.5s ease-out",
             }
       }
       className={`z-[11000] bg-[#121212] p-5 rounded-xl border-2 
-      max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center 
-      transition-all duration-500 ease-out
-      ${
-        isInfo
-          ? "border-[#00ff00] shadow-[0_0_20px_#00ff00]"
-          : "border-[#ff0040] shadow-[0_0_20px_#ff0040]"
-      }`}
+        max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center 
+        transition-all duration-500 ease-out
+        ${
+          isInfo
+            ? "border-[#00ff00] shadow-[0_0_20px_#00ff00]"
+            : "border-[#ff0040] shadow-[0_0_20px_#ff0040]"
+        }`}
     >
       {/* Botón de cierre */}
       <button

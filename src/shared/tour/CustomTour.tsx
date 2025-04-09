@@ -26,27 +26,27 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
   const step = tourSteps[currentStep];
 
   // Bloquea el scroll del body mientras el tour está activo.
-  useEffect(() => {
-    const preventScroll = (e: Event) => {
-      e.preventDefault();
-    };
+  // useEffect(() => {
+  //   const preventScroll = (e: Event) => {
+  //     e.preventDefault();
+  //   };
 
-    if (isActive) {
-      document.body.style.overflow = "hidden";
-      document.addEventListener("touchmove", preventScroll, { passive: false });
-      document.addEventListener("wheel", preventScroll, { passive: false });
-    } else {
-      document.body.style.overflow = "auto";
-      document.removeEventListener("touchmove", preventScroll);
-      document.removeEventListener("wheel", preventScroll);
-    }
+  //   if (isActive) {
+  //     document.body.style.overflow = "hidden";
+  //     document.addEventListener("touchmove", preventScroll, { passive: false });
+  //     document.addEventListener("wheel", preventScroll, { passive: false });
+  //   } else {
+  //     document.body.style.overflow = "auto";
+  //     document.removeEventListener("touchmove", preventScroll);
+  //     document.removeEventListener("wheel", preventScroll);
+  //   }
 
-    return () => {
-      document.body.style.overflow = "auto";
-      document.removeEventListener("touchmove", preventScroll);
-      document.removeEventListener("wheel", preventScroll);
-    };
-  }, [isActive]);
+  //   return () => {
+  //     document.body.style.overflow = "auto";
+  //     document.removeEventListener("touchmove", preventScroll);
+  //     document.removeEventListener("wheel", preventScroll);
+  //   };
+  // }, [isActive]);
 
   // Activa el tour al montar el componente.
   useEffect(() => {
