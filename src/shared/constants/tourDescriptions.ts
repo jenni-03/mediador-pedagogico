@@ -141,17 +141,17 @@ export const memoriaDescriptions: TourStep[] = [
     type: "element",
   },
   {
+    id: "consola",
+    type: "action",
+  },
+  {
     id: "inputConsola",
     text:
       "insert int xd = 243535;",
     type: "write",
   },
   {
-    id: "consola",
-    type: "enter",
-  },
-  {
-    id: "consola",
+    id: "inputConsola",
     type: "enter",
   },
   {
