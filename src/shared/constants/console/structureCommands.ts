@@ -3,7 +3,8 @@ export const structureCommands: Record<string, string[]> = {
     pila: ["push", "pop", "getTop", "clean"],
     cola: ["enqueue", "dequeue", "getFront", "clean", "getRear"],
     cola_de_prioridad: ["enqueue", "dequeue", "getFront", "clean", "getRear"],
-    lista_simple: ["create", "insertFirst", "insertLast", "delete", "insertAt", "search", "update", "clean", "traverse"],
-    lista_circular: ["insertLast", "rotateLeft", "rotateRight", "create", "clean"],
-    lista_circular_doble: ["insertSorted", "deleteFirst", "deleteLast", "create", "clean"],
+    lista_simple: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverse"],
+    lista_doble: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverse"],
+    lista_circular: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverse"],
+    lista_circular_doble: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverse"],
 };

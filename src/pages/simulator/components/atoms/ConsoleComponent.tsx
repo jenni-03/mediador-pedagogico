@@ -46,9 +46,50 @@ export function ConsoleComponent({
     const structuresRequiringCreate = [
         "secuencia",
         "lista_simple",
+        "lista_doble",
         "lista_circular",
         "lista_circular_doble",
     ];
+
+    // Manejo de Enter manual para el input, en el caso del tutorial
+    useEffect(() => {
+        const inputEl = inputRef.current;
+        if (!inputEl) return;
+
+        const handleManualEnter = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && inputEl.value.trim() !== "") {
+                e.preventDefault();
+                console.log(inputEl.value.trim());
+                const parsed = parseCommand(
+                    inputEl.value.trim(),
+                    structureType
+                );
+
+                if (Array.isArray(parsed)) {
+                    onCommand(parsed, true);
+                    setHistory([
+                        ...history,
+                        `$ ${inputEl.value.trim()}`,
+                        "Comando válido, procesando...",
+                    ]);
+                    //Guardamos el comando en el historial
+                    setCommandHistory([...commandHistory, inputEl.value.trim()]);
+                } else {
+                    // parsed es { error: string }
+                    setHistory([
+                        ...history,
+                        `$ ${input}`,
+                        `Error: ${parsed.error}`,
+                    ]);
+                }
+
+                inputEl.value = "";
+            }
+        };
+
+        inputEl.addEventListener("keydown", handleManualEnter);
+        return () => inputEl.removeEventListener("keydown", handleManualEnter);
+    }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (isAnimating) return;
@@ -79,8 +120,6 @@ export function ConsoleComponent({
                 }
 
                 const parts = parsed;
-
-                console.log("Comando parseado:", parts);
 
                 const commandValidation = commandRules[structureType](parts);
 
@@ -176,9 +215,7 @@ export function ConsoleComponent({
     };
 
     return (
-        <div
-            className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono"
-        >
+        <div className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono">
             {history.map((cmd, index) => (
                 <div
                     key={index}
@@ -206,6 +243,7 @@ export function ConsoleComponent({
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}
+                    data-tour="inputConsola"
                 />
             </div>
         </div>

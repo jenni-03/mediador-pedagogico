@@ -16,6 +16,55 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
     ]
 };
 
+export const tourStepsCommands: Record<string, TourStep[]> = {
+    secuencia: [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una secuencia, tales como, crear, insertar, eliminar, modificar y consultar.",
+            type: "element",
+        },
+        {
+            id: "console",
+            type: "action",
+        },
+        {
+            id: "inputConsola",
+            text:
+                "create(7);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para crear una secuencia con un tamaño de 7.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la estructura secuencia ya creada, ahora puedes usarla para insertar, eliminar o modificar elementos.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la secuencia es 0, ya que aún no se ha insertado ningún valor. Sin embargo, tiene capacidad para almacenar hasta 7 elementos, los cuales por ahora son nulos."
+        },
+        {
+            id: "memory-visualization",
+            type: "element",
+            description:
+                "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la secuencia y cómo se calcula el espacio necesario para cada uno de sus elementos."
+        },
+    ]
+};
+
 export const getTourSteps = (structureType: string): TourStep[] => [
     {
         type: 'info',
@@ -54,7 +103,7 @@ export const getTourSteps = (structureType: string): TourStep[] => [
         id: 'command-buttons',
         type: 'element',
         description: `Aquí verás los comandos disponibles para interactuar con la estructura.
-                Cada botón representa una operación propia de la estructura y al hacer clic en él, 
+                Cada botón representa una operación propia de la estructura y al hacer click en él, 
                 se mostrará información útil sobre el funcionamiento y la sintáxis correcta de ese comando para su ejecución en la consola.`,
     },
     {
@@ -63,6 +112,7 @@ export const getTourSteps = (structureType: string): TourStep[] => [
         description: `La consola es el medio principal de interacción con la estructura, en ella podrás escribir los comandos
                 para manipular la estructura y recibir retroalimentación sobre su ejecución como advertencias o errores.`,
     },
+    ...(tourStepsCommands[structureType] ?? []),
     {
         id: 'execution-code',
         type: 'element',

@@ -116,10 +116,9 @@ export type BaseStructureActions<T extends string> =
         clean: () => void;
     } :
     T extends "pila" ? {
-        create: (n: number) => void;
-        insertLast: (element: number) => void;
-        delete: (element: number) => void;
-        search: (element: number) => void;
+        push: (element: number) => void;
+        pop: () => void;
+        getTop: () => void;
         clean: () => void;
     } :
     Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
