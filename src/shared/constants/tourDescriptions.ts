@@ -5,8 +5,10 @@ import { getTourSteps } from "./tourStepsSimulatorByStructure";
 export type TourStep = {
   id?: string;
   description?: string;
-  type: "element" | "info" | "action";
+  type: "element" | "info" | "action" | "write" | "enter";
+  text?: string; 
 };
+
 
 //Categoría: MEMORIA
 export const memoriaDescriptions: TourStep[] = [
@@ -137,6 +139,20 @@ export const memoriaDescriptions: TourStep[] = [
     description:
       "En la consola puedes insertar variables, cambiar tipos, actualizar valores, consultar tamaños, y mucho más usando comandos de texto.",
     type: "element",
+  },
+  {
+    id: "consola",
+    type: "action",
+  },
+  {
+    id: "inputConsola",
+    text:
+      "insert int xd = 243535;",
+    type: "write",
+  },
+  {
+    id: "inputConsola",
+    type: "enter",
   },
   {
     id: "comandos",
