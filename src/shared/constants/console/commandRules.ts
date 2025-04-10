@@ -71,6 +71,50 @@
         }
     },
 
+    pila: (parts) => {
+        const keyword = parts[0]?.toLowerCase();
+        switch (keyword) {
+            case "push":
+                return parts.length === 2 && !isNaN(Number(parts[1])); // Solo permite agregar números
+            case "pop":
+            case "getTop":
+            case "clean":
+                return parts.length === 1;
+            default:
+                return false;
+        }
+    },
+
+    cola: (parts) => {
+        const keyword = parts[0]?.toLowerCase();
+        switch (keyword) {
+            case "enqueue":
+                return parts.length === 2 && !isNaN(Number(parts[1])); // Agrega elementos a la cola
+            case "dequeue":
+            case "getFront":
+            case "getRear":
+            case "clean":
+                return parts.length === 1;
+            default:
+                return false;
+        }
+    },
+
+    cola_de_prioridad: (parts) => {
+        const keyword = parts[0]?.toLowerCase();
+        switch (keyword) {
+            case "enqueue":
+                return parts.length === 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2])); // Agrega elementos a la cola con prioridad
+            case "dequeue": // Elimina el elemento con mayor prioridad.
+            case "getFront":
+            case "getRear":
+            case "clean":
+                return parts.length === 1;
+            default:
+                return false;
+        }
+    },
+
     lista_simple: (parts) => {
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
@@ -151,50 +195,6 @@
             case "clean":
             case "traverse_forward": // Recorre la lista hacia adelante
             case "traverse_backward": // Recorre la lista hacia atrás
-                return parts.length === 1;
-            default:
-                return false;
-        }
-    },
-
-    pila: (parts) => {
-        const keyword = parts[0]?.toLowerCase();
-        switch (keyword) {
-            case "push":
-                return parts.length === 2 && !isNaN(Number(parts[1])); // Solo permite agregar números
-            case "pop":
-            case "top":
-            case "clean":
-                return parts.length === 1;
-            default:
-                return false;
-        }
-    },
-
-    cola: (parts) => {
-        const keyword = parts[0]?.toLowerCase();
-        switch (keyword) {
-            case "enqueue":
-                return parts.length === 2 && !isNaN(Number(parts[1])); // Agrega elementos a la cola
-            case "dequeue":
-            case "front":
-            case "rear":
-            case "clean":
-                return parts.length === 1;
-            default:
-                return false;
-        }
-    },
-
-    cola_de_prioridad: (parts) => {
-        const keyword = parts[0]?.toLowerCase();
-        switch (keyword) {
-            case "enqueue":
-                return parts.length === 3 && !isNaN(Number(parts[1])) && !isNaN(Number(parts[2])); // Agrega elementos a la cola con prioridad
-            case "dequeue": // Elimina el elemento con mayor prioridad.
-            case "front":
-            case "rear":
-            case "clean":
                 return parts.length === 1;
             default:
                 return false;
