@@ -101,8 +101,8 @@ export const operations_pseudoCode: Record<string, any> = {
             `}`
         ]
     },
-    cola: {
-        create: [
+    pila: {
+        push: [
             "función constructor(n):",
             "si n <= 0 entonces",
             "vector ← arreglo vacío",
@@ -117,7 +117,7 @@ export const operations_pseudoCode: Record<string, any> = {
             "cant ← 0",
             "fin función"
         ],
-        insert_last: [
+        pop: [
             "función insertar(elem):",
             "si cant es mayor o igual a la longitud del vector entonces",
             'lanzar error "No hay espacio para insertar el elemento {elem}"',
@@ -127,7 +127,7 @@ export const operations_pseudoCode: Record<string, any> = {
             "cant ← cant + 1",
             "fin función"
         ],
-        update: [
+        getTop: [
             "función set(i, nuevo):",
             "si i < 0 o i >= cant entonces",
             'lanzar error "Índice fuera de rango!"',
@@ -138,7 +138,7 @@ export const operations_pseudoCode: Record<string, any> = {
             "vector[i] ← nuevo",
             "fin función"
         ],
-        delete: [
+        clean: [
             "función eliminar(elem):",
             "indice ← getIndice(elem)",
             "si indice es igual a -1 entonces",
@@ -155,12 +155,59 @@ export const operations_pseudoCode: Record<string, any> = {
             "cant ← cant - 1",
             "fin función"
         ],
-        search: [
-            "función esta(elem):",
-            "si el vector contiene elem entonces",
-            "retornar true",
+    },
+    cola: {
+        enqueue: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
             "fin si",
-            'lanzar error "El elemento {elem} no se encontró en la secuencia"',
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        dequeue: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        getFront: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        getRear: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
             "fin función"
         ],
         clean: [
@@ -169,5 +216,497 @@ export const operations_pseudoCode: Record<string, any> = {
             "cant ← 0",
             "fin función"
         ]
-    }
+    },
+    cola_de_prioridad: {
+        enqueue: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
+            "fin si",
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        dequeue: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        getFront: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        getRear: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
+            "fin función"
+        ],
+        clean: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ]
+    },
+    lista_simple: {
+        create: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
+            "fin si",
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        insertFirst: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        insertLast: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        insertSorted: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
+            "fin función"
+        ],
+        delete: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        get: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        set: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        clean: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        traverse: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+    },
+    lista_doble: {
+        create: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
+            "fin si",
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        insertFirst: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        insertLast: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        insertSorted: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
+            "fin función"
+        ],
+        delete: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        get: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        set: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        clean: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        traverseForward: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        traverseBackward: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+    },
+    lista_circular: {
+        create: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
+            "fin si",
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        insertFirst: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        insertLast: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        insertSorted: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
+            "fin función"
+        ],
+        delete: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        get: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        set: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        clean: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        traverse: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+    },
+    lista_circular_doble: {
+        create: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
+            "fin si",
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        insertFirst: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        insertLast: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        insertSorted: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
+            "fin función"
+        ],
+        delete: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        get: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        set: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        clean: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        traverseForward: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        traverseBackward: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+    },
+    tabla_hash: {
+        create: [
+            "función constructor(n):",
+            "si n <= 0 entonces",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "retornar",
+            "fin si",
+            "",
+            "vector ← nuevo arreglo de tamaño n",
+            "para i desde 0 hasta n - 1 hacer:",
+            "vector[i] ← null",
+            "fin para",
+            "cant ← 0",
+            "fin función"
+        ],
+        put: [
+            "función insertar(elem):",
+            "si cant es mayor o igual a la longitud del vector entonces",
+            'lanzar error "No hay espacio para insertar el elemento {elem}"',
+            "fin si",
+            "",
+            "vector[cant] ← elem",
+            "cant ← cant + 1",
+            "fin función"
+        ],
+        remove: [
+            "función set(i, nuevo):",
+            "si i < 0 o i >= cant entonces",
+            'lanzar error "Índice fuera de rango!"',
+            "fin si",
+            "si el vector contiene nuevo entonces",
+            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
+            "fin si",
+            "vector[i] ← nuevo",
+            "fin función"
+        ],
+        get: [
+            "función eliminar(elem):",
+            "indice ← getIndice(elem)",
+            "si indice es igual a -1 entonces",
+            'lanzar error "El elemento {elem} no está en la secuencia"',
+            "fin si",
+            "",
+            "// Mover los elementos hacia la izquierda",
+            "para i desde indice hasta cant - 2 hacer:",
+            "vector[i] ← vector[i + 1]",
+            "fin para",
+            "",
+            "// Reducir cantidad y limpiar el último espacio",
+            "vector[cant - 1] ← null",
+            "cant ← cant - 1",
+            "fin función"
+        ],
+        delete: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        containsKey: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        values: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+        clean: [
+            "función vaciar():",
+            "vector ← arreglo vacío",
+            "cant ← 0",
+            "fin función"
+        ],
+    },
 };

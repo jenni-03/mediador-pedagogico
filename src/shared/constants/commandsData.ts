@@ -102,7 +102,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  coladeprioridad: {
+  cola_de_prioridad: {
     buttons: [
       {
         title: "enqueue",
@@ -136,7 +136,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  listasimple: {
+  lista_simple: {
     buttons: [
       {
         title: "create",
@@ -194,7 +194,71 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  listadoble: {
+  lista_doble: {
+    buttons: [
+      {
+        title: "create",
+        description: "Crear una lista vacía o con un valor inicial",
+        estructura: "create(valor);",
+        ejemplo: "create(1);",
+      },
+      {
+        title: "insertFirst",
+        description: "Insertar al inicio de la Lista.",
+        estructura: "insertFirst(valor);",
+        ejemplo: "insertFirst(1);",
+      },
+      {
+        title: "insertLast",
+        description: "Insertar al final de la Lista.",
+        estructura: "insertLast(valor);",
+        ejemplo: "insertLast(1);",
+      },
+      {
+        title: "insertSorted",
+        description: "Insertar de manera Ordenada desde la cabeza de la Lista.",
+        estructura: "insertSorted(posición,valor);",
+        ejemplo: "insertSorted(2,1);",
+      },
+      {
+        title: "delete",
+        description: "Eliminar un elemento de la Lista dada una posición..",
+        estructura: "delete(posicion);",
+        ejemplo: "delete(1);",
+      },
+      {
+        title: "get",
+        description: "Buscar el elemento que se encuentre en una posicion dada.",
+        estructura: "get(posicion);",
+        ejemplo: "get(1);",
+      },
+      {
+        title: "set",
+        description: "Actualizar el elemento que se encuentre en una posición dada.",
+        estructura: "set(posicion,nuevoValor);",
+        ejemplo: "set(1,5);",
+      },
+      {
+        title: "clean",
+        description: "Borra la lista simple",
+        estructura: "clean();",
+        ejemplo: "clean();",
+      },
+      {
+        title: "traverseForward",
+        description: "Recorrer la lista hacia adelante",
+        estructura: "traverseForward();",
+        ejemplo: "traverseForward();",
+      },
+      {
+        title: "traverseBackward",
+        description: "Recorrer la lista hacia atrás",
+        estructura: "traverseBackward();",
+        ejemplo: "traverseBackward();",
+      },
+    ],
+  },
+  lista_circular: {
     buttons: [
       {
         title: "create",
@@ -252,7 +316,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  listacircular: {
+  lista_circular_doble: {
     buttons: [
       {
         title: "create",
@@ -303,108 +367,50 @@ export const commandsData: Record<string, any> = {
         ejemplo: "clean();",
       },
       {
-        title: "traverse",
-        description: "Recorrer la lista",
-        estructura: "traverse();",
-        ejemplo: "traverse();",
+        title: "traverseForward",
+        description: "Recorrer la lista hacia adelante",
+        estructura: "traverseForward();",
+        ejemplo: "traverseForward();",
+      },
+      {
+        title: "traverseBackward",
+        description: "Recorrer la lista hacia atrás",
+        estructura: "traverseBackward();",
+        ejemplo: "traverseBackward();",
       },
     ],
   },
-  listacirculardoble: {
+  tabla_hash: {
     buttons: [
       {
         title: "create",
-        description: "Crear una lista vacía o con un valor inicial",
-        estructura: "create(valor);",
-        ejemplo: "create(1);",
+        description: "Crear una tabla hash designando la cantidad de slots especificos.",
+        estructura: "create(cantidadSlots);",
+        ejemplo: "create(30);",
       },
       {
-        title: "insertFirst",
-        description: "Insertar al inicio de la Lista.",
-        estructura: "insertFirst(valor);",
-        ejemplo: "insertFirst(1);",
+        title: "put",
+        description: "Insertar o actualizar un elemento con clave y valor",
+        estructura: "put(clave,valor);",
+        ejemplo: "put('nombre',1);",
       },
       {
-        title: "insertLast",
-        description: "Insertar al final de la Lista.",
-        estructura: "insertLast(valor);",
-        ejemplo: "insertLast(1);",
-      },
-      {
-        title: "insertSorted",
-        description: "Insertar de manera Ordenada desde la cabeza de la Lista.",
-        estructura: "insertSorted(posición,valor);",
-        ejemplo: "insertSorted(2,1);",
-      },
-      {
-        title: "delete",
-        description: "Eliminar un elemento de la Lista dada una posición..",
-        estructura: "delete(posicion);",
-        ejemplo: "delete(1);",
-      },
-      {
-        title: "get",
-        description: "Buscar el elemento que se encuentre en una posicion dada.",
-        estructura: "get(posicion);",
-        ejemplo: "get(1);",
-      },
-      {
-        title: "set",
-        description: "Actualizar el elemento que se encuentre en una posición dada.",
-        estructura: "set(posicion,nuevoValor);",
-        ejemplo: "set(1,5);",
-      },
-      {
-        title: "clean",
-        description: "Borra la lista simple",
-        estructura: "clean();",
-        ejemplo: "clean();",
-      },
-      {
-        title: "traverse",
-        description: "Recorrer la lista",
-        estructura: "traverse();",
-        ejemplo: "traverse();",
-      },
-    ],
-  },
-  tablahash: {
-    buttons: [
-      {
-        title: "insert",
-        description: "Insertar un elemento con clave y valor",
-        estructura: "insert(clave,valor);",
-        ejemplo: "insert('nombre',1);",
-      },
-      {
-        title: "update",
-        description: "Actualizar un valor existente",
-        estructura: "update(clave,nuevoValor);",
-        ejemplo: "update('nombre',5);",
-      },
-      {
-        title: "delete",
+        title: "remove",
         description: "Eliminar un elemento por su clave",
-        estructura: "delete(clave);",
-        ejemplo: "delete('nombre');",
+        estructura: "remove(clave);",
+        ejemplo: "remove('nombre');",
       },
       {
-        title: "search",
-        description: "Buscar un valor por su clave",
-        estructura: "search(clave);",
-        ejemplo: "search('nombre');",
+        title: "get",
+        description: "Buscar un elemento por su clave",
+        estructura: "get(clave);",
+        ejemplo: "get('nombre');",
       },
       {
-        title: "contains",
+        title: "containsKey",
         description: "Verificar si una clave existe",
-        estructura: "contains(clave);",
-        ejemplo: "contains('nombre');",
-      },
-      {
-        title: "resize",
-        description: "Redimensionar la tabla hash",
-        estructura: "resize(nuevoTamaño);",
-        ejemplo: "resize(20);",
+        estructura: "containsKey(clave);",
+        ejemplo: "containsKey('nombre');",
       },
       {
         title: "clean",
@@ -413,10 +419,10 @@ export const commandsData: Record<string, any> = {
         ejemplo: "clean();",
       },
       {
-        title: "traverse",
-        description: "Recorrer todos los elementos",
-        estructura: "traverse();",
-        ejemplo: "traverse();",
+        title: "values",
+        description: "Recorrer todos los elementos(valores)",
+        estructura: "values()();",
+        ejemplo: "values();",
       },
     ],
   },

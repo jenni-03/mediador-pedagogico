@@ -17,6 +17,9 @@ export function Simulator<T extends string>({
     error,
     children,
 }: SimulatorProps<T>) {
+
+    //temporal
+    const structureN = "lista_circular_doble";
     // Estado para el manejo de la visualización del código
     const [executionCode, setExecutionCode] = useState<string[]>([]);
 
@@ -27,10 +30,10 @@ export function Simulator<T extends string>({
     const { setIsAnimating } = useAnimation();
 
     // Botones de comandos propios de la estructura
-    const buttons = commandsData[structureName].buttons;
+    const buttons = commandsData[structureN].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operations_pseudoCode[structureName];
+    const operations_code = operations_pseudoCode[structureN];
 
     // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);
@@ -46,13 +49,15 @@ export function Simulator<T extends string>({
             return;
         }
 
+        // Separa el comando en acción y valores
         const action = command[0];
         const values = command.slice(1).map(Number);
 
-        if (action !== "create" && action !== "clean") {
-            setIsAnimating(true);
-        }
+        // if (action !== "create" && action !== "clean") {
+        //     setIsAnimating(true);
+        // }
 
+        // Realiza la operación correspondiente según el comando
         if (values.length === 2) {
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
         } else if (values.length === 1) {
@@ -61,11 +66,14 @@ export function Simulator<T extends string>({
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
 
+        // Actualiza el código de ejecución dependiendo del comando
         setExecutionCode(
             operations_code[action as keyof typeof operations_code]
         );
 
-        if (action === "create") {
+
+        // Informa los casos en los que se debe de mostrar la asignación de memoria
+        if (action === "create" || action === "push") {
             setMemoryCode(true);
         } else {
             setMemoryCode(false);
@@ -89,7 +97,7 @@ export function Simulator<T extends string>({
                         data-tour="structure-title"
                         className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6"
                     >
-                        {structureName.toUpperCase()}{" "}
+                        {structureN.replace(/_/g, " ").toUpperCase()}{" "}
                         <span className="text-[#D72638]">&lt;Integer&gt;</span>
                     </h1>
                     {/* Contenedor principal */}
@@ -101,7 +109,7 @@ export function Simulator<T extends string>({
                                 className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 rounded-xl space-y-3 overflow-hidden"
                             >
                                 <DataStructureInfo
-                                    structure={structureName}
+                                    structure={structureN}
                                     structurePrueba={structure}
                                     memoryAddress={memoryCode}
                                 >
@@ -130,7 +138,7 @@ export function Simulator<T extends string>({
                                 data-tour="console"
                             >
                                 <ConsoleComponent
-                                    structureType={structureName}
+                                    structureType={structureN}
                                     onCommand={handleCommand}
                                     error={error}
                                 />
@@ -143,7 +151,7 @@ export function Simulator<T extends string>({
                     </div>
                 </div>
             </div>
-            <CustomTour tipo={structureName as TourType} />
+            <CustomTour tipo={structureN as TourType} />
         </>
     );
 }

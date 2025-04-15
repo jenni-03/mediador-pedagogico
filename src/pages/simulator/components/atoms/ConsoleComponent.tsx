@@ -58,8 +58,11 @@ export function ConsoleComponent({
 
         const handleManualEnter = (e: KeyboardEvent) => {
             if (e.key === "Enter" && inputEl.value.trim() !== "") {
+                if (e.isTrusted) {
+                    // Ignoramos los eventos del teclado físico
+                    return;
+                }
                 e.preventDefault();
-                console.log(inputEl.value.trim());
                 const parsed = parseCommand(
                     inputEl.value.trim(),
                     structureType
@@ -73,7 +76,10 @@ export function ConsoleComponent({
                         "Comando válido, procesando...",
                     ]);
                     //Guardamos el comando en el historial
-                    setCommandHistory([...commandHistory, inputEl.value.trim()]);
+                    setCommandHistory([
+                        ...commandHistory,
+                        inputEl.value.trim(),
+                    ]);
                 } else {
                     // parsed es { error: string }
                     setHistory([
@@ -105,7 +111,6 @@ export function ConsoleComponent({
                 const parsed = parseCommand(input.trim(), structureType);
 
                 if ("error" in parsed) {
-                    console.log("Error en el comando:", parsed.error);
                     onCommand([], false);
                     setHistory([
                         ...history,
@@ -123,15 +128,16 @@ export function ConsoleComponent({
 
                 const commandValidation = commandRules[structureType](parts);
 
+                // Verifica si el comando es válido según las reglas de la estructura, es decir, es un booleano
                 if (typeof commandValidation === "boolean") {
-                    if (commandValidation) {
+                    if(commandValidation){
                         const command = parts[0]?.toLowerCase();
 
                         // Verificar si la estructura necesita "create"
                         const needsCreate =
                             structuresRequiringCreate.includes(structureType);
-
-                        // Si la estructura no ha sido creada solo se permite el cmd create
+    
+                        // Caso 1: Si la estructura no ha sido creada y el comando es distinto a create
                         if (needsCreate && !isCreated && command !== "create") {
                             onCommand([], false);
                             setHistory([
@@ -139,19 +145,22 @@ export function ConsoleComponent({
                                 `$ ${input}`,
                                 "Error: Debe crear la estructura primero con 'create'",
                             ]);
-                        } else if (isCreated && command == "clean") {
+                            //Guardamos el comando en el historial
+                            setCommandHistory([...commandHistory, input.trim()]);
+                        }
+                        //Caso 2: Si la estructura ya fue creada y el comando es clean
+                        else if (needsCreate && isCreated && command == "clean") {
                             onCommand(parsed, true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
-                            setCommandHistory([
-                                ...commandHistory,
-                                input.trim(),
-                            ]); // Guardamos solo el comando
+                            setCommandHistory([...commandHistory, input.trim()]); // Guardamos solo el comando
                             setIsCreated(false); // Marcar como no creada
-                        } else {
+                        }
+                        //Caso 3: Cuando es cualquier comando, excepto clean en el caso de que la estructura ya fue creada
+                        else {
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
                             }
@@ -161,6 +170,9 @@ export function ConsoleComponent({
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
+                            console.log(commandValidation);
+                            //Guardamos el comando en el historial
+                            setCommandHistory([...commandHistory, input.trim()]);
                         }
                     } else {
                         onCommand([], false);
@@ -169,18 +181,21 @@ export function ConsoleComponent({
                             `$ ${input}`,
                             "Error: Comando no válido",
                         ]);
+                        //Guardamos el comando en el historial
+                        setCommandHistory([...commandHistory, input.trim()]);
                     }
-                } else {
+                }
+                // Verifica si el comando es inválido según las reglas de la estructura, es decir, es un objeto con un mensaje
+                else {
                     onCommand([], false);
                     setHistory([
                         ...history,
                         `$ ${input}`,
                         `Error: ${commandValidation.message}`,
                     ]);
+                    //Guardamos el comando en el historial
+                    setCommandHistory([...commandHistory, input.trim()]);
                 }
-
-                //Guardamos el comando en el historial
-                setCommandHistory([...commandHistory, input.trim()]);
 
                 setInput("");
                 setHistoryIndex(-1); // Reiniciamos el índice del historial
@@ -239,8 +254,8 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    disabled={isAnimating}
-                    ref={inputRef}
+                    // disabled={isAnimating}
+                    // ref={inputRef}
                     autoFocus
                     spellCheck={false}
                     data-tour="inputConsola"
