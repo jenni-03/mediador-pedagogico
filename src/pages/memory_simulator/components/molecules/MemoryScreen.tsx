@@ -36,15 +36,15 @@ export function MemoryScreen({
   return (
     <div className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative">
       <div className="w-full bg-[#1A1A1A] border border-[#2E2E2E] rounded-3xl shadow-xl shadow-black/50 flex flex-col max-h-[85vh] overflow-visible transition-all duration-300">
-        {/* 🧠 Título principal */}
+        {/* Título principal */}
         <div className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow">
           <h3 className="text-[#E0E0E0] text-2xl font-bold tracking-wider text-center">
             SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()}
           </h3>
 
-          {/* 🎯 Segment buttons */}
+          {/* Segment buttons */}
           <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-5xl mt-3">
-            {/* 🧹 Limpiar memoria */}
+            {/*Limpiar memoria */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.03 }}
@@ -62,7 +62,7 @@ export function MemoryScreen({
               🧹 <span>Limpiar Memoria</span>
             </motion.button>
 
-            {/* 🔍 Buscador de memoria */}
+            {/* Buscador de memoria */}
             <div
               className="flex items-center flex-1 min-w-[180px] bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 shadow-sm"
               data-tour="buscador"
@@ -73,11 +73,37 @@ export function MemoryScreen({
                 placeholder="Buscar dirección..."
                 className="w-full bg-transparent text-sm text-[#E0E0E0] placeholder-[#A0A0A0] outline-none"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchTerm(val);
+
+                  if (val.length >= 2) {
+                    const prefix = val.slice(0, 2).toLowerCase();
+
+                    // Declaramos el objeto con Record<string, string>
+                    const mapping: Record<string, string> = {
+                      "0x": "boolean",
+                      "1x": "char",
+                      "2x": "byte",
+                      "3x": "short",
+                      "4x": "int",
+                      "5x": "long",
+                      "6x": "float",
+                      "7x": "double",
+                      "8x": "string",
+                      "9x": "object",
+                      ax: "array",
+                    };
+
+                    if (prefix in mapping) {
+                      setSelectedSegment(mapping[prefix]);
+                    }
+                  }
+                }}
               />
             </div>
 
-            {/* 🧪 Casos de prueba */}
+            {/* Casos de prueba */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.03 }}
@@ -91,7 +117,7 @@ export function MemoryScreen({
           </div>
         </div>
 
-        {/* 💾 Área de visualización de variables */}
+        {/* Área de visualización de variables */}
         <div
           className="w-full flex-1 min-h-0 overflow-y-auto px-2 pt-4 pb-28 scrollbar-thin scrollbar-thumb-[#D72638] scrollbar-track-[#2E2E2E]"
           data-tour="visualizacionVariables"
@@ -105,7 +131,7 @@ export function MemoryScreen({
           />
         </div>
 
-        {/* 🧭 Barra de segmentos */}
+        {/* Barra de segmentos */}
         <div
           className="w-full bg-[#1A1A1A] border-t border-[#2E2E2E] shadow-inner rounded-b-3xl relative z-10"
           data-tour="segment-buttons"
@@ -161,7 +187,7 @@ export function MemoryScreen({
         </div>
       </div>
 
-      {/* 🧪 Modal de Casos de Prueba */}
+      {/* Modal de Casos de Prueba */}
       {showModal && (
         <TestCasesModal
           consolaRef={consolaRef}

@@ -8,78 +8,98 @@ import { Header } from "../simulator/components/molecules/Header";
 import CustomTour from "../../shared/tour/CustomTour";
 
 export function MemorySimulator() {
-    const consolaRef = useRef(new Consola());
+  const consolaRef = useRef(new Consola());
 
-    const [consoleOutput, setConsoleOutput] = useState<string>("");
-    const [isSuccess, setIsSuccess] = useState<boolean>(true);
-    const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
-    const [selectedSegment, setSelectedSegment] = useState<string>("int");
+  const [consoleOutput, setConsoleOutput] = useState<string>("");
+  const [isSuccess, setIsSuccess] = useState<boolean>(true);
+  const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
+  const [selectedSegment, setSelectedSegment] = useState<string>("int");
 
-    const detectarTipoInsertado = (cmd: string): string | undefined => {
-        const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
-        if (match) {
-            let tipo = match[1].toLowerCase();
-            if (match[2]) tipo = "array";
-            if (tipo === "object") return "object";
-            return tipo;
-        }
-        return undefined;
-    };
+  const detectarTipoInsertado = (cmd: string): string | undefined => {
+    const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
+    if (match) {
+      let tipo = match[1].toLowerCase();
+      if (match[2]) tipo = "array";
+      if (tipo === "object") return "object";
+      return tipo;
+    }
+    return undefined;
+  };
 
-    const updateMemoryState = (
-        newState: Record<string, any[]>,
-        tipoInsertado?: string
-    ) => {
-        setMemoryState(newState);
-        if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
-            setSelectedSegment(tipoInsertado);
-        }
-    };
+  const updateMemoryState = (
+    newState: Record<string, any[]>,
+    tipoInsertado?: string
+  ) => {
+    setMemoryState(newState);
+    if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
+      setSelectedSegment(tipoInsertado);
+    }
+  };
 
-    const handleCommand = (command: string) => {
-        try {
-            const resultado = consolaRef.current.ejecutarComando(command);
+  const handleCommand = (command: string) => {
+    try {
+      const resultado = consolaRef.current.ejecutarComando(command);
 
-            if (!resultado[0]) {
-                setConsoleOutput(resultado[1]);
-                setIsSuccess(false);
-            } else {
-                setConsoleOutput(resultado[1]);
-                setIsSuccess(true);
+      if (!resultado[0]) {
+        setConsoleOutput(resultado[1]);
+        setIsSuccess(false);
+      } else {
+        setConsoleOutput(resultado[1]);
+        setIsSuccess(true);
 
-                const tipo = detectarTipoInsertado(command);
-                updateMemoryState(resultado[2], tipo);
-            }
-        } catch (error) {
-            setConsoleOutput(`Error inesperado: ${(error as Error).message}`);
-            setIsSuccess(false);
-        }
-    };
+        const tipo = detectarTipoInsertado(command);
+        updateMemoryState(resultado[2], tipo);
+      }
+    } catch (error) {
+      setConsoleOutput(`Error inesperado: ${(error as Error).message}`);
+      setIsSuccess(false);
+    }
+  };
 
-    return (
-        <>
-            <Header />
+  return (
+    <>
+      <Header />
 
-            <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
-                <TitleComponent />
+      <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
+        <TitleComponent />
 
-                <MemoryScreen
-                    consolaRef={consolaRef}
-                    memoryState={memoryState}
-                    setMemoryState={updateMemoryState}
-                    selectedSegment={selectedSegment}
-                    setSelectedSegment={setSelectedSegment}
-                />
+        <MemoryScreen
+          consolaRef={consolaRef}
+          memoryState={memoryState}
+          setMemoryState={updateMemoryState}
+          selectedSegment={selectedSegment}
+          setSelectedSegment={setSelectedSegment}
+        />
 
-                <ConsoleComponent
-                    onCommand={handleCommand}
-                    outputMessage={consoleOutput}
-                    isSuccess={isSuccess}
-                />
+        {/* Contenedor padre para la Consola y el Panel flotante */}
+        <div
+  className="
+    flex
+    flex-col sm:flex-row
+    items-stretch       /* Para que hijos se estiren verticalmente */
+    gap-4
+    px-4 sm:px-10
+    mt-6
+    h-96                /* ¡Fijamos una altura de ejemplo! */
+  "
+>
+          {/* Consola */}
+          <div className="w-full sm:w-1/2 h-full">
+            <ConsoleComponent
+              onCommand={handleCommand}
+              outputMessage={consoleOutput}
+              isSuccess={isSuccess}
+            />
+          </div>
 
-                <FloatingCommandPanel />
-            </div>
-            <CustomTour tipo="memoria" />
-        </>
-    );
+          {/* Panel de comandos */}
+          <div className="w-full sm:w-1/2 h-full">
+            <FloatingCommandPanel />
+          </div>
+        </div>
+      </div>
+
+      <CustomTour tipo="memoria" />
+    </>
+  );
 }

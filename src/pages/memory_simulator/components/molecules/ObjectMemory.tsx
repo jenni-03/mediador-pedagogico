@@ -86,34 +86,61 @@ export function ObjectMemory({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedEntry(entry)}
-                className="relative bg-gradient-to-br from-[#262626] to-[#1F1F1F] p-5 rounded-2xl border border-[#2E2E2E] shadow-xl shadow-black/40 hover:ring-2 hover:ring-[#D72638]/50 transition-all cursor-pointer"
+                className="relative bg-gradient-to-br from-[#262626] to-[#1F1F1F]
+             p-5 rounded-2xl border border-[#2E2E2E]
+             shadow-xl shadow-black/40 hover:ring-2 hover:ring-[#D72638]/50
+             transition-all cursor-pointer"
               >
-                {/* Dirección */}
-                <div className="absolute top-2 left-2">
-                  <span className="text-xs bg-[#D72638] text-white px-2.5 py-0.5 rounded-full font-semibold shadow">
-                    {entry.address}
-                  </span>
+                {/* Botón: engranaje en esquina superior izquierda */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setChangeTypeTarget(entry.address);
+                  }}
+                  title="Cambiar tipo de dato"
+                  className="absolute top-3 left-3 flex items-center gap-1
+               text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
+               px-2 py-1 rounded-full transition duration-200 cursor-pointer"
+                >
+                  <span className="text-base">⚙️</span>
+                </button>
+
+                {/* Botón: eliminar (X) en esquina superior derecha */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteTarget(entry.address);
+                  }}
+                  title="Eliminar objeto"
+                  className="absolute top-3 right-3 flex items-center gap-1
+               text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
+               px-2 py-1 rounded-full transition duration-200 cursor-pointer"
+                >
+                  <span className="text-base">✖</span>
+                </button>
+
+                {/* Sección central: Información de ADDR y SIZE */}
+                <div className="w-full mt-8 flex justify-center gap-8">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold uppercase text-white/90">
+                      ADDR:
+                    </span>
+                    <span className="text-sm font-bold text-[#D72638]">
+                      {entry.address}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold uppercase text-white/90">
+                      SIZE:
+                    </span>
+                    <span className="text-sm font-bold text-[#F59E0B]">
+                      {sizes[entry.address] ?? "…"}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Tamaño y eliminar */}
-                <div className="absolute top-2 right-2 flex items-center gap-2">
-                  <span className="text-xs bg-[#4B4B4B] text-white px-2.5 py-0.5 rounded-full font-medium shadow-sm">
-                    {sizes[entry.address] ?? "…"}
-                  </span>
-                  <button
-                    className="text-[#D72638] hover:text-white hover:bg-[#D72638] rounded-full p-1 transition"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(entry.address);
-                    }}
-                    title="Eliminar objeto"
-                  >
-                    ✖
-                  </button>
-                </div>
-
-                {/* Nombre */}
-                <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2 text-[#E0E0E0]">
+                {/* Nombre del objeto */}
+                <p className="text-lg font-bold uppercase mt-4 truncate w-full px-2 text-[#E0E0E0]">
                   {entry.name}
                 </p>
 
@@ -155,28 +182,39 @@ export function ObjectMemory({
                             key={i}
                             className="hover:bg-[#2B2B2B] transition-all"
                           >
-                            <td className="px-4 py-2 border-b border-[#2E2E2E] text-xs text-[#E0E0E0] font-mono tracking-wider">
+                            <td
+                              className="px-4 py-2 border-b border-[#2E2E2E]
+                         text-xs text-[#E0E0E0] font-mono tracking-wider"
+                            >
                               {address}
                             </td>
-
-                            <td className="px-4 py-2 border-b border-[#2E2E2E] text-[#E0E0E0] flex items-center gap-2">
+                            <td
+                              className="px-4 py-2 border-b border-[#2E2E2E]
+                         text-[#E0E0E0] flex items-center gap-2"
+                            >
                               {type}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setChangeTypeTarget(address);
                                 }}
-                                className="bg-[#D72638]/10 hover:bg-[#D72638]/30 text-[#D72638] px-2 py-1 rounded-full text-xs font-bold shadow-sm"
+                                className="bg-[#D72638]/10 hover:bg-[#D72638]/30
+                             text-[#D72638] px-2 py-1 rounded-full text-xs
+                             font-bold shadow-sm"
                                 title="Cambiar tipo"
                               >
                                 ⚙️
                               </button>
                             </td>
-                            <td className="px-4 py-2 border-b border-[#2E2E2E] font-semibold text-white">
+                            <td
+                              className="px-4 py-2 border-b border-[#2E2E2E]
+                         font-semibold text-white"
+                            >
                               {key}
                             </td>
                             <td
-                              className={`px-4 py-2 border-b border-[#2E2E2E] font-semibold ${colorByType(type)}`}
+                              className={`px-4 py-2 border-b border-[#2E2E2E]
+                           font-semibold ${colorByType(type)}`}
                             >
                               {typeof value === "object"
                                 ? JSON.stringify(value)

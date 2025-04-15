@@ -15,15 +15,20 @@ export function FloatingCommandPanel() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full flex justify-center sm:justify-end px-4 sm:px-10 mt-6 sm:-mt-60"
+        // Agregamos h-full para que el contenedor ocupe el 100% de la altura de su padre
+        className="w-full h-full flex justify-center sm:justify-end px-4 sm:px-10"
       >
-        <div className="w-full sm:w-[40%] max-w-screen-md bg-[#1F1F1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 p-5"
-        data-tour="comandos">
-          <h2 className="text-center font-bold text-sm text-[#D72638] tracking-wide mb-4">
+        <div
+          // También h-full en el contenedor del panel
+          className="w-full h-full max-w-md sm:w-[480px] bg-[#1F1F1F] border border-[#2E2E2E] rounded-2xl shadow-2xl shadow-black/40 p-8"
+          data-tour="comandos"
+        >
+          <h2 className="text-center text-lg sm:text-xl font-bold text-[#D72638] tracking-wide mb-6">
             COMANDOS DEL SIMULADOR DE MEMORIA
           </h2>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Grilla de botones más grandes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {comandos.map((cmd: CommandProps, idx: number) => (
               <motion.button
                 key={idx}
@@ -31,7 +36,7 @@ export function FloatingCommandPanel() {
                 whileTap={{ scale: 0.97 }}
                 transition={{ type: "spring", stiffness: 300 }}
                 onClick={() => setSelected(cmd)}
-                className="text-xs font-semibold text-[#E0E0E0] bg-[#2B2B2B] border border-[#3A3A3A] hover:border-[#D72638] hover:text-[#D72638] rounded-full px-4 py-1 transition-all shadow-sm hover:shadow-md"
+                className="text-sm sm:text-base font-semibold text-[#E0E0E0] bg-[#2B2B2B] border border-[#3A3A3A] hover:border-[#D72638] hover:text-[#D72638] rounded-full px-5 py-2 transition-all shadow-md hover:shadow-lg"
               >
                 {cmd.title}
               </motion.button>
@@ -54,37 +59,31 @@ export function FloatingCommandPanel() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-[#1F1F1F] p-6 rounded-2xl shadow-2xl w-[90%] max-w-sm border border-[#2E2E2E]"
+              className="bg-[#1F1F1F] p-8 rounded-2xl shadow-2xl w-[90%] max-w-md border border-[#2E2E2E]"
             >
-              <h3 className="text-2xl font-bold text-[#D72638] mb-5 text-center tracking-wide">
+              <h3 className="text-3xl font-bold text-[#D72638] mb-6 text-center tracking-wide">
                 {selected.title.toUpperCase()}
               </h3>
-              <div className="space-y-3 text-sm text-[#CCCCCC]">
+              <div className="space-y-4 text-base text-[#CCCCCC] leading-relaxed">
                 <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    🧠 Funcionalidad:
-                  </span>{" "}
+                  <span className="font-semibold text-[#E0E0E0]">🧠 Funcionalidad:</span>{" "}
                   {selected.description}
                 </p>
                 <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    📌 Estructura del comando:
-                  </span>{" "}
+                  <span className="font-semibold text-[#E0E0E0]">📌 Estructura del comando:</span>{" "}
                   {selected.estructura}
                 </p>
                 <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    🛠️ Ejemplo de uso:
-                  </span>{" "}
+                  <span className="font-semibold text-[#E0E0E0]">🛠️ Ejemplo de uso:</span>{" "}
                   {selected.ejemplo}
                 </p>
               </div>
-              <div className="text-center mt-6">
+              <div className="text-center mt-8">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelected(null)}
-                  className="bg-[#D72638] hover:bg-[#c41f30] text-white font-semibold text-sm px-6 py-2 rounded-full shadow"
+                  className="bg-[#D72638] hover:bg-[#c41f30] text-white font-bold text-base px-8 py-3 rounded-full shadow-lg"
                 >
                   Aceptar
                 </motion.button>
