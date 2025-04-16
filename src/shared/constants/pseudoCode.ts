@@ -1014,81 +1014,135 @@ export const operationsCode: Record<string, any> = {
     },
     tabla_hash: {
         create: [
-            "función constructor(n):",
-            "si n <= 0 entonces",
-            "vector ← arreglo vacío",
-            "cant ← 0",
-            "retornar",
-            "fin si",
-            "",
-            "vector ← nuevo arreglo de tamaño n",
-            "para i desde 0 hasta n - 1 hacer:",
-            "vector[i] ← null",
-            "fin para",
-            "cant ← 0",
-            "fin función"
+            `/**
+     * Constructor de una tabla hash con 23 slots. <br>
+     * <b> post:</b> Se creo una tabla hash con 23 slots. <br>
+     */`,
+            `public TablaHash() {`,
+            `    this.numeroDatos = 0;`,
+            `    this.numeroSlots = 11;`,
+            `    this.informacionEntrada = new ListaCD [this.numeroSlots ];`,
+            `    // inicializar los Slots de la tabla`,
+            `    this.inicializarListas( );`,
+            `}`
         ],
         put: [
-            "función insertar(elem):",
-            "si cant es mayor o igual a la longitud del vector entonces",
-            'lanzar error "No hay espacio para insertar el elemento {elem}"',
-            "fin si",
-            "",
-            "vector[cant] ← elem",
-            "cant ← cant + 1",
-            "fin función"
+            `/**
+      * Metodo que permite insertar o modificar en la tabla un objeto con su respectiva clave. <br>
+     * <b> post:</b> Se inserto o modifico un objeto en la tabla fragmentada . <br>
+     * @param clave representa la clave del objeto a insertar o modificar. <br>
+      * @param objeto representa el objeto a insertar en la tabla. <br>
+      * @return el objeto insertado.
+      */`,
+            `public T insertar( Clave clave, T objeto ) {`,
+            `    int indice=0;`,
+            `    InformacionDeEntrada<Clave,T> objetoAnterior=null;`,
+            `    if(clave==null){`,
+            `        throw new RuntimeException("La Clave de Objeto no puede ser vacia!!!");`,
+            `    }`,
+            `    else{`,
+            `        indice =index(clave);`,
+            `        objetoAnterior = this.registrarEntrada(indice, clave );`,
+            `        if( objetoAnterior== null ){ // Si la clave del objeto no se encuentra en la tabla lo insertamos`,
+            `            InformacionDeEntrada<Clave,T> nuevoObjeto = new InformacionDeEntrada( clave, objeto );`,
+            `            this.informacionEntrada[ indice ].insertarAlFinal(nuevoObjeto);`,
+            `            this.numeroDatos+=1;`,
+            `            return nuevoObjeto.getObjeto();`,
+            `        }`,
+            `        else  // si la clave esta se encuentra en la tabla modificamos el objeto`,
+            `            objetoAnterior.setObjeto( objeto);`,
+            `    }`,
+            `        return (T)objetoAnterior.getObjeto();`,
+            `}`
         ],
         remove: [
-            "función set(i, nuevo):",
-            "si i < 0 o i >= cant entonces",
-            'lanzar error "Índice fuera de rango!"',
-            "fin si",
-            "si el vector contiene nuevo entonces",
-            'lanzar error "El elemento {nuevo} ya está en la secuencia"',
-            "fin si",
-            "vector[i] ← nuevo",
-            "fin función"
+            `/**
+     * Metodo que permite eliminar un objeto entrada de la tabla fragmentada. <br>
+     * <b> post:</b> Se elimino el objeto en la tabla fragmentada . <br>
+     * @param clave representa la clave del objeto que se desea eliminar. <br>
+     * @return  el objeto que se elimino o null en caso de que no exista en la tabla un objeto con esa clave.
+     */`,
+            `public T eliminar( Clave clave ) {`,
+            `    int i=0;`,
+            `    InformacionDeEntrada objeto;`,
+            `    if(clave==null){`,
+            `        throw new RuntimeException("La Clave de Objeto no puede ser vacia!!!");`,
+            `    }`,
+            `    else{`,
+            `        int indice =index(clave);`,
+            `        ListaCD<InformacionDeEntrada<Clave,T>> listaObjeto = this.informacionEntrada[ indice ];`,
+            `        objeto = new InformacionDeEntrada( clave );`,
+            `        i=listaObjeto.getIndice(objeto);`,
+            `        if(i==-1)`,
+            `            objeto=null;`,
+            `        else{`,
+            `            objeto = ( InformacionDeEntrada )listaObjeto.eliminar(i);`,
+            `            this.numeroDatos--;`,
+            `        }`,
+            `    }`,
+            `    return (T)objeto.getObjeto();`,
+            `}`
         ],
         get: [
-            "función eliminar(elem):",
-            "indice ← getIndice(elem)",
-            "si indice es igual a -1 entonces",
-            'lanzar error "El elemento {elem} no está en la secuencia"',
-            "fin si",
-            "",
-            "// Mover los elementos hacia la izquierda",
-            "para i desde indice hasta cant - 2 hacer:",
-            "vector[i] ← vector[i + 1]",
-            "fin para",
-            "",
-            "// Reducir cantidad y limpiar el último espacio",
-            "vector[cant - 1] ← null",
-            "cant ← cant - 1",
-            "fin función"
-        ],
-        delete: [
-            "función vaciar():",
-            "vector ← arreglo vacío",
-            "cant ← 0",
-            "fin función"
-        ],
-        containsKey: [
-            "función vaciar():",
-            "vector ← arreglo vacío",
-            "cant ← 0",
-            "fin función"
-        ],
-        values: [
-            "función vaciar():",
-            "vector ← arreglo vacío",
-            "cant ← 0",
-            "fin función"
+            `/**
+     * Método que permite obtener el objeto asociado con la clave especificada. <br>
+     * <b> post:</b> Se obtuvo el objeto de la tabla fragmentada, que posee esa clave . <br>
+     * @param clave representa la clave del objeto que se desea obtener. <br>
+     * @return El objeto asociado con la clave o null si no existe objeto con esa clave.
+     */`,
+            `public Object getObjeto( Clave clave ) {`,
+            `    InformacionDeEntrada objeto;`,
+            `    if ( clave == null )`,
+            `        throw new IllegalArgumentException("Clave null no permitida" );`,
+            `    else{`,
+            `        int indice =index(clave);`,
+            `        ListaCD<InformacionDeEntrada<Clave,T>> listaObjeto = this.informacionEntrada[ indice ];`,
+            `        objeto= new InformacionDeEntrada( clave );`,
+            `        int i=listaObjeto.getIndice(objeto);`,
+            `        if(i==-1)`,
+            `            return null;`,
+            `        else{`,
+            `            objeto = listaObjeto.get(i);`,
+            `        }`,
+            `    }`,
+            `    return objeto.getObjeto();`,
+            `}`
         ],
         clean: [
-            "función vaciar():",
-            "vector ← arreglo vacío",
-            "cant ← 0",
-            "fin función"
+            `/**
+     * Metodo que permite eliminar las entradas de la tabla hash. <br>
+     * <b> post:</b> Se eliminaron todos los datos antes almacendos en la tabla. <br>
+     */`,
+            `public void eliminarTodo(){`,
+            `    this.numeroDatos = 0;`,
+            `    for ( int i = 0; i < this.informacionEntrada.length; i++ )`,
+            `        this.informacionEntrada[ i ] = null;`,
+            `}`
         ],
+        containsKey: [
+            `/**
+     * Metodo que permite conocer si se encuentra un objeto asociado con la clave dada. <br>
+     * <b>post:<b> Se consulto si se encuentra un objeto asociado con la clave dada. <br>
+     * @param clave dato a verificar si se encuentra en la tabla. <br>
+     * @return true de encontrar un objeto asociado con la clave dada. <br>
+     */`,
+            `public boolean esta(Clave clave){`,
+            `    return(this.getObjeto(clave)!=null);`,
+            `}`
+        ],
+        values: [
+            `/**
+     * Metodo que permite imprimir los datos almacenados en la tabla. <br>
+     *  <b>post: </b> Se retorno una cadena de caracteres que representan los datos almacenados en la tabla. <br>
+     * @return cadena de caracteres que representan los datos almacenados en la tabla.
+     */`,
+            `public String imprimir(){`,
+            `    String msg="";`,
+            `    for ( int i = 0; i < this.informacionEntrada.length; i++ )`,
+            `        if(this.informacionEntrada[ i ] != null)`,
+            `            msg+="Slot de la tabla numero"+i+" ==>"+this.informacionEntrada[ i ].toString()+"\\n";`,
+            `    return msg;`,
+            `}`
+        ]
     },
 };
