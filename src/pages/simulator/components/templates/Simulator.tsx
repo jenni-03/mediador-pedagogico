@@ -4,7 +4,7 @@ import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
 import { SimulatorProps } from "../../../../types";
 import { useRef, useState } from "react";
 import { commandsData } from "../../../../shared/constants/commandsData";
-import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
+import { operationsCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
@@ -19,7 +19,7 @@ export function Simulator<T extends string>({
 }: SimulatorProps<T>) {
 
     //temporal
-    const structureN = "lista_circular_doble";
+    const structureN = "cola";
     // Estado para el manejo de la visualización del código
     const [executionCode, setExecutionCode] = useState<string[]>([]);
 
@@ -33,7 +33,7 @@ export function Simulator<T extends string>({
     const buttons = commandsData[structureN].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operations_pseudoCode[structureN];
+    const operations_code = operationsCode[structureN];
 
     // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);

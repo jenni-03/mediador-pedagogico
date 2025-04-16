@@ -115,7 +115,6 @@
 
             case "dequeue":
             case "getfront":
-            case "getrear":
             case "clean":
                 if (parts.length !== 1) {
                     return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
@@ -146,7 +145,6 @@
 
             case "dequeue":
             case "getfront":
-            case "getrear":
             case "clean":
                 if (parts.length !== 1) {
                     return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };

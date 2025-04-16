@@ -89,12 +89,6 @@ export const commandsData: Record<string, any> = {
         ejemplo: "getFront();",
       },
       {
-        title: "getRear",
-        description: "Obtener el último elemento que fue insertado en la Cola.",
-        estructura: "getRear();",
-        ejemplo: "getRear();",
-      },
-      {
         title: "clean",
         description: "Vaciar la cola",
         estructura: "clean();",
@@ -121,12 +115,6 @@ export const commandsData: Record<string, any> = {
         description: "Obtener el primer elemento que fue insertado en la Cola.",
         estructura: "getFront();",
         ejemplo: "getFront();",
-      },
-      {
-        title: "getRear",
-        description: "Obtener el último elemento que fue insertado en la Cola.",
-        estructura: "getRear();",
-        ejemplo: "getRear();",
       },
       {
         title: "clean",
