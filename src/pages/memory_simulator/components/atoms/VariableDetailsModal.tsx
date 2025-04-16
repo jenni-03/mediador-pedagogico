@@ -208,11 +208,18 @@ export function VariableDetailsModal({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium text-center transition-all duration-300 ${
-                feedback.success
-                  ? "bg-green-600/20 text-green-400 border border-green-600"
-                  : "bg-red-600/20 text-red-400 border border-red-600"
-              }`}
+              className={`
+        mt-4 px-4 py-2 rounded-xl text-sm font-medium text-center
+        transition-all duration-300
+        ${
+          feedback.success
+            ? "bg-green-600/20 text-green-400 border border-green-600"
+            : "bg-red-600/20 text-red-400 border border-red-600"
+        }
+        overflow-y-auto
+        max-h-24
+        break-all
+      `}
             >
               {feedback.message}
             </motion.div>

@@ -10,6 +10,15 @@ interface ObjectDetailsModalProps {
   setMemoryState: (newState: Record<string, any[]>) => void;
 }
 
+// 1. Funciones para transformar corchetes ↔ llaves
+function bracketsToBraces(str: string): string {
+  return str.replace(/\[/g, "{").replace(/\]/g, "}");
+}
+
+function bracesToBrackets(str: string): string {
+  return str.replace(/{/g, "[").replace(/}/g, "]");
+}
+
 export function ObjectDetailsModal({
   entry,
   onClose,
@@ -17,20 +26,26 @@ export function ObjectDetailsModal({
   size,
   setMemoryState,
 }: ObjectDetailsModalProps) {
-  const [localValue, _setLocalValue] = useState(entry.value);
+  // localValue se mantiene para la tabla interna
+  const [localValue] = useState(entry.value);
+
+  // tempValues: guardamos la versión con corchetes (la lógica real)
   const [tempValues, setTempValues] = useState(
     entry.value.map((group: any[]) => {
       const val = group.find((a: any) => a.key === "value")?.value ?? "";
-      return Array.isArray(val) ? JSON.stringify(val) : val;
+      return Array.isArray(val) ? JSON.stringify(val) : String(val);
     })
   );
+
   const [feedbacks, setFeedbacks] = useState<
     Record<number, { success: boolean; message: string }>
   >({});
 
-  const updateAttributeValue = (index: number, newValue: string) => {
+  const updateAttributeValue = (index: number, newDisplayValue: string) => {
+    // 2. Convertimos la versión con llaves a la real con corchetes
+    const bracketed = bracesToBrackets(newDisplayValue);
     const updated = [...tempValues];
-    updated[index] = newValue;
+    updated[index] = bracketed;
     setTempValues(updated);
   };
 
@@ -49,6 +64,7 @@ export function ObjectDetailsModal({
       return;
     }
 
+    // Lógica real: envía a la consola la versión con corchetes
     const setResult = consolaRef.current?.ejecutarComando(
       `set address ${address} value ${tempValues[index]}`
     );
@@ -86,9 +102,24 @@ export function ObjectDetailsModal({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -30 }}
         transition={{ duration: 0.2 }}
-        className="bg-[#1A1A1A] text-[#E0E0E0] p-6 rounded-2xl shadow-2xl border border-red-500 w-[95%] max-w-2xl"
+        className="
+          bg-[#1A1A1A]
+          text-[#E0E0E0]
+          p-6
+          rounded-2xl
+          shadow-2xl
+          border border-red-500
+          w-[95%]
+          max-w-2xl
+        "
       >
-        <h2 className="text-2xl font-bold text-red-500 mb-5 text-center flex items-center justify-center gap-2">
+        <h2
+          className="
+            text-2xl font-bold text-red-500 mb-5
+            text-center
+            flex items-center justify-center gap-2
+          "
+        >
           🧩 Detalles del Objeto
         </h2>
 
@@ -146,20 +177,31 @@ export function ObjectDetailsModal({
                       {key}
                     </td>
                     <td className="px-4 py-2 border-b border-[#333]">
+                      {/* 3. Muestra con llaves, pero lo almacena con corchetes */}
                       <input
-                        value={tempValues[i]}
+                        value={bracketsToBraces(tempValues[i])}
                         onChange={(e) =>
                           updateAttributeValue(i, e.target.value)
                         }
-                        className="w-full px-2 py-1 rounded-md border border-[#444] bg-[#2A2A2A] text-sm text-[#E0E0E0] focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm"
+                        className="
+                          w-full px-2 py-1 rounded-md
+                          border border-[#444]
+                          bg-[#2A2A2A]
+                          text-sm text-[#E0E0E0]
+                          focus:outline-none focus:ring-1 focus:ring-red-500
+                          shadow-sm
+                        "
                       />
                       {feedbacks[i] && (
                         <div
-                          className={`mt-1 text-xs px-2 py-1 rounded shadow-sm ${
-                            feedbacks[i].success
-                              ? "bg-green-600/20 text-green-400 border border-green-600"
-                              : "bg-red-600/20 text-red-400 border border-red-600"
-                          }`}
+                          className={`
+                            mt-1 text-xs px-2 py-1 rounded shadow-sm
+                            ${
+                              feedbacks[i].success
+                                ? "bg-green-600/20 text-green-400 border border-green-600"
+                                : "bg-red-600/20 text-red-400 border border-red-600"
+                            }
+                          `}
                         >
                           {feedbacks[i].message}
                         </div>
@@ -168,7 +210,12 @@ export function ObjectDetailsModal({
                     <td className="px-2 py-2 border-b border-[#333] text-center">
                       <button
                         onClick={() => confirmChange(i)}
-                        className="text-green-500 hover:bg-green-600 hover:text-white rounded-full p-1 transition-all"
+                        className="
+                          text-green-500 hover:bg-green-600
+                          hover:text-white
+                          rounded-full p-1
+                          transition-all
+                        "
                         title="Confirmar cambio"
                       >
                         ✅
@@ -186,7 +233,10 @@ export function ObjectDetailsModal({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onClose}
-            className="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm font-semibold"
+            className="
+              px-5 py-2 bg-red-500 hover:bg-red-600
+              text-white rounded-full text-sm font-semibold
+            "
           >
             Cerrar
           </motion.button>

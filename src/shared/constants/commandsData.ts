@@ -763,44 +763,62 @@ export const commandsData: Record<string, any> = {
   memoria: {
     buttons: [
       {
-        title: "Insert",
+        title: "Declarar",
         description:
-          "Insertar una variable primitiva, un array o un objeto en memoria.",
-        estructura: "insert tipo nombre = valor;",
-        ejemplo: "insert int edad = 25;",
+          "Permite declarar variables primitivas, arrays u objetos en la memoria de forma natural, al estilo de Java. Se debe respetar la sintaxis estricta, con exactamente un espacio entre cada token. Las declaraciones pueden incluir asignación (por ejemplo, 'int edad = 25;') o no (por ejemplo, 'int edad;'), en cuyo caso se asigna un valor por defecto según el tipo. Para arrays se utiliza la sintaxis: 'tipo[] nombre = {valor1,valor2,...};', y para objetos: 'object nombre = new object( ... );'.",
+        estructura:
+          "Primitivo: tipo nombre = valor;   |   Sin asignación: tipo nombre;   |   Array: tipo[] nombre = {valor1,valor2,...};   |   Objeto: object nombre = new object( ... );",
+        ejemplo: "int edad = 25;",
       },
       {
         title: "Delete Address",
         description:
-          "Eliminar una variable, array u objeto completo por su dirección de memoria.",
+          "Elimina la variable, array u objeto completo identificado por su dirección de memoria. Este comando es útil para limpiar o reasignar recursos en la simulación.",
         estructura: "delete address <direccion>",
         ejemplo: "delete address 4x001",
       },
       {
         title: "Clear Memory",
-        description: "Borrar completamente la memoria RAM simulada.",
+        description:
+          "Borra por completo el contenido de la memoria simulada, reiniciando todos los registros, contadores y nombres globales. Útil para comenzar de cero en una nueva sesión.",
         estructura: "clear memory",
         ejemplo: "clear memory",
       },
       {
         title: "Convert Type",
-        description: "Convertir una variable primitiva a otro tipo compatible.",
+        description:
+          "Convierte una variable primitiva a otro tipo compatible. Este comando se asegura de que la conversión sea segura (por ejemplo, de int a long) y evita pérdida de datos. Se especifica la dirección de la variable y el nuevo tipo deseado.",
         estructura: "convert address <direccion> to <nuevotipo>",
         ejemplo: "convert address 4x001 to long",
       },
       {
         title: "Size Address",
         description:
-          "Mostrar el tamaño en memoria (bits o bytes) de una variable, array u objeto.",
+          "Muestra el tamaño en memoria (expresado en bits o bytes) que ocupa la variable, array u objeto en una dirección específica. Esto ayuda a visualizar el uso de recursos de la simulación.",
         estructura: "size address <direccion>",
         ejemplo: "size address 5x002",
       },
       {
-        title: "update Value",
-        description: "Actualizar el valor de una variable o array existente.",
+        title: "Update Value",
+        description:
+          "Permite actualizar el valor almacenado en una dirección de memoria. Es ideal para cambiar el contenido de una variable o un array ya declarado. El comando interpreta el nuevo valor y actualiza la estructura correspondiente.",
         estructura: "update address <direccion> value <nuevovalor>",
         ejemplo: "update address 4x003 value 99",
       },
+      {
+        title: "Address Of",
+        description:
+          "Retorna la dirección de memoria de una variable especificada por su nombre. Es muy útil para encontrar rápidamente dónde está almacenado un dato en la simulación.",
+        estructura: "address of <nombre_variable>",
+        ejemplo: "address of edad",
+      },
+      {
+        title: "Type Address",
+        description:
+          "Muestra el tipo de dato de la variable, array u objeto almacenado en la dirección especificada. Este comando permite verificar qué tipo de dato hay en una dirección determinada.",
+        estructura: "type address <direccion>",
+        ejemplo: "type address 4x001",
+      },
     ],
-  },
+  },  
 };

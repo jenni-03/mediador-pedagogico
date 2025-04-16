@@ -17,6 +17,20 @@ interface Result {
   isSuccess: boolean;
 }
 
+// Función auxiliar para detectar el tipo a partir del primer token del comando.
+const detectarTipo = (cmd: string): string | undefined => {
+  const trimmed = cmd.trim();
+  // Extrae el primer token, ignorando si hay [].
+  const match = trimmed.match(/^([a-zA-Z]+)(\[\])?/i);
+  if (match) {
+    let tipo = match[1].toLowerCase();
+    if (tipo === "object") return "object";
+    if (match[2]) return "array";
+    return tipo;
+  }
+  return undefined;
+};
+
 export function TestCasesModal({
   consolaRef,
   setMemoryState,
@@ -84,8 +98,9 @@ export function TestCasesModal({
 
   const executeTestCases = () => {
     const localResults: Result[] = [];
-    let lastTypeInserted: string | undefined;
+    let lastTypeInserted: string | undefined = undefined;
 
+    // Recorrer cada comando seleccionado
     selected.forEach((index) => {
       const cmd = testCommands[index];
       if (cmd && consolaRef.current) {
@@ -96,15 +111,9 @@ export function TestCasesModal({
             message: result[1],
             isSuccess: result[0],
           });
-          // Detectar tipo insertado si es un comando "insert "
-          if (cmd.trim().startsWith("insert ")) {
-            const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
-            if (match) {
-              lastTypeInserted = match[1].toLowerCase();
-              if (match[2]) lastTypeInserted = "array";
-              if (lastTypeInserted === "object") lastTypeInserted = "object";
-            }
-          }
+          // Usamos detectarTipo para obtener el segmento deseado
+          const tipo = detectarTipo(cmd);
+          if (tipo) lastTypeInserted = tipo;
         }
       }
     });
@@ -114,10 +123,10 @@ export function TestCasesModal({
 
     const printResult = consolaRef.current?.ejecutarPrintMemory();
     if (printResult && printResult[0]) {
+      // Pasamos el nuevo estado de memoria junto con lastTypeInserted.
       setMemoryState(printResult[1] as Record<string, any[]>, lastTypeInserted);
     }
   };
-
   return (
     <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
       <motion.div

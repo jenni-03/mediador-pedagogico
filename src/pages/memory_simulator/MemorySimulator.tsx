@@ -13,14 +13,18 @@ export function MemorySimulator() {
   const [consoleOutput, setConsoleOutput] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState<boolean>(true);
   const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
+  // Por defecto se muestra el segmento "int"
   const [selectedSegment, setSelectedSegment] = useState<string>("int");
 
+  // Nueva versión de la función para detectar el tipo,
+  // sin requerir que empiece con "insert".
   const detectarTipoInsertado = (cmd: string): string | undefined => {
-    const match = cmd.match(/^insert\s+([a-zA-Z]+)(\[\])?/);
+    const trimmed = cmd.trim();
+    // Extrae el primer token: ej. "int", "long", "double", etc.
+    const match = trimmed.match(/^([a-zA-Z]+)(\[\])?/);
     if (match) {
       let tipo = match[1].toLowerCase();
       if (match[2]) tipo = "array";
-      if (tipo === "object") return "object";
       return tipo;
     }
     return undefined;
@@ -31,6 +35,7 @@ export function MemorySimulator() {
     tipoInsertado?: string
   ) => {
     setMemoryState(newState);
+    // Si se detectó un tipo y hay datos en ese segmento, se actualiza el segmento seleccionado
     if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
       setSelectedSegment(tipoInsertado);
     }
@@ -39,14 +44,13 @@ export function MemorySimulator() {
   const handleCommand = (command: string) => {
     try {
       const resultado = consolaRef.current.ejecutarComando(command);
-
       if (!resultado[0]) {
         setConsoleOutput(resultado[1]);
         setIsSuccess(false);
       } else {
         setConsoleOutput(resultado[1]);
         setIsSuccess(true);
-
+        // Detecta el tipo basándose en el primer token del comando
         const tipo = detectarTipoInsertado(command);
         updateMemoryState(resultado[2], tipo);
       }
@@ -56,14 +60,13 @@ export function MemorySimulator() {
     }
   };
 
-  // Simula que se presiona el botón con data-tour="limpiar" al iniciar la página
+  // Simula que se presiona el botón "limpiar" al iniciar la página (para reiniciar el estado)
   useEffect(() => {
     const limpiarBtn = document.querySelector('[data-tour="limpiar"]');
     if (limpiarBtn instanceof HTMLElement) {
       limpiarBtn.click();
     }
   }, []);
-  
 
   return (
     <>
@@ -81,14 +84,12 @@ export function MemorySimulator() {
         />
 
         {/* Contenedor padre para la Consola y el Panel flotante */}
-        <div
-          className="
-            flex flex-col sm:flex-row
-            items-stretch gap-4
-            px-4 sm:px-10 mt-6
-            h-auto sm:h-96   /* En móvil, alto automático; en ≥ sm, altura fija de 24rem */
-          "
-        >
+        <div className="
+          flex flex-col sm:flex-row
+          items-stretch gap-4
+          px-4 sm:px-10 mt-6
+          h-auto sm:h-96
+        ">
           {/* Consola */}
           <div className="w-full sm:w-1/2 h-full">
             <ConsoleComponent
