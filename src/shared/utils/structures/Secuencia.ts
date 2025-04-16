@@ -4,7 +4,6 @@
  * Clase que representa un vector
  */
 export class Secuencia {
-
     // Vector donde se almacena los objetos
     private vector: (number | null)[];
 
@@ -26,7 +25,11 @@ export class Secuencia {
      * @param direccionBase Dirección base de memoria (opcional, por defecto 1000)
      * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4)
      */
-    constructor(n: number, direccionBase: number = 1000, tamanioNodo: number = 4) {
+    constructor(
+        n: number,
+        direccionBase: number = 1000,
+        tamanioNodo: number = 4
+    ) {
         if (n <= 0) {
             this.vector = [];
             this.vectorMemoria = [];
@@ -64,7 +67,9 @@ export class Secuencia {
      */
     eliminarPos(pos: number) {
         if (this.cant === 0) {
-            throw new Error("No se puede eliminar: la estructura está vacía (tamaño actual: 0).");
+            throw new Error(
+                "No se puede eliminar: la estructura está vacía (tamaño actual: 0)."
+            );
         }
 
         if (pos < 0 || pos >= this.cant) {
@@ -111,7 +116,7 @@ export class Secuencia {
     set(i: number, nuevo: number) {
         if (i < 0 || i >= this.cant) {
             throw new Error(
-                `Posición inválida: se intentó acceder a la posición ${i}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`
+                `Posición inválida, no se puede acceder a la posición ${i} porque no está en un rango válido. Primero debe insertar el elemento ${nuevo} en la posición ${i} antes de poder modificarlo. Le recomendamos primero hacer "insertLast(${nuevo});"`
             );
         }
         this.vector[i] = nuevo;
@@ -124,7 +129,7 @@ export class Secuencia {
      */
     esta(elem: number): boolean {
         if (this.vector.includes(elem)) {
-            return true
+            return true;
         }
         throw new Error(`El elemento ${elem} no se encontró en la secuencia`);
     }
@@ -201,6 +206,4 @@ export class Secuencia {
     getVectorMemoria(): number[] {
         return this.vectorMemoria;
     }
-
 }
-

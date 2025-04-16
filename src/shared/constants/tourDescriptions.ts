@@ -151,6 +151,11 @@ export const memoriaDescriptions: TourStep[] = [
     type: "write",
   },
   {
+    type: "info",
+    description:
+      "Este comando sirve para insertar una variable de tipo entera en la memoria, o cualquier tipo de variable.",
+  },
+  {
     id: "inputConsola",
     type: "enter",
   },
