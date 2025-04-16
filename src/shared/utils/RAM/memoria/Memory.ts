@@ -324,8 +324,7 @@ class Memory {
     address: string,
     force: boolean = false
   ): [true, string] | [false, string] {
-    for (const [type, segment] of this.segments.entries()) {
-      console.log(type);
+    for (const [_type, segment] of this.segments.entries()) {
       if (!segment.has(address)) continue;
 
       const entry = segment.get(address)!;

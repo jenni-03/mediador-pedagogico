@@ -8,10 +8,7 @@ import { motion } from "framer-motion";
 interface MemoryScreenProps {
   consolaRef: React.RefObject<Consola>;
   memoryState: Record<string, any[]>;
-  setMemoryState: (
-    newState: Record<string, any[]>,
-    typeInserted?: string
-  ) => void;
+  setMemoryState: (newState: Record<string, any[]>, typeInserted?: string) => void;
   selectedSegment: string;
   setSelectedSegment: (segment: string) => void;
 }
@@ -34,29 +31,77 @@ export function MemoryScreen({
   };
 
   return (
-    <div className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative">
-      <div className="w-full bg-[#1A1A1A] border border-[#2E2E2E] rounded-3xl shadow-xl shadow-black/50 flex flex-col max-h-[85vh] overflow-visible transition-all duration-300">
+    <div className="
+      w-full flex flex-col items-center
+      px-4 sm:px-6 xl:px-10 2xl:px-20
+      max-w-[1800px] mx-auto
+      mt-4 sm:mt-6
+      relative
+    ">
+      <div className="
+        w-full
+        bg-[#1A1A1A]
+        border border-[#2E2E2E]
+        rounded-3xl
+        shadow-xl shadow-black/50
+        flex flex-col
+        max-h-[85vh]
+        overflow-visible
+        transition-all duration-300
+      ">
         {/* Título principal */}
-        <div className="sticky top-0 left-0 w-full bg-[#1A1A1A] p-4 z-20 border-b border-[#2E2E2E] flex flex-col items-center rounded-t-3xl shadow">
-          <h3 className="text-[#E0E0E0] text-2xl font-bold tracking-wider text-center">
-            SEGMENTO DE MEMORIA: {selectedSegment.toUpperCase()}
+        <div className="
+          sticky top-0 left-0 w-full
+          bg-[#1A1A1A]
+          p-4 z-20
+          border-b border-[#2E2E2E]
+          flex flex-col items-center
+          rounded-t-3xl
+          shadow
+        ">
+          <h3 className="
+            text-[#E0E0E0]
+            text-2xl font-bold tracking-wider
+            text-center
+            flex items-center gap-2
+          ">
+            <span>SEGMENTO DE MEMORIA:</span>
+            <span className="text-[#D72638]">
+              {selectedSegment.toUpperCase()}
+            </span>
           </h3>
 
           {/* Segment buttons */}
-          <div className="flex flex-wrap justify-center sm:justify-between items-center gap-3 sm:gap-4 w-full max-w-5xl mt-3">
-            {/*Limpiar memoria */}
+          <div className="
+            flex flex-wrap
+            justify-center sm:justify-between
+            items-center
+            gap-3 sm:gap-4
+            w-full max-w-5xl
+            mt-3
+          ">
+            {/* Limpiar memoria */}
             <motion.button
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 300 }}
               onClick={() => {
-                const result =
-                  consolaRef.current?.ejecutarComando("clear memory");
+                const result = consolaRef.current?.ejecutarComando("clear memory");
                 if (result && result[0]) {
                   handleUpdateMemory(result[2]);
                 }
               }}
-              className="px-5 py-2 text-sm font-bold uppercase text-[#D72638] border border-[#D72638] rounded-full hover:bg-[#2E2E2E] transition-colors duration-200 flex items-center gap-2"
+              className="
+                px-5 py-2
+                text-sm font-bold uppercase
+                text-[#D72638]
+                border border-[#D72638]
+                rounded-full
+                hover:bg-[#2E2E2E]
+                transition-colors duration-200
+                flex items-center gap-2
+                shadow-sm
+              "
               data-tour="limpiar"
             >
               🧹 <span>Limpiar Memoria</span>
@@ -64,23 +109,35 @@ export function MemoryScreen({
 
             {/* Buscador de memoria */}
             <div
-              className="flex items-center flex-1 min-w-[180px] bg-[#262626] border border-[#2E2E2E] rounded-full px-4 py-2 shadow-sm"
+              className="
+                flex items-center flex-1 min-w-[180px]
+                bg-[#262626]
+                border border-[#2E2E2E]
+                rounded-full
+                px-4 py-2
+                shadow-sm
+              "
               data-tour="buscador"
             >
               <FaSearch className="text-[#A0A0A0] mr-2" />
               <input
                 type="text"
                 placeholder="Buscar dirección..."
-                className="w-full bg-transparent text-sm text-[#E0E0E0] placeholder-[#A0A0A0] outline-none"
+                className="
+                  w-full
+                  bg-transparent
+                  text-sm text-[#E0E0E0]
+                  placeholder-[#A0A0A0]
+                  outline-none
+                "
                 value={searchTerm}
                 onChange={(e) => {
                   const val = e.target.value;
                   setSearchTerm(val);
 
+                  // Detección de prefijo (mapeo)
                   if (val.length >= 2) {
                     const prefix = val.slice(0, 2).toLowerCase();
-
-                    // Declaramos el objeto con Record<string, string>
                     const mapping: Record<string, string> = {
                       "0x": "boolean",
                       "1x": "char",
@@ -109,7 +166,17 @@ export function MemoryScreen({
               whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 300 }}
               onClick={() => setShowModal(true)}
-              className="px-5 py-2 text-sm font-bold uppercase text-[#D72638] border border-[#D72638] rounded-full hover:bg-[#2E2E2E] transition-colors duration-200 flex items-center gap-2"
+              className="
+                px-5 py-2
+                text-sm font-bold uppercase
+                text-[#D72638]
+                border border-[#D72638]
+                rounded-full
+                hover:bg-[#2E2E2E]
+                transition-colors duration-200
+                flex items-center gap-2
+                shadow-sm
+              "
               data-tour="casosPrueba"
             >
               🧪 <span>Casos de Prueba</span>
@@ -119,7 +186,16 @@ export function MemoryScreen({
 
         {/* Área de visualización de variables */}
         <div
-          className="w-full flex-1 min-h-0 overflow-y-auto px-2 pt-4 pb-28 scrollbar-thin scrollbar-thumb-[#D72638] scrollbar-track-[#2E2E2E]"
+          className="
+            w-full
+            flex-1
+            min-h-0
+            overflow-y-auto
+            px-2 pt-4 pb-28
+            scrollbar-thin
+            scrollbar-thumb-[#D72638]
+            scrollbar-track-[#2E2E2E]
+          "
           data-tour="visualizacionVariables"
         >
           <MemoryDisplay
@@ -133,7 +209,14 @@ export function MemoryScreen({
 
         {/* Barra de segmentos */}
         <div
-          className="w-full bg-[#1A1A1A] border-t border-[#2E2E2E] shadow-inner rounded-b-3xl relative z-10"
+          className="
+            w-full
+            bg-[#1A1A1A]
+            border-t border-[#2E2E2E]
+            shadow-inner
+            rounded-b-3xl
+            relative z-10
+          "
           data-tour="segment-buttons"
         >
           <div className="w-full px-2 py-4 flex flex-wrap justify-center gap-3">
@@ -148,40 +231,62 @@ export function MemoryScreen({
               "double",
               "string",
             ].map((seg) => (
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.05 }}
                 key={seg}
                 onClick={() => setSelectedSegment(seg)}
-                className={`px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
-                  rounded-full border transition-all duration-300
+                className={`
+                  px-4 py-2
+                  text-xs sm:text-sm
+                  font-semibold uppercase tracking-wide
+                  rounded-full border
+                  transition-all duration-300
+                  shadow-sm
                   ${
                     selectedSegment === seg
                       ? "bg-[#D72638]/20 border-[#D72638] text-[#D72638] shadow"
                       : "bg-[#262626] border-[#2E2E2E] text-[#A0A0A0] hover:bg-[#333] hover:text-[#E0E0E0]"
-                  }`}
+                  }
+                `}
               >
                 {seg}
-              </button>
+              </motion.button>
             ))}
 
-            <span className="mx-3 hidden sm:inline-block text-[#444] font-bold select-none">
+            <span className="
+              mx-3
+              hidden sm:inline-block
+              text-[#444]
+              font-bold
+              select-none
+            ">
               |
             </span>
 
             {["array", "object"].map((seg) => (
-              <button
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.05 }}
                 key={seg}
                 onClick={() => setSelectedSegment(seg)}
                 data-tour="botonArray"
-                className={`px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide
-                  rounded-full border transition-all duration-300
+                className={`
+                  px-4 py-2
+                  text-xs sm:text-sm
+                  font-semibold uppercase tracking-wide
+                  rounded-full border
+                  transition-all duration-300
+                  shadow-sm
                   ${
                     selectedSegment === seg
                       ? "bg-[#D72638]/20 border-[#D72638] text-[#D72638] shadow"
                       : "bg-[#262626] border-[#2E2E2E] text-[#A0A0A0] hover:bg-[#333] hover:text-[#E0E0E0]"
-                  }`}
+                  }
+                `}
               >
                 {seg}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>

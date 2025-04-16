@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ConsoleComponent } from "./components/molecules/ConsoleComponent";
 import { MemoryScreen } from "./components/molecules/MemoryScreen";
 import { TitleComponent } from "./components/atoms/TitleComponent";
@@ -56,6 +56,15 @@ export function MemorySimulator() {
     }
   };
 
+  // Simula que se presiona el botón con data-tour="limpiar" al iniciar la página
+  useEffect(() => {
+    const limpiarBtn = document.querySelector('[data-tour="limpiar"]');
+    if (limpiarBtn instanceof HTMLElement) {
+      limpiarBtn.click();
+    }
+  }, []);
+  
+
   return (
     <>
       <Header />
@@ -73,16 +82,13 @@ export function MemorySimulator() {
 
         {/* Contenedor padre para la Consola y el Panel flotante */}
         <div
-  className="
-    flex
-    flex-col sm:flex-row
-    items-stretch       /* Para que hijos se estiren verticalmente */
-    gap-4
-    px-4 sm:px-10
-    mt-6
-    h-96                /* ¡Fijamos una altura de ejemplo! */
-  "
->
+          className="
+            flex flex-col sm:flex-row
+            items-stretch gap-4
+            px-4 sm:px-10 mt-6
+            h-auto sm:h-96   /* En móvil, alto automático; en ≥ sm, altura fija de 24rem */
+          "
+        >
           {/* Consola */}
           <div className="w-full sm:w-1/2 h-full">
             <ConsoleComponent
