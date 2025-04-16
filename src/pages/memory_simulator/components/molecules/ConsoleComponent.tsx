@@ -19,75 +19,56 @@ export function ConsoleComponent({
   const consoleRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Autoscroll para siempre mostrar el último mensaje
+  // Auto‐scroll al último mensaje
   useEffect(() => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
   }, [history]);
 
-  // Actualiza la respuesta del último comando en el historial
+  // Actualiza la respuesta del último comando
   useEffect(() => {
-    if (history.length > 0) {
-      setHistory((prevHistory) => {
-        const newHistory = [...prevHistory];
-        newHistory[newHistory.length - 1].response = outputMessage;
-        newHistory[newHistory.length - 1].success = isSuccess;
-        return newHistory;
-      });
-    }
+    if (!history.length) return;
+    setHistory((prev) => {
+      const copy = [...prev];
+      copy[copy.length - 1].response = outputMessage;
+      copy[copy.length - 1].success = isSuccess;
+      return copy;
+    });
   }, [outputMessage, isSuccess]);
 
   const executeCommand = (cmd: string) => {
-    if (
-      cmd.trim().toLowerCase() === "clear" ||
-      cmd.trim().toLowerCase() === "cls"
-    ) {
+    if (["clear", "cls"].includes(cmd.trim().toLowerCase())) {
       setHistory([]);
       setInput("");
       return;
     }
-    const commandText = `$ ${cmd}`;
     setHistory((prev) => [
       ...prev,
-      { command: commandText, response: "", success: true },
+      { command: `$ ${cmd}`, response: "", success: true },
     ]);
-    onCommand(cmd.trim());
+    onCommand(cmd);
     setInput("");
   };
 
-  // Funciones para moverse en el historial
+  // Historial con flechas
   const moveHistoryUp = () => {
-    if (history.length > 0) {
-      const newIndex =
-        historyIndex === -1
-          ? history.length - 1
-          : Math.max(0, historyIndex - 1);
-      setHistoryIndex(newIndex);
-      setInput(history[newIndex].command.replace("$ ", ""));
-    }
+    if (!history.length) return;
+    const idx =
+      historyIndex === -1 ? history.length - 1 : Math.max(0, historyIndex - 1);
+    setHistoryIndex(idx);
+    setInput(history[idx].command.replace(/^\$\s*/, ""));
   };
-
   const moveHistoryDown = () => {
-    if (history.length > 0) {
-      const newIndex =
-        historyIndex === history.length - 1 ? -1 : historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setInput(
-        newIndex === -1 ? "" : history[newIndex].command.replace("$ ", "")
-      );
-    }
+    if (!history.length) return;
+    const idx = historyIndex === history.length - 1 ? -1 : historyIndex + 1;
+    setHistoryIndex(idx);
+    setInput(idx === -1 ? "" : history[idx].command.replace(/^\$\s*/, ""));
   };
-
-  const sendCommand = () => {
-    if (input.trim() !== "") {
-      executeCommand(input);
-    }
-  };
+  const sendCommand = () => input.trim() && executeCommand(input);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Para PC: se usan las teclas
-    if (e.key === "Enter" && input.trim() !== "") {
+    if (e.key === "Enter" && input.trim()) {
       e.preventDefault();
       executeCommand(input);
     } else if (e.key === "ArrowUp") {
@@ -99,71 +80,78 @@ export function ConsoleComponent({
     }
   };
 
-  // Ejecuta comando si se dispara Enter externamente (desde el tour)
+  // Para triggers externos tipo tour
   useEffect(() => {
-    const inputEl = inputRef.current;
-    if (!inputEl) return;
-    const handleManualEnter = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && inputEl.value.trim() !== "") {
+    const el = inputRef.current;
+    if (!el) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && el.value.trim()) {
         e.preventDefault();
-        executeCommand(inputEl.value);
-        inputEl.value = "";
+        executeCommand(el.value);
       }
     };
-    inputEl.addEventListener("keydown", handleManualEnter);
-    return () => inputEl.removeEventListener("keydown", handleManualEnter);
+    el.addEventListener("keydown", onKey);
+    return () => el.removeEventListener("keydown", onKey);
   }, []);
 
-  const focusInput = () => {
-    inputRef.current?.focus();
-  };
+  // Renderiza respuesta con saltos de línea y flechas
+  const renderResponse = (resp: string, success: boolean) =>
+    resp.split("\n").map((line, i) => {
+      const colorClass = success ? "text-[#a8ffdd]" : "text-red-500";
+      if (line.startsWith("->")) {
+        return (
+          <div key={i} className={`flex items-start gap-1 ${colorClass}`}>
+            <span>➡️</span>
+            <span>{line.slice(2).trim()}</span>
+          </div>
+        );
+      }
+      return (
+        <div key={i} className={colorClass}>
+          {line}
+        </div>
+      );
+    });
+
+  const focusInput = () => inputRef.current?.focus();
 
   return (
-    // En móvil, la consola ocupa 20rem; en ≥sm, se ajusta a la altura del contenedor padre.
     <div className="w-full h-80 sm:h-full flex flex-col">
-      {/* Caja de la consola con barra superior */}
       <div
         className="
           flex flex-col w-full h-full
-          rounded-2xl
-          shadow-xl shadow-black/40
+          rounded-2xl shadow-xl shadow-black/40
           bg-gradient-to-tr from-[#0F0F0F] to-[#262626]
           border border-[#3A3A3A]
           hover:ring-1 hover:ring-[#D72638]/70
           transition-all
         "
       >
-        {/* Barra Superior */}
+        {/* Header */}
         <div className="flex items-center justify-between bg-[#1F1F1F]/90 border-b border-[#2E2E2E] px-4 py-2 rounded-t-2xl">
           <span className="text-sm uppercase font-bold tracking-wider text-gray-300">
             Consola
           </span>
         </div>
 
-        {/* Área de historial (scrollable) */}
+        {/* Historial */}
         <div
           ref={consoleRef}
           className="flex-1 min-h-0 overflow-y-auto p-4 text-sm"
           onClick={focusInput}
           data-tour="consola"
         >
-          {history.map((entry, index) => (
-            <div key={index} className="mb-1">
-              {/* Comando ingresado */}
+          {history.map((entry, idx) => (
+            <div key={idx} className="mb-1">
               <div className="text-[#00ff98] font-medium">{entry.command}</div>
-              {/* Respuesta */}
               {entry.response && (
-                <div
-                  className={entry.success ? "text-[#a8ffdd]" : "text-red-500"}
-                >
-                  → {entry.response}
-                </div>
+                <div>{renderResponse(entry.response, entry.success)}</div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Área del input */}
+        {/* Input */}
         <div className="flex flex-col sm:flex-row items-center px-4 py-2 border-t border-[#2E2E2E] bg-[#1F1F1F]/80 rounded-b-2xl">
           <span className="text-[#00ff98] font-semibold mr-2 sm:mr-4">$</span>
           <input
@@ -176,7 +164,7 @@ export function ConsoleComponent({
             autoFocus
             spellCheck={false}
           />
-          {/* Botones para móviles */}
+          {/* Botones en móvil */}
           <div className="flex items-center mt-2 sm:hidden gap-2">
             <button
               onClick={moveHistoryUp}

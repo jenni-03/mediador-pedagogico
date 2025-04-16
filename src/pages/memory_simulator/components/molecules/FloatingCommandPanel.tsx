@@ -1,9 +1,36 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { commandsData } from "../../../../shared/constants/commandsData";
 import { CommandProps } from "../../../../types";
-import { motion, AnimatePresence } from "framer-motion";
 
+// Lista de comandos
 const comandos: CommandProps[] = commandsData["memoria"].buttons;
+
+/**
+ * Renderiza un bloque de texto dividido por '\n':
+ * - Si la línea comienza con '->', la reemplaza por '➡️ ' + resto de la línea.
+ * - En caso contrario, la muestra tal cual.
+ */
+function renderWithLineBreaks(text: string) {
+  return text.split("\n").map((line, idx) => {
+    if (line.startsWith("->")) {
+      // Línea con flecha
+      return (
+        <p key={idx} className="flex items-start gap-1">
+          <span className="mt-0.5">➡️</span>
+          <span>{line.slice(2).trim()}</span>
+        </p>
+      );
+    } else {
+      // Línea normal
+      return (
+        <p key={idx} className="mt-1">
+          {line}
+        </p>
+      );
+    }
+  });
+}
 
 export function FloatingCommandPanel() {
   const [selected, setSelected] = useState<CommandProps | null>(null);
@@ -17,14 +44,13 @@ export function FloatingCommandPanel() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="
           w-full
-          h-auto           /* En móvil, auto para que no se recorte */
-          sm:h-full        /* A partir de sm, ocupa todo el alto del contenedor padre */
+          h-auto       /* En móvil, auto */
+          sm:h-full    /* En ≥sm, ocupa todo el alto */
           flex
-          justify-center    /* En móvil, centrado */
-          sm:justify-end    /* En sm, alineado a la derecha */
-          mt-4 sm:mt-0      /* Espacio arriba en móvil, 0 en pantallas mayores */
+          justify-center sm:justify-end
+          mt-4 sm:mt-0
           px-4 sm:px-10
-          overflow-visible  /* Deja que el contenido se expanda si hace falta */
+          overflow-visible
         "
       >
         <div
@@ -35,10 +61,9 @@ export function FloatingCommandPanel() {
             bg-[#1F1F1F]
             border border-[#2E2E2E]
             rounded-2xl
-            shadow-2xl
-            shadow-black/40
-            p-4 sm:p-8       /* Menos padding en móvil, más en desktop */
-            overflow-auto     /* Scroll interno si excede en pantallas pequeñas */
+            shadow-2xl shadow-black/40
+            p-4 sm:p-8
+            overflow-auto
           "
           data-tour="comandos"
         >
@@ -57,7 +82,7 @@ export function FloatingCommandPanel() {
 
           {/* Grilla de botones */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            {comandos.map((cmd: CommandProps, idx: number) => (
+            {comandos.map((cmd, idx) => (
               <motion.button
                 key={idx}
                 whileHover={{ scale: 1.05 }}
@@ -108,38 +133,48 @@ export function FloatingCommandPanel() {
               transition={{ duration: 0.3 }}
               className="
                 bg-[#1F1F1F]
+                w-[90%]
+                max-w-md
+                max-h-[80vh]     /* Límite de altura */
+                overflow-y-auto  /* Scroll si excede */
                 p-6 sm:p-8
                 rounded-2xl
                 shadow-2xl
-                w-[90%]
-                max-w-md
                 border border-[#2E2E2E]
               "
             >
-              <h3 className="text-2xl sm:text-3xl font-bold text-[#D72638] mb-4 sm:mb-6 text-center tracking-wide">
+              <h3 className="
+                text-2xl sm:text-3xl
+                font-bold
+                text-[#D72638]
+                mb-4 sm:mb-6
+                text-center
+                tracking-wide
+              ">
                 {selected.title.toUpperCase()}
               </h3>
-              <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-[#CCCCCC] leading-relaxed">
-                <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    🧠 Funcionalidad:
-                  </span>{" "}
-                  {selected.description}
-                </p>
-                <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    📌 Estructura del comando:
-                  </span>{" "}
-                  {selected.estructura}
-                </p>
-                <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    🛠️ Ejemplo de uso:
-                  </span>{" "}
-                  {selected.ejemplo}
-                </p>
+
+              <div className="space-y-6 text-sm sm:text-base text-[#CCCCCC]">
+                {/* Funcionalidad */}
+                <div>
+                  <h4 className="font-semibold text-[#E0E0E0] mb-1">🧠 Funcionalidad:</h4>
+                  {renderWithLineBreaks(selected.description)}
+                </div>
+
+                {/* Estructura */}
+                <div>
+                  <h4 className="font-semibold text-[#E0E0E0] mb-1">📌 Estructura del comando:</h4>
+                  {renderWithLineBreaks(selected.estructura)}
+                </div>
+
+                {/* Ejemplo */}
+                <div>
+                  <h4 className="font-semibold text-[#E0E0E0] mb-1">🛠️ Ejemplo de uso:</h4>
+                  {renderWithLineBreaks(selected.ejemplo)}
+                </div>
               </div>
-              <div className="text-center mt-6 sm:mt-8">
+
+              <div className="text-center mt-8">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
