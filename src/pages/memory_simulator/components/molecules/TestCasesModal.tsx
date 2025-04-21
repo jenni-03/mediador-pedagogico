@@ -155,6 +155,7 @@ export function TestCasesModal({
             <div className="flex gap-2 mb-4">
               <input
                 type="text"
+                data-tour="inputCasos"
                 placeholder="Escribe un comando..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -173,6 +174,7 @@ export function TestCasesModal({
                   text-sm font-semibold transition
                 "
                 onClick={addCommand}
+                data-tour="botonAñadirCasos"
               >
                 {editingIndex !== null ? "Actualizar" : "Añadir"}
               </motion.button>
@@ -183,17 +185,18 @@ export function TestCasesModal({
               {testCommands.map((cmd, idx) => (
                 <li
                   key={idx}
+                  data-tour={`comandoCreado.${idx + 1}`} 
                   className={`
-                    flex items-center gap-2
-                    rounded-full px-4 py-2 text-sm
-                    cursor-pointer border
-                    transition-all duration-200
-                    ${
-                      selected.has(idx)
-                        ? "bg-[#2A2A2A] ring-1 ring-[#D72638]/50 border-[#D72638]"
-                        : "bg-[#262626] border-[#2E2E2E]"
-                    }
-                  `}
+        flex items-center gap-2
+        rounded-full px-4 py-2 text-sm
+        cursor-pointer border
+        transition-all duration-200
+        ${
+          selected.has(idx)
+            ? "bg-[#2A2A2A] ring-1 ring-[#D72638]/50 border-[#D72638]"
+            : "bg-[#262626] border-[#2E2E2E]"
+        }
+      `}
                   onClick={() => toggleSelect(idx)}
                 >
                   <span className="truncate flex-1 text-[#D72638] font-medium">
@@ -207,12 +210,13 @@ export function TestCasesModal({
                       setEditingIndex(idx);
                     }}
                     className="
-                      text-white hover:text-[#D72638]
-                      text-xs px-2 py-1
-                      bg-[#333] border border-[#2E2E2E]
-                      rounded-md
-                    "
+          text-white hover:text-[#D72638]
+          text-xs px-2 py-1
+          bg-[#333] border border-[#2E2E2E]
+          rounded-md
+        "
                     title="Editar"
+                    data-tour="lapiz"
                   >
                     ✏️
                   </motion.button>
@@ -234,12 +238,13 @@ export function TestCasesModal({
                       }
                     }}
                     className="
-                      text-white hover:text-[#D72638]
-                      text-xs px-2 py-1
-                      bg-[#333] border border-[#2E2E2E]
-                      rounded-md
-                    "
+          text-white hover:text-[#D72638]
+          text-xs px-2 py-1
+          bg-[#333] border border-[#2E2E2E]
+          rounded-md
+        "
                     title="Eliminar"
+                    data-tour="equis"
                   >
                     ❌
                   </motion.button>
@@ -262,6 +267,7 @@ export function TestCasesModal({
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={loadPredefinedCases}
+                data-tour="botonCargarPruebas"
                 className="
                   bg-[#333] text-[#D72638]
                   hover:bg-[#444] px-4 py-2
@@ -273,6 +279,7 @@ export function TestCasesModal({
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={selectAll}
+                data-tour="botonSeleccionarPruebas"
                 className="
                   bg-[#333] text-purple-400
                   hover:bg-[#444] px-4 py-2
@@ -285,6 +292,7 @@ export function TestCasesModal({
                 whileTap={{ scale: 0.95 }}
                 onClick={executeTestCases}
                 disabled={selected.size === 0}
+                data-tour="botonEjecutarPruebas"
                 className="
                   bg-[#D72638] hover:bg-[#c01f30]
                   text-white px-4 py-2
@@ -304,6 +312,7 @@ export function TestCasesModal({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              data-tour="resultadosComandos"
               className="
                 mt-4 space-y-3
                 max-h-60
@@ -353,6 +362,7 @@ export function TestCasesModal({
             <div className="text-center mt-5">
               <motion.button
                 whileTap={{ scale: 0.95 }}
+                data-tour="cerrarModalPruebas"
                 onClick={closeModal}
                 className="
                   bg-[#333] hover:bg-[#444]

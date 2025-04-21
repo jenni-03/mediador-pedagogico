@@ -184,6 +184,24 @@ const TourTooltip: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightStyle, isInfo, viewportDimensions]);
 
+  // Función para convertir **negrilla** en <strong>
+  const parseDescription = (text: string): JSX.Element[] => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong
+            key={index}
+            className="font-semibold text-[#F4F4F5] underline decoration-[#ff0040]/40 underline-offset-2"
+          >
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   const tooltipContent = (
     <div
       ref={tooltipRef}
@@ -206,21 +224,21 @@ const TourTooltip: React.FC<Props> = ({
             }
       }
       className={`z-[11000] bg-[#121212] p-5 rounded-xl border-2 
-        max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center 
-        transition-all duration-500 ease-out
-        ${
-          isInfo
-            ? "border-[#00ff00] shadow-[0_0_20px_#00ff00]"
-            : "border-[#ff0040] shadow-[0_0_20px_#ff0040]"
-        }`}
+      max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center 
+      transition-all duration-500 ease-out
+      ${
+        isInfo
+          ? "border-[#00ff00] shadow-[0_0_20px_#00ff00]"
+          : "border-[#ff0040] shadow-[0_0_20px_#ff0040]"
+      }`}
     >
       {/* Botón de cierre */}
       <button
         onClick={onClose}
         className="absolute top-2 right-3 w-8 h-8 flex items-center justify-center 
-          rounded-full bg-[#1f1f1f] text-[#ff0040] text-xl font-bold 
-          hover:bg-[#ff0040] hover:text-black transition-all duration-200 
-          shadow-[0_0_6px_#ff0040] focus:outline-none"
+        rounded-full bg-[#1f1f1f] text-[#ff0040] text-xl font-bold 
+        hover:bg-[#ff0040] hover:text-black transition-all duration-200 
+        shadow-[0_0_6px_#ff0040] focus:outline-none"
         aria-label="Cerrar"
       >
         ×
@@ -231,7 +249,7 @@ const TourTooltip: React.FC<Props> = ({
         <span className="text-xl animate-bounce">{isInfo ? "💡" : "🤖"}</span>
         <h2
           className={`text-lg font-bold tracking-widest drop-shadow-[0_0_4px_#ff0040] 
-          ${isInfo ? "text-[#00ff00]" : "text-[#ff0040]"}`}
+        ${isInfo ? "text-[#00ff00]" : "text-[#ff0040]"}`}
         >
           {isInfo ? "¡Descubre!" : "ASISTENTE"}
         </h2>
@@ -239,7 +257,7 @@ const TourTooltip: React.FC<Props> = ({
 
       {/* Descripción */}
       <p className="text-gray-200 font-medium text-sm mb-4 leading-relaxed drop-shadow-sm">
-        {description}
+        {parseDescription(description)}
       </p>
 
       {/* Navegación */}

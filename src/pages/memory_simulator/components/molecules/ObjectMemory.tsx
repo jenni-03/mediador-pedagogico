@@ -96,6 +96,7 @@ export function ObjectMemory({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedEntry(entry)}
+                data-tour={`divObjeto.${index + 1}`}
                 className="
                   relative bg-gradient-to-br from-[#262626] to-[#1F1F1F]
                   p-5 rounded-2xl border border-[#2E2E2E]
@@ -110,6 +111,7 @@ export function ObjectMemory({
                     setChangeTypeTarget(entry.address);
                   }}
                   title="Cambiar tipo de dato"
+                  data-tour={`engranajeObjeto.${index + 1}`}
                   className="
                     absolute top-3 left-3 flex items-center gap-1
                     text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
@@ -125,6 +127,7 @@ export function ObjectMemory({
                     e.stopPropagation();
                     setDeleteTarget(entry.address);
                   }}
+                  data-tour={`eliminarObjeto.${index + 1}`}
                   title="Eliminar objeto"
                   className="
                     absolute top-3 right-3 flex items-center gap-1

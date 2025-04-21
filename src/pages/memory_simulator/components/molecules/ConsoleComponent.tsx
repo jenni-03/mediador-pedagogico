@@ -152,7 +152,9 @@ export function ConsoleComponent({
         </div>
 
         {/* Input */}
-        <div className="flex flex-col sm:flex-row items-center px-4 py-2 border-t border-[#2E2E2E] bg-[#1F1F1F]/80 rounded-b-2xl">
+        <div className="flex flex-col sm:flex-row items-center px-4 py-2 border-t border-[#2E2E2E] bg-[#1F1F1F]/80 rounded-b-2xl"
+        data-tour="divInputConsola"
+        >
           <span className="text-[#00ff98] font-semibold mr-2 sm:mr-4">$</span>
           <input
             ref={inputRef}
@@ -163,6 +165,7 @@ export function ConsoleComponent({
             onKeyDown={handleKeyDown}
             autoFocus
             spellCheck={false}
+            data-tour="inputConsola"
           />
           {/* Botones en móvil */}
           <div className="flex items-center mt-2 sm:hidden gap-2">
