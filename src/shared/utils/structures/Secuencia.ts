@@ -45,9 +45,7 @@ export class Secuencia {
         this.tamanioNodo = tamanioNodo;
 
         // Asignar direcciones de memoria a cada posición del vector
-        for (let i = 0; i < n; i++) {
-            this.vectorMemoria[i] = this.direccionBase + i * this.tamanioNodo;
-        }
+        this.inicializarDireccionesMemoria();
     }
 
     /**
@@ -88,9 +86,6 @@ export class Secuencia {
      * Método que vacía la secuencia
      */
     vaciar(): void {
-        // for (let i = 0; i < this.cant; i++) {
-        //     this.vector[i] = null;
-        // }
         this.cant = 0;
         this.vector = [];
     }
@@ -98,7 +93,7 @@ export class Secuencia {
     /**
      * Método que retorna el elemento en la posición indicada
      * @param i Posición del elemento
-     * @returns El elemento de tipo T o null si la posición es inválida.
+     * @returns El elemento indicado o null si la posición es inválida.
      */
     get(i: number): number | null {
         if (i < 0 || i >= this.cant) {
@@ -132,15 +127,6 @@ export class Secuencia {
             return true;
         }
         throw new Error(`El elemento ${elem} no se encontró en la secuencia`);
-    }
-
-    /**
-     * Método que retorna el índice de un elemento dentro de la secuencia.
-     * @param elem Elemento a ubicar.
-     * @returns El índice si se encuentra o -1 en caso contrario.
-     */
-    getIndice(elem: number): number {
-        return this.vector.indexOf(elem);
     }
 
     /**
@@ -206,4 +192,15 @@ export class Secuencia {
     getVectorMemoria(): number[] {
         return this.vectorMemoria;
     }
+
+    /**
+     * Método auxiliar que inicializa las direcciones de memoria para cada elemento del vector
+     */
+    private inicializarDireccionesMemoria() {
+        const n = this.vectorMemoria.length;
+        for (let i = 0; i < n; i++) {
+            this.vectorMemoria[i] = this.direccionBase + i * this.tamanioNodo;
+        }
+    }
+
 }

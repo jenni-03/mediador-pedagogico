@@ -17,7 +17,6 @@ export function Simulator<T extends string>({
     error,
     children,
 }: SimulatorProps<T>) {
-
     //temporal
     // const structureN = "secuencia";
     // Estado para el manejo de la visualización del código
@@ -70,7 +69,6 @@ export function Simulator<T extends string>({
         setExecutionCode(
             operations_code[action as keyof typeof operations_code]
         );
-
 
         // Informa los casos en los que se debe de mostrar la asignación de memoria
         if (action === "create" || action === "push") {

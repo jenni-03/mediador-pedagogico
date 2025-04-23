@@ -740,44 +740,102 @@ export const commandsData: Record<string, any> = {
   memoria: {
     buttons: [
       {
-        title: "Insert",
+        title: "Declarar",
         description:
-          "Insertar una variable primitiva, un array o un objeto en memoria.",
-        estructura: "insert tipo nombre = valor;",
-        ejemplo: "insert int edad = 25;",
+          "Permite declarar variables primitivas, arrays u objetos en la memoria de forma natural, al estilo de Java. Se debe respetar la sintaxis estricta, con exactamente un espacio entre cada token.\n" +
+          "->Las declaraciones pueden incluir asignación (por ejemplo, 'int edad = 25;') o no (por ejemplo, 'int edad;'), en cuyo caso se asigna un valor por defecto según el tipo.\n" +
+          "->Para arrays se utiliza la sintaxis: 'tipo[] nombre = {valor1,valor2,...};'.\n" +
+          "->Para objetos: 'object nombre = new object( ... );'.",
+        estructura:
+          "Primitivo: tipo nombre = valor;   |   Sin asignación: tipo nombre;   |   Array: tipo[] nombre = {valor1,valor2,...};   |   Objeto: object nombre = new object( ... );",
+        ejemplo:
+          "-> int edad = 25;                            (Primitivo con asignación)\n" +
+          "-> int edad;                                (Primitivo sin asignación, valor por defecto)\n" +
+          "-> float temperatura = 36.7;                (Primitivo float)\n" +
+          "-> int[] edades = {20, 30, 40, 50};         (Array de enteros)\n" +
+          "-> string[] nombres = {\"Ana\", \"Luis\"};    (Array de Strings)\n" +
+          "-> object persona = new object( int edad = 23; float deudas[] = {20, 30, 40, 50};);\n"
       },
+      
       {
         title: "Delete Address",
         description:
-          "Eliminar una variable, array u objeto completo por su dirección de memoria.",
+          "Elimina la variable, array u objeto completo identificado por su dirección de memoria. Este comando es útil para limpiar o reasignar recursos en la simulación.",
         estructura: "delete address <direccion>",
         ejemplo: "delete address 4x001",
       },
       {
         title: "Clear Memory",
-        description: "Borrar completamente la memoria RAM simulada.",
+        description:
+          "Borra por completo el contenido de la memoria simulada, reiniciando todos los registros, contadores y nombres globales.\n" +
+          "Útil para comenzar de cero en una nueva sesión.",
         estructura: "clear memory",
         ejemplo: "clear memory",
       },
       {
         title: "Convert Type",
-        description: "Convertir una variable primitiva a otro tipo compatible.",
+        description:
+          "Convierte una variable primitiva a otro tipo compatible. Este comando se asegura de que la conversión sea segura (por ejemplo, de int a long) y evita pérdida de datos.\n" +
+          "Se especifica la dirección de la variable y el nuevo tipo deseado.",
         estructura: "convert address <direccion> to <nuevotipo>",
         ejemplo: "convert address 4x001 to long",
       },
       {
         title: "Size Address",
         description:
-          "Mostrar el tamaño en memoria (bits o bytes) de una variable, array u objeto.",
+          "Muestra el tamaño en memoria (expresado en bits o bytes) que ocupa la variable, array u objeto en una dirección específica.\n" +
+          "Esto ayuda a visualizar el uso de recursos de la simulación.",
         estructura: "size address <direccion>",
         ejemplo: "size address 5x002",
       },
       {
-        title: "update Value",
-        description: "Actualizar el valor de una variable o array existente.",
+        title: "Update Value",
+        description:
+          "Permite modificar el valor almacenado en una dirección de memoria.\n" +
+          "Ideal para cambiar el contenido de una variable o un array ya declarado.\n" +
+          "El comando interpreta el nuevo valor y actualiza la estructura correspondiente.",
         estructura: "update address <direccion> value <nuevovalor>",
         ejemplo: "update address 4x003 value 99",
       },
+      {
+        title: "Address Of",
+        description:
+          "Retorna la dirección de memoria de una variable especificada por su nombre.\n" +
+          "Muy útil para encontrar rápidamente dónde se almacena un dato en la simulación.",
+        estructura: "address of <nombre_variable>",
+        ejemplo: "address of edad",
+      },
+      {
+        title: "Type Address",
+        description:
+          "Muestra el tipo de dato de la variable, array u objeto almacenado en la dirección especificada.\n" +
+          "Este comando permite verificar qué tipo de dato hay en una dirección determinada.",
+        estructura: "type address <direccion>",
+        ejemplo: "type address 4x001",
+      },
+      {
+        title: "Help",
+        description:
+          "Muestra una lista de todos los comandos disponibles y sus respectivas sintaxis.Es la opción ideal para recordar rápidamente cómo usar el simulador.\n" +
+          "Comandos:\n" +
+          "->Declarar: Permite definir variables, arrays u objetos (e.g., int edad = 25;).\n" +
+          "->Delete Address: Elimina la entrada en memoria por su dirección.\n" +
+          "->Clear Memory: Limpia toda la memoria simulada.\n" +
+          "->Convert Type: Cambia el tipo de una variable primitiva.\n" +
+          "->Size Address: Muestra el tamaño en memoria de la entrada.\n" +
+          "->Update Value: Actualiza el valor de una dirección dada.\n" +
+          "->Address Of: Obtiene la dirección de una variable por su nombre.\n" +
+          "->Type Address: Muestra el tipo del valor en la dirección especificada.",
+        estructura: "help",
+        ejemplo: "help",
+      },
+      {
+        title: "CLS",
+        description:
+          "Limpia el contenido de la consola.\n", 
+        estructura: "cls",
+        ejemplo: "cls",
+      },
     ],
-  },
+  },  
 };

@@ -1,5 +1,5 @@
 // Reglas de comandos para cada estructura de datos
-    export const commandRules: Record<string, (parts: string[]) => boolean | { valid: boolean; message?: string }> = {    
+export const commandRules: Record<string, (parts: string[]) => boolean | { valid: boolean; message?: string }> = {
     secuencia: (parts) => {
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
@@ -43,7 +43,7 @@
                 return true;
 
             case "get":
-                return parts.length === 2 && !isNaN(Number(parts[1])); 
+                return parts.length === 2 && !isNaN(Number(parts[1]));
 
             case "set":
                 if (parts.length !== 3) {
@@ -163,7 +163,7 @@
                 if (parts.length !== 1 && parts.length !== 2) {
                     return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
                 }
-                if(parts.length === 2) {
+                if (parts.length === 2) {
                     const num = Number(parts[1]);
                     if (isNaN(num)) {
                         return { valid: false, message: "El argumento debe ser un número válido." };
@@ -255,7 +255,7 @@
                 if (parts.length !== 1 && parts.length !== 2) {
                     return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
                 }
-                if(parts.length === 2) {
+                if (parts.length === 2) {
                     const num = Number(parts[1]);
                     if (isNaN(num)) {
                         return { valid: false, message: "El argumento debe ser un número válido." };
@@ -348,7 +348,7 @@
                 if (parts.length !== 1 && parts.length !== 2) {
                     return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
                 }
-                if(parts.length === 2) {
+                if (parts.length === 2) {
                     const num = Number(parts[1]);
                     if (isNaN(num)) {
                         return { valid: false, message: "El argumento debe ser un número válido." };
@@ -440,7 +440,7 @@
                 if (parts.length !== 1 && parts.length !== 2) {
                     return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
                 }
-                if(parts.length === 2) {
+                if (parts.length === 2) {
                     const num = Number(parts[1]);
                     if (isNaN(num)) {
                         return { valid: false, message: "El argumento debe ser un número válido." };
@@ -560,7 +560,7 @@
                     return { valid: false, message: "Debe proporcionar una clave como argumento." };
                 }
                 return true;
-                
+
             case "clean":
             case "values": // Recorrer todos los elementos de la tabla
                 if (parts.length !== 1) {
@@ -600,7 +600,7 @@
         const keyword = parts[0]?.toLowerCase();
         return commandRules.bst(parts) ||
             (keyword === "balance" && parts.length === 2 && !isNaN(Number(parts[1])));
-            // || (keyword === "isbalanced" && parts.length === 1);
+        // || (keyword === "isbalanced" && parts.length === 1);
     },
 
     roji_negro: (parts) => {
@@ -617,7 +617,7 @@
     heap: (parts) => {
         const keyword = parts[0]?.toLowerCase();
         return ["extract_min", "extract_max", "get_min", "get_max"].includes(keyword) && parts.length === 1 ||
-            (["heapify" , "insert", "delete"].includes(keyword) && parts.length === 2 && !isNaN(Number(parts[1]))) ||
+            (["heapify", "insert", "delete"].includes(keyword) && parts.length === 2 && !isNaN(Number(parts[1]))) ||
             keyword === "clean" && parts.length === 1;
     },
 
@@ -636,11 +636,11 @@
                 return false;
         }
     },
-    
+
     arbol_1_2_3: (parts) => {
         return commandRules.arbol_eneario(parts);
-            // case "split":
-            // case "merge":
+        // case "split":
+        // case "merge":
     },
 
     arbol_b: (parts) => {

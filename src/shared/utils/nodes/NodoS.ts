@@ -1,27 +1,29 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { v4 as uuidv4 } from "uuid";
+
 /**
- * Clase que representa un Nodo Doble
+ * Clase que representa un Nodo Simple
  */
-export class NodoD {
+export class NodoS {
+
+    // ID único del nodo
+    private id: string;
 
     // Información almacenada en el nodo
     private valor: number;
 
     // Información del nodo siguiente
-    private siguiente: NodoD | null;
-
-    // Información del nodo anterior
-    private anterior: NodoD | null;
+    private siguiente: NodoS | null;
 
     /**
-     * Constructor de la clase Nodo Doble
+     * Constructor de la clase Nodo Simple
      * @param valor Valor a almacenar en el nodo
      */
-    constructor(valor: number) {
+    constructor(valor: number, id?: string) {
+        this.id = id ?? `node-${uuidv4()}`;
         this.valor = valor;
         this.siguiente = null;
-        this.anterior = null;
     }
 
     /**
@@ -36,16 +38,8 @@ export class NodoD {
      * Método encargado de obtener el nodo siguiente
      * @returns nodo siguiente o null según corresponda
      */
-    public getSiguiente(): NodoD | null {
+    public getSiguiente(): NodoS | null {
         return this.siguiente;
-    }
-
-    /**
-     * Método encargado de obtener el nodo anterior
-     * @returns nodo anterior o null según corresponda
-     */
-    public getAnterior(): NodoD | null {
-        return this.anterior;
     }
 
     /**
@@ -60,15 +54,16 @@ export class NodoD {
      * Método encargado de establecer el nodo siguiente
      * @param nodo Nodo a establecer como siguiente
      */
-    public setSiguiente(nodo: NodoD | null): void {
+    public setSiguiente(nodo: NodoS | null): void {
         this.siguiente = nodo;
     }
 
     /**
-     * Método encargado de establecer el nodo anterior
-     * @param nodo Nodo a establecer como anterior
+     * Método encargado de obtener el ID del nodo
+     * @returns ID del nodo
      */
-    public setAnterior(nodo: NodoD | null): void {
-        this.anterior = nodo;
+    public getId(): string {
+        return this.id;
     }
+
 }

@@ -44,7 +44,6 @@ export function useSequence(structure: Secuencia) {
                 ...prev,
                 toDelete: pos
             }));
-            setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
@@ -58,6 +57,7 @@ export function useSequence(structure: Secuencia) {
                     ...prev,
                     toSearch: element
                 }));
+                setError(null);
             }
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
@@ -74,6 +74,7 @@ export function useSequence(structure: Secuencia) {
                 ...prev,
                 toUpdate: [pos, element]
             }));
+            setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }

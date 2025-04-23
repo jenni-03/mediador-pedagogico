@@ -17,7 +17,7 @@ export function Header() {
     to: d.toConceptos.replace("$estructura", String(d.id)),
   }));
 
-  // Este useEffect se encarga de eliminar el scroll horizontal general
+  // Ocultar scroll horizontal general
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -28,7 +28,9 @@ export function Header() {
       const pageWidth = document.documentElement.scrollWidth;
       const screenWidth = window.innerWidth;
       document.body.style.transform =
-        pageWidth > screenWidth ? `translateX(-${pageWidth - screenWidth}px)` : "none";
+        pageWidth > screenWidth
+          ? `translateX(-${pageWidth - screenWidth}px)`
+          : "none";
     };
 
     fixScroll();
@@ -41,73 +43,149 @@ export function Header() {
     };
   }, []);
 
-  // Opción A: Congela el scroll de la página (body) cuando el menú está abierto
+  // Congela el scroll cuando el menú está abierto
   useEffect(() => {
-    // Bloqueo/Desbloqueo de scroll en body
     if (menuType) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
     }
-  
-    // Además, bloquea/Desbloquea el contenedor principal con .flex-1.overflow-y-auto
-    const mainContent = document.querySelector(".flex-1.overflow-y-auto") as HTMLElement | null;
+    const mainContent = document.querySelector(
+      ".flex-1.overflow-y-auto"
+    ) as HTMLElement | null;
     if (mainContent) {
-      if (menuType) {
-        mainContent.style.overflow = "hidden";
-      } else {
-        mainContent.style.overflow = "auto";
-      }
+      mainContent.style.overflow = menuType ? "hidden" : "auto";
     }
   }, [menuType]);
-  
 
   return (
-    <header className="sticky top-0 left-0 w-full z-50 bg-[#1a1a1a] border-b border-[#2a2a2a] shadow-lg overflow-visible">
-      <div className="max-w-7xl mx-auto px-4 pt-4 pb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 justify-center sm:justify-start">
-          <button onClick={() => window.history.back()}>
-            <ChevronLeft className="text-red-400 hover:text-red-300" />
+    <header
+      className="
+        sticky top-0 left-0 w-full z-50
+        overflow-visible
+        shadow-lg
+        border-b border-[#2a2a2a]
+        bg-gradient-to-r from-[#1a1a1a] to-[#2b2b2b]
+      "
+    >
+      <div
+        className="
+          max-w-7xl mx-auto px-4 pt-4 pb-5
+          flex flex-col gap-3 sm:flex-row
+          sm:items-center sm:justify-between
+        "
+      >
+        {/* Botones back/forward + Home */}
+        <div className="flex items-center gap-3 justify-center sm:justify-start">
+          {/* Back */}
+          <button
+            onClick={() => window.history.back()}
+            className="
+              p-2 text-white/70
+              hover:text-red-400
+              hover:scale-105
+              transition-transform
+            "
+            title="Atrás"
+          >
+            <ChevronLeft className="w-5 h-5" />
           </button>
-          <button onClick={() => window.history.forward()}>
-            <ChevronRight className="text-red-400 hover:text-red-300" />
+
+          {/* Forward */}
+          <button
+            onClick={() => window.history.forward()}
+            className="
+              p-2 text-white/70
+              hover:text-red-400
+              hover:scale-105
+              transition-transform
+            "
+            title="Adelante"
+          >
+            <ChevronRight className="w-5 h-5" />
           </button>
+
+          {/* Home */}
           <Link
             to="/"
-            className="ml-2 text-white font-bold text-base sm:text-lg hover:text-red-400 flex items-center gap-1"
+            className="
+              flex items-center gap-1 ml-2
+              font-bold text-base sm:text-lg
+              text-white hover:text-red-400
+              transition-colors
+            "
           >
-            <Home className="w-5 h-5" /> Inicio
+            <Home className="w-5 h-5" />
+            <span>Inicio</span>
           </Link>
         </div>
 
+        {/* Título principal */}
         <div className="text-center w-full sm:w-auto">
-          <h1 className="text-white text-base sm:text-lg font-bold tracking-wide uppercase leading-tight">
+          <h1
+            className="
+              text-white text-base sm:text-lg
+              font-bold tracking-wide
+              uppercase
+              leading-tight
+            "
+          >
             MEDIADOR PEDAGÓGICO: <span className="text-red-500">SEED</span>
           </h1>
         </div>
 
+        {/* Navegación */}
         <nav className="flex items-center justify-center gap-3 sm:gap-6 sm:justify-end">
           <Link
             to="/simulador/memoria"
-            className="font-semibold text-white border border-white/20 px-3 py-1 rounded hover:bg-white/10 transition"
+            className="
+              font-semibold
+              text-white
+              border border-white/20
+              px-3 py-1
+              rounded
+              hover:bg-white/10
+              transition
+              text-sm
+            "
           >
             Simulador Memoria
           </Link>
 
+          {/* Botón: Simuladores de Estructuras */}
           <button
             onClick={() => setMenuType(menuType === "sim" ? null : "sim")}
-            className={`font-semibold px-2 py-1 transition hover:text-red-400 ${
-              menuType === "sim" ? "text-red-400" : "text-white"
-            }`}
+            className={`
+              font-semibold px-3 py-1
+              transition
+              text-sm
+              rounded
+              ${
+                menuType === "sim"
+                  ? "text-red-400 underline underline-offset-4"
+                  : "text-white hover:text-red-400"
+              }
+            `}
           >
             Simuladores de Estructuras
           </button>
 
+          {/* Botón: Conceptos */}
           <button
-            onClick={() => setMenuType(menuType === "concepts" ? null : "concepts")}
-            className={`font-semibold px-2 py-1 transition hover:text-red-400 ${
-              menuType === "concepts" ? "text-red-400" : "text-white"
-            }`}
+            onClick={() =>
+              setMenuType(menuType === "concepts" ? null : "concepts")
+            }
+            className={`
+              font-semibold px-3 py-1
+              transition
+              text-sm
+              rounded
+              ${
+                menuType === "concepts"
+                  ? "text-red-400 underline underline-offset-4"
+                  : "text-white hover:text-red-400"
+              }
+            `}
           >
             Conceptos
           </button>
