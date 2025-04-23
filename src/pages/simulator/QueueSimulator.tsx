@@ -22,6 +22,7 @@ export function QueueSimulator() {
             actions={{
                 enqueue: enqueueElement,
                 dequeue: dequeueElement,
+                getFront: () => {},
                 clean: clearQueue,
             }}
             query={query}

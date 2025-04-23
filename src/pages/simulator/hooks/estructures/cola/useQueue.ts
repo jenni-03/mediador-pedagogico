@@ -17,27 +17,23 @@ export function useQueue(structure: Cola) {
 
     // Operación de encolar
     const enqueueElement = (value: number) => {
-        try {
-            // Clonar la cola para garantizar la inmutabilidad del estado
-            const clonedQueue = queue.clonar();
+        // Clonar la cola para garantizar la inmutabilidad del estado
+        const clonedQueue = queue.clonar();
 
-            // Encolar el nuevo elemento
-            clonedQueue.encolar(value);
+        // Encolar el nuevo elemento
+        clonedQueue.encolar(value);
 
-            // Obtener el nodo insertado para acceder a su ID
-            const finalNode = clonedQueue.getFin();
+        // Obtener el nodo insertado para acceder a su ID
+        const finalNode = clonedQueue.getFin();
 
-            // Actualizar el estado de la cola
-            setQueue(clonedQueue);
+        // Actualizar el estado de la cola
+        setQueue(clonedQueue);
 
-            // Actualizar la query a partir de la operación realizada
-            setQuery((prev) => ({
-                ...prev,
-                toEnqueuedNode: finalNode ? finalNode.getId() : null
-            }));
-        } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
-        }
+        // Actualizar la query a partir de la operación realizada
+        setQuery((prev) => ({
+            ...prev,
+            toEnqueuedNode: finalNode ? finalNode.getId() : null
+        }));
     }
 
     // Operación de decolar
@@ -60,6 +56,9 @@ export function useQueue(structure: Cola) {
                 ...prev,
                 toDequeuedNode: nodeToDelete ? nodeToDelete.getId() : null
             }));
+
+            // Limpieza del error existente
+            setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }

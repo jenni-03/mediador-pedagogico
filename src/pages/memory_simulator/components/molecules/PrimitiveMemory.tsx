@@ -83,55 +83,85 @@ export function PrimitiveMemory({
                   setSelectedEntry(entry);
                   setTempValue(entry.value);
                 }}
-                className="relative bg-gradient-to-br from-[#262626] to-[#1F1F1F]
-             p-5 rounded-2xl border border-[#2E2E2E]
-             shadow-xl shadow-black/40 ring-1 ring-[#2E2E2E]
-             hover:ring-[#D72638]/40
-             flex flex-col items-center text-center cursor-pointer
-             transition-all"
+                className="
+    relative
+    bg-gradient-to-br from-[#262626] to-[#1F1F1F]
+    p-5 rounded-2xl border border-[#2E2E2E]
+    shadow-xl shadow-black/40 ring-1 ring-[#2E2E2E]
+    hover:ring-[#D72638]/40
+    flex flex-col items-center
+    text-center cursor-pointer
+    transition-all
+  "
               >
-                {/* Dirección */}
-                <div className="absolute top-2 left-2 flex items-center gap-1">
-                  <span
-                    title="Dirección de memoria"
-                    className="text-xs bg-[#D72638] text-white px-2.5 py-0.5 rounded-full font-semibold shadow"
-                  >
-                    {entry.address}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setChangeTypeTarget(entry.address);
-                    }}
-                    className="bg-[#1A1A1A] text-[#E0E0E0] w-7 h-7 flex items-center justify-center rounded-full hover:bg-[#D72638] hover:text-white transition shadow-sm"
-                    title="Cambiar tipo de dato"
-                  >
-                    ⚙️
-                  </button>
-                </div>
+                {/* Engranaje en esquina superior izquierda */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setChangeTypeTarget(entry.address);
+                  }}
+                  title="Cambiar tipo de dato"
+                  className="
+      absolute top-3 left-3
+      flex items-center gap-1
+      text-sm text-gray-300
+      hover:text-white hover:bg-[#D72638]
+      px-2 py-1
+      rounded-full
+      transition duration-200
+      cursor-pointer
+    "
+                >
+                  <span className="text-base">⚙️</span>
+                  {/* Podrías añadir una palabra para que se note más que es un botón */}
+                  {/* <span className="text-xs uppercase font-semibold">Tipo</span> */}
+                </button>
 
-                {/* Tamaño */}
-                <div className="absolute top-2 right-2 flex items-center gap-2">
-                  <span
-                    title="Tamaño ocupado en memoria"
-                    className="text-xs bg-[#4B4B4B] text-white px-2.5 py-0.5 rounded-full font-medium shadow-sm"
-                  >
-                    {sizes[entry.address] ?? "…"}
-                  </span>
-                  <button
-                    className="text-[#D72638] hover:text-white hover:bg-[#D72638] rounded-full p-1 transition-all duration-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteTarget(entry.address);
-                    }}
-                    title="Eliminar variable"
-                  >
-                    ✖
-                  </button>
+                {/* Botón de eliminar (X) en esquina superior derecha */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteTarget(entry.address);
+                  }}
+                  title="Eliminar variable"
+                  className="
+      absolute top-3 right-3
+      flex items-center gap-1
+      text-sm text-gray-300
+      hover:text-white hover:bg-[#D72638]
+      px-2 py-1
+      rounded-full
+      transition duration-200
+      cursor-pointer
+    "
+                >
+                  <span className="text-base">✖</span>
+                  {/* <span className="text-xs uppercase font-semibold">Del</span> */}
+                </button>
+
+                {/* Sección central con ADDR y SIZE */}
+                <div className="w-full mt-6 flex flex-wrap justify-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold uppercase text-white/90">
+                      ADDR:
+                    </span>
+                    <span className="text-sm font-bold text-[#D72638]">
+                      {entry.address}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold uppercase text-white/90">
+                      SIZE:
+                    </span>
+                    <span className="text-sm font-bold text-[#F59E0B]">
+                      {sizes[entry.address] ?? "…"}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Nombre de la variable */}
-                <p className="text-lg font-bold uppercase mt-6 truncate w-full px-2 text-[#E0E0E0]">
+                <p className="text-lg font-bold uppercase mt-4 truncate w-full px-2 text-[#E0E0E0]">
                   {entry.name}
                 </p>
 
@@ -153,9 +183,11 @@ export function PrimitiveMemory({
                         <td className="px-3 py-2 border-b border-[#2E2E2E] text-center font-semibold text-[#CCCCCC]">
                           {entry.type}
                         </td>
-
                         <td
-                          className={`px-3 py-2 border-b border-[#2E2E2E] text-center font-semibold ${getValueColor(entry.type)}`}
+                          className={`
+              px-3 py-2 border-b border-[#2E2E2E] text-center 
+              font-semibold ${getValueColor(entry.type)}
+            `}
                         >
                           {typeof entry.value === "object"
                             ? JSON.stringify(entry.value)

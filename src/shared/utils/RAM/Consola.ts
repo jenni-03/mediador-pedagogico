@@ -20,10 +20,6 @@ export class Consola {
       return this.ejecutarHelp();
     }
 
-    if (command.startsWith("insert ")) {
-      return this.ejecutarInsert(command.substring(7).trim());
-    }
-
     if (command.startsWith("delete address ")) {
       return this.ejecutarDeleteAddress(command.substring(15).trim());
     }
@@ -52,7 +48,9 @@ export class Consola {
       return this.ejecutarType(command.substring(13).trim());
     }
 
-    return [false, "Comando no reconocido."];
+    // Si el comando no coincide con ningún otro, se asume que es una declaración de variable
+    // y se envía al método ejecutarInsert (ahora sin la necesidad de escribir "insert")
+    return this.ejecutarInsert(command);
   }
 
   /**
@@ -69,6 +67,7 @@ export class Consola {
 
   /**
    * Ejecuta el comando "insert" para almacenar variables u objetos en memoria.
+   * Ahora se utiliza tanto si el estudiante escribe "insert ..." o si omite el prefijo.
    */
   private ejecutarInsert(
     instruction: string
@@ -164,7 +163,7 @@ export class Consola {
     const helpMsg = [
       "Comandos disponibles:",
       "",
-      "• insert --> Insertar un dato primitivo, array u objeto en memoria.",
+      "• Declarar variables: Ej. int x = 3;",
       "• delete address <direccion> --> Eliminar un valor por su dirección.",
       "• clear memory --> Borra completamente toda la memoria.",
       "• convert address <direccion> to <tipo> --> Cambia el tipo de una variable (int, float, etc).",
@@ -172,12 +171,11 @@ export class Consola {
       "• set address <direccion> value <nuevo_valor> --> Cambia el valor de una dirección existente.",
       "• address of <nombre_variable> --> Muestra la dirección de una variable por su nombre.",
       "• type address <direccion> --> Muestra el tipo del valor en la dirección dada.",
-      "• help --> Muestra esta lista de comandos."
+      "• help --> Muestra esta lista de comandos.",
     ].join("\n");
-  
+
     return [true, helpMsg, this.memoria.printMemory()];
   }
-  
 
   /**
    * Ejecuta el comando "type address <direccion>" para obtener el tipo de dato.

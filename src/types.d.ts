@@ -105,15 +105,22 @@ export type BaseStructureActions<T extends string> =
         set: (pos: number, element: number) => void;
     } :
     T extends "cola" ? {
-        enqueue: (n: number) => void;
+        enqueue: (element: number) => void;
         dequeue: () => void;
+        getFront: () => void;
+        clean: () => void;
+    } :
+    T extends "cola de prioridad" ? {
+        enqueue: (element: number) => void;
+        dequeue: () => void;
+        getFront: () => void;
+        getRear: () => void;
         clean: () => void;
     } :
     T extends "pila" ? {
-        create: (n: number) => void;
-        insertlast: (element: number) => void;
-        delete: (element: number) => void;
-        search: (element: number) => void;
+        push: (element: number) => void;
+        pop: () => void;
+        getTop: () => void;
         clean: () => void;
     } :
     Record<string, (...args: unknown[]) => void>; // Fallback para otros casos

@@ -89,8 +89,28 @@ class Memory {
   private generateAddress(type: PrimitiveType | ComplexType): string {
     const prefix = Memory.typePrefixes[type];
     const count = Memory.addressCounters[type]++;
-    return `${prefix}${String(count).padStart(3, "0")}`;
+    let multiplier = 1;
+  
+    // Si es un tipo primitivo, se aplica el multiplicador respectivo.
+    if (type !== "object" && type !== "array") {
+      const multipliers: Record<PrimitiveType, number> = {
+        boolean: 1,  // 1 en 1
+        char: 2,     // 2 en 2
+        byte: 1,     // 1 en 1
+        short: 2,    // 2 en 2
+        int: 4,      // 4 en 4
+        long: 8,     // 8 en 8
+        float: 4,    // 4 en 4
+        double: 8,   // 8 en 8
+        string: 1,   // lo dejamos en 1 en 1
+      };
+      multiplier = multipliers[type as PrimitiveType];
+    }
+    // Usamos (count + 1) para que la primera dirección no quede en 000.
+    const addressOffset = (count + 1) * multiplier;
+    return `${prefix}${String(addressOffset).padStart(3, "0")}`;
   }
+  
 
   /**
    * Almacena un dato primitivo en la memoria.
@@ -304,8 +324,7 @@ class Memory {
     address: string,
     force: boolean = false
   ): [true, string] | [false, string] {
-    for (const [type, segment] of this.segments.entries()) {
-      console.log(type);
+    for (const [_type, segment] of this.segments.entries()) {
       if (!segment.has(address)) continue;
 
       const entry = segment.get(address)!;

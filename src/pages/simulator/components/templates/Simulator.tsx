@@ -4,10 +4,11 @@ import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
 import { SimulatorProps } from "../../../../types";
 import { useRef, useState } from "react";
 import { commandsData } from "../../../../shared/constants/commandsData";
-import { operations_pseudoCode } from "../../../../shared/constants/pseudoCode";
+import { operationsCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
+import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
 
 export function Simulator<T extends string>({
     structureName,
@@ -16,6 +17,8 @@ export function Simulator<T extends string>({
     error,
     children,
 }: SimulatorProps<T>) {
+    //temporal
+    const structureN = "cola";
     // Estado para el manejo de la visualización del código
     const [executionCode, setExecutionCode] = useState<string[]>([]);
 
@@ -26,10 +29,10 @@ export function Simulator<T extends string>({
     const { setIsAnimating } = useAnimation();
 
     // Botones de comandos propios de la estructura
-    const buttons = commandsData[structureName].buttons;
+    const buttons = commandsData[structureN].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operations_pseudoCode[structureName];
+    const operations_code = operationsCode[structureN];
 
     // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);
@@ -45,13 +48,15 @@ export function Simulator<T extends string>({
             return;
         }
 
+        // Separa el comando en acción y valores
         const action = command[0];
         const values = command.slice(1).map(Number);
 
-        if (action !== "create" && action !== "clean") {
-            setIsAnimating(true);
-        }
+        // if (action !== "create" && action !== "clean") {
+        //     setIsAnimating(true);
+        // }
 
+        // Realiza la operación correspondiente según el comando
         if (values.length === 2) {
             (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
         } else if (values.length === 1) {
@@ -60,11 +65,13 @@ export function Simulator<T extends string>({
             (actions as any)?.[action]?.(); // Llama sin parámetros
         }
 
+        // Actualiza el código de ejecución dependiendo del comando
         setExecutionCode(
             operations_code[action as keyof typeof operations_code]
         );
 
-        if (action === "create") {
+        // Informa los casos en los que se debe de mostrar la asignación de memoria
+        if (action === "create" || action === "push") {
             setMemoryCode(true);
         } else {
             setMemoryCode(false);
@@ -88,7 +95,7 @@ export function Simulator<T extends string>({
                         data-tour="structure-title"
                         className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6"
                     >
-                        {structureName.toUpperCase()}{" "}
+                        {structureN.replace(/_/g, " ").toUpperCase()}{" "}
                         <span className="text-[#D72638]">&lt;Integer&gt;</span>
                     </h1>
                     {/* Contenedor principal */}
@@ -100,7 +107,7 @@ export function Simulator<T extends string>({
                                 className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 rounded-xl space-y-3 overflow-hidden"
                             >
                                 <DataStructureInfo
-                                    structure={structureName}
+                                    structure={structureN}
                                     structurePrueba={structure}
                                     memoryAddress={memoryCode}
                                 >
@@ -116,11 +123,7 @@ export function Simulator<T extends string>({
                                     data-tour="execution-code"
                                     className="flex-1 bg-[#1F1F22] rounded-xl p-4 overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
                                 >
-                                    <pre className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md text-[#A0A0A0]">
-                                        {executionCode.map((line, index) => (
-                                            <div key={index}>{line}</div>
-                                        ))}
-                                    </pre>
+                                    <PseudoCodeRunner lines={executionCode} />
                                 </div>
                             </div>
                         </div>
@@ -130,10 +133,10 @@ export function Simulator<T extends string>({
                             <div
                                 ref={consoleRef}
                                 className="flex-1 bg-[#101014] border border-[#2E2E2E] rounded-2xl px-4 py-2 max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
-                                data-tour = "console"
+                                data-tour="console"
                             >
                                 <ConsoleComponent
-                                    structureType={structureName}
+                                    structureType={structureN}
                                     onCommand={handleCommand}
                                     error={error}
                                 />
@@ -146,7 +149,7 @@ export function Simulator<T extends string>({
                     </div>
                 </div>
             </div>
-            <CustomTour tipo={structureName as TourType} />
+            <CustomTour tipo={structureN as TourType} />
         </>
     );
 }

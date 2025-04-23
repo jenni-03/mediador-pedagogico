@@ -22,7 +22,7 @@ export function DataStructureInfo({
                 className="flex flex-col md:flex-row gap-4 items-start justify-between"
             >
                 {/* Info lateral izquierda en cards */}
-                <div className="flex flex-col gap-4 w-full max-w-xs ">
+                <div className="flex flex-col gap-4 w-full max-w-xs" data-tour="info-cards">
                     {info.map(
                         (
                             item: { key: string; description: string },
@@ -70,7 +70,7 @@ export function DataStructureInfo({
                 </div>
 
                 {/* Visualización de memoria */}
-                <div className="flex-[2]">
+                <div className="flex-[2]" data-tour="memory-visualization">
                     {memoryAddress && (
                         <MemoryAllocationVisualizer
                             n={structurePrueba.vector.length}

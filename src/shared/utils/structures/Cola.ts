@@ -49,7 +49,7 @@ export class Cola {
      * @returns Número removido o null si la cola está vacía.
      */
     public decolar(): number | null {
-        if (this.esVacia()) return null;
+        if (this.esVacia()) throw new Error("No se puede eliminar: la estructura está vacía (tamaño actual: 0).");
 
         const valorEliminado = this.inicio?.getValor() ?? null;
 
