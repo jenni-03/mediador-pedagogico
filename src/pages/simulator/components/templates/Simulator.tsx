@@ -19,7 +19,7 @@ export function Simulator<T extends string>({
 }: SimulatorProps<T>) {
 
     //temporal
-    const structureN = "cola";
+    // const structureN = "secuencia";
     // Estado para el manejo de la visualización del código
     const [executionCode, setExecutionCode] = useState<string[]>([]);
 
@@ -30,10 +30,10 @@ export function Simulator<T extends string>({
     const { setIsAnimating } = useAnimation();
 
     // Botones de comandos propios de la estructura
-    const buttons = commandsData[structureN].buttons;
+    const buttons = commandsData[structureName].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operationsCode[structureN];
+    const operations_code = operationsCode[structureName];
 
     // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);
@@ -97,7 +97,7 @@ export function Simulator<T extends string>({
                         data-tour="structure-title"
                         className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6"
                     >
-                        {structureN.replace(/_/g, " ").toUpperCase()}{" "}
+                        {structureName.replace(/_/g, " ").toUpperCase()}{" "}
                         <span className="text-[#D72638]">&lt;Integer&gt;</span>
                     </h1>
                     {/* Contenedor principal */}
@@ -109,7 +109,7 @@ export function Simulator<T extends string>({
                                 className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 rounded-xl space-y-3 overflow-hidden"
                             >
                                 <DataStructureInfo
-                                    structure={structureN}
+                                    structure={structureName}
                                     structurePrueba={structure}
                                     memoryAddress={memoryCode}
                                 >
@@ -138,7 +138,7 @@ export function Simulator<T extends string>({
                                 data-tour="console"
                             >
                                 <ConsoleComponent
-                                    structureType={structureN}
+                                    structureType={structureName}
                                     onCommand={handleCommand}
                                     error={error}
                                 />
@@ -151,7 +151,7 @@ export function Simulator<T extends string>({
                     </div>
                 </div>
             </div>
-            <CustomTour tipo={structureN as TourType} />
+            <CustomTour tipo={structureName as TourType} />
         </>
     );
 }
