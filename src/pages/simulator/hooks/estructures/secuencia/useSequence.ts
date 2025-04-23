@@ -58,6 +58,7 @@ export function useSequence(structure: Secuencia) {
                     ...prev,
                     toSearch: element
                 }));
+                // ¿PQ no se limpia el error?
             }
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
@@ -74,6 +75,7 @@ export function useSequence(structure: Secuencia) {
                 ...prev,
                 toUpdate: [pos, element]
             }));
+            // ¿PQ no se limpia el error?
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
@@ -88,6 +90,7 @@ export function useSequence(structure: Secuencia) {
             ...prev,
             create: n
         }));
+        // ¿PQ no se limpia el error?
     }
 
     // Operación para vaciar la secuencia
@@ -95,6 +98,7 @@ export function useSequence(structure: Secuencia) {
         const newSequence = sequence.clonar();
         newSequence.vaciar();
         setSequence(newSequence);
+        // ¿PQ no se limpia el error?
     }
 
     // Función de restablecimiento de las queries del usuario

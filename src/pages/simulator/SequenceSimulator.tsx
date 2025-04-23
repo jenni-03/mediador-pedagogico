@@ -36,11 +36,9 @@ export function SequenceSimulator() {
                 set: updateElement,
             }}
             query={query}
-            reset={resetQueryValues}
             error={error}
         >
             <SequenceRender
-                structureName={STRUCTURE_NAME.SEQUENCE}
                 sequence={sequence.getVector()}
                 memory={getMemory()}
                 query={query}

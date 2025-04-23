@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { SVG_SEQUENCE_VALUES } from "../../constants/consts";
 
 /**
  * Función encargada de renderizar la estructura base de la secuencia
@@ -46,9 +47,9 @@ export function drawBaseSequence(
           .attr("height", 0)
           .attr("rx", 6)
           .attr("ry", 6)
-          .attr("fill", "#1A1A1A")
-          .attr("stroke", "#D72638")
-          .attr("stroke-width", 1.2)
+          .attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_FIRST_COLOR)
+          .attr("stroke", SVG_SEQUENCE_VALUES.RECT_STROKE_COLOR)
+          .attr("stroke-width", SVG_SEQUENCE_VALUES.RECT_STROKE_WIDTH)
           .transition()
           .duration(1000)
           .attr("width", elementWidth)
@@ -63,9 +64,9 @@ export function drawBaseSequence(
           .attr("dy", ".35em")
           .attr("text-anchor", "middle")
           .text("NULL")
-          .attr("fill", "#E0E0E0")
-          .style("font-weight", "600")
-          .style("font-size", "16px")
+          .attr("fill", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_COLOR)
+          .style("font-weight", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_WEIGHT)
+          .style("font-size", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_SIZE)
           .style("letter-spacing", "0.5px")
           .style("opacity", 0)
           .transition()
@@ -82,9 +83,9 @@ export function drawBaseSequence(
           .attr("height", 0)
           .attr("rx", 4)
           .attr("ry", 4)
-          .attr("fill", "#2E2E2E")
-          .attr("stroke", "#555")
-          .attr("stroke-width", 1)
+          .attr("fill", SVG_SEQUENCE_VALUES.MEMORY_FILL_COLOR)
+          .attr("stroke", SVG_SEQUENCE_VALUES.MEMORY_STROKE_COLOR)
+          .attr("stroke-width", SVG_SEQUENCE_VALUES.MEMORY_SRTOKE_WIDTH)
           .transition()
           .duration(1000)
           .attr("width", elementWidth)
@@ -100,9 +101,9 @@ export function drawBaseSequence(
           .attr("text-anchor", "middle")
           .style("opacity", 0)
           .text((_d, i) => memoria[i])
-          .attr("fill", "#A0FFDA")
-          .style("font-size", "13px")
-          .style("font-weight", "500")
+          .attr("fill", SVG_SEQUENCE_VALUES.MEMORY_TEXT_COLOR)
+          .style("font-size", SVG_SEQUENCE_VALUES.MEMORY_TEXT_SIZE)
+          .style("font-weight", SVG_SEQUENCE_VALUES.MEMORY_TEXT_WEIGHT)
           .transition()
           .duration(2500)
           .style("opacity", 1);
@@ -116,9 +117,9 @@ export function drawBaseSequence(
           .attr("text-anchor", "middle")
           .style("opacity", 0)
           .text((_d, i) => i)
-          .attr("fill", "#FF6F6F")
-          .style("font-size", "13px")
-          .style("font-weight", "600")
+          .attr("fill", SVG_SEQUENCE_VALUES.INDEX_TEXT_COLOR)
+          .style("font-size", SVG_SEQUENCE_VALUES.INDEX_TEXT_SIZE)
+          .style("font-weight", SVG_SEQUENCE_VALUES.INDEX_TEXT_WEIGHT)
           .transition()
           .duration(2500)
           .style("opacity", 1);
@@ -136,9 +137,10 @@ export function drawBaseSequence(
         // Actualización del rectángulo principal
         update
           .select("rect.sequence-rect")
-          .attr("fill", (d) => (d === null ? "#1A1A1A" : "#1F1F2D"))
-          .attr("stroke", "#D72638") // mismo rojo intenso
-          .attr("stroke-width", 1.2) // mismo grosor del borde
+          .attr("fill", (d) => (d === null ?
+            SVG_SEQUENCE_VALUES.RECT_FILL_FIRST_COLOR : SVG_SEQUENCE_VALUES.RECT_FILL_SECOND_COLOR))
+          .attr("stroke", "#D72638")
+          .attr("stroke-width", 1.2)
           .attr("rx", 6)
           .attr("ry", 6);
 
@@ -146,9 +148,9 @@ export function drawBaseSequence(
         update
           .select("text")
           .text((d) => (d === null ? "NULL" : d.toString()))
-          .attr("fill", "#E0E0E0") // Asegúrate de que siempre sea visible
-          .style("font-weight", "600")
-          .style("font-size", "16px")
+          .attr("fill", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_COLOR)
+          .style("font-weight", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_WEIGHT)
+          .style("font-size", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_SIZE)
           .style("letter-spacing", "0.5px");
 
         // Actualización del texto correspondiente al indice del elemento
@@ -199,6 +201,7 @@ export async function animateInsertionSequence(
 
   // Restablecimiento del texto del contenedor donde se va a insertar el elemento
   targetGroup.select("text").text("");
+  targetGroup.select("rect.sequence-rect").attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_FIRST_COLOR);
 
   // Creación o reutilización de un grupo temporal para la inserción
   let insertionGroup = svg.select<SVGGElement>("g#insertion-group");
@@ -227,9 +230,9 @@ export async function animateInsertionSequence(
     .attr("x", startX)
     .attr("y", startY)
     .attr("text-anchor", "middle")
-    .attr("fill", "#E0E0E0")
-    .style("font-size", "16px")
-    .style("font-weight", "600")
+    .attr("fill", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_COLOR)
+    .style("font-size", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_SIZE)
+    .style("font-weight", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_WEIGHT)
     .style("letter-spacing", "0.5px")
     .text(insertionValue)
     .style("opacity", 0);
@@ -242,9 +245,9 @@ export async function animateInsertionSequence(
     .select("rect.sequence-rect")
     .transition()
     .duration(500)
-    .attr("stroke", "#D72638")
+    .attr("stroke", SVG_SEQUENCE_VALUES.RECT_STROKE_COLOR)
     .attr("stroke-width", 3)
-    .attr("fill", "#1F1F2D")
+    .attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_SECOND_COLOR)
     .end();
 
   // Transición para el desplazamiento del nuevo elemento al centro de la posición de destino
@@ -310,9 +313,8 @@ export async function animateDeleteLastElementSequence(
   // Restablecimiento del color original de fondo para el contenedor del elemento eliminado
   targetGroup
     .select("rect.sequence-rect")
-    .attr("fill", "#1F1F2D") // fondo oscuro estándar
-    .attr("stroke", "#D72638") // Borde rojo intenso
-    .attr("stroke-width", 1.2);
+    .attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_SECOND_COLOR)
+    .attr("stroke", SVG_SEQUENCE_VALUES.RECT_STROKE_COLOR);
 
   // Creación o reutilización de un grupo temporal para la eliminación
   let deleteGroup = svg.select<SVGGElement>("g#delete-group");
@@ -341,7 +343,7 @@ export async function animateDeleteLastElementSequence(
     .transition()
     .delay(100)
     .duration(1500)
-    .ease(d3.easeBack)
+    .ease(d3.easeBounce)
     .style("opacity", 0)
     .end();
 
@@ -349,12 +351,9 @@ export async function animateDeleteLastElementSequence(
   await targetGroup
     .select("rect.sequence-rect")
     .transition()
-    .delay(100)
-    .duration(2000)
+    .duration(1500)
     .ease(d3.easeBounce)
-    .attr("fill", "#1A1A1A") // fondo negro
-    .attr("stroke", "#D72638") // borde rojo intenso
-    .attr("stroke-width", 1.2)
+    .attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_FIRST_COLOR)
     .end();
 
   // Restablecimiento del texto resultante de la operación de eliminación
@@ -421,9 +420,7 @@ export async function animateDeleteElementWithDisplacement(
   // Devolvemos el color original al grupo que termina sin valor
   nullGroup
     .select("rect")
-    .attr("fill", "#1F1F2D")
-    .attr("stroke", "#D72638")
-    .attr("stroke-width", 1.2);
+    .attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_SECOND_COLOR);
 
   // Creación o reutilización de una capa overlay para animar el desplazamiento
   let displacementGroup = svg.select<SVGGElement>("g#displacement-group");
@@ -445,9 +442,9 @@ export async function animateDeleteElementWithDisplacement(
       .attr("x", xPos)
       .attr("y", yPos)
       .attr("text-anchor", "middle")
-      .attr("fill", "#E0E0E0")
-      .style("font-size", "16px")
-      .style("font-weight", "600")
+      .attr("fill", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_COLOR)
+      .style("font-size", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_SIZE)
+      .style("font-weight", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_WEIGHT)
       .text(value);
   }
 
@@ -494,9 +491,7 @@ export async function animateDeleteElementWithDisplacement(
     .select("rect")
     .transition()
     .duration(1000)
-    .attr("fill", "#1A1A1A")
-    .attr("stroke", "#D72638")
-    .attr("stroke-width", 1.2)
+    .attr("fill", SVG_SEQUENCE_VALUES.RECT_FILL_FIRST_COLOR)
     .ease(d3.easeBounce)
     .end();
 
@@ -589,8 +584,10 @@ export async function animateUpdateSequence(
     .attr("x", startX)
     .attr("y", startY)
     .attr("text-anchor", "middle")
-    .attr("fill", "#E0E0E0")
-    .style("font-size", "16px")
+    .attr("fill", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_COLOR)
+    .style("font-size", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_SIZE)
+    .style("font-weight", SVG_SEQUENCE_VALUES.ELEMENT_TEXT_WEIGHT)
+    .style("letter-spacing", "0.5px")
     .text(newValue.toString())
     .style("opacity", 0);
 
@@ -602,9 +599,7 @@ export async function animateUpdateSequence(
     .select("rect.sequence-rect")
     .transition()
     .duration(500)
-    .attr("stroke", "#D72638")
     .attr("stroke-width", 3)
-    .attr("fill", "#1F1F2D")
     .end();
 
   // Desvanecimiento del texto original
@@ -670,9 +665,10 @@ export async function animateSearchSequence(
   // Restablecimiento de los bordes y fondos de los contenedores antes de iniciar la animación
   elements
     .select("rect.sequence-rect")
-    .attr("fill", (d) => (d === null ? "#1A1A1A" : "#1F1F2D"))
-    .attr("stroke", "#d7263899") // borde rojo claro
-    .attr("stroke-width", 1.2);
+    .attr("fill", (d) => (d === null ?
+      SVG_SEQUENCE_VALUES.RECT_FILL_FIRST_COLOR : SVG_SEQUENCE_VALUES.RECT_FILL_SECOND_COLOR))
+    .attr("stroke", SVG_SEQUENCE_VALUES.RECT_STROKE_COLOR)
+    .attr("stroke-width", SVG_SEQUENCE_VALUES.RECT_STROKE_WIDTH);
 
   // Creación o reutilización de un grupo temporal para la flecha indicatoria
   let searchGroup = svg.select<SVGGElement>("g#search-group");
@@ -731,8 +727,8 @@ export async function animateSearchSequence(
       .attr("stroke-width", 2)
       .transition()
       .duration(600)
-      .attr("stroke", "#d7263899") // borde rojo claro
-      .attr("stroke-width", 1.2)
+      .attr("stroke", SVG_SEQUENCE_VALUES.RECT_STROKE_COLOR)
+      .attr("stroke-width", SVG_SEQUENCE_VALUES.RECT_STROKE_WIDTH)
       .end();
 
     // Data vinculada al elemento actual
@@ -745,8 +741,8 @@ export async function animateSearchSequence(
         .select("rect")
         .transition()
         .duration(500)
-        .attr("stroke", "#D72638")
-        .attr("stroke-width", 3.5)
+        .attr("stroke", SVG_SEQUENCE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", 3)
         .end();
       found = true;
       break;

@@ -61,8 +61,7 @@ export type SimulatorProps<T extends string> = {
     actions: BaseStructureActions<T>;
     query: BaseQueryOperations;
     error: { message: string, id: number } | null;
-    reset: () => void;
-    children: React.ReactNode
+    children: React.ReactNode;
 }
 
 export type FilterState = {
@@ -85,11 +84,15 @@ export interface CardData {
 
 export type BaseQueryOperations<T extends string> =
     T extends "secuencia" ? {
-        create: number | null,
-        toAdd: number | null,
-        toDelete: number | null,
-        toSearch: number | null,
-        toUpdate: [number, number] | []
+        create: number | null;
+        toAdd: number | null;
+        toDelete: number | null;
+        toSearch: number | null;
+        toUpdate: [number, number] | [];
+    } :
+    T extends "cola" ? {
+        toEnqueuedNode: string | null;
+        toDequeuedNode: string | null;
     } : never;
 
 export type BaseStructureActions<T extends string> =
@@ -102,10 +105,8 @@ export type BaseStructureActions<T extends string> =
         set: (pos: number, element: number) => void;
     } :
     T extends "cola" ? {
-        create: (n: number) => void;
-        insertlast: (element: number) => void;
-        delete: (element: number) => void;
-        search: (element: number) => void;
+        enqueue: (n: number) => void;
+        dequeue: () => void;
         clean: () => void;
     } :
     T extends "pila" ? {
@@ -126,4 +127,16 @@ export type CodeAnalysisProps = {
     code: string;
     operationalCost: string[];
     complexity: string;
+}
+
+export type QueueNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+};
+
+export type LinkData = {
+    sourceId: string;
+    targetId: string;
+    type: "next" | "prev";
 }

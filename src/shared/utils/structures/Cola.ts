@@ -1,6 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { NodoD } from "../nodes/NodoD";
+import { NodoS } from "../nodes/NodoS";
 
 /**
  * Clase que representa una Cola utilizando nodos dobles.
@@ -8,10 +8,10 @@ import { NodoD } from "../nodes/NodoD";
 export class Cola {
 
     // Nodo inicial de la cola
-    private inicio: NodoD | null;
+    private inicio: NodoS | null;
 
     // Nodo final de la cola
-    private fin: NodoD | null;
+    private fin: NodoS | null;
 
     // Tamaño de la cola
     private tamanio: number;
@@ -27,10 +27,10 @@ export class Cola {
 
     /**
      * Método para encolar un elemento en la cola.
-     * @param valor Número a encolar.
+     * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
-        const nuevoNodo = new NodoD(valor);
+        const nuevoNodo = new NodoS(valor);
 
         if (this.esVacia()) {
             this.inicio = nuevoNodo;
@@ -38,7 +38,6 @@ export class Cola {
         } else {
             if (this.fin) {
                 this.fin.setSiguiente(nuevoNodo);
-                nuevoNodo.setAnterior(this.fin);
                 this.fin = nuevoNodo;
             }
         }
@@ -60,7 +59,6 @@ export class Cola {
         } else {
             if (this.inicio) {
                 this.inicio = this.inicio.getSiguiente();
-                if (this.inicio) this.inicio.setAnterior(null);
             }
         }
         this.tamanio--;
@@ -68,7 +66,7 @@ export class Cola {
     }
 
     /**
-     * Vacía la cola completamente.
+     * Método encargado de vaciar la cola.
      */
     public vaciar(): void {
         this.inicio = null;
@@ -77,23 +75,39 @@ export class Cola {
     }
 
     /**
-     * Obtiene el nodo en el inicio de la cola.
-     * @returns NodoD o null si la cola está vacía.
+     * Método que obtiene el nodo inicial de la cola.
+     * @returns NodoS o null si la cola está vacía.
      */
-    public getInicio(): NodoD | null {
+    public getInicio(): NodoS | null {
         return this.inicio;
     }
 
     /**
-     * Obtiene el valor del nodo en el inicio de la cola.
-     * @returns Número o null si la cola está vacía.
+     * Método que obtiene el valor del nodo inicial de la cola.
+     * @returns Valor del nodo o null si la cola está vacía.
      */
     public getInfoInicio(): number | null {
         return this.inicio?.getValor() ?? null;
     }
 
     /**
-     * Devuelve el tamaño actual de la cola.
+     * Método que obtiene el nodo final de la cola.
+     * @returns NodoS o null si la cola está vacía.
+     */
+    public getFin(): NodoS | null {
+        return this.fin;
+    }
+
+    /**
+     * Método que obtiene el valor del nodo final de la cola.
+     * @returns Valor del nodo o null si la cola está vacía.
+     */
+    public getInfoFin(): number | null {
+        return this.fin?.getValor() ?? null;
+    }
+
+    /**
+     * Método que devuelve el tamaño actual de la cola.
      * @returns Número de elementos en la cola.
      */
     public getTamanio(): number {
@@ -101,45 +115,70 @@ export class Cola {
     }
 
     /**
-     * Verifica si la cola está vacía.
+     * Método que verifica si la cola está vacía.
      * @returns True si está vacía, false en caso contrario.
      */
     public esVacia(): boolean {
         return this.tamanio === 0;
     }
+
+    /**
+     * Método encargado de transformar la cola en un array de nodos.
+     * @returns Array de nodos con la información de la cola.
+     */
+    public getArrayDeNodos() {
+        const arregloNodos = [];
+        let nodoActual = this.inicio;
+
+        while (nodoActual !== null) {
+            const nodoSiguiente = nodoActual.getSiguiente();
+
+            arregloNodos.push({
+                id: nodoActual.getId(),
+                value: nodoActual.getValor(),
+                next: nodoSiguiente ? nodoSiguiente.getId() : null,
+            });
+
+            nodoActual = nodoActual.getSiguiente();
+        }
+
+        return arregloNodos;
+    }
+
+    public clonar() {
+        const nuevaCola = new Cola();
+
+        if (this.esVacia()) {
+            return nuevaCola;
+        }
+
+        let nodoActual = this.inicio;
+        let ultimoNodoClonado: NodoS | null = null;
+
+
+        while (nodoActual !== null) {
+            const nuevoNodo = new NodoS(
+                nodoActual.getValor(),
+                nodoActual.getId()
+            );
+
+            if (nuevaCola.inicio === null) {
+                nuevaCola.inicio = nuevoNodo;
+                nuevaCola.fin = nuevoNodo;
+            } else {
+                if (ultimoNodoClonado) {
+                    ultimoNodoClonado.setSiguiente(nuevoNodo);
+                }
+                nuevaCola.fin = nuevoNodo;
+            }
+
+            ultimoNodoClonado = nuevoNodo;
+            nodoActual = nodoActual.getSiguiente();
+        }
+
+        nuevaCola.tamanio = this.tamanio;
+
+        return nuevaCola;
+    }
+
 }
-
-// Crear una nueva cola
-const cola = new Cola();
-
-// Verificar si la cola está vacía (Debe ser true)
-console.log("¿Cola está vacía?:", cola.esVacia());
-
-// Encolar elementos
-cola.encolar(10);
-cola.encolar(20);
-cola.encolar(30);
-
-// Mostrar el tamaño de la cola (Debe ser 3)
-console.log("Tamaño de la cola:", cola.getTamanio());
-
-// Obtener el inicio de la cola (Debe ser el NodoD que tiene el valor 10)
-console.log("Inicio de la cola:", cola.getInicio());
-
-// Obtener el valor del nodo al inicio (Debe ser 10)
-console.log("Valor del nodo al inicio:", cola.getInfoInicio());
-
-// Desencolar un elemento (Debe eliminar el 10)
-cola.decolar();
-
-// Mostrar el tamaño de la cola después de desencolar (Debe ser 2)
-console.log("Tamaño de la cola después de desencolar:", cola.getTamanio());
-
-// Obtener el nuevo valor al inicio (Debe ser 20)
-console.log("Nuevo valor al inicio:", cola.getInfoInicio());
-
-// Vaciar la cola
-cola.vaciar();
-
-// Verificar si la cola está vacía nuevamente (Debe ser true)
-console.log("¿Cola está vacía después de vaciarla?:", cola.esVacia());
