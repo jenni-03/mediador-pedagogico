@@ -93,6 +93,7 @@ export type BaseQueryOperations<T extends string> =
     T extends "cola" ? {
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
+        toClear: boolean;
     } : never;
 
 export type BaseStructureActions<T extends string> =
@@ -147,3 +148,10 @@ export type LinkData = {
     targetId: string;
     type: "next" | "prev";
 }
+
+export type IndicatorPositioningConfig = {
+    calculateTransform: (
+        nodePos: { x: number, y: number },
+        dims: { elementWidth: number, elementHeight: number }
+    ) => string;
+};

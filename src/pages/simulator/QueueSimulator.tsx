@@ -1,6 +1,6 @@
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { Cola } from "../../shared/utils/structures/Cola";
-import { QueueRender } from "./components/estructures/secuencia/QueueRender";
+import { QueueRender } from "./components/estructures/cola/QueueRender";
 import { Simulator } from "./components/templates/Simulator";
 import { useQueue } from "./hooks/estructures/cola/useQueue";
 

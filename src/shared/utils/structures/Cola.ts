@@ -30,6 +30,8 @@ export class Cola {
      * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
+        if (this.tamanio >= 10) throw new Error("No se puede encolar: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+
         const nuevoNodo = new NodoS(valor);
 
         if (this.esVacia()) {
@@ -49,7 +51,7 @@ export class Cola {
      * @returns Número removido o null si la cola está vacía.
      */
     public decolar(): number | null {
-        if (this.esVacia()) throw new Error("No se puede eliminar: la estructura está vacía (tamaño actual: 0).");
+        if (this.esVacia()) throw new Error("No se puede decolar: La cola está vacía (tamaño actual: 0).");
 
         const valorEliminado = this.inicio?.getValor() ?? null;
 
