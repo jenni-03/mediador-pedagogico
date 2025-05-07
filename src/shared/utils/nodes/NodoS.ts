@@ -16,14 +16,24 @@ export class NodoS {
     // Información del nodo siguiente
     private siguiente: NodoS | null;
 
+    // Dirección en formato hexadecimal
+    private direccionMemoria: string; 
+
+    // Tamaño del nodo en bytes
+    private tamanio: number; 
+
+
     /**
      * Constructor de la clase Nodo Simple
      * @param valor Valor a almacenar en el nodo
      */
-    constructor(valor: number, id?: string) {
+    constructor(valor: number, id?: string, direccionMemoria?: number) {
         this.id = id ?? `node-${uuidv4()}`;
         this.valor = valor;
         this.siguiente = null;
+        const direccion = direccionMemoria ?? Math.floor(Math.random() * 100000); // Simulamos una dirección
+        this.direccionMemoria = "0x" + direccion.toString(16).padStart(8, "0"); // Convierte a formato hexadecimal, 8 dígitos
+        this.tamanio = 16;
     }
 
     /**
@@ -66,4 +76,12 @@ export class NodoS {
         return this.id;
     }
 
+    public getDireccionMemoria(): string {
+        return this.direccionMemoria;
+    }
+    
+    public getTamanio(): number {
+        return this.tamanio;
+    }
+    
 }

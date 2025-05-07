@@ -8,7 +8,7 @@ export const TYPE_FILTER = {
 export const STRUCTURE_NAME = {
     SEQUENCE: 'secuencia',
     QUEUE: 'cola',
-    PRIORITY_QUEUE: 'cola de prioridad',
+    PRIORITY_QUEUE: 'cola_de_prioridad',
     STACK: 'pila',
 } as const
 
@@ -50,3 +50,20 @@ export const SVG_QUEUE_VALUES = {
     NODE_TEXT_WEIGHT: '600',
     NODE_TEXT_SIZE: '16px',
 } as const
+
+export const SVG_STACK_VALUES = {
+    MARGIN_TOP: 30,           // espacio superior del SVG
+    MARGIN_BOTTOM: 30,        // espacio inferior para que no se corte el nodo inferior
+    MARGIN_LEFT: 50,          // para centrar horizontalmente los nodos
+    MARGIN_RIGHT: 50,         // mismo que el izquierdo
+    ELEMENT_WIDTH: 80,        // ancho del nodo 
+    ELEMENT_HEIGHT: 60,       // alto del nodo (esto importa más ahora porque el eje principal es vertical)
+    SPACING: 10,              // espacio vertical entre nodos
+    WIDTH: 180,               // ancho fijo del SVG 
+    HEIGHT: 230,               // ancho fijo del SVG 
+    NODE_FILL_COLOR: '#1F1F2D',
+    NODE_STROKE_COLOR: '#D72638',
+    NODE_TEXT_COLOR: '#E0E0E0',
+    NODE_TEXT_WEIGHT: '600',
+    NODE_TEXT_SIZE: '16px',
+  } as const;

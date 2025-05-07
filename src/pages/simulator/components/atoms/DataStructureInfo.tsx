@@ -16,13 +16,16 @@ export function DataStructureInfo({
     const info = infoStructures[structure].info;
 
     return (
-        <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] overflow-x-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
+        <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] max-h-[600px] overflow-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
             <div
                 data-tour="structure-info"
                 className="flex flex-col md:flex-row gap-4 items-start justify-between"
             >
                 {/* Info lateral izquierda en cards */}
-                <div className="flex flex-col gap-4 w-full max-w-xs" data-tour="info-cards">
+                <div
+                    className="flex flex-col gap-4 w-full max-w-xs"
+                    data-tour="info-cards"
+                >
                     {info.map(
                         (
                             item: { key: string; description: string },
@@ -70,7 +73,7 @@ export function DataStructureInfo({
                 </div>
 
                 {/* Visualización de memoria */}
-                <div className="flex-[2]" data-tour="memory-visualization">
+                {/* <div className="flex-[2]" data-tour="memory-visualization">
                     {memoryAddress && (
                         <MemoryAllocationVisualizer
                             n={structurePrueba.vector.length}
@@ -78,13 +81,19 @@ export function DataStructureInfo({
                             tamanioNodo={structurePrueba.tamanioNodo}
                         />
                     )}
-                </div>
+                </div> */}
             </div>
 
             {/* Contenido visual (estructura de datos) */}
-            <div
+            {/* <div
                 data-tour="main-canvas"
                 className="flex-1 flex items-center mt-5"
+            >
+                {children}
+            </div> */}
+            <div
+                data-tour="main-canvas"
+                className="mt-5 w-full flex justify-center items-start"
             >
                 {children}
             </div>
