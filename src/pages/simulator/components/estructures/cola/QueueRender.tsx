@@ -1,4 +1,4 @@
-import { SVG_QUEUE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { BaseQueryOperations } from "../../../../../types";
 import { useQueueRender } from "../../../hooks/estructures/cola/useQueueRender";
 
@@ -7,7 +7,12 @@ export function QueueRender({
     query,
     resetQueryValues,
 }: {
-    queue: { id: string; value: number; next: string | null }[];
+    queue: {
+        id: string;
+        value: number;
+        next: string | null;
+        address: number;
+    }[];
     query: BaseQueryOperations<"cola">;
     resetQueryValues: () => void;
 }) {
@@ -28,7 +33,7 @@ export function QueueRender({
                     >
                         <polygon
                             points="0 0, 7 2.5, 0 5"
-                            fill={SVG_QUEUE_VALUES.NODE_STROKE_COLOR}
+                            fill={SVG_STYLE_VALUES.RECT_STROKE_COLOR}
                         />
                     </marker>
                 </defs>
