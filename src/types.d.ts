@@ -93,6 +93,7 @@ export type BaseQueryOperations<T extends string> =
     T extends "cola" ? {
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
+        toClear: boolean;
     } : 
     T extends "cola_de_prioridad" ? {
         toEnqueuedNode: string | null;
@@ -103,8 +104,7 @@ export type BaseQueryOperations<T extends string> =
         toPushNode: string | null;
         toPopNode: string | null;
         toGetTop: string | null;
-    } :
-    Record<string, unknown>; // Fallback para otros casos
+    } : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
@@ -164,4 +164,11 @@ export type StackNodeData = {
     value: number;
     next: string | null;
     memoryAddress: string;
+};
+
+export type IndicatorPositioningConfig = {
+    calculateTransform: (
+        nodePos: { x: number, y: number },
+        dims: { elementWidth: number, elementHeight: number }
+    ) => string;
 };
