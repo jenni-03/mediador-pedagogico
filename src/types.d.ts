@@ -104,7 +104,7 @@ export type BaseQueryOperations<T extends string> =
         toPushNode: string | null;
         toPopNode: string | null;
         toGetTop: string | null;
-    } : never;
+    } : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
