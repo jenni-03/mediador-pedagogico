@@ -8,9 +8,25 @@ export const TYPE_FILTER = {
 export const STRUCTURE_NAME = {
     SEQUENCE: 'secuencia',
     QUEUE: 'cola',
-    PRIORITY_QUEUE: 'cola de prioridad',
+    PRIORITY_QUEUE: 'cola_de_prioridad',
     STACK: 'pila',
 } as const
+
+export const SVG_STYLE_VALUES = {
+    MEMORY_TEXT_COLOR: '#A0FFDA',
+    MEMORY_TEXT_SIZE: '13px',
+    MEMORY_TEXT_WEIGHT: '500',
+    MEMORY_FILL_COLOR: '#2E2E2E',
+    MEMORY_STROKE_COLOR: '#555',
+    MEMORY_SRTOKE_WIDTH: 1,
+    ELEMENT_TEXT_COLOR: '#E0E0E0',
+    ELEMENT_TEXT_WEIGHT: '600',
+    ELEMENT_TEXT_SIZE: '16px',
+    RECT_FILL_FIRST_COLOR: '#1A1A1A',
+    RECT_FILL_SECOND_COLOR: '#1F1F2D',
+    RECT_STROKE_COLOR: '#D72638',
+    RECT_STROKE_WIDTH: 1.2,
+}
 
 export const SVG_SEQUENCE_VALUES = {
     MARGIN_LEFT: 20,
@@ -18,5 +34,34 @@ export const SVG_SEQUENCE_VALUES = {
     ELEMENT_WIDTH: 65,
     ELEMENT_HEIGHT: 65,
     SPACING: 0,
-    HEIGHT: 230
-} as const 
+    HEIGHT: 230,
+    INDEX_TEXT_COLOR: '#FF6F6F',
+    INDEX_TEXT_SIZE: '13px',
+    INDEX_TEXT_WEIGHT: '600',
+} as const
+
+export const SVG_QUEUE_VALUES = {
+    MARGIN_LEFT: 50,
+    MARGIN_RIGHT: 50,
+    ELEMENT_WIDTH: 80,
+    ELEMENT_HEIGHT: 40,
+    SPACING: 55,
+    HEIGHT: 230,
+} as const
+
+export const SVG_STACK_VALUES = {
+    MARGIN_TOP: 30,           // espacio superior del SVG
+    MARGIN_BOTTOM: 30,        // espacio inferior para que no se corte el nodo inferior
+    MARGIN_LEFT: 50,          // para centrar horizontalmente los nodos
+    MARGIN_RIGHT: 50,         // mismo que el izquierdo
+    ELEMENT_WIDTH: 80,        // ancho del nodo 
+    ELEMENT_HEIGHT: 60,       // alto del nodo (esto importa más ahora porque el eje principal es vertical)
+    SPACING: 10,              // espacio vertical entre nodos
+    WIDTH: 180,               // ancho fijo del SVG 
+    HEIGHT: 230,               // ancho fijo del SVG 
+    NODE_FILL_COLOR: '#1F1F2D',
+    NODE_STROKE_COLOR: '#D72638',
+    NODE_TEXT_COLOR: '#E0E0E0',
+    NODE_TEXT_WEIGHT: '600',
+    NODE_TEXT_SIZE: '16px',
+} as const;

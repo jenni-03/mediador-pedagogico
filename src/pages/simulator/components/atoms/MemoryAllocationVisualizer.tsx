@@ -4,27 +4,70 @@ export default function MemoryAllocationVisualizer({
     n,
     direccionBase,
     tamanioNodo,
+    direcciones,
+    structure,
 }: {
     n: number;
     direccionBase: number;
     tamanioNodo: number;
+    direcciones: any[];
+    structure: string;
 }) {
     const [step, setStep] = useState(0);
 
-    const memory = Array.from({ length: n }, (_, i) => ({
-        index: i,
-        address: direccionBase + i * tamanioNodo,
-    }));
+    const getCodeLines = () => {
+        if (structure === "secuencia") {
+            return [
+                `// Dirección base inicial`,
+                `int dirBase = ${direccionBase};`,
+                ``,
+                `// Tamaño fijo de cada nodo`,
+                `int tamNodo = ${tamanioNodo};`,
+                ``,
+                `// Se crea un arreglo para guardar las direcciones`,
+                `String[] vectorMemoria = new String[${n}];`,
+                ``,
+                `for (int i = 0; i < ${n}; i++) {`,
+                `    int dirDecimal = dirBase + (i * tamNodo);`,
+                `    vectorMemoria[i] = String.format("0x%06X", dirDecimal);`,
+                `}`
+            ];
+        } else {
+            return [
+                `int dirBase = ${direccionBase}; // Dirección base inicial`,
+                ``,
+                `int tamNodo = ${tamanioNodo}; // Tamaño base de cada nodo`,
+                ``,
+                `int maxPasosAlea = 4; // Máximo número de pasos aleatorios`,
+                ``,
+                `int tamPasoExtra = 6; // Tamaño del paso aleatorio extra`,
+                ``,
+                `String[] direcciones = new String[${n}];`,
+                ``,
+                `for (int i = 0; i < ${n}; i++) {`,
+                `    int incremAlea = (int)(Math.random()*(maxPasosAlea + 1))*tamPasoExtra;`,
+                `    int incrementoTotal = tamNodo + incremAlea;`,
+                ``,
+                `    int direccionDecimal = dirBase;`,
+                `    direcciones[i] = String.format("0x%06X", direccionDecimal);`,
+                ``,
+                `    dirBase += incrementoTotal;`,
+                `}`
+            ];
+        }
+    };
+    
+    const codeLines = getCodeLines();
 
-    const codeLines = [
-        `// Se define la dirección base: dirBase = ${direccionBase}`,
-        `// Se define el tamaño de cada nodo en bytes: tamNodo = ${tamanioNodo}`,
-        `for (let i = 0; i < ${n}; i++) {`,
-        `    vectorMemoria[i] = dirBase + (i * tamNodo);`,
-        `    // Ejm: vectorMemoria[i] = ${direccionBase} + (i * ${tamanioNodo})`,
-        `}`,
-        `// Fin del proceso.`,
-    ];
+    // const codeLines = [
+    //     `// Se define la dirección base: dirBase = ${direccionBase}`,
+    //     `// Se define el tamaño de cada nodo en bytes: tamNodo = ${tamanioNodo}`,
+    //     `for (let i = 0; i < ${n}; i++) {`,
+    //     `    vectorMemoria[i] = dirBase + (i * tamNodo);`,
+    //     `    // Ejm: vectorMemoria[i] = ${direccionBase} + (i * ${tamanioNodo})`,
+    //     `}`,
+    //     `// Fin del proceso.`,
+    // ];
 
     const isShowingCode = step === 0;
     const isShowingMemory = step > 0 && step <= n;
@@ -60,17 +103,32 @@ export default function MemoryAllocationVisualizer({
 
             {isShowingMemory && (
                 <div className="flex justify-center gap-4">
-                    {memory.slice(0, step).map(({ index, address }) => (
-                        <div
-                            key={index}
-                            className="min-w-[90px] flex flex-col items-center justify-center bg-[#2E2E2E] rounded-xl p-2 border border-[#3A3A3A] text-center shadow transition-all duration-300"
-                        >
-                            <span className="text-xs text-[#A0A0A0]">Índice</span>
-                            <span className="text-sm font-bold">{index}</span>
-                            <span className="text-xs mt-1 text-[#A0A0A0]">Dirección</span>
-                            <span className="text-sm text-[#40B4C4]">{address}</span>
-                        </div>
-                    ))}
+                    {direcciones.slice(0, step).map((direccion, index) => {
+                        // Detectamos si el item es string o un objeto con memoryAddress
+                        const address =
+                            typeof direccion === "string"
+                                ? direccion
+                                : direccion.memoryAddress;
+                        return (
+                            <div
+                                key={index}
+                                className="min-w-[90px] flex flex-col items-center justify-center bg-[#2E2E2E] rounded-xl p-2 border border-[#3A3A3A] text-center shadow transition-all duration-300"
+                            >
+                                <span className="text-xs text-[#A0A0A0]">
+                                    Índice
+                                </span>
+                                <span className="text-sm font-bold">
+                                    {index}
+                                </span>
+                                <span className="text-xs mt-1 text-[#A0A0A0]">
+                                    Dirección
+                                </span>
+                                <span className="text-sm text-[#40B4C4]">
+                                    {address}
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 

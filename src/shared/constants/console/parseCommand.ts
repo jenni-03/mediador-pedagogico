@@ -55,7 +55,14 @@ export const parseCommand = (input: string, structureType: string): string[] | {
         };
     }
 
-    // 6. Parsear argumentos
+    // 6. Validar errores como coma final, doble coma o argumentos vacíos
+    if (/(^,|,,|,$)/.test(argsString)) {
+        return {
+            error: `Los argumentos están mal formateados. Evite usar comas dobles, comas al principio o al final.`,
+        };
+    }
+
+    // 7. Parsear argumentos
     const rawArgs = argsString
         .split(",")
         .map((arg) => arg.trim())

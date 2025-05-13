@@ -46,9 +46,56 @@ export function ConsoleComponent({
     const structuresRequiringCreate = [
         "secuencia",
         "lista_simple",
+        "lista_doble",
         "lista_circular",
         "lista_circular_doble",
     ];
+
+    // Manejo de Enter manual para el input, en el caso del tutorial
+    useEffect(() => {
+        const inputEl = inputRef.current;
+        if (!inputEl) return;
+
+        const handleManualEnter = (e: KeyboardEvent) => {
+            if (e.key === "Enter" && inputEl.value.trim() !== "") {
+                if (e.isTrusted) {
+                    // Ignoramos los eventos del teclado físico
+                    return;
+                }
+                e.preventDefault();
+                const parsed = parseCommand(
+                    inputEl.value.trim(),
+                    structureType
+                );
+
+                if (Array.isArray(parsed)) {
+                    onCommand(parsed, true);
+                    setHistory([
+                        ...history,
+                        `$ ${inputEl.value.trim()}`,
+                        "Comando válido, procesando...",
+                    ]);
+                    //Guardamos el comando en el historial
+                    setCommandHistory([
+                        ...commandHistory,
+                        inputEl.value.trim(),
+                    ]);
+                } else {
+                    // parsed es { error: string }
+                    setHistory([
+                        ...history,
+                        `$ ${input}`,
+                        `Error: ${parsed.error}`,
+                    ]);
+                }
+
+                inputEl.value = "";
+            }
+        };
+
+        inputEl.addEventListener("keydown", handleManualEnter);
+        return () => inputEl.removeEventListener("keydown", handleManualEnter);
+    }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (isAnimating) return;
@@ -64,7 +111,6 @@ export function ConsoleComponent({
                 const parsed = parseCommand(input.trim(), structureType);
 
                 if ("error" in parsed) {
-                    console.log("Error en el comando:", parsed.error);
                     onCommand([], false);
                     setHistory([
                         ...history,
@@ -80,10 +126,9 @@ export function ConsoleComponent({
 
                 const parts = parsed;
 
-                console.log("Comando parseado:", parts);
-
                 const commandValidation = commandRules[structureType](parts);
 
+                // Verifica si el comando es válido según las reglas de la estructura, es decir, es un booleano
                 if (typeof commandValidation === "boolean") {
                     if (commandValidation) {
                         const command = parts[0]?.toLowerCase();
@@ -92,7 +137,7 @@ export function ConsoleComponent({
                         const needsCreate =
                             structuresRequiringCreate.includes(structureType);
 
-                        // Si la estructura no ha sido creada solo se permite el cmd create
+                        // Caso 1: Si la estructura no ha sido creada y el comando es distinto a create
                         if (needsCreate && !isCreated && command !== "create") {
                             onCommand([], false);
                             setHistory([
@@ -100,7 +145,18 @@ export function ConsoleComponent({
                                 `$ ${input}`,
                                 "Error: Debe crear la estructura primero con 'create'",
                             ]);
-                        } else if (isCreated && command == "clean") {
+                            //Guardamos el comando en el historial
+                            setCommandHistory([
+                                ...commandHistory,
+                                input.trim(),
+                            ]);
+                        }
+                        //Caso 2: Si la estructura ya fue creada y el comando es clean
+                        else if (
+                            needsCreate &&
+                            isCreated &&
+                            command == "clean"
+                        ) {
                             onCommand(parsed, true);
                             setHistory([
                                 ...history,
@@ -112,7 +168,9 @@ export function ConsoleComponent({
                                 input.trim(),
                             ]); // Guardamos solo el comando
                             setIsCreated(false); // Marcar como no creada
-                        } else {
+                        }
+                        //Caso 3: Cuando es cualquier comando, excepto clean en el caso de que la estructura ya fue creada
+                        else {
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
                             }
@@ -122,6 +180,12 @@ export function ConsoleComponent({
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
+                            console.log(commandValidation);
+                            //Guardamos el comando en el historial
+                            setCommandHistory([
+                                ...commandHistory,
+                                input.trim(),
+                            ]);
                         }
                     } else {
                         onCommand([], false);
@@ -130,18 +194,21 @@ export function ConsoleComponent({
                             `$ ${input}`,
                             "Error: Comando no válido",
                         ]);
+                        //Guardamos el comando en el historial
+                        setCommandHistory([...commandHistory, input.trim()]);
                     }
-                } else {
+                }
+                // Verifica si el comando es inválido según las reglas de la estructura, es decir, es un objeto con un mensaje
+                else {
                     onCommand([], false);
                     setHistory([
                         ...history,
                         `$ ${input}`,
                         `Error: ${commandValidation.message}`,
                     ]);
+                    //Guardamos el comando en el historial
+                    setCommandHistory([...commandHistory, input.trim()]);
                 }
-
-                //Guardamos el comando en el historial
-                setCommandHistory([...commandHistory, input.trim()]);
 
                 setInput("");
                 setHistoryIndex(-1); // Reiniciamos el índice del historial
@@ -176,9 +243,7 @@ export function ConsoleComponent({
     };
 
     return (
-        <div
-            className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono"
-        >
+        <div className="flex-1 bg-[#101014] text-white mr-2 rounded-xl font-mono">
             {history.map((cmd, index) => (
                 <div
                     key={index}
@@ -206,6 +271,7 @@ export function ConsoleComponent({
                     ref={inputRef}
                     autoFocus
                     spellCheck={false}
+                    data-tour="inputConsola"
                 />
             </div>
         </div>

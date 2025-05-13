@@ -61,8 +61,7 @@ export type SimulatorProps<T extends string> = {
     actions: BaseStructureActions<T>;
     query: BaseQueryOperations;
     error: { message: string, id: number } | null;
-    reset: () => void;
-    children: React.ReactNode
+    children: React.ReactNode;
 }
 
 export type FilterState = {
@@ -85,12 +84,27 @@ export interface CardData {
 
 export type BaseQueryOperations<T extends string> =
     T extends "secuencia" ? {
-        create: number | null,
-        toAdd: number | null,
-        toDelete: number | null,
-        toSearch: number | null,
-        toUpdate: [number, number] | []
-    } : never;
+        create: number | null;
+        toAdd: number | null;
+        toDelete: number | null;
+        toSearch: number | null;
+        toUpdate: [number, number] | [];
+    } :
+    T extends "cola" ? {
+        toEnqueuedNode: string | null;
+        toDequeuedNode: string | null;
+        toClear: boolean;
+    } : 
+    T extends "cola_de_prioridad" ? {
+        toEnqueuedNode: string | null;
+        toDequeuedNode: string | null;
+        toGetRear: string | null;
+    } :
+    T extends "pila" ? {
+        toPushNode: string | null;
+        toPopNode: string | null;
+        toGetTop: string | null;
+    } : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
@@ -102,17 +116,22 @@ export type BaseStructureActions<T extends string> =
         set: (pos: number, element: number) => void;
     } :
     T extends "cola" ? {
-        create: (n: number) => void;
-        insertlast: (element: number) => void;
-        delete: (element: number) => void;
-        search: (element: number) => void;
+        enqueue: (element: number) => void;
+        dequeue: () => void;
+        getFront: () => void;
+        clean: () => void;
+    } :
+    T extends "cola de prioridad" ? {
+        enqueue: (element: number) => void;
+        dequeue: () => void;
+        getFront: () => void;
+        getRear: () => void;
         clean: () => void;
     } :
     T extends "pila" ? {
-        create: (n: number) => void;
-        insertlast: (element: number) => void;
-        delete: (element: number) => void;
-        search: (element: number) => void;
+        push: (element: number) => void;
+        pop: () => void;
+        getTop: () => void;
         clean: () => void;
     } :
     Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
@@ -127,3 +146,30 @@ export type CodeAnalysisProps = {
     operationalCost: string[];
     complexity: string;
 }
+
+export type QueueNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
+};
+
+export type LinkData = {
+    sourceId: string;
+    targetId: string;
+    type: "next" | "prev";
+}
+
+export type StackNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
+};
+
+export type IndicatorPositioningConfig = {
+    calculateTransform: (
+        nodePos: { x: number, y: number },
+        dims: { elementWidth: number, elementHeight: number }
+    ) => string;
+};

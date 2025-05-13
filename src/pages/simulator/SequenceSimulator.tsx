@@ -3,10 +3,11 @@ import { Simulator } from "./components/templates/Simulator";
 import { SequenceRender } from "./components/estructures/secuencia/SequenceRender";
 import { Secuencia } from "../../shared/utils/structures/Secuencia";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
+import { useRef } from "react";
 
 export function SequenceSimulator() {
     // Instanciación de la estructura Secuencia
-    const structure = new Secuencia(0);
+    const structure = useRef(new Secuencia(0)).current;
 
     // Llamada al hook useSequence para manejar la lógica de la secuencia
     const { sequence, query, error, operations } = useSequence(structure);
@@ -36,11 +37,9 @@ export function SequenceSimulator() {
                 set: updateElement,
             }}
             query={query}
-            reset={resetQueryValues}
             error={error}
         >
             <SequenceRender
-                structureName={STRUCTURE_NAME.SEQUENCE}
                 sequence={sequence.getVector()}
                 memory={getMemory()}
                 query={query}

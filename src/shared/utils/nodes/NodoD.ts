@@ -16,7 +16,7 @@ export class NodoD {
 
     /**
      * Constructor de la clase Nodo Doble
-     * @param valor 
+     * @param valor Valor a almacenar en el nodo
      */
     constructor(valor: number) {
         this.valor = valor;
@@ -25,37 +25,49 @@ export class NodoD {
     }
 
     /**
-     * 
-     * @returns información almacenada en el nodo
+     * Método encargado de obtener la información almacenada en el nodo
+     * @returns valor almacenado en el nodo
      */
     public getValor(): number {
         return this.valor;
     }
 
     /**
-     * 
-     * @returns información almacenada en el nodo siguiente
+     * Método encargado de obtener el nodo siguiente
+     * @returns nodo siguiente o null según corresponda
      */
     public getSiguiente(): NodoD | null {
         return this.siguiente;
     }
 
     /**
-     * 
-     * @returns información almacenada en el nodo anterior
+     * Método encargado de obtener el nodo anterior
+     * @returns nodo anterior o null según corresponda
      */
     public getAnterior(): NodoD | null {
         return this.anterior;
     }
 
+    /**
+     * Método encargado de establecer el valor del nodo
+     * @param valor Valor a establecer
+     */
     public setValor(valor: number): void {
         this.valor = valor;
     }
 
+    /**
+     * Método encargado de establecer el nodo siguiente
+     * @param nodo Nodo a establecer como siguiente
+     */
     public setSiguiente(nodo: NodoD | null): void {
         this.siguiente = nodo;
     }
 
+    /**
+     * Método encargado de establecer el nodo anterior
+     * @param nodo Nodo a establecer como anterior
+     */
     public setAnterior(nodo: NodoD | null): void {
         this.anterior = nodo;
     }

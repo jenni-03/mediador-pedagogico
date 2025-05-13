@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { commandsData } from "../../../../shared/constants/commandsData";
 import { CommandProps } from "../../../../types";
-import { motion, AnimatePresence } from "framer-motion";
 
-const comandos: CommandProps[] = commandsData["memoria"].buttons;
+// Lista plana de todos los comandos
+const allCommands: CommandProps[] = commandsData["memoria"].buttons;
 
 export function FloatingCommandPanel() {
   const [selected, setSelected] = useState<CommandProps | null>(null);
@@ -15,23 +16,49 @@ export function FloatingCommandPanel() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full flex justify-center sm:justify-end px-4 sm:px-10 mt-6 sm:-mt-60"
+        className="
+          w-full h-auto sm:h-full
+          flex justify-center sm:justify-end
+          mt-4 sm:mt-0
+          px-4 sm:px-10
+        "
       >
-        <div className="w-full sm:w-[40%] max-w-screen-md bg-[#1F1F1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 p-5"
-        data-tour="comandos">
-          <h2 className="text-center font-bold text-sm text-[#D72638] tracking-wide mb-4">
-            COMANDOS DEL SIMULADOR DE MEMORIA
+        <div
+          className="
+            w-full sm:w-[480px]
+            bg-[#1F1F1F]
+            border border-[#2E2E2E]
+            rounded-2xl
+            shadow-2xl shadow-black/40
+            p-4 sm:p-8
+          "
+          data-tour="comandos"
+        >
+          <h2 className="text-center text-lg sm:text-xl font-bold text-[#D72638] tracking-wide mb-6">
+            COMANDOS SIMULADOR MEMORIA
           </h2>
 
+          {/* Grid plano de 2 columnas */}
           <div className="grid grid-cols-2 gap-3">
-            {comandos.map((cmd: CommandProps, idx: number) => (
+            {allCommands.map((cmd) => (
               <motion.button
-                key={idx}
+                key={cmd.title}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
                 transition={{ type: "spring", stiffness: 300 }}
                 onClick={() => setSelected(cmd)}
-                className="text-xs font-semibold text-[#E0E0E0] bg-[#2B2B2B] border border-[#3A3A3A] hover:border-[#D72638] hover:text-[#D72638] rounded-full px-4 py-1 transition-all shadow-sm hover:shadow-md"
+                className="
+                  text-xs sm:text-sm md:text-base
+                  font-semibold
+                  text-[#E0E0E0]
+                  bg-[#2B2B2B]
+                  border border-[#3A3A3A]
+                  hover:border-[#D72638] hover:text-[#D72638]
+                  rounded-full
+                  px-3 py-2
+                  transition-all
+                  shadow-sm hover:shadow-md
+                "
               >
                 {cmd.title}
               </motion.button>
@@ -54,37 +81,37 @@ export function FloatingCommandPanel() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-[#1F1F1F] p-6 rounded-2xl shadow-2xl w-[90%] max-w-sm border border-[#2E2E2E]"
+              className="bg-[#1F1F1F] w-[90%] max-w-md max-h-[80vh] overflow-y-auto p-6 sm:p-8 rounded-2xl shadow-2xl border border-[#2E2E2E]"
             >
-              <h3 className="text-2xl font-bold text-[#D72638] mb-5 text-center tracking-wide">
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#D72638] mb-6 text-center tracking-wide">
                 {selected.title.toUpperCase()}
               </h3>
-              <div className="space-y-3 text-sm text-[#CCCCCC]">
-                <p>
-                  <span className="font-semibold text-[#E0E0E0]">
+              <div className="space-y-6 text-sm sm:text-base text-[#CCCCCC]">
+                <div>
+                  <h4 className="font-semibold text-[#E0E0E0] mb-1">
                     🧠 Funcionalidad:
-                  </span>{" "}
-                  {selected.description}
-                </p>
-                <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    📌 Estructura del comando:
-                  </span>{" "}
-                  {selected.estructura}
-                </p>
-                <p>
-                  <span className="font-semibold text-[#E0E0E0]">
-                    🛠️ Ejemplo de uso:
-                  </span>{" "}
-                  {selected.ejemplo}
-                </p>
+                  </h4>
+                  {renderWithLineBreaks(selected.description)}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-[#E0E0E0] mb-1">
+                    📌 Estructura:
+                  </h4>
+                  {renderWithLineBreaks(selected.estructura)}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-[#E0E0E0] mb-1">
+                    🛠️ Ejemplo:
+                  </h4>
+                  {renderWithLineBreaks(selected.ejemplo)}
+                </div>
               </div>
-              <div className="text-center mt-6">
+              <div className="text-center mt-8">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelected(null)}
-                  className="bg-[#D72638] hover:bg-[#c41f30] text-white font-semibold text-sm px-6 py-2 rounded-full shadow"
+                  className="bg-[#D72638] hover:bg-[#c41f30] text-white font-bold text-sm sm:text-base px-6 py-2 rounded-full shadow-lg"
                 >
                   Aceptar
                 </motion.button>
@@ -95,4 +122,23 @@ export function FloatingCommandPanel() {
       </AnimatePresence>
     </>
   );
+}
+
+// Función de renderizado de líneas (igual que antes)
+function renderWithLineBreaks(text: string) {
+  return text.split("\n").map((line, idx) => {
+    if (line.startsWith("->")) {
+      return (
+        <p key={idx} className="flex items-start gap-1">
+          <span className="mt-0.5">➡️</span>
+          <span>{line.slice(2).trim()}</span>
+        </p>
+      );
+    }
+    return (
+      <p key={idx} className="mt-1">
+        {line}
+      </p>
+    );
+  });
 }
