@@ -100,7 +100,7 @@ export function Simulator<T extends string>({
                     </h1>
                     {/* Contenedor principal */}
                     <div className="w-full bg-[#1A1A1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 px-4 py-6">
-                        <div className="flex flex-col xl:flex-row gap-6 mb-6 overflow-hidden">
+                        <div className="flex flex-col lg:flex-row gap-6 mb-6 overflow-hidden">
                             {/* Estructura */}
                             <div
                                 id="main-container"
