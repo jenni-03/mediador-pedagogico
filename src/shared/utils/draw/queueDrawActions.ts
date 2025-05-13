@@ -448,6 +448,7 @@ export function drawArrowIndicator(
         fontSize: string;
         fontWeight: string;
         arrowPathData: string;
+        textRelativeX?: number;
         textRelativeY: number;
         arrowTransform: string;
     },
@@ -475,7 +476,7 @@ export function drawArrowIndicator(
                     .attr("fill", styleConfig.textColor)
                     .attr("font-size", styleConfig.fontSize)
                     .attr("font-weight", styleConfig.fontWeight)
-                    .attr("x", 0)
+                    .attr("x", styleConfig.textRelativeX ?? 0)
                     .attr("y", styleConfig.textRelativeY)
                     .text(styleConfig.text);
 

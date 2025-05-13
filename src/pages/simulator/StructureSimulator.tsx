@@ -2,12 +2,13 @@ import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
 import { SequenceSimulator } from "./SequenceSimulator";
 import { QueueSimulator } from "./QueueSimulator";
+import { StackSimulator } from "./StackSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
     Secuencia: SequenceSimulator, // Si nombre = "Secuencia", renderiza <SequenceSimulator />
     Cola: QueueSimulator,
-    // Pila: StackSimulator,
+    Pila: StackSimulator,
 };
 
 export function StructureSimulator() {

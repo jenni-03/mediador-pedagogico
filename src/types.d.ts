@@ -94,7 +94,17 @@ export type BaseQueryOperations<T extends string> =
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
         toClear: boolean;
-    } : never;
+    } : 
+    T extends "cola_de_prioridad" ? {
+        toEnqueuedNode: string | null;
+        toDequeuedNode: string | null;
+        toGetRear: string | null;
+    } :
+    T extends "pila" ? {
+        toPushNode: string | null;
+        toPopNode: string | null;
+        toGetTop: string | null;
+    } : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
@@ -149,6 +159,13 @@ export type LinkData = {
     targetId: string;
     type: "next" | "prev";
 }
+
+export type StackNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
+};
 
 export type IndicatorPositioningConfig = {
     calculateTransform: (

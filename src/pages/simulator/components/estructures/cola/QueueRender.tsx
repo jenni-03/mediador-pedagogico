@@ -11,7 +11,7 @@ export function QueueRender({
         id: string;
         value: number;
         next: string | null;
-        address: number;
+        address: string;
     }[];
     query: BaseQueryOperations<"cola">;
     resetQueryValues: () => void;
@@ -20,7 +20,7 @@ export function QueueRender({
 
     return (
         <div>
-            <svg id={`sequence-svg`} ref={svgRef}>
+            <svg id={`queue-svg`} ref={svgRef}>
                 <defs>
                     <marker
                         id="arrowhead"

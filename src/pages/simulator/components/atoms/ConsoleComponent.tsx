@@ -130,13 +130,13 @@ export function ConsoleComponent({
 
                 // Verifica si el comando es válido según las reglas de la estructura, es decir, es un booleano
                 if (typeof commandValidation === "boolean") {
-                    if(commandValidation){
+                    if (commandValidation) {
                         const command = parts[0]?.toLowerCase();
 
                         // Verificar si la estructura necesita "create"
                         const needsCreate =
                             structuresRequiringCreate.includes(structureType);
-    
+
                         // Caso 1: Si la estructura no ha sido creada y el comando es distinto a create
                         if (needsCreate && !isCreated && command !== "create") {
                             onCommand([], false);
@@ -146,17 +146,27 @@ export function ConsoleComponent({
                                 "Error: Debe crear la estructura primero con 'create'",
                             ]);
                             //Guardamos el comando en el historial
-                            setCommandHistory([...commandHistory, input.trim()]);
+                            setCommandHistory([
+                                ...commandHistory,
+                                input.trim(),
+                            ]);
                         }
                         //Caso 2: Si la estructura ya fue creada y el comando es clean
-                        else if (needsCreate && isCreated && command == "clean") {
+                        else if (
+                            needsCreate &&
+                            isCreated &&
+                            command == "clean"
+                        ) {
                             onCommand(parsed, true);
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
-                            setCommandHistory([...commandHistory, input.trim()]); // Guardamos solo el comando
+                            setCommandHistory([
+                                ...commandHistory,
+                                input.trim(),
+                            ]); // Guardamos solo el comando
                             setIsCreated(false); // Marcar como no creada
                         }
                         //Caso 3: Cuando es cualquier comando, excepto clean en el caso de que la estructura ya fue creada
@@ -172,7 +182,10 @@ export function ConsoleComponent({
                             ]);
                             console.log(commandValidation);
                             //Guardamos el comando en el historial
-                            setCommandHistory([...commandHistory, input.trim()]);
+                            setCommandHistory([
+                                ...commandHistory,
+                                input.trim(),
+                            ]);
                         }
                     } else {
                         onCommand([], false);
@@ -254,8 +267,8 @@ export function ConsoleComponent({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    // disabled={isAnimating}
-                    // ref={inputRef}
+                    disabled={isAnimating}
+                    ref={inputRef}
                     autoFocus
                     spellCheck={false}
                     data-tour="inputConsola"

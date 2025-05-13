@@ -50,9 +50,7 @@ export function useQueueRender(
 
         // Cálculo del ancho del SVG en base al número de nodos presentes
         const displayLength = Math.max(queueNodes.length, prevNodes?.length ?? 0);
-        console.log("displayLength", displayLength);
         const width = margin.left + displayLength * nodeSpacing - (queueNodes.length > 0 ? spacing : 0) + margin.right;
-        console.log("width", width);
 
         // Alto del SVG
         const height = SVG_QUEUE_VALUES.HEIGHT;
