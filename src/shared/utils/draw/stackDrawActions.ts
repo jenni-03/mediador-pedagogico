@@ -1,89 +1,15 @@
 import { StackNodeData } from "../../../types";
 import * as d3 from "d3";
-import { SVG_QUEUE_VALUES, SVG_STACK_VALUES } from "../../constants/consts";
-import { RefObject } from "react";
+import { SVG_QUEUE_VALUES, SVG_STACK_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 
 /**
- * Función para dibujar el indicador de TOPE en la pila
- * @param svg Lienzo en el que se va a dibujar
- * @param positions Posiciones de cada uno de los nodos dentro del lienzo
- * @param topNodeId ID del nodo que está en el tope de la pila
- * @param elementWidth Ancho de los elementos
- * @param elementHeight Alto de los elementos
- */
-export function drawTopIndicator(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    positions: Map<string, { x: number; y: number }>,
-    topNodeId: string | undefined,
-    elementWidth: number,
-    elementHeight: number
-) {
-    // Eliminamos cualquier indicador de tope existente
-    svg.selectAll("g.top-indicator").remove();
-
-    // Si no hay nodos en la pila, no dibujamos el indicador
-    if (!topNodeId) return;
-
-    // Obtenemos la posición del nodo superior
-    const topNodePos = positions.get(topNodeId);
-    if (!topNodePos) return;
-
-    // Creamos un grupo para el indicador de tope
-    const topIndicator = svg
-        .append("g")
-        .attr("class", "top-indicator")
-        .attr("id", "stack-top-indicator");
-
-    // Definimos las posiciones para la flecha
-    const arrowStartX = topNodePos.x + elementWidth + 30; // 30px a la derecha del nodo (más distancia)
-    const arrowStartY = topNodePos.y + elementHeight / 2;
-    const arrowEndX = topNodePos.x + elementWidth + 10; // Punta de la flecha cerca del nodo
-    const arrowEndY = arrowStartY;
-
-    // Dibujamos la línea de la flecha (más ancha)
-    topIndicator
-        .append("line")
-        .attr("x1", arrowStartX)
-        .attr("y1", arrowStartY)
-        .attr("x2", arrowEndX)
-        .attr("y2", arrowEndY)
-        .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR) // Color rojo tomate para destacar
-        .attr("stroke-width", 4); // Línea más ancha (aumentado de 2 a 4)
-
-    // Añadimos la punta de la flecha (más grande)
-    topIndicator
-        .append("polygon")
-        .attr(
-            "points",
-            `
-            ${arrowEndX},${arrowEndY} 
-            ${arrowEndX + 10},${arrowEndY - 10} 
-            ${arrowEndX + 10},${arrowEndY + 10}
-        `
-        )
-        .attr("fill", SVG_QUEUE_VALUES.NODE_STROKE_COLOR);
-
-    // Añadimos el texto "TOPE"
-    topIndicator
-        .append("text")
-        .attr("x", arrowStartX + 10) // 10px a la derecha del inicio de la flecha
-        .attr("y", arrowStartY)
-        .attr("dy", "0.35em") // Alineación vertical
-        .attr("text-anchor", "start")
-        .attr("fill", SVG_QUEUE_VALUES.NODE_TEXT_COLOR)
-        .style("font-weight", "bold")
-        .style("font-size", "18px")
-        .text("TOPE");
-}
-
-/**
- * Función encargada de dibujar los nodos de la pila
+ * Función encargada de renderizar los nodos de la pila
  * @param svg Lienzo en el que se va a dibujar
  * @param pushNodes Nodos a dibujar
- * @param positions Posiciones de cada uno de los nodos dentro del lienzo
+ * @param positions Mapa de posiciones de cada uno de los nodos dentro del lienzo
  * @param dims Dimensiones de los elementos dentro del lienzo
  */
-export function drawNodes(
+export function drawStackNodes(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     pushNodes: StackNodeData[],
     positions: Map<string, { x: number; y: number }>,
@@ -93,27 +19,19 @@ export function drawNodes(
         elementHeight: number;
         verticalSpacing: number;
         height: number;
+        nodesHeight: number;
     }
 ) {
-    const { margin, elementWidth, elementHeight, verticalSpacing } = dims;
+    // Dimensiones del lienzo
+    const { margin, elementWidth, elementHeight, verticalSpacing, height, nodesHeight } = dims;
 
     // Verificamos si hay un espacio adicional para animación en la parte superior
-    const svgHeight = parseFloat(svg.attr("height"));
-    const nodesHeight =
-        SVG_STACK_VALUES.MARGIN_TOP +
-        pushNodes.length * verticalSpacing +
-        SVG_STACK_VALUES.MARGIN_BOTTOM;
-    const animationSpace = Math.max(0, svgHeight - nodesHeight);
+    const animationSpace = Math.max(0, height - nodesHeight);
+    console.log("nodesHeight:", nodesHeight);
+    console.log("animation space:", animationSpace)
 
     // Calculamos un offset adicional para posicionar la pila más abajo cuando hay espacio para animación
     const offsetY = animationSpace;
-
-    // Primero calculamos las posiciones finales de todos los nodos
-    pushNodes.forEach((node, i) => {
-        const x = margin.left;
-        const y = SVG_STACK_VALUES.MARGIN_TOP + offsetY + i * verticalSpacing;
-        positions.set(node.id, { x, y });
-    });
 
     // Realizamos el data join para los nodos
     svg.selectAll<SVGGElement, StackNodeData>("g.node")
@@ -125,14 +43,15 @@ export function drawNodes(
                     .append("g")
                     .attr("class", "node")
                     .attr("id", (d) => d.id)
-                    .attr("transform", (d) => {
-                        // Posicionamos el nodo directamente en su posición calculada
-                        const pos = positions.get(d.id)!;
-                        return `translate(${pos.x}, ${pos.y})`;
+                    .attr("transform", (d, i) => {
+                        // Cálculo de la posición del nodo
+                        const x = margin.left;
+                        const y = SVG_STACK_VALUES.MARGIN_TOP + offsetY + i * verticalSpacing;
+                        positions.set(d.id, { x, y });
+                        return `translate(${x}, ${y})`;
                     })
-                    .style("opacity", 1); // Los nodos iniciales comienzan visibles
 
-                // Contenedor principal del nodo (borde exterior con bordes redondeados y sombra)
+                // Contenedor principal del nodo
                 gEnter
                     .append("rect")
                     .attr("class", "node-container")
@@ -141,25 +60,25 @@ export function drawNodes(
                     .attr("rx", 12)
                     .attr("ry", 12)
                     .attr("fill", "#ffffff")
-                    .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
                     .attr("stroke-width", 1.5);
 
-                // Sección superior para el valor con color azul más atractivo
+                // Sección superior para el valor del nodo
                 const valueSection = gEnter
                     .append("g")
                     .attr("class", "value-section");
 
-                // Rectángulo de la sección superior
+                // Contenedor del valor del nodo
                 valueSection
                     .append("rect")
                     .attr("class", "value-container")
-                    .attr("width", elementWidth - 2) // margen interior para estética
+                    .attr("width", elementWidth - 2)
                     .attr("height", elementHeight / 2 - 1)
                     .attr("x", 1)
                     .attr("y", 1)
                     .attr("rx", 8)
                     .attr("ry", 8)
-                    .attr("fill", SVG_QUEUE_VALUES.NODE_STROKE_COLOR); // azul llamativo
+                    .attr("fill", SVG_STYLE_VALUES.RECT_STROKE_COLOR);
 
                 // Texto del valor
                 valueSection
@@ -171,7 +90,7 @@ export function drawNodes(
                     .attr("dominant-baseline", "middle")
                     .attr("fill", "white")
                     .style("font-weight", "bold")
-                    .style("font-size", "18px")
+                    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
                     .style("letter-spacing", "0.5px")
                     .text((d) => d.value);
 
@@ -180,7 +99,7 @@ export function drawNodes(
                     .append("g")
                     .attr("class", "memory-section");
 
-                // Texto de la dirección de memoria directamente sin contenedor gris
+                // Texto de la dirección de memoria
                 memorySection
                     .append("text")
                     .attr("class", "memory-text")
@@ -188,8 +107,8 @@ export function drawNodes(
                     .attr("y", (elementHeight * 3) / 4 + 4)
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
-                    .attr("fill", "#444") // gris oscuro
-                    .style("font-weight", "normal")
+                    .attr("fill", "#444")
+                    .style("font-weight", "bold")
                     .style("font-size", "12px")
                     .style("letter-spacing", "0.5px")
                     .text((d) => d.memoryAddress);
@@ -197,129 +116,122 @@ export function drawNodes(
                 return gEnter;
             },
             (update) => {
-                // Movemos los nodos existentes instantáneamente sin animación
+                // Guarda la posición actualizada para cada nodo presente
                 update
-                    .attr("transform", (d) => {
-                        const pos = positions.get(d.id)!;
-                        return `translate(${pos.x}, ${pos.y})`;
-                    })
-                    .style("opacity", 1);
+                    .each((d, i) => {
+                        const x = margin.left;
+                        const y = SVG_STACK_VALUES.MARGIN_TOP + offsetY + i * verticalSpacing;
+                        positions.set(d.id, { x, y });
+                    });
 
                 // Actualizamos los textos por si cambiaron
                 update.select(".value-text").text((d) => d.value);
                 update.select(".memory-text").text((d) => d.memoryAddress);
 
                 return update;
-            }
+            },
+            (exit) => exit
         );
-
-    // Añadimos el indicador de tope si hay nodos en la pila
-    if (pushNodes.length > 0) {
-        // El nodo superior es el primero en el array (debido al orden visual en una pila)
-        const topNodeId = pushNodes[0].id;
-        drawTopIndicator(
-            svg,
-            positions,
-            topNodeId,
-            elementWidth,
-            elementHeight
-        );
-    } else {
-        // Si no hay nodos, eliminamos cualquier indicador existente
-        svg.selectAll("g.top-indicator").remove();
-    }
 }
 
 /**
- *
- * @param newNodeGroup
- * @param nextLinkGroup
- * @param nodeStacked
- * @param positions
- * @param resetQueryValues
- * @param setIsAnimating
+ * Función encargada de animar la entrada de un nuevo nodo en la pila 
+ * @param svg Lienzo en el que se va a dibujar
+ * @param nodeStacked ID del nodo apilado
+ * @param remainingNodesData Información de los nodos dentro de la pila
+ * @param positions Mapa de posiciones de cada nodo dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de la query del usuario
+ * @param setIsAnimating Función que establece el estado de animación
  */
 export async function pushNode(
-    newNodeGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodeStacked: string,
+    remainingNodesData: StackNodeData[],
     positions: Map<string, { x: number; y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Marcamos el inicio de la animación
-    setIsAnimating(true);
+    // Grupo del lienzo correspondiente al nuevo elemento
+    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeStacked}`);
 
-    // Importante: Aseguramos que todos los nodos existentes permanezcan visibles
-    const svgElement = newNodeGroup.node()?.ownerSVGElement;
+    // Grupo del lienzo correspondiente al indicador del elemento tope
+    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
     // Posición final del nuevo nodo
     const finalPos = positions.get(nodeStacked)!;
 
-    // Calculamos la posición inicial en la parte superior del SVG con un pequeño margen
-    const topMargin = 20; // Un pequeño margen desde el borde superior
+    // Cálculo de la posición de animación inicial del nuevo nodo
+    const topMargin = 20;
     const initialPos = {
         x: finalPos.x,
-        y: topMargin, // Posicionamos el elemento cerca del borde superior del SVG
+        y: topMargin
     };
 
-    // Establecemos el estado visual inicial del nuevo nodo antes de animar
+    // Establecimiento del estado visual inicial para el nuevo nodo
     newNodeGroup
-        .style("opacity", 0) // Aseguramos que comienza invisible
+        .style("opacity", 0)
         .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
 
-    // Durante la animación, eliminamos temporalmente el indicador de tope
-    if (svgElement) {
-        d3.select(svgElement).selectAll("g.top-indicator").remove();
-    }
-
-    // 1. Animación de aparición del nuevo nodo
+    // Animación de aparición del nuevo nodo
     await newNodeGroup
         .transition()
-        .duration(800)
+        .duration(1000)
         .style("opacity", 1)
         .ease(d3.easeCubicInOut)
         .end();
 
-    // 2. Animación de movimiento del nuevo nodo a su posición final
-    const nodeMovePromise = newNodeGroup
-        .transition()
-        .duration(1000)
-        .ease(d3.easeCubicInOut)
-        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-        .end();
-
-    // Ejecutamos ambas promesas de animación en paralelo
-    await Promise.all([nodeMovePromise]);
-
-    // Después de completar la animación, añadimos el indicador de tope al nuevo nodo (que ahora es el superior)
-    if (svgElement) {
-        const svg = d3.select(svgElement);
-        const elementWidth = SVG_STACK_VALUES.ELEMENT_WIDTH;
-        const elementHeight = SVG_STACK_VALUES.ELEMENT_HEIGHT;
-
-        // Dibujamos el nuevo indicador de tope
-        drawTopIndicator(
-            svg,
-            positions,
-            nodeStacked,
-            elementWidth,
-            elementHeight
-        );
-
-        // Seleccionamos el nuevo indicador
-        const newTopIndicator = svg.select<SVGGElement>("g.top-indicator");
-
-        // Lo hacemos inicialmente invisible
-        newTopIndicator.style("opacity", 0);
-
-        // Animamos su aparición
-        await newTopIndicator
+    // En caso de haber mas nodos dentro de la pila
+    if (remainingNodesData.length >= 1) {
+        // Animación de salida del indicador tope
+        await topeIndicatorGroup
             .transition()
-            .duration(1500)
+            .duration(1000)
+            .ease(d3.easeBounce)
+            .style("opacity", 0)
+            .end();
+
+        // Array de promesas para concretar animaciones de desplazamiento de nodos.
+        const shiftPromises: Promise<void>[] = [];
+
+        // Selección de nodos adicionales (re-vinculación de datos)
+        const remainingNodes = svg
+            .selectAll<SVGGElement, StackNodeData>("g.node")
+            .data(remainingNodesData, (d) => d.id);
+
+        // Por cada nodo dentro de la pila cálculamos la transición a su posición final
+        remainingNodes.each(function (d) {
+            const group = d3.select(this);
+            const finalPos = positions.get(d.id);
+            if (finalPos) {
+                shiftPromises.push(
+                    group.transition()
+                        .duration(1500)
+                        .ease(d3.easeBounce)
+                        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+                        .end()
+                );
+            }
+        });
+
+        // Resolución de las promesas de animación de desplazamiento
+        await Promise.all(shiftPromises);
+
+        // Animación de entrada del indicador tope
+        await topeIndicatorGroup
+            .transition()
+            .duration(1000)
             .ease(d3.easeBounce)
             .style("opacity", 1)
             .end();
     }
+
+    // Animación de movimiento del nuevo nodo a su posición final
+    await newNodeGroup
+        .transition()
+        .duration(1500)
+        .ease(d3.easeCubicInOut)
+        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+        .end();
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
@@ -329,24 +241,12 @@ export async function pushNode(
 }
 
 export function highlightTopNode(
-    svgRef: RefObject<SVGSVGElement>,
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     stackNodes: StackNodeData[],
     onEnd: () => void
 ) {
-    if (!svgRef.current || stackNodes.length === 0) {
-        onEnd();
-        return;
-    }
-
-    const svg = d3.select(svgRef.current);
     const topNodeId = stackNodes[0].id;
     const topNodeGroup = svg.select<SVGGElement>(`#${topNodeId}`);
-
-    if (topNodeGroup.empty()) {
-        console.error("No se encontró el nodo del tope:", topNodeId);
-        onEnd();
-        return;
-    }
 
     // Color para resaltar el nodo tope
     const highlightColor = "#00e676"; // Verde neón
@@ -391,46 +291,7 @@ export function highlightTopNode(
         .style("font-size", "18px")
         .style("font-weight", "bold");
 
-    // Resaltar la flecha del top
-    const topIndicator = svg.select<SVGGElement>("g.top-indicator");
-
-    // Resaltar línea de flecha
-    topIndicator
-        .select("line")
-        .transition()
-        .duration(300)
-        .attr("stroke", "#00e676")
-        .attr("stroke-width", 6) // más gruesa
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR)
-        .attr("stroke-width", 4);
-
-    // Resaltar punta de flecha
-    topIndicator
-        .select("polygon")
-        .transition()
-        .duration(300)
-        .attr("fill", "#00e676")
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("fill", SVG_QUEUE_VALUES.NODE_STROKE_COLOR);
-
-    // Resaltar texto "TOPE"
-    topIndicator
-        .select("text")
-        .transition()
-        .duration(300)
-        .attr("fill", "#00e676")
-        .style("font-size", "19px")
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("fill", SVG_QUEUE_VALUES.NODE_TEXT_COLOR)
-        .style("font-size", "18px");
-
+    // ?????????
     d3.timeout(() => {
         topNodeGroup
             .transition()
@@ -448,26 +309,28 @@ export function highlightTopNode(
 
 }
 
+/**
+ * Función encargada de animar la salida de un nodo de la pila 
+ * @param svg Lienzo en el que se va a dibujar
+ * @param nodeIdPop Id del nodo desapilado 
+ * @param remainingNodesData Información de los nodos restantes de la pila
+ * @param positions Mapa de posiciones de cada nodo dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de la query del usuario
+ * @param setIsAnimating Función que establece el estado de animación
+ */
 export async function animateNodePopExit(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    prevFirstNode: StackNodeData,
+    nodeIdPop: string,
     remainingNodesData: StackNodeData[],
     positions: Map<string, { x: number; y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    setIsAnimating(true);
-
-    // Id del nodo a desapilar
-    const nodeIdPop = prevFirstNode.id;
-
-    console.log("Animando la salida del nodo:", nodeIdPop);
-
     // Grupo del lienzo correspondiente al elemento a desapilar
-    const nodeToRemoveGroup = svg.select<SVGGElement>(`#${nodeIdPop}`);
+    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdPop}`);
 
     // Grupo del lienzo correspondiente al indicador del elemento tope
-    const tailIndicatorGroup = svg.select<SVGGElement>("g.top-indicator");
+    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
     // Movimiento del nodo a desapilar
     const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
@@ -475,7 +338,7 @@ export async function animateNodePopExit(
     // Animación de salida del nodo
     await nodeToRemoveGroup
         .transition()
-        .ease(d3.easeBackIn)
+        .ease(d3.easeBackInOut)
         .duration(1500)
         .attr("transform", () => {
             const currentPos = positions.get(nodeIdPop);
@@ -486,23 +349,23 @@ export async function animateNodePopExit(
         .style("opacity", 0)
         .end();
 
-    // Animación de salida del indicador de tope
-    await tailIndicatorGroup
-        .transition()
-        .duration(1000)
-        .ease(d3.easeBounce)
-        .style("opacity", 0)
-        .end();
-
     // Eliminación de los elementos del DOM correspondientes al nodo decolado
     nodeToRemoveGroup.remove();
 
     // Eliminación de la posición del nodo decolado
     positions.delete(nodeIdPop);
 
-    // Solo continuamos si hay nodos restantes
+    // Si hay nodos por mover
     if (remainingNodesData.length > 0) {
-        // Array de promesas para animaciones de desplazamiento de nodos y enlaces restantes
+        // Animación de salida del indicador de tope
+        await topeIndicatorGroup
+            .transition()
+            .duration(1000)
+            .ease(d3.easeBounce)
+            .style("opacity", 0)
+            .end();
+
+        // Array de promesas para animaciones de desplazamiento de los nodos restantes
         const shiftPromises: Promise<void>[] = [];
 
         // Selección de nodos restantes (re-vinculación de datos)
@@ -514,16 +377,13 @@ export async function animateNodePopExit(
         remainingNodes.each(function (d) {
             const group = d3.select(this);
             const finalPos = positions.get(d.id);
+            console.log(finalPos);
             if (finalPos) {
                 shiftPromises.push(
-                    group
-                        .transition()
+                    group.transition()
                         .duration(1500)
-                        .ease(d3.easeElasticOut)
-                        .attr(
-                            "transform",
-                            `translate(${finalPos.x}, ${finalPos.y})`
-                        )
+                        .ease(d3.easeBounce)
+                        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
                         .end()
                 );
             }
@@ -532,31 +392,10 @@ export async function animateNodePopExit(
         // Resolución de las promesas de animación de desplazamiento
         await Promise.all(shiftPromises);
 
-        // Primero eliminamos cualquier indicador anterior (por si acaso)
-        svg.selectAll("g.top-indicator").remove();
-
-        // El nuevo nodo superior es el primero en el array de nodos restantes
-        const newTopNodeId = remainingNodesData[0].id;
-
-        // Dibujamos el nuevo indicador con opacidad 0 inicialmente
-        drawTopIndicator(
-            svg,
-            positions,
-            newTopNodeId,
-            SVG_STACK_VALUES.ELEMENT_WIDTH,
-            SVG_STACK_VALUES.ELEMENT_HEIGHT
-        );
-
-        // Seleccionamos el nuevo indicador
-        const newTopIndicator = svg.select<SVGGElement>("g.top-indicator");
-
-        // Lo hacemos inicialmente invisible
-        newTopIndicator.style("opacity", 0);
-
-        // Animamos su aparición
-        await newTopIndicator
+        // Animación de entrada del indicador de tope
+        await topeIndicatorGroup
             .transition()
-            .duration(1500)
+            .duration(1000)
             .ease(d3.easeBounce)
             .style("opacity", 1)
             .end();

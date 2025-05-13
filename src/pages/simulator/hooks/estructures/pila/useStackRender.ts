@@ -1,17 +1,17 @@
 import { useEffect, useRef } from "react";
-import { BaseQueryOperations, StackNodeData } from "../../../../../types";
-import { SVG_STACK_VALUES } from "../../../../../shared/constants/consts";
+import { BaseQueryOperations, IndicatorPositioningConfig, StackNodeData } from "../../../../../types";
+import { SVG_STACK_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import {
     animateNodePopExit,
-    drawNodes,
+    drawStackNodes,
     highlightTopNode,
     pushNode,
 } from "../../../../../shared/utils/draw/stackDrawActions";
+import { drawArrowIndicator } from "../../../../../shared/utils/draw/queueDrawActions";
 
-//la que sirve pero mal
 export function useStackRender(
     stackNodes: StackNodeData[],
     query: BaseQueryOperations<"pila">,
@@ -29,15 +29,21 @@ export function useStackRender(
     const prevNodes = usePrevious(stackNodes);
 
     // Control de bloqueo de animación
-    const { setIsAnimating, isAnimating } = useAnimation();
+    const { setIsAnimating } = useAnimation();
+
+    console.log("Nodos de la cola");
+    console.log(stackNodes);
+    // console.log("Query actual");
+    // console.log(query);
+    console.log("Nodos previos de la cola");
+    console.log(prevNodes);
+    console.log("Posiciones de los nodos");
+    console.log(nodePositions);
 
     // Renderizado base de la pila
     useEffect(() => {
         // Verificamos que el array de nodos no sea nulo y que la referencia al SVG se haya establecido
-        if (!svgRef.current || query.toPopNode) return;
-
-        // Si hay una animación en curso, no redibujamos la pila completamente
-        if (isAnimating) return;
+        if (!stackNodes || !svgRef.current) return;
 
         // Margenes para el svg
         const margin = {
@@ -53,18 +59,18 @@ export function useStackRender(
         const spacing = SVG_STACK_VALUES.SPACING;
         const verticalSpacing = elementHeight + spacing;
 
-        // Ancho y alto del SVG dependiendo del número de elementos de la pila
+        // Ancho del SVG
         const width = margin.left + 120 + margin.right;
 
-        // Para la altura, consideramos un espacio adicional en la parte superior para la animación
+        // Cálculo de la altura de la SVG considerando un espacio adicional en la parte superior para la animación
         const animationTopSpace = elementHeight * 2;
+        const displayLength = Math.max(stackNodes.length, prevNodes?.length ?? 0);
+        const nodesHeight = SVG_STACK_VALUES.MARGIN_TOP + displayLength * verticalSpacing + SVG_STACK_VALUES.MARGIN_BOTTOM;
         const height =
             stackNodes.length == 0
                 ? SVG_STACK_VALUES.HEIGHT
-                : animationTopSpace +
-                  SVG_STACK_VALUES.MARGIN_TOP +
-                  stackNodes.length * (elementHeight + spacing) +
-                  SVG_STACK_VALUES.MARGIN_BOTTOM;
+                : animationTopSpace + nodesHeight;
+        console.log("height", height);
 
         // Configuración del contenedor SVG
         const svg = d3
@@ -73,14 +79,49 @@ export function useStackRender(
             .attr("width", width);
 
         // Renderizado de los nodos pertenecientes a la pila
-        drawNodes(svg, stackNodes, nodePositions, {
+        drawStackNodes(svg, stackNodes, nodePositions, {
             margin,
             elementWidth,
             elementHeight,
             verticalSpacing,
             height,
+            nodesHeight
         });
-    }, [stackNodes, isAnimating]);
+
+        // Transición de aparición del indicador
+        const indicatorPositioningTransform: IndicatorPositioningConfig = {
+            calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth + 30}, ${pos.y - d.elementHeight / 2})`
+        };
+
+        // Creación de indicador para elemento tope
+        const headId = stackNodes.length > 0 ? stackNodes[0].id : null;
+        const headPos = headId ? nodePositions.get(headId)! : null;
+        const arrowHeadPathData = "M0,0 L10,9.5 L10,4 L20,4 L20,-4 L10,-4 L10,-9.5 Z";
+
+        // Configuración de estilos y de posicionamiento para el indicador de tope
+        const headStyleConfig = {
+            text: "TOPE",
+            textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
+            arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
+            fontSize: "18px",
+            fontWeight: "bold",
+            arrowPathData: arrowHeadPathData,
+            textRelativeX: headPos ? elementWidth / 2 : undefined,
+            textRelativeY: headPos ? elementHeight + 10 : -30,
+            arrowTransform: `translate(-15, ${elementHeight + 5})`
+        }
+
+        // Renderizado del indicador de tope
+        drawArrowIndicator(
+            svg,
+            "tope-indicator",
+            "tope-indicator-group",
+            headPos,
+            headStyleConfig,
+            indicatorPositioningTransform,
+            { elementWidth, elementHeight }
+        );
+    }, [stackNodes]);
 
     // Efecto para manejar la operación push (apilar)
     useEffect(() => {
@@ -89,8 +130,7 @@ export function useStackRender(
             !stackNodes ||
             !svgRef.current ||
             !query.toPushNode ||
-            !prevNodes ||
-            isAnimating
+            !prevNodes
         )
             return;
 
@@ -110,26 +150,23 @@ export function useStackRender(
         // Seleccionamos el elemento SVG de acuerdo a su referencia
         const svg = d3.select(svgRef.current);
 
-        // Grupo del lienzo correspondiente al nuevo elemento
-        const newNodeGroup = svg.select<SVGGElement>(`#${newNode.id}`);
-
         // Animación de inserción del nuevo nodo
         pushNode(
-            newNodeGroup,
+            svg,
             nodeIdEnqueued,
+            stackNodes.slice(1),
             nodePositions,
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toPushNode, isAnimating]);
+    }, [query.toPushNode, stackNodes, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la operación pop (desapilar)
     useEffect(() => {
-        // Solo procesamos si hay un cambio en toPopNode y no estamos ya animando
+        // Verificaciones necesarias para realizar la animación
         if (
             !stackNodes ||
             !query.toPopNode ||
-            isAnimating ||
             !svgRef.current ||
             !prevNodes ||
             prevNodes.length === 0
@@ -137,10 +174,12 @@ export function useStackRender(
             return;
 
         // Obtenemos el nodo superior que va a ser eliminado
-        const nodeToRemove = prevNodes[0];
+        const nodeToRemove = query.toPopNode;
 
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
+
+        console.log("POOOP");
 
         // Ejecutamos la animación de pop
         animateNodePopExit(
@@ -151,24 +190,25 @@ export function useStackRender(
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toPopNode, stackNodes, prevNodes, resetQueryValues, isAnimating]);
+    }, [query.toPopNode, stackNodes, prevNodes, resetQueryValues]);
 
     useEffect(() => {
         if (
-            !query.toGetTop ||
-            isAnimating ||
             !svgRef.current ||
-            stackNodes.length === 0
+            !stackNodes ||
+            stackNodes.length === 0 ||
+            !query.toGetTop
         )
             return;
 
-        setIsAnimating(true);
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
 
-        highlightTopNode(svgRef, stackNodes, () => {
+        highlightTopNode(svg, stackNodes, () => {
             resetQueryValues();
             setIsAnimating(false);
         });
-    }, [query.toGetTop, isAnimating, stackNodes]);
+    }, [query.toGetTop, stackNodes]);
 
     return { svgRef };
 }

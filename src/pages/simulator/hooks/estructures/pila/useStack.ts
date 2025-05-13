@@ -18,23 +18,30 @@ export function useStack(structure: Pila) {
 
     // Operación de insersión (apilar)
     const pushElement = (value: number) => {
-        // Clonar la pila para garantizar la inmutabilidad del estado
-        const clonedStack = stack.clonar();
+        try {
+            // Clonar la pila para garantizar la inmutabilidad del estado
+            const clonedStack = stack.clonar();
 
-        // Apilar el nuevo elemento
-        clonedStack.apilar(value);
+            // Apilar el nuevo elemento
+            clonedStack.apilar(value);
 
-        // Obtener el nodo insertado para acceder a su ID
-        const finalNode = clonedStack.getTope();
+            // Obtener el nodo insertado para acceder a su ID
+            const finalNode = clonedStack.getTope();
 
-        // Actualizar el estado de la pila
-        setStack(clonedStack);
+            // Actualizar el estado de la pila
+            setStack(clonedStack);
 
-        // Actualizar la query a partir de la operación realizada
-        setQuery((prev) => ({
-            ...prev,
-            toPushNode: finalNode ? finalNode.getId() : null
-        }));
+            // Actualizar la query a partir de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toPushNode: finalNode ? finalNode.getId() : null
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
     }
 
     // Operación de eliminación (desapilar)
@@ -68,7 +75,7 @@ export function useStack(structure: Pila) {
     // Operación de obtener el tope de la pila 
     const getTop = () => {
         try {
-            const topNode = stack.getTope();    
+            const topNode = stack.getTope();
             if (topNode) {
                 setQuery((prev) => ({
                     ...prev,

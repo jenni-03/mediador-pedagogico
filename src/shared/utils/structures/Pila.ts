@@ -5,10 +5,10 @@ import { NodoS } from "../nodes/NodoS";
  */
 export class Pila {
 
-    // Nodo en la cima (tope) de la pila
+    // Nodo en la cima (tope) de la pila.
     private tope: NodoS | null;
 
-    // Tamaño de la pila
+    // Tamaño de la pila.
     private tamanio: number;
 
     /**
@@ -20,36 +20,28 @@ export class Pila {
     }
 
     /**
-     * Método para apilar un elemento en la pila.
+     * Método que apila un nuevo elemento en la pila.
      * @param valor Elemento a apilar.
      */
     public apilar(valor: number): void {
-        let direccion = 0;
-    
-        if (!this.esVacia()) {
-            const tope = this.tope!;
-            const topeHex = parseInt(tope.getDireccionMemoria(), 16);
-            direccion = topeHex + tope.getTamanio();
-        } else {
-            direccion = 0x10000000; // dirección inicial simulada
-        }
-    
-        const nuevoNodo = new NodoS(valor, undefined, direccion);
-        
+        if (this.tamanio >= 10) throw new Error("No se puede apilar: Cantidad de nodos máxima alcanzada (tamaño máximo: 15).");
+
+        const nuevoNodo = new NodoS(valor);
+
         if (this.esVacia()) {
             this.tope = nuevoNodo;
         } else {
             nuevoNodo.setSiguiente(this.tope);
             this.tope = nuevoNodo;
         }
-    
+
         this.tamanio++;
     }
-    
+
 
     /**
-     * Método para desapilar (quitar) el elemento en el tope de la pila.
-     * @returns Número removido o null si la pila está vacía.
+     * Método que desapila (quita) el elemento tope de la pila.
+     * @returns Elemento removido o null si la pila está vacía.
      */
     public desapilar(): number | null {
         if (this.esVacia()) throw new Error("No se puede desapilar: No hay elementos en la pila.");
@@ -74,7 +66,6 @@ export class Pila {
      * @returns NodoS o null si la pila está vacía.
      */
     public getTope(): NodoS | null {
-        // if (this.esVacia()) throw new Error("No existe un elemento tope, ya que no hay elementos en la pila.");
         return this.tope;
     }
 
@@ -104,7 +95,7 @@ export class Pila {
 
     /**
      * Método que transforma la pila en un array de nodos.
-     * @returns Array con los nodos de la pila.
+     * @returns Array con la información de los nodos de la pila.
      */
     public getArrayDeNodos() {
         const arregloNodos = [];
@@ -128,25 +119,35 @@ export class Pila {
      * Método que clona la pila.
      * @returns Nueva instancia de Pila con los mismos valores.
      */
-    public clonar(): Pila {
+    public clonar() {
         const nuevaPila = new Pila();
 
         if (this.esVacia()) return nuevaPila;
 
-        // Paso 1: recorrer la pila original y almacenar nodos en un array temporal
-        const nodosTemporales: NodoS[] = [];
         let nodoActual = this.tope;
+        let ultimoNodoClonado: NodoS | null = null;
 
         while (nodoActual !== null) {
-            nodosTemporales.push(nodoActual);
+            const nuevoNodo = new NodoS(
+                nodoActual.getValor(),
+                nodoActual.getId(),
+                nodoActual.getDireccionMemoria()
+            );
+
+            if (nuevaPila.tope === null) {
+                nuevaPila.tope = nuevoNodo;
+            } else {
+                if (ultimoNodoClonado) {
+                    ultimoNodoClonado.setSiguiente(nuevoNodo);
+                }
+            }
+
+            ultimoNodoClonado = nuevoNodo;
             nodoActual = nodoActual.getSiguiente();
         }
 
-        // Paso 2: reconstruir la pila en orden inverso
-        for (let i = nodosTemporales.length - 1; i >= 0; i--) {
-            nuevaPila.apilar(nodosTemporales[i].getValor());
-        }
-
+        nuevaPila.tamanio = this.tamanio;
         return nuevaPila;
     }
+
 }

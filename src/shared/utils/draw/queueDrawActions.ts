@@ -1,6 +1,6 @@
 import { IndicatorPositioningConfig, LinkData, QueueNodeData } from "../../../types";
 import * as d3 from "d3";
-import { SVG_QUEUE_VALUES } from "../../constants/consts";
+import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateLinkPath } from "./calculateLinkPath";
 
 /**
@@ -49,9 +49,9 @@ export function drawNodes(
                     .attr("height", elementHeight)
                     .attr("rx", 6)
                     .attr("ry", 6)
-                    .attr("fill", SVG_QUEUE_VALUES.NODE_FILL_COLOR)
-                    .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR)
-                    .attr("stroke-width", 1.2);
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
 
                 // Valor del nodo
                 gEnter.append("text")
@@ -59,11 +59,36 @@ export function drawNodes(
                     .attr("y", elementHeight / 2)
                     .attr("dy", "0.35em")
                     .attr("text-anchor", "middle")
-                    .attr("fill", SVG_QUEUE_VALUES.NODE_TEXT_COLOR)
-                    .style("font-weight", SVG_QUEUE_VALUES.NODE_TEXT_WEIGHT)
-                    .style("font-size", SVG_QUEUE_VALUES.NODE_TEXT_SIZE)
+                    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+                    .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
+                    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
                     .text(d => d.value)
                     .style("letter-spacing", "0.5px");
+
+                // Bloque de dirección de memoria
+                gEnter
+                    .append("rect")
+                    .attr("class", "memory-container")
+                    .attr("y", elementHeight + 10)
+                    .attr("width", elementWidth)
+                    .attr("height", 20)
+                    .attr("rx", 4)
+                    .attr("ry", 4)
+                    .attr("fill", SVG_STYLE_VALUES.MEMORY_FILL_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.MEMORY_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_SRTOKE_WIDTH);
+
+                // Dirección de memoria
+                gEnter
+                    .append("text")
+                    .attr("class", "memory")
+                    .attr("x", elementWidth / 2)
+                    .attr("y", elementHeight + 25)
+                    .attr("text-anchor", "middle")
+                    .text((d) => d.address)
+                    .attr("fill", SVG_STYLE_VALUES.MEMORY_TEXT_COLOR)
+                    .style("font-size", SVG_STYLE_VALUES.MEMORY_TEXT_SIZE)
+                    .style("font-weight", SVG_STYLE_VALUES.MEMORY_TEXT_WEIGHT);
 
                 return gEnter;
             },
@@ -119,7 +144,7 @@ export function drawLinks(
                 // Path del enlace
                 gLink.append("path")
                     .attr("class", d => `node-link ${d.type}`)
-                    .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
                     .attr("stroke-width", 1.5)
                     .attr("marker-end", "url(#arrowhead)")
                     .attr("d", d => calculateLinkPath(d, positions, elementWidth, elementHeight));
@@ -423,6 +448,7 @@ export function drawArrowIndicator(
         fontSize: string;
         fontWeight: string;
         arrowPathData: string;
+        textRelativeX?: number;
         textRelativeY: number;
         arrowTransform: string;
     },
@@ -450,7 +476,7 @@ export function drawArrowIndicator(
                     .attr("fill", styleConfig.textColor)
                     .attr("font-size", styleConfig.fontSize)
                     .attr("font-weight", styleConfig.fontWeight)
-                    .attr("x", 0)
+                    .attr("x", styleConfig.textRelativeX ?? 0)
                     .attr("y", styleConfig.textRelativeY)
                     .text(styleConfig.text);
 

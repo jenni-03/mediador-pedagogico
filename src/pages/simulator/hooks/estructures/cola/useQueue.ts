@@ -36,6 +36,9 @@ export function useQueue(structure: Cola) {
                 ...prev,
                 toEnqueuedNode: finalNode ? finalNode.getId() : null
             }));
+
+            // Limpieza del error existente
+            setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }

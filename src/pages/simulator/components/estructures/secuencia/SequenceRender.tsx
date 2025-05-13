@@ -8,7 +8,7 @@ export function SequenceRender({
     resetQueryValues,
 }: {
     sequence: (number | null)[];
-    memory: number[];
+    memory: string[];
     query: BaseQueryOperations<"secuencia">;
     resetQueryValues: () => void;
 }) {

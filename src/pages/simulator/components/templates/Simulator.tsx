@@ -52,9 +52,9 @@ export function Simulator<T extends string>({
         const action = command[0];
         const values = command.slice(1).map(Number);
 
-        // if (action !== "create" && action !== "clean") {
-        //     setIsAnimating(true);
-        // }
+        if (action !== "create" && action !== "clean") {
+            setIsAnimating(true);
+        }
 
         // Realiza la operación correspondiente según el comando
         if (values.length === 2) {

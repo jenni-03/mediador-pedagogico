@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { BaseQueryOperations, IndicatorPositioningConfig, QueueNodeData } from "../../../../../types";
-import { SVG_QUEUE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { drawNodes, drawLinks, animateDequeueNode, animateEnqueueNode, drawArrowIndicator, animateClearQueue } from "../../../../../shared/utils/draw/queueDrawActions";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
@@ -50,9 +50,7 @@ export function useQueueRender(
 
         // Cálculo del ancho del SVG en base al número de nodos presentes
         const displayLength = Math.max(queueNodes.length, prevNodes?.length ?? 0);
-        console.log("displayLength", displayLength);
         const width = margin.left + displayLength * nodeSpacing - (queueNodes.length > 0 ? spacing : 0) + margin.right;
-        console.log("width", width);
 
         // Alto del SVG
         const height = SVG_QUEUE_VALUES.HEIGHT;
@@ -93,8 +91,8 @@ export function useQueueRender(
         // Configuración de estilos y de posicionamiento para el indicador de cabeza
         const headStyleConfig = {
             text: "INICIO",
-            textColor: SVG_QUEUE_VALUES.NODE_TEXT_COLOR,
-            arrowColor: SVG_QUEUE_VALUES.NODE_STROKE_COLOR,
+            textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
+            arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
             fontSize: "14px",
             fontWeight: "bold",
             arrowPathData: arrowHeadPathData,
@@ -121,13 +119,13 @@ export function useQueueRender(
         // Configuración de estilos y de posicionamiento para el indicador de tope
         const tailStyleConfig = {
             text: "FIN",
-            textColor: SVG_QUEUE_VALUES.NODE_TEXT_COLOR,
-            arrowColor: SVG_QUEUE_VALUES.NODE_STROKE_COLOR,
+            textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
+            arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
             fontSize: "14px",
             fontWeight: "bold",
             arrowPathData: arrowTailPathData,
-            textRelativeY: SVG_QUEUE_VALUES.ELEMENT_HEIGHT + 40,
-            arrowTransform: `translate(0, ${SVG_QUEUE_VALUES.ELEMENT_HEIGHT + 5})`
+            textRelativeY: SVG_QUEUE_VALUES.ELEMENT_HEIGHT + 70,
+            arrowTransform: `translate(0, ${SVG_QUEUE_VALUES.ELEMENT_HEIGHT + 35})`
         }
 
         // Renderizado del indicador de tope
