@@ -11,12 +11,18 @@ export class Pila {
     // Tamaño de la pila.
     private tamanio: number;
 
+    // Tamaño simulado de cada elemento en bytes
+    private tamanioNodo: number;
+
     /**
      * Constructor de la clase Pila.
      */
-    constructor() {
+    constructor(
+        tamanioNodo: number = 16
+    ) {
         this.tope = null;
         this.tamanio = 0;
+        this.tamanioNodo = tamanioNodo;
     }
 
     /**
@@ -75,6 +81,14 @@ export class Pila {
      */
     public getTamanio(): number {
         return this.tamanio;
+    }
+
+    /**
+     * Método que retorna el tamaño en bytes de los nodos almacenados.
+     * @returns Tamaño en bytes de los nodos.
+     */
+    getTamanioNodo() {
+        return this.tamanioNodo;
     }
 
     /**

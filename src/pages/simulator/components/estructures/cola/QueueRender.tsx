@@ -11,7 +11,7 @@ export function QueueRender({
         id: string;
         value: number;
         next: string | null;
-        address: string;
+        memoryAddress: string;
     }[];
     query: BaseQueryOperations<"cola">;
     resetQueryValues: () => void;

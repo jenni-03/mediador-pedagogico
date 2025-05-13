@@ -73,15 +73,25 @@ export function DataStructureInfo({
                 </div>
 
                 {/* Visualización de memoria */}
-                {/* <div className="flex-[2]" data-tour="memory-visualization">
+                <div className="flex-[2]" data-tour="memory-visualization">
                     {memoryAddress && (
                         <MemoryAllocationVisualizer
-                            n={structurePrueba.vector.length}
-                            direccionBase={structurePrueba.direccionBase}
+                            n={
+                                structure == "secuencia"
+                                    ? structurePrueba.vector.length
+                                    : structurePrueba.getTamanio()
+                            }
+                            direccionBase={1000}
                             tamanioNodo={structurePrueba.tamanioNodo}
+                            direcciones={
+                                structure == "secuencia"
+                                    ? structurePrueba.vectorMemoria
+                                    : structurePrueba.getArrayDeNodos()
+                            }
+                            structure={structure}
                         />
                     )}
-                </div> */}
+                </div>
             </div>
 
             {/* Contenido visual (estructura de datos) */}

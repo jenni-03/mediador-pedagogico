@@ -71,7 +71,7 @@ export function Simulator<T extends string>({
         );
 
         // Informa los casos en los que se debe de mostrar la asignación de memoria
-        if (action === "create" || action === "push") {
+        if (action === "create" || action === "push" || action === "enqueue") {
             setMemoryCode(true);
         } else {
             setMemoryCode(false);

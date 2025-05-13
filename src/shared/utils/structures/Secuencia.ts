@@ -16,24 +16,31 @@ export class Secuencia {
     // Vector de direcciones de memoria.
     private vectorMemoria: string[];
 
+    // Tamaño simulado de cada nodo en bytes
+    private tamanioNodo: number;
+
     /**
      * Constructor de la clase Secuencia.
      * @param n Tamaño (capacidad) de la secuencia.
      * @param memoriaExistente Vector de direcciones de memoria (opcional).
+     * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4)
      */
     constructor(
         n: number,
-        memoriaExistente?: string[]
+        memoriaExistente?: string[],
+        tamanioNodo: number = 4
     ) {
         if (n <= 0) {
             this.vector = [];
             this.vectorMemoria = [];
             this.cant = 0;
+            this.tamanioNodo = 0;
             return;
         }
 
         this.vector = new Array<number | null>(n).fill(null);
         this.cant = 0;
+        this.tamanioNodo = tamanioNodo;
 
         if (memoriaExistente && memoriaExistente.length === n) {
             this.vectorMemoria = [...memoriaExistente];
@@ -130,6 +137,14 @@ export class Secuencia {
      */
     getTamanio() {
         return this.cant;
+    }
+
+    /**
+     * Método que retorna el tamaño en bytes de los nodos almacenados.
+     * @returns Tamaño en bytes de los nodos.
+     */
+    getTamanioNodo() {
+        return this.tamanioNodo;
     }
 
     /**
