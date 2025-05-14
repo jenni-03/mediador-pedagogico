@@ -85,7 +85,7 @@ export function drawNodes(
                     .attr("x", elementWidth / 2)
                     .attr("y", elementHeight + 25)
                     .attr("text-anchor", "middle")
-                    .text((d) => d.address)
+                    .text((d) => d.memoryAddress)
                     .attr("fill", SVG_STYLE_VALUES.MEMORY_TEXT_COLOR)
                     .style("font-size", SVG_STYLE_VALUES.MEMORY_TEXT_SIZE)
                     .style("font-weight", SVG_STYLE_VALUES.MEMORY_TEXT_WEIGHT);

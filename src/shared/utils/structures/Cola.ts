@@ -16,13 +16,19 @@ export class Cola {
     // Tamaño de la cola.
     private tamanio: number;
 
+    // Tamaño simulado de cada elemento en bytes
+    private tamanioNodo: number;
+
     /**
      * Constructor de la clase Cola.
      */
-    constructor() {
+    constructor(
+        tamanioNodo: number = 16
+    ) {
         this.inicio = null;
         this.fin = null;
         this.tamanio = 0;
+        this.tamanioNodo = tamanioNodo;
     }
 
     /**
@@ -117,6 +123,14 @@ export class Cola {
     public getTamanio(): number {
         return this.tamanio;
     }
+    
+    /**
+     * Método que retorna el tamaño en bytes de los nodos almacenados.
+     * @returns Tamaño en bytes de los nodos.
+     */
+    getTamanioNodo() {
+        return this.tamanioNodo;
+    }
 
     /**
      * Método que verifica si la cola está vacía.
@@ -141,7 +155,7 @@ export class Cola {
                 id: nodoActual.getId(),
                 value: nodoActual.getValor(),
                 next: nodoSiguiente ? nodoSiguiente.getId() : null,
-                address: nodoActual.getDireccionMemoria()
+                memoryAddress: nodoActual.getDireccionMemoria()
             });
 
             nodoActual = nodoActual.getSiguiente();
