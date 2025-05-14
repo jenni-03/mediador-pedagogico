@@ -14,6 +14,7 @@ export function useStack(structure: Pila) {
         toPushNode: null,
         toPopNode: null,
         toGetTop: null,
+        toClear: false
     });
 
     // Operación de insersión (apilar)
@@ -75,14 +76,20 @@ export function useStack(structure: Pila) {
     // Operación de obtener el tope de la pila 
     const getTop = () => {
         try {
+            // Obtener el nodo tope
             const topNode = stack.getTope();
-            if (topNode) {
-                setQuery((prev) => ({
-                    ...prev,
-                    toGetTop: topNode.getId()
-                }));
-                setError(null);
-            }
+
+            // Verificar su existencia
+            if (!topNode) throw new Error("No fue posible obtener el elemento tope: No hay elementos en la pila.");
+
+            // Actualizar la query para informar de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toGetTop: topNode.getId()
+            }));
+
+            // Limpieza del error existente
+            setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
@@ -98,6 +105,12 @@ export function useStack(structure: Pila) {
 
         // Actualizar el estado de la pila
         setStack(clonedStack);
+
+        // Actualizar la query a partir de la operación realizada
+        setQuery((prev) => ({
+            ...prev,
+            toClear: true
+        }));
     }
 
     // Función de restablecimiento de las queries del usuario
@@ -106,6 +119,7 @@ export function useStack(structure: Pila) {
             toPushNode: null,
             toPopNode: null,
             toGetTop: null,
+            toClear: false
         })
     }
 

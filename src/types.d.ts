@@ -93,8 +93,9 @@ export type BaseQueryOperations<T extends string> =
     T extends "cola" ? {
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
+        toGetFront: string | null;
         toClear: boolean;
-    } : 
+    } :
     T extends "cola_de_prioridad" ? {
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
@@ -104,6 +105,7 @@ export type BaseQueryOperations<T extends string> =
         toPushNode: string | null;
         toPopNode: string | null;
         toGetTop: string | null;
+        toClear: boolean;
     } : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> =

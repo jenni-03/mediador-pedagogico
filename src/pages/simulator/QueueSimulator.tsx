@@ -19,8 +19,13 @@ export function QueueSimulator() {
     const { queue, query, error, operations } = useQueue(structure);
 
     // Desestructuración de las operaciones soportadas por la cola
-    const { enqueueElement, dequeueElement, clearQueue, resetQueryValues } =
-        operations;
+    const {
+        enqueueElement,
+        dequeueElement,
+        getFront,
+        clearQueue,
+        resetQueryValues,
+    } = operations;
 
     return (
         <Simulator
@@ -29,7 +34,7 @@ export function QueueSimulator() {
             actions={{
                 enqueue: enqueueElement,
                 dequeue: dequeueElement,
-                getFront: () => {},
+                getFront: getFront,
                 clean: clearQueue,
             }}
             query={query}

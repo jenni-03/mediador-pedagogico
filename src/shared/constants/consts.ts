@@ -50,18 +50,12 @@ export const SVG_QUEUE_VALUES = {
 } as const
 
 export const SVG_STACK_VALUES = {
-    MARGIN_TOP: 30,           // espacio superior del SVG
-    MARGIN_BOTTOM: 30,        // espacio inferior para que no se corte el nodo inferior
-    MARGIN_LEFT: 50,          // para centrar horizontalmente los nodos
-    MARGIN_RIGHT: 50,         // mismo que el izquierdo
-    ELEMENT_WIDTH: 80,        // ancho del nodo 
-    ELEMENT_HEIGHT: 60,       // alto del nodo (esto importa más ahora porque el eje principal es vertical)
-    SPACING: 10,              // espacio vertical entre nodos
-    WIDTH: 180,               // ancho fijo del SVG 
-    HEIGHT: 230,               // ancho fijo del SVG 
-    NODE_FILL_COLOR: '#1F1F2D',
-    NODE_STROKE_COLOR: '#D72638',
-    NODE_TEXT_COLOR: '#E0E0E0',
-    NODE_TEXT_WEIGHT: '600',
-    NODE_TEXT_SIZE: '16px',
+    MARGIN_TOP: 30,
+    MARGIN_BOTTOM: 30,
+    MARGIN_LEFT: 50,
+    MARGIN_RIGHT: 50,
+    ELEMENT_WIDTH: 80,
+    ELEMENT_HEIGHT: 60,
+    SPACING: 10,
+    WIDTH: 120,
 } as const;

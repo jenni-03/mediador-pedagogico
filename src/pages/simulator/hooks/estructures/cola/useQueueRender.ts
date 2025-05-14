@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
 import { BaseQueryOperations, IndicatorPositioningConfig, QueueNodeData } from "../../../../../types";
 import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { drawNodes, drawLinks, animateDequeueNode, animateEnqueueNode, drawArrowIndicator, animateClearQueue } from "../../../../../shared/utils/draw/queueDrawActions";
+import { drawNodes, drawLinks, animateDequeueNode, animateEnqueueNode, animateClearQueue, animateGetFront } from "../../../../../shared/utils/draw/queueDrawActions";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
+import { drawArrowIndicator } from "../../../../../shared/utils/draw/drawActionsUtilities";
 
 export function useQueueRender(
     queueNodes: QueueNodeData[],
@@ -22,15 +23,6 @@ export function useQueueRender(
 
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
-
-    console.log("Nodos de la cola");
-    console.log(queueNodes);
-    console.log("Query actual");
-    console.log(query);
-    console.log("Nodos previos de la cola");
-    console.log(prevNodes);
-    console.log("Posiciones de los nodos");
-    console.log(nodePositions);
 
     // Renderizado base de la cola
     useEffect(() => {
@@ -140,7 +132,7 @@ export function useQueueRender(
         );
     }, [queueNodes, prevNodes]);
 
-    // Operación de encolar
+    // Efecto para manejar la animación de encolar
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
         if (!queueNodes || !svgRef.current || !query.toEnqueuedNode || !prevNodes) return;
@@ -161,8 +153,6 @@ export function useQueueRender(
             return;
         };
 
-        console.log("ENCOLANDOOO...", nodeIdEnqueued);
-
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
 
@@ -170,19 +160,17 @@ export function useQueueRender(
         animateEnqueueNode(
             svg,
             nodeIdEnqueued,
-            prevLastNode?.id,
+            prevLastNode ? prevLastNode.id : null,
             nodePositions,
             resetQueryValues,
             setIsAnimating
         );
     }, [query.toEnqueuedNode, queueNodes, prevNodes, resetQueryValues, setIsAnimating]);
 
-    // Operación de decolar
+    // Efecto para manejar la animación de decolar
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
         if (!queueNodes || !svgRef.current || !query.toDequeuedNode || !prevNodes || prevNodes.length === 0) return;
-
-        console.log("DESENCOLANDOOO...", query.toDequeuedNode);
 
         // Obtenemos el nodo que anteriormente era el primero (nodo a desencolar)
         const prevFirstNode = prevNodes[0];
@@ -201,12 +189,30 @@ export function useQueueRender(
         );
     }, [query.toDequeuedNode, queueNodes, prevNodes, resetQueryValues, setIsAnimating]);
 
-    // Operación de limpieza
+    // Efecto para manejar la animación de obtención del elemento cabeza
+    useEffect(() => {
+        if (
+            !svgRef.current ||
+            !queueNodes ||
+            queueNodes.length === 0 ||
+            !query.toGetFront
+        )
+            return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Identificador del nodo cabeza de la cola
+        const headNodeId = query.toGetFront;
+
+        // Animación de resaltado para nodo cabeza de la cola
+        animateGetFront(svg, headNodeId, resetQueryValues, setIsAnimating);
+    }, [query.toGetFront, queueNodes, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la limpieza de lienzo
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
         if (!queueNodes || !svgRef.current || !query.toClear) return;
-
-        console.log("LIMPIANDOOO...", query.toClear);
 
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);

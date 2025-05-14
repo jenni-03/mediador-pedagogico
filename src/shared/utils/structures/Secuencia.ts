@@ -61,7 +61,7 @@ export class Secuencia {
     eliminarPos(pos: number) {
         if (this.cant === 0) {
             throw new Error(
-                "No se puede eliminar: la estructura está vacía (tamaño actual: 0)."
+                "No fue posible eliminar: la secuencia está vacía (tamaño actual: 0)."
             );
         }
 
