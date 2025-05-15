@@ -10,6 +10,7 @@ export const STRUCTURE_NAME = {
     QUEUE: 'cola',
     PRIORITY_QUEUE: 'cola de prioridad',
     STACK: 'pila',
+    HASHTABLE: 'tabla_hash',
 } as const
 
 export const SVG_SEQUENCE_VALUES = {

@@ -201,7 +201,6 @@ const TourTooltip: React.FC<Props> = ({
       return <span key={index}>{part}</span>;
     });
   };
-
   const tooltipContent = (
     <div
       ref={tooltipRef}

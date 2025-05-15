@@ -203,7 +203,7 @@ export const conceptosData: Record<string, any> = {
       analisis: "En promedio, la búsqueda, inserción y eliminación son O(1), pero pueden degradarse a O(n) con muchas colisiones...",
     },
     tipo: "Estructura Lineal",
-    nombre: "Tabla Hash",
+    nombre: "tabla_hash",
   },
   10: {
     definicion: {

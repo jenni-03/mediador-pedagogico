@@ -7,5 +7,5 @@ export const structureCommands: Record<string, string[]> = {
     lista_doble: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverseForward", "traverseBackward"],
     lista_circular: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverse"],
     lista_circular_doble: ["create", "insertFirst", "insertLast", "delete", "insertSorted", "get", "set", "clean", "traverseForward", "traverseBackward"],
-    tabla_hash: ["create", "put", "remove", "get", "containsKey", "clean", "values"],
+    tabla_hash: ["create", "set","get","delete","clean"],
 };
