@@ -18,7 +18,7 @@ export function StackRender({
     const { svgRef } = useStackRender(stack, query, resetQueryValues);
 
     return (
-        <div>
+        <div className="w-full flex justify-center items-start">
             <svg id={`stack-svg`} ref={svgRef}></svg>
         </div>
     );

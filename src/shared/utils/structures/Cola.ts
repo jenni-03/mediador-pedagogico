@@ -36,7 +36,7 @@ export class Cola {
      * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
-        if (this.tamanio >= 10) throw new Error("No se puede encolar: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+        if (this.tamanio >= 10) throw new Error("No fue posible encolar: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
 
         const nuevoNodo = new NodoS(valor);
 
@@ -58,7 +58,7 @@ export class Cola {
      * @returns Elemento removido o null si la cola está vacía.
      */
     public decolar(): number | null {
-        if (this.esVacia()) throw new Error("No se puede decolar: La cola está vacía (tamaño actual: 0).");
+        if (this.esVacia()) throw new Error("No fue posible decolar: La cola está vacía (tamaño actual: 0).");
 
         const valorEliminado = this.inicio?.getValor() ?? null;
 

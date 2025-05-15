@@ -30,7 +30,7 @@ export class Pila {
      * @param valor Elemento a apilar.
      */
     public apilar(valor: number): void {
-        if (this.tamanio >= 10) throw new Error("No se puede apilar: Cantidad de nodos máxima alcanzada (tamaño máximo: 15).");
+        if (this.tamanio >= 10) throw new Error("No fue posble apilar: Cantidad de nodos máxima alcanzada (tamaño máximo: 15).");
 
         const nuevoNodo = new NodoS(valor);
 
@@ -50,7 +50,7 @@ export class Pila {
      * @returns Elemento removido o null si la pila está vacía.
      */
     public desapilar(): number | null {
-        if (this.esVacia()) throw new Error("No se puede desapilar: No hay elementos en la pila.");
+        if (this.esVacia()) throw new Error("No fue posible desapilar: No hay elementos en la pila.");
 
         const valor = this.tope?.getValor() ?? null;
         this.tope = this.tope?.getSiguiente() ?? null;
