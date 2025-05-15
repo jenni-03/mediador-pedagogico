@@ -12,28 +12,37 @@ export function useQueue(structure: Cola) {
     // Estado para manejar la operación solicitada por el usuario
     const [query, setQuery] = useState<BaseQueryOperations<"cola">>({
         toEnqueuedNode: null,
-        toDequeuedNode: null
+        toDequeuedNode: null,
+        toGetFront: null,
+        toClear: false
     });
 
     // Operación de encolar
     const enqueueElement = (value: number) => {
-        // Clonar la cola para garantizar la inmutabilidad del estado
-        const clonedQueue = queue.clonar();
+        try {
+            // Clonar la cola para garantizar la inmutabilidad del estado
+            const clonedQueue = queue.clonar();
 
-        // Encolar el nuevo elemento
-        clonedQueue.encolar(value);
+            // Encolar el nuevo elemento
+            clonedQueue.encolar(value);
 
-        // Obtener el nodo insertado para acceder a su ID
-        const finalNode = clonedQueue.getFin();
+            // Obtener el nodo insertado para acceder a su ID
+            const finalNode = clonedQueue.getFin();
 
-        // Actualizar el estado de la cola
-        setQueue(clonedQueue);
+            // Actualizar el estado de la cola
+            setQueue(clonedQueue);
 
-        // Actualizar la query a partir de la operación realizada
-        setQuery((prev) => ({
-            ...prev,
-            toEnqueuedNode: finalNode ? finalNode.getId() : null
-        }));
+            // Actualizar la query a partir de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toEnqueuedNode: finalNode ? finalNode.getId() : null
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
     }
 
     // Operación de decolar
@@ -64,6 +73,28 @@ export function useQueue(structure: Cola) {
         }
     }
 
+    // Operación para obtener la cabeza de la cola 
+    const getFront = () => {
+        try {
+            // Obtener el nodo cabeza de la cola
+            const frontNode = queue.getInicio();
+
+            // Verificar su existencia
+            if (!frontNode) throw new Error("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");
+
+            // Actualizar la query para informar de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toGetFront: frontNode.getId()
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
+    };
+
     // Operación para vaciar la cola
     const clearQueue = () => {
         // Clonar la cola para asegurar la inmutabilidad del estado
@@ -74,13 +105,21 @@ export function useQueue(structure: Cola) {
 
         // Actualizar el estado de la cola
         setQueue(clonedQueue);
+
+        // Actualizar la query a partir de la operación realizada
+        setQuery((prev) => ({
+            ...prev,
+            toClear: true
+        }));
     }
 
     // Función de restablecimiento de las queries del usuario
     const resetQueryValues = () => {
         setQuery({
             toEnqueuedNode: null,
-            toDequeuedNode: null
+            toDequeuedNode: null,
+            toGetFront: null,
+            toClear: false
         })
     }
 
@@ -91,6 +130,7 @@ export function useQueue(structure: Cola) {
         operations: {
             enqueueElement,
             dequeueElement,
+            getFront,
             clearQueue,
             resetQueryValues
         }

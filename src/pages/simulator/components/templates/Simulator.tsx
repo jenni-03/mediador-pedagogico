@@ -52,9 +52,9 @@ export function Simulator<T extends string>({
         const action = command[0];
         const values = command.slice(1).map(Number);
 
-        // if (action !== "create" && action !== "clean") {
-        //     setIsAnimating(true);
-        // }
+        if (action !== "create" && action !== "clean") {
+            setIsAnimating(true);
+        }
 
         // Realiza la operación correspondiente según el comando
         if (values.length === 2) {
@@ -71,7 +71,7 @@ export function Simulator<T extends string>({
         );
 
         // Informa los casos en los que se debe de mostrar la asignación de memoria
-        if (action === "create" || action === "push") {
+        if (action === "create" || action === "push" || action === "enqueue") {
             setMemoryCode(true);
         } else {
             setMemoryCode(false);
@@ -100,7 +100,7 @@ export function Simulator<T extends string>({
                     </h1>
                     {/* Contenedor principal */}
                     <div className="w-full bg-[#1A1A1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 px-4 py-6">
-                        <div className="flex flex-col xl:flex-row gap-6 mb-6 overflow-hidden">
+                        <div className="flex flex-col lg:flex-row gap-6 mb-6 overflow-hidden">
                             {/* Estructura */}
                             <div
                                 id="main-container"

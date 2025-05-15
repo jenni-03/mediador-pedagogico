@@ -1,14 +1,14 @@
 import { LinkData, QueueNodeData } from "../../../types";
 import * as d3 from "d3";
-import { SVG_QUEUE_VALUES } from "../../constants/consts";
+import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateLinkPath } from "./calculateLinkPath";
 
 /**
- * Función encargada de dibujar los nodos de la cola
+ * Función encargada renderizar los nodos de la cola dentro del lienzo
  * @param svg Lienzo en el que se va a dibujar
- * @param queueNodes Nodos a dibujar
- * @param positions Posiciones de cada uno de los nodos dentro del lienzo
- * @param dims Dimensiones de los elementos dentro del lienzo
+ * @param queueNodes Nodos a renderizar
+ * @param positions Mapa de posiciones de cada uno de los nodos dentro del lienzo
+ * @param dims Dimensiones del lienzo y sus elementos
  */
 export function drawNodes(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -21,28 +21,27 @@ export function drawNodes(
         nodeSpacing: number;
         height: number;
     },
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
     // Dimensiones del lienzo
     const { margin, elementWidth, elementHeight, nodeSpacing, height } = dims;
 
-    // Realizamos el data join para los nodos
+    // Data join para la creación de los nodos
     svg.selectAll<SVGGElement, QueueNodeData>("g.node")
         .data(queueNodes, d => d.id)
         .join(
             enter => {
-                // Creación de los grupos
+                // Creación del grupo para cada nodo entrante
                 const gEnter = enter
                     .append("g")
                     .attr("class", "node")
                     .attr("id", (d) => d.id)
                     .attr("transform", (d, i) => {
+                        // Cálculo de la posición del nodo
                         const x = margin.left + i * nodeSpacing;
                         const y = (height - elementHeight) / 2;
                         positions.set(d.id, { x, y });
                         return `translate(${x}, ${y})`;
-                    })
-                    .style("opacity", 0);
+                    });
 
                 // Contenedor del nodo
                 gEnter.append("rect")
@@ -50,9 +49,9 @@ export function drawNodes(
                     .attr("height", elementHeight)
                     .attr("rx", 6)
                     .attr("ry", 6)
-                    .attr("fill", SVG_QUEUE_VALUES.NODE_FILL_COLOR)
-                    .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR)
-                    .attr("stroke-width", 1.2);
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
 
                 // Valor del nodo
                 gEnter.append("text")
@@ -60,42 +59,58 @@ export function drawNodes(
                     .attr("y", elementHeight / 2)
                     .attr("dy", "0.35em")
                     .attr("text-anchor", "middle")
-                    .attr("fill", SVG_QUEUE_VALUES.NODE_TEXT_COLOR)
-                    .style("font-weight", SVG_QUEUE_VALUES.NODE_TEXT_WEIGHT)
-                    .style("font-size", SVG_QUEUE_VALUES.NODE_TEXT_SIZE)
+                    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+                    .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
+                    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
                     .text(d => d.value)
                     .style("letter-spacing", "0.5px");
+
+                // Bloque de dirección de memoria
+                gEnter
+                    .append("rect")
+                    .attr("class", "memory-container")
+                    .attr("y", elementHeight + 10)
+                    .attr("width", elementWidth)
+                    .attr("height", 20)
+                    .attr("rx", 4)
+                    .attr("ry", 4)
+                    .attr("fill", SVG_STYLE_VALUES.MEMORY_FILL_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.MEMORY_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_SRTOKE_WIDTH);
+
+                // Dirección de memoria
+                gEnter
+                    .append("text")
+                    .attr("class", "memory")
+                    .attr("x", elementWidth / 2)
+                    .attr("y", elementHeight + 25)
+                    .attr("text-anchor", "middle")
+                    .text((d) => d.memoryAddress)
+                    .attr("fill", SVG_STYLE_VALUES.MEMORY_TEXT_COLOR)
+                    .style("font-size", SVG_STYLE_VALUES.MEMORY_TEXT_SIZE)
+                    .style("font-weight", SVG_STYLE_VALUES.MEMORY_TEXT_WEIGHT);
 
                 return gEnter;
             },
             update => {
-                update.transition()
-                    .duration(1500)
-                    .attr("transform", (d, i) => {
-                        const x = margin.left + i * nodeSpacing;
-                        const y = (height - elementHeight) / 2;
-                        positions.set(d.id, { x, y });
-                        return `translate(${x}, ${y})`;
-                    });
+                // Guarda la posición actualizada para cada nodo presente en el DOM
+                update.each((d, i) => {
+                    const x = margin.left + i * nodeSpacing;
+                    const y = (height - elementHeight) / 2;
+                    positions.set(d.id, { x, y });
+                });
 
                 return update;
             },
-            exit => {
-                exit.call(
-                    animateNodeDequeueExit,
-                    positions,
-                    elementHeight,
-                    setIsAnimating
-                )
-            }
+            exit => exit
         );
 }
 
 /**
- * Función encargada de dibujar los enlaces pertenecientes a los nodos de la cola
+ * Función encargada de renderizar los enlaces pertenecientes a cada nodo de la cola
  * @param svg Lienzo en el que se va a dibujar
- * @param queueNodes Nodos a dibujar
- * @param positions Posiciones de cada uno de los nodos dentro del lienzo 
+ * @param queueNodes Nodos a renderizar
+ * @param positions Mapa de posiciones de cada nodo dentro del lienzo 
  * @param elementWidth Ancho del nodo
  * @param elementHeight Alto del nodo
  */
@@ -106,7 +121,7 @@ export function drawLinks(
     elementWidth: number,
     elementHeight: number
 ) {
-    // Preparamos la data de los enlaces para realizar el data join
+    // Determinamos los enlaces a renderizar en base a la data de los nodos
     const linksData: LinkData[] = [];
     queueNodes.forEach(node => {
         if (node.next && positions.has(node.next)) {
@@ -114,123 +129,138 @@ export function drawLinks(
         }
     });
 
-    console.log(linksData);
-
-    // Data join para la creación de enlaces de los nodos
-    svg.selectAll<SVGPathElement, LinkData>("g.link")
+    // Data join para la creación de los enlaces entre nodos
+    svg.selectAll<SVGGElement, LinkData>("g.link")
         .data(linksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`)
         .join(
             enter => {
+                // Creación del grupo para cada nuevo enlace
                 const gLink = enter.append("g")
                     .attr("class", "link")
                     .attr("id", (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`);
 
+                // Path del enlace
                 gLink.append("path")
                     .attr("class", d => `node-link ${d.type}`)
-                    .attr("stroke", SVG_QUEUE_VALUES.NODE_STROKE_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
                     .attr("stroke-width", 1.5)
                     .attr("marker-end", "url(#arrowhead)")
-                    .attr("d", d => calculateLinkPath(d, positions, elementWidth, elementHeight))
-                    .style("opacity", 0);
+                    .attr("d", d => calculateLinkPath(d, positions, elementWidth, elementHeight));
 
                 return gLink;
             },
-            update => {
-                update.select("path.node-link")
-                    .transition()
-                    .duration(500)
-                    .attr("d", d => calculateLinkPath(d, positions, elementWidth, elementHeight));
-
-                return update;
-            },
-            exit => {
-                exit.transition()
-                    .duration(500)
-                    .style("opacity", 0)
-                    .remove();
-            }
+            update => update,
+            exit => exit
         )
 }
 
 /**
- * 
- * @param newNodeGroup 
- * @param nextLinkGroup 
- * @param nodeEnqueued 
- * @param positions 
- * @param resetQueryValues 
- * @param setIsAnimating 
+ * Función encargada de animar la inserción de un nuevo nodo en la cola
+ * @param svg Lienzo en el que se va a dibujar
+ * @param nodeEnqueued Id del nodo encolado
+ * @param prevNodeId Id del nodo anterior al nuevo nodo
+ * @param positions Mapa de posiciones de cada nodo dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de la query del usuario
+ * @param setIsAnimating Función que establece el estado de animación
  */
-export async function enqueueNode(
-    newNodeGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
-    nextLinkGroup: d3.Selection<SVGGElement, unknown, null, undefined> | null,
+export async function animateEnqueueNode(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodeEnqueued: string,
-    prevNodeId: string | undefined,
+    prevNodeId: string | null,
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Posición final del nuevo nodo
-    const finalPos = positions.get(nodeEnqueued)!;
+    // Grupo del lienzo correspondiente al nuevo elemento
+    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeEnqueued}`);
 
-    // Posición inicial del nuevo nodo
-    const initialYOffset = -60;
-    const initialPos = { x: finalPos.x, y: finalPos.y + initialYOffset };
+    // Grupo del lienzo correspondiente al enlace que apunta al nuevo nodo
+    const nextLinkGroup = prevNodeId ? svg.select<SVGGElement>(`g#link-${prevNodeId}-${nodeEnqueued}-next`) : null;
 
-    // Mapa temporal de posiciones para calular el path inicial del enlace
-    const tempPositions = new Map(positions);
-    tempPositions.set(nodeEnqueued, initialPos);
+    // Grupo del lienzo correspondiente al indicador del elemento cabeza
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Cálculo formas de enlace inicial y final
-    let initialPath = "M0,0";
-    let finalPath = "M0,0";
-    if (prevNodeId && nextLinkGroup) {
-        const tempPositions = new Map(positions);
-        tempPositions.set(nodeEnqueued, initialPos);
-        initialPath = calculateLinkPath({ sourceId: prevNodeId, targetId: nodeEnqueued, type: 'next' }, tempPositions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT);
-        finalPath = calculateLinkPath({ sourceId: prevNodeId, targetId: nodeEnqueued, type: 'next' }, positions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT);
-    }
+    // Posición de animación final del nuevo nodo
+    const finalPos = positions.get(nodeEnqueued);
 
-    // Establecemos el estado visual inicial antes de animar
-    newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
-    nextLinkGroup?.select("path.node-link").attr("d", initialPath);
+    if (finalPos) {
+        // Estado visual inicial del nuevo nodo y el enlace que apunta a él (ocultos)
+        newNodeGroup.style("opacity", 0);
+        nextLinkGroup?.select("path.node-link").style("opacity", 0);
 
-    // Animación de aparición del nuevo nodo
-    await newNodeGroup
-        .transition()
-        .duration(1500)
-        .style("opacity", 1)
-        .ease(d3.easeCubicInOut)
-        .end();
+        // Cálculo de la forma inicial y final del enlace
+        let initialPath = "M0,0";
+        let finalPath = "M0,0";
+        if (prevNodeId && nextLinkGroup) {
+            // Posición de animación inicial del nuevo nodo
+            const initialYOffset = -60;
+            const initialPos = { x: finalPos.x, y: finalPos.y + initialYOffset };
 
-    // Animación de aparición del enlace
-    await nextLinkGroup
-        ?.select("path.node-link")
-        .transition()
-        .duration(1500)
-        .style("opacity", 1)
-        .ease(d3.easeCubicInOut)
-        .end();
+            // Mapa temporal de posiciones para calular la forma inicial del enlace
+            const tempPositions: Map<string, {
+                x: number;
+                y: number;
+            }> = new Map(positions);
+            tempPositions.set(nodeEnqueued, initialPos);
 
-    // Animación de movimiento del nuevo nodo y su enlace a su posición final
-    const nodeMovePromise = newNodeGroup
-        .transition()
-        .duration(1500)
-        .ease(d3.easeCubicInOut)
-        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-        .end();
+            // Forma inicial y final del enlace
+            initialPath = calculateLinkPath({ sourceId: prevNodeId, targetId: nodeEnqueued, type: 'next' }, tempPositions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT);
+            finalPath = calculateLinkPath({ sourceId: prevNodeId, targetId: nodeEnqueued, type: 'next' }, positions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT);
 
-    const linkMovePromise = nextLinkGroup
-        ? nextLinkGroup.select("path.node-link")
+            // Posicionamiento inicial del nodo a encolar y su enlace
+            newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
+            nextLinkGroup.select("path.node-link").attr("d", initialPath);
+        }
+
+        // Animación de aparición del nuevo nodo
+        await newNodeGroup
             .transition()
-            .duration(1500)
-            .ease(d3.easeCubicInOut)
-            .attr("d", finalPath)
-            .end()
-        : Promise.resolve();
+            .duration(1000)
+            .style("opacity", 1)
+            .ease(d3.easePolyInOut)
+            .end();
 
-    // Ejecutamos ambas promesas de animación en paralelo
-    await Promise.all([nodeMovePromise, linkMovePromise]);
+        if (nextLinkGroup) {
+            // Animación de aparición del enlace
+            await nextLinkGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .ease(d3.easeExpInOut)
+                .end();
+
+            // Animación de movimiento del nuevo nodo y su enlace a su posición final
+            const nodeMovePromise = newNodeGroup
+                .transition()
+                .duration(1500)
+                .ease(d3.easeBounce)
+                .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+                .end();
+
+            const linkMovePromise = nextLinkGroup.select("path.node-link")
+                .transition()
+                .duration(1500)
+                .ease(d3.easeBounce)
+                .attr("d", finalPath)
+                .end();
+
+            // Resolución de las promesas de animación de movimiento
+            await Promise.all([nodeMovePromise, linkMovePromise]);
+
+            // Animación de movimiento del indicador de tope
+            await tailIndicatorGroup
+                .transition()
+                .duration(1000)
+                .ease(d3.easeQuadInOut)
+                .attr("transform", () => {
+                    const finalX = finalPos.x + SVG_QUEUE_VALUES.ELEMENT_WIDTH / 2;
+                    const finalY = finalPos.y;
+                    return `translate(${finalX}, ${finalY})`;
+                })
+                .end();
+        }
+    }
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
@@ -239,39 +269,246 @@ export async function enqueueNode(
     setIsAnimating(false);
 }
 
-async function animateNodeDequeueExit(
-    selection: d3.Selection<SVGGElement, QueueNodeData, SVGSVGElement, unknown>,
+/**
+ * Función encargada de animar la salida de un nodo de la cola
+ * @param svg Lienzo en el que se va a dibujar
+ * @param prevFirstNode Nodo que se decola
+ * @param remainingNodesData Nodos restantes en la cola
+ * @param positions Posiciones de los nodos dentro del lienzo
+ * @param dims Dimensiones de los elementos
+ * @param resetQueryValues Función que restablece los valores de la query del usuario
+ * @param setIsAnimating Función que establece el estado de animación
+ */
+export async function animateDequeueNode(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    prevFirstNode: QueueNodeData,
+    remainingNodesData: QueueNodeData[],
     positions: Map<string, { x: number, y: number }>,
-    elementHeight: number,
+    resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Duración de la animación de salida
-    const exitDuration = 1500;
+    // Id del nodo a desencolar
+    const nodeIdDequeued = prevFirstNode.id;
 
-    // Offset de movimiento del nodo 
-    const moveOffsetY = elementHeight * 0.8;
+    // Grupo del lienzo correspondiente al elemento a decolar
+    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdDequeued}`);
+
+    // Grupo del lienzo correspondiente al enlace del elemento a decolar
+    const linkToRemoveGroup = svg.select<SVGGElement>(`g#link-${nodeIdDequeued}-${prevFirstNode.next}-next`);
+
+    // Grupo del lienzo correspondiente al indicador del elemento cabeza
+    const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+
+    // Grupo del lienzo correspondiente al indicador del elemento tope
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+    // Movimiento del nodo a decolar 
+    const nodeMoveOffsetY = SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
+
+    // Animación de salida del enlace
+    await linkToRemoveGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .ease(d3.easeBounce)
+        .style("opacity", 0)
+        .end();
 
     // Animación de salida del nodo
-    await selection
+    await nodeToRemoveGroup
         .transition()
-        .duration(exitDuration)
-        .attr("transform", (d) => {
-            const currentPos = positions.get(d.id);
+        .ease(d3.easeBackInOut)
+        .duration(1500)
+        .attr("transform", () => {
+            const currentPos = positions.get(nodeIdDequeued);
             const x = currentPos?.x ?? 0;
-            const y = (currentPos?.y ?? 0) + moveOffsetY;
+            const y = (currentPos?.y ?? 0) + nodeMoveOffsetY;
             return `translate(${x}, ${y})`;
         })
         .style("opacity", 0)
         .end();
 
-    // Limpiar el mapa de posiciones
-    selection.each(d => {
-        positions.delete(d.id);
-        console.log("Posición eliminada para:", d.id);
-    });
+    // Eliminación de los elementos del DOM correspondientes al nodo decolado
+    nodeToRemoveGroup.remove();
+    linkToRemoveGroup.remove();
 
-    // Eliminar los nodos del DOM
-    selection.remove();
+    // Eliminación de la posición del nodo decolado
+    positions.delete(nodeIdDequeued);
 
+    if (remainingNodesData.length > 0) {
+        // Animación de salida del indicador de cabeza
+        await headIndicatorGroup
+            .transition()
+            .duration(1000)
+            .ease(d3.easeBounce)
+            .style("opacity", 0)
+            .end();
+
+        // Array de promesas para animaciones de desplazamiento de nodos y enlaces restantes
+        const shiftPromises: Promise<void>[] = [];
+
+        // Selección de nodos restantes (re-vinculación de datos)
+        const remainingNodes = svg.selectAll<SVGGElement, QueueNodeData>("g.node")
+            .data(remainingNodesData, d => d.id);
+
+        // Por cada nodo restante, se calcula la transición a su posición final
+        remainingNodes.each(function (d) {
+            const group = d3.select(this);
+            const finalPos = positions.get(d.id);
+            if (finalPos) {
+                shiftPromises.push(
+                    group.transition()
+                        .duration(1500)
+                        .ease(d3.easeBounce)
+                        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+                        .end()
+                );
+            }
+        });
+
+        // Recálculo de los enlaces en base a la información de los nodos restantes
+        const remainingLinksData: LinkData[] = [];
+        remainingNodesData.forEach(node => {
+            if (node.next && positions.has(node.next)) {
+                remainingLinksData.push({ sourceId: node.id, targetId: node.next, type: "next" });
+            }
+        });
+
+        // Selección de enlaces restantes (re-vinculación de datos)
+        const remainingLinks = svg.selectAll<SVGGElement, LinkData>("g.link")
+            .data(remainingLinksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`);
+
+        // Por cada enlace, se crea su transición a su forma final
+        remainingLinks.each(function (d) {
+            const path = d3.select(this).select<SVGPathElement>("path.node-link");
+            const finalPathD = calculateLinkPath(d, positions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT);
+            shiftPromises.push(
+                path.transition()
+                    .duration(1500)
+                    .ease(d3.easeBounce)
+                    .attr("d", finalPathD)
+                    .end()
+            );
+        });
+
+        // Animación de posicionamiento del indicador de tope a su elemento correspondiente
+        const finalTailIndicatorPos = positions.get(remainingNodesData[remainingNodesData.length - 1].id)!;
+        shiftPromises.push(
+            tailIndicatorGroup
+                .transition()
+                .duration(1500)
+                .ease(d3.easeBounce)
+                .attr("transform", () => {
+                    const finalX = finalTailIndicatorPos.x + SVG_QUEUE_VALUES.ELEMENT_WIDTH / 2;
+                    const finalY = finalTailIndicatorPos.y;
+                    return `translate(${finalX}, ${finalY})`;
+                })
+                .end()
+        );
+
+        // Resolución de las promesas de animación de desplazamiento
+        await Promise.all(shiftPromises);
+
+        // Animación de entrada del indicador de cabeza
+        await headIndicatorGroup
+            .transition()
+            .duration(1000)
+            .ease(d3.easeBounce)
+            .style("opacity", 1)
+            .end();
+    }
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+export function animateGetFront(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    headNodeId: string,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Grupo del lienzo correspondiente al elemento cabeza de la cola 
+    const topNodeGroup = svg.select<SVGGElement>(`#${headNodeId}`);
+
+    // Color de resaltado para el nodo
+    const highlightColor = "#00e676";
+
+    // Grupo correspondiente al contenedor principal del nodo y al valor de este  
+    const rect = topNodeGroup.select("rect");
+    const text = topNodeGroup.select("text");
+
+    // Animación de sobresalto del contenedor del nodo
+    rect.transition()
+        .duration(300)
+        .attr("stroke", highlightColor)
+        .attr("stroke-width", 3)
+        .transition()
+        .delay(800)
+        .duration(300)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+
+    // Animación de sobresalto del valor del nodo
+    text.transition()
+        .duration(300)
+        .attr("fill", highlightColor)
+        .style("font-size", "18px")
+        .style("font-weight", "bold")
+        .transition()
+        .delay(800)
+        .duration(300)
+        .attr("fill", "white")
+        .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+        .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT);
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animacion
+    setIsAnimating(false);
+}
+
+/**
+ * Función encargada de eliminar todos los nodos y enlaces del lienzo
+ * @param svg Lienzo que se va a limpiar
+ * @param nodePositions Mapa de posiciones de los nodos dentro del lienzo
+ * @param resetQueryValues Función que restablece los valores de la query del usuario
+ * @param setIsAnimating Función que establece el estado de animación
+ */
+export async function animateClearQueue(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodePositions: Map<string, { x: number, y: number }>,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Animación de salida de los enlaces
+    await svg.selectAll("g.link")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Animacición de salida de los nodos
+    await svg.selectAll("g.node")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Eliminación de los nodos y enlaces del DOM
+    svg.selectAll("g.node").remove();
+    svg.selectAll("g.link").remove();
+
+    // Liempiza del mapa de posiciones
+    nodePositions.clear();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
     setIsAnimating(false);
 }

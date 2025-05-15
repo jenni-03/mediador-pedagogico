@@ -1,72 +1,74 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { sequentialAddressGenerator } from "../memoryAllocator";
+
 /**
- * Clase que representa un vector
+ * Clase que representa un vector.
  */
 export class Secuencia {
-    // Vector donde se almacena los objetos
+
+    // Vector donde se almacena los objetos.
     private vector: (number | null)[];
 
     // Cantidad de elementos actualmente almacenados en la secuencia.
     private cant: number;
 
-    // Dirección base ficticia desde donde se comienza a calcular la memoria
-    private direccionBase: number;
+    // Vector de direcciones de memoria.
+    private vectorMemoria: string[];
 
     // Tamaño simulado de cada nodo en bytes
     private tamanioNodo: number;
 
-    // Vector de direcciones de memoria
-    private vectorMemoria: number[];
-
     /**
-     * Constructor de la clase Secuencia
-     * @param n Tamaño (capacidad) de la secuencia
-     * @param direccionBase Dirección base de memoria (opcional, por defecto 1000)
+     * Constructor de la clase Secuencia.
+     * @param n Tamaño (capacidad) de la secuencia.
+     * @param memoriaExistente Vector de direcciones de memoria (opcional).
      * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4)
      */
     constructor(
         n: number,
-        direccionBase: number = 1000,
+        memoriaExistente?: string[],
         tamanioNodo: number = 4
     ) {
         if (n <= 0) {
             this.vector = [];
             this.vectorMemoria = [];
             this.cant = 0;
-            this.direccionBase = 0;
             this.tamanioNodo = 0;
             return;
         }
+
         this.vector = new Array<number | null>(n).fill(null);
-        this.vectorMemoria = new Array<number>(n);
         this.cant = 0;
-        this.direccionBase = direccionBase;
         this.tamanioNodo = tamanioNodo;
 
-        // Asignar direcciones de memoria a cada posición del vector
-        this.inicializarDireccionesMemoria();
+        if (memoriaExistente && memoriaExistente.length === n) {
+            this.vectorMemoria = [...memoriaExistente];
+        } else {
+            this.vectorMemoria = new Array<string>(n);
+            this.inicializarDireccionesMemoria();
+        }
     }
 
     /**
-     * Método que inserta un nuevo elemento a la secuencia
-     * @param elem Elemento a insertar
+     * Método que inserta un nuevo elemento a la secuencia.
+     * @param elem Elemento a insertar.
      */
     insertar(elem: number) {
         if (this.cant >= this.vector.length) {
-            throw new Error(`No hay espacio para insertar el elemento ${elem}`);
+            throw new Error(`No hay espacio para insertar el elemento ${elem}.`);
         }
         this.vector[this.cant++] = elem;
     }
 
     /**
-     * Método que elimina un elemento a la secuencia dada su posición
-     * @param pos Posición del elemento a eliminar
+     * Método que elimina un elemento a la secuencia dada su posición.
+     * @param pos Posición del elemento a eliminar.
      */
     eliminarPos(pos: number) {
         if (this.cant === 0) {
             throw new Error(
-                "No se puede eliminar: la estructura está vacía (tamaño actual: 0)."
+                "No fue posible eliminar: la secuencia está vacía (tamaño actual: 0)."
             );
         }
 
@@ -83,7 +85,7 @@ export class Secuencia {
     }
 
     /**
-     * Método que vacía la secuencia
+     * Método que vacía la secuencia.
      */
     vaciar(): void {
         this.cant = 0;
@@ -91,8 +93,8 @@ export class Secuencia {
     }
 
     /**
-     * Método que retorna el elemento en la posición indicada
-     * @param i Posición del elemento
+     * Método que retorna el elemento en la posición indicada.
+     * @param i Posición del elemento.
      * @returns El elemento indicado o null si la posición es inválida.
      */
     get(i: number): number | null {
@@ -126,7 +128,7 @@ export class Secuencia {
         if (this.vector.includes(elem)) {
             return true;
         }
-        throw new Error(`El elemento ${elem} no se encontró en la secuencia`);
+        throw new Error(`El elemento ${elem} no se encontró en la secuencia.`);
     }
 
     /**
@@ -135,6 +137,14 @@ export class Secuencia {
      */
     getTamanio() {
         return this.cant;
+    }
+
+    /**
+     * Método que retorna el tamaño en bytes de los nodos almacenados.
+     * @returns Tamaño en bytes de los nodos.
+     */
+    getTamanioNodo() {
+        return this.tamanioNodo;
     }
 
     /**
@@ -154,19 +164,19 @@ export class Secuencia {
     }
 
     /**
-     * Método que retorna el vector contenedor de la secuencia
-     * @returns Vector contenedor
+     * Método que retorna el vector contenedor de la secuencia.
+     * @returns Vector contenedor.
      */
     getVector() {
         return this.vector;
     }
 
     /**
-     * Método encargado de clonar la secuencia actual
-     * @returns Nueva secuencia clonada
+     * Método que clona la secuencia actual.
+     * @returns Nueva secuencia clonada.
      */
     clonar() {
-        const secuenciaClonada = new Secuencia(this.getCapacidad());
+        const secuenciaClonada = new Secuencia(this.getCapacidad(), this.vectorMemoria);
         for (let i = 0; i < this.getTamanio(); i++) {
             secuenciaClonada.insertar(this.get(i) ?? -1);
         }
@@ -174,11 +184,11 @@ export class Secuencia {
     }
 
     /**
-     * Método que retorna la dirección de memoria de un índice dado
-     * @param i Índice del vector
-     * @returns Dirección de memoria correspondiente al índice
+     * Método que retorna la dirección de memoria de un índice dado.
+     * @param i Índice del vector.
+     * @returns Dirección de memoria correspondiente al índice.
      */
-    getDireccion(i: number): number | null {
+    getDireccion(i: number): string | null {
         if (i < 0 || i >= this.vector.length) {
             return null;
         }
@@ -186,20 +196,21 @@ export class Secuencia {
     }
 
     /**
-     * Método que retorna el vector de direcciones de memoria completo
-     * @returns Vector con las direcciones de memoria
+     * Método que retorna el vector de direcciones de memoria completo.
+     * @returns Vector con las direcciones de memoria.
      */
-    getVectorMemoria(): number[] {
+    getVectorMemoria(): string[] {
         return this.vectorMemoria;
     }
 
     /**
-     * Método auxiliar que inicializa las direcciones de memoria para cada elemento del vector
+     * Método auxiliar que inicializa las direcciones de memoria para cada elemento del vector.
      */
     private inicializarDireccionesMemoria() {
+        sequentialAddressGenerator.reset();
         const n = this.vectorMemoria.length;
         for (let i = 0; i < n; i++) {
-            this.vectorMemoria[i] = this.direccionBase + i * this.tamanioNodo;
+            this.vectorMemoria[i] = sequentialAddressGenerator.generateNextAddress();
         }
     }
 

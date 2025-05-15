@@ -8,21 +8,12 @@ export const TYPE_FILTER = {
 export const STRUCTURE_NAME = {
     SEQUENCE: 'secuencia',
     QUEUE: 'cola',
-    PRIORITY_QUEUE: 'cola de prioridad',
+    PRIORITY_QUEUE: 'cola_de_prioridad',
     STACK: 'pila',
     HASHTABLE: 'tabla_hash',
 } as const
 
-export const SVG_SEQUENCE_VALUES = {
-    MARGIN_LEFT: 20,
-    MARGIN_RIGHT: 20,
-    ELEMENT_WIDTH: 65,
-    ELEMENT_HEIGHT: 65,
-    SPACING: 0,
-    HEIGHT: 230,
-    INDEX_TEXT_COLOR: '#FF6F6F',
-    INDEX_TEXT_SIZE: '13px',
-    INDEX_TEXT_WEIGHT: '600',
+export const SVG_STYLE_VALUES = {
     MEMORY_TEXT_COLOR: '#A0FFDA',
     MEMORY_TEXT_SIZE: '13px',
     MEMORY_TEXT_WEIGHT: '500',
@@ -36,6 +27,18 @@ export const SVG_SEQUENCE_VALUES = {
     RECT_FILL_SECOND_COLOR: '#1F1F2D',
     RECT_STROKE_COLOR: '#D72638',
     RECT_STROKE_WIDTH: 1.2,
+}
+
+export const SVG_SEQUENCE_VALUES = {
+    MARGIN_LEFT: 20,
+    MARGIN_RIGHT: 20,
+    ELEMENT_WIDTH: 65,
+    ELEMENT_HEIGHT: 65,
+    SPACING: 0,
+    HEIGHT: 230,
+    INDEX_TEXT_COLOR: '#FF6F6F',
+    INDEX_TEXT_SIZE: '13px',
+    INDEX_TEXT_WEIGHT: '600',
 } as const
 
 export const SVG_QUEUE_VALUES = {
@@ -45,9 +48,15 @@ export const SVG_QUEUE_VALUES = {
     ELEMENT_HEIGHT: 40,
     SPACING: 55,
     HEIGHT: 230,
-    NODE_FILL_COLOR: '#1F1F2D',
-    NODE_STROKE_COLOR: '#D72638',
-    NODE_TEXT_COLOR: '#E0E0E0',
-    NODE_TEXT_WEIGHT: '600',
-    NODE_TEXT_SIZE: '16px',
 } as const
+
+export const SVG_STACK_VALUES = {
+    MARGIN_TOP: 30,
+    MARGIN_BOTTOM: 30,
+    MARGIN_LEFT: 50,
+    MARGIN_RIGHT: 50,
+    ELEMENT_WIDTH: 80,
+    ELEMENT_HEIGHT: 60,
+    SPACING: 10,
+    WIDTH: 120,
+} as const;

@@ -7,29 +7,37 @@ import { NodoS } from "../nodes/NodoS";
  */
 export class Cola {
 
-    // Nodo inicial de la cola
+    // Nodo inicial de la cola.
     private inicio: NodoS | null;
 
-    // Nodo final de la cola
+    // Nodo final de la cola.
     private fin: NodoS | null;
 
-    // Tamaño de la cola
+    // Tamaño de la cola.
     private tamanio: number;
 
+    // Tamaño simulado de cada elemento en bytes
+    private tamanioNodo: number;
+
     /**
-     * Constructor de la clase Cola
+     * Constructor de la clase Cola.
      */
-    constructor() {
+    constructor(
+        tamanioNodo: number = 16
+    ) {
         this.inicio = null;
         this.fin = null;
         this.tamanio = 0;
+        this.tamanioNodo = tamanioNodo;
     }
 
     /**
-     * Método para encolar un elemento en la cola.
+     * Método que encola un nuevo elemento en la cola.
      * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
+        if (this.tamanio >= 10) throw new Error("No fue posible encolar: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+
         const nuevoNodo = new NodoS(valor);
 
         if (this.esVacia()) {
@@ -41,15 +49,16 @@ export class Cola {
                 this.fin = nuevoNodo;
             }
         }
+
         this.tamanio++;
     }
 
     /**
-     * Método para decolar (quitar) el primer elemento de la cola.
-     * @returns Número removido o null si la cola está vacía.
+     * Método que decola (remueve) el primer elemento de la cola.
+     * @returns Elemento removido o null si la cola está vacía.
      */
     public decolar(): number | null {
-        if (this.esVacia()) throw new Error("No se puede eliminar: la estructura está vacía (tamaño actual: 0).");
+        if (this.esVacia()) throw new Error("No fue posible decolar: La cola está vacía (tamaño actual: 0).");
 
         const valorEliminado = this.inicio?.getValor() ?? null;
 
@@ -61,12 +70,13 @@ export class Cola {
                 this.inicio = this.inicio.getSiguiente();
             }
         }
+
         this.tamanio--;
         return valorEliminado;
     }
 
     /**
-     * Método encargado de vaciar la cola.
+     * Método que vacia la cola.
      */
     public vaciar(): void {
         this.inicio = null;
@@ -113,6 +123,14 @@ export class Cola {
     public getTamanio(): number {
         return this.tamanio;
     }
+    
+    /**
+     * Método que retorna el tamaño en bytes de los nodos almacenados.
+     * @returns Tamaño en bytes de los nodos.
+     */
+    getTamanioNodo() {
+        return this.tamanioNodo;
+    }
 
     /**
      * Método que verifica si la cola está vacía.
@@ -123,7 +141,7 @@ export class Cola {
     }
 
     /**
-     * Método encargado de transformar la cola en un array de nodos.
+     * Método que transforma la cola en un array de nodos.
      * @returns Array de nodos con la información de la cola.
      */
     public getArrayDeNodos() {
@@ -137,6 +155,7 @@ export class Cola {
                 id: nodoActual.getId(),
                 value: nodoActual.getValor(),
                 next: nodoSiguiente ? nodoSiguiente.getId() : null,
+                memoryAddress: nodoActual.getDireccionMemoria()
             });
 
             nodoActual = nodoActual.getSiguiente();
@@ -145,6 +164,10 @@ export class Cola {
         return arregloNodos;
     }
 
+    /**
+     * Método que clona la cola actual.
+     * @returns Nueva cola clonada.
+     */
     public clonar() {
         const nuevaCola = new Cola();
 
@@ -155,11 +178,11 @@ export class Cola {
         let nodoActual = this.inicio;
         let ultimoNodoClonado: NodoS | null = null;
 
-
         while (nodoActual !== null) {
             const nuevoNodo = new NodoS(
                 nodoActual.getValor(),
-                nodoActual.getId()
+                nodoActual.getId(),
+                nodoActual.getDireccionMemoria()
             );
 
             if (nuevaCola.inicio === null) {
@@ -177,7 +200,6 @@ export class Cola {
         }
 
         nuevaCola.tamanio = this.tamanio;
-
         return nuevaCola;
     }
 

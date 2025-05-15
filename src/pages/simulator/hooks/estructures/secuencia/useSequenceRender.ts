@@ -6,7 +6,7 @@ import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../../../shared/constants/consts";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 
-export function useSequenceRender(sequence: (number | null)[], memory: number[], query: BaseQueryOperations<"secuencia">, resetQueryValues: () => void) {
+export function useSequenceRender(sequence: (number | null)[], memory: string[], query: BaseQueryOperations<"secuencia">, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
@@ -32,7 +32,8 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
         const spacing = SVG_SEQUENCE_VALUES.SPACING;
 
         // Ancho y alto del SVG dependiendo del número de elementos de la secuencia
-        const width = margin.left + sequence.length * (elementWidth + spacing) - spacing;
+        const displayLength = Math.max(sequence.length, prevSequence?.length ?? 0);
+        const width = margin.left + displayLength * (elementWidth + spacing) - spacing;
         const height = SVG_SEQUENCE_VALUES.HEIGHT;
 
         // Configuración del contenedor SVG
@@ -46,12 +47,12 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
             memory,
             { margin, elementWidth, elementHeight, spacing, height }
         );
-    }, [sequence]);
+    }, [sequence, memory]);
 
     // Operación de inserción
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!sequence || !svgRef.current || query.toAdd === null || !prevSequence) return;
+        if (!sequence || !svgRef.current || query.toAdd === null || !prevSequence || prevSequence.length === 0) return;
 
         // Indice donde se insertó el nuevo elemento
         const newElementIndex = sequence.findIndex((actualValue, i) => actualValue !== prevSequence[i]);
@@ -60,11 +61,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
         if (newElementIndex !== -1) {
             // Seleccionamos el elemento SVG de acuerdo a su referencia
             const svg = d3.select(svgRef.current);
-
-            // Grupo del lienzo correspondiente al nuevo elemento
-            const targetGroup = svg
-                .selectAll<SVGGElement, number | null>("g.element")
-                .filter((_d, i) => i === newElementIndex);
 
             // Dimensiones del SVG
             const dims = {
@@ -76,8 +72,8 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
             }
 
             // Animación de inserción del nuevo elemento
-            animateInsertionSequence(svg,
-                targetGroup,
+            animateInsertionSequence(
+                svg,
                 query.toAdd,
                 newElementIndex,
                 dims,
@@ -85,12 +81,12 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
                 setIsAnimating
             );
         }
-    }, [query.toAdd]);
+    }, [query.toAdd, sequence, prevSequence, resetQueryValues, setIsAnimating]);
 
     // Operación de eliminación por posición
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!sequence || !svgRef.current || query.toDelete === null || !prevSequence) return;
+        if (!sequence || !svgRef.current || query.toDelete === null || !prevSequence || prevSequence.length === 0) return;
 
         // Indice del elemento eliminado
         const deletedIndexElement = query.toDelete;
@@ -112,19 +108,14 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
                 height: SVG_SEQUENCE_VALUES.HEIGHT
             }
 
-            // Seleccionamos el elemento SVG de acuerdo a su referencia
+            // Selección del elemento SVG de acuerdo a su referencia
             const svg = d3.select(svgRef.current);
 
             // Determinamos la animación a aplicar en base a si es necesario realizar un desplazamiento o no 
             if (deletedIndexElement === firstNullIndex) {
-                // Grupo del lienzo correspondiente al ultimo elemento con valor de la secuencia
-                const targetGroup = svg
-                    .selectAll<SVGGElement, number | null>("g.element")
-                    .filter((_d, i) => i === deletedIndexElement);
-
                 // Animación para eliminar el elemento seleccionado
-                animateDeleteLastElementSequence(svg,
-                    targetGroup,
+                animateDeleteLastElementSequence(
+                    svg,
                     deletedElement,
                     deletedIndexElement,
                     dims,
@@ -132,19 +123,9 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
                     setIsAnimating
                 );
             } else {
-                // Grupos afectados cuyo índice esté entre deletedIndexElement y firstNullIndex
-                const affectedGroups = svg.selectAll<SVGGElement, number | null>("g.element")
-                    .filter((_d, i) => i >= deletedIndexElement && i <= firstNullIndex);
-
-                // Grupo correspondiente al elemento que pasa a ser nulo
-                const nullGroup = svg.selectAll<SVGGElement, number | null>("g.element")
-                    .filter((_d, i) => i === firstNullIndex);
-
                 // Animación para eliminar el elemento seleccionado y desplazar los elementos afectados
                 animateDeleteElementWithDisplacement(
                     svg,
-                    affectedGroups,
-                    nullGroup,
                     prevSequence,
                     deletedIndexElement,
                     firstNullIndex,
@@ -154,29 +135,24 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
                 );
             }
         }
-    }, [query.toDelete]);
+    }, [query.toDelete, sequence, prevSequence, resetQueryValues, setIsAnimating]);
 
     // Operación de actualización
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!sequence || !svgRef.current || !query.toUpdate || !prevSequence) return;
+        if (!sequence || !svgRef.current || !query.toUpdate || !prevSequence || prevSequence.length === 0) return;
 
-        // Verificamos la estructura de la query del usuario
+        // Verificación de la estructura de la query del usuario
         if (!Array.isArray(query.toUpdate) || query.toUpdate.length !== 2) return;
 
         // Posición del elemento a actualizar y el nuevo valor a asignar
         const [pos, newVal] = query.toUpdate;
 
-        // Guardamos el valor previo a su actualización para su uso en la transición
+        // Obtención del valor previo a su actualización para su uso en la transición
         const oldVal = prevSequence[pos] ?? -1;
 
-        // Seleccionamos el elemento SVG de acuerdo a su referencia
+        // Selección del elemento SVG de acuerdo a su referencia
         const svg = d3.select(svgRef.current);
-
-        // Grupo que correspondiente al elemento actualizado
-        const updatedGroup = svg
-            .selectAll<SVGGElement, number | null>("g.element")
-            .filter((_d, i) => i === pos);
 
         // Dimensiones del SVG
         const dims = {
@@ -190,22 +166,21 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
         // Animacíon del proceso de actualización del elemento
         animateUpdateSequence(
             svg,
-            updatedGroup,
             oldVal,
             newVal,
             pos,
             dims,
             resetQueryValues,
-            () => setIsAnimating(false)
+            setIsAnimating
         );
-    }, [query.toUpdate]);
+    }, [query.toUpdate, sequence, prevSequence, resetQueryValues, setIsAnimating]);
 
     // Operación de búsqueda
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || query.toSearch === null) return;
 
-        // Seleccionamos el elemento SVG de acuerdo a su referencia
+        // Selección del elemento SVG de acuerdo a su referencia
         const svg = d3.select(svgRef.current);
 
         // Dimensiones del SVG
@@ -225,7 +200,7 @@ export function useSequenceRender(sequence: (number | null)[], memory: number[],
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toSearch]);
+    }, [query.toSearch, sequence, resetQueryValues, setIsAnimating]);
 
     return { svgRef }
 }
