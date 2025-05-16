@@ -99,7 +99,8 @@ export type BaseQueryOperations<T extends string> =
     T extends "cola_de_prioridad" ? {
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
-        toGetRear: string | null;
+        toGetFront: string | null;
+        toClear: boolean;
     } :
     T extends "pila" ? {
         toPushNode: string | null;
@@ -124,10 +125,9 @@ export type BaseStructureActions<T extends string> =
         clean: () => void;
     } :
     T extends "cola de prioridad" ? {
-        enqueue: (element: number) => void;
+        enqueue: (element: number, priority: number) => void;
         dequeue: () => void;
         getFront: () => void;
-        getRear: () => void;
         clean: () => void;
     } :
     T extends "pila" ? {

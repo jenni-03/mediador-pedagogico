@@ -208,7 +208,7 @@ export const operationsCode: Record<string, any> = {
             `}`
         ]
     },
-    cola_de_prioridad: {
+    "cola de prioridad": {
         enqueue: [
             `/**
  * Metodo que permite agregar un elemento a la Cola. <br>

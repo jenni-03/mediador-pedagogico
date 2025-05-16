@@ -49,4 +49,17 @@ export class NodoPrioridad {
     public getTamanio(): number {
         return this.tamanio;
     }
+
+    public setId(id: string): void {
+        this.id = id;
+    }
+
+    public setDireccionMemoria(direccion: string): void {
+        this.direccionMemoria = direccion;
+    }
+
+    public setTamanio(tamanio: number): void {
+        this.tamanio = tamanio;
+    }
+
 }

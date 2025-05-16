@@ -126,7 +126,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         }
     },
 
-    cola_de_prioridad: (parts) => {
+    "cola de prioridad": (parts) => {
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
             case "enqueue":
