@@ -156,6 +156,14 @@ export type QueueNodeData = {
     memoryAddress: string;
 };
 
+export type PriorityQueueNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
+    priority: number;
+};
+
 export type LinkData = {
     sourceId: string;
     targetId: string;

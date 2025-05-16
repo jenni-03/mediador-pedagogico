@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { QueueRender } from "./components/estructures/cola/QueueRender";
 import { Simulator } from "./components/templates/Simulator";
 import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
 import { ColaDePrioridad } from "../../shared/utils/structures/ColaPrioridad";
 import { usePriorityQueue } from "./hooks/estructures/colaPrioridad/usePriorityQueue";
+import { PriorityQueueRender } from "./components/estructures/colaPrioridad/PriorityQueueRender";
 
 export function PriorityQueueSimulator() {
     // Instanciación de la estructura Cola
@@ -40,7 +40,7 @@ export function PriorityQueueSimulator() {
             query={query}
             error={error}
         >
-            <QueueRender
+            <PriorityQueueRender
                 queue={queue.getArrayDeNodos()}
                 query={query}
                 resetQueryValues={resetQueryValues}
