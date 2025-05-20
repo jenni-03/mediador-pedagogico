@@ -172,10 +172,10 @@ export async function animateEnqueueNode(
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     try {
-        // Indicamos que la animación está en curso
+        // Activamos el flag de animación
         setIsAnimating(true);
         
-        // Dimensiones del SVG
+        // Margenes para el svg
         const margin = { left: SVG_QUEUE_VALUES.MARGIN_LEFT, right: SVG_QUEUE_VALUES.MARGIN_RIGHT };
         const elementWidth = SVG_QUEUE_VALUES.ELEMENT_WIDTH;
         const elementHeight = SVG_QUEUE_VALUES.ELEMENT_HEIGHT;
@@ -186,13 +186,13 @@ export async function animateEnqueueNode(
         // Localizamos el nodo recién insertado en la cola de prioridad
         const newNodeIndex = queueNodes.findIndex(node => node.id === nodeEnqueued);
         if (newNodeIndex === -1) {
-            console.warn("No se encontró el nodo encolado en el array de nodos");
+            console.error(`No se encontró el nodo con ID: ${nodeEnqueued} en la cola`);
             resetQueryValues();
             setIsAnimating(false);
             return;
         }
         
-        // Determinamos el nodo que está antes y después del nuevo nodo
+        // Determinamos el nodo que está antes y después del nuevo nodo (en base a la posición, no al enlace)
         const prevNodeId = newNodeIndex > 0 ? queueNodes[newNodeIndex - 1].id : null;
         const nextNodeId = newNodeIndex < queueNodes.length - 1 ? queueNodes[newNodeIndex + 1].id : null;
         
@@ -201,19 +201,16 @@ export async function animateEnqueueNode(
         
         // Verificamos que el nodo exista en el DOM
         if (newNodeGroup.empty()) {
-            console.error(`No se encontró el nodo con ID: ${nodeEnqueued}`);
+            console.error(`No se encontró el nodo con ID: ${nodeEnqueued} en el DOM`);
             resetQueryValues();
             setIsAnimating(false);
             return;
         }
         
-        // Guardamos copia de las posiciones actuales antes de la animación
-        const oldPositions = new Map<string, { x: number, y: number }>();
-        positions.forEach((pos, id) => {
-            oldPositions.set(id, { ...pos });
-        });
+        // Calcular todas las posiciones finales de los nodos
+        const oldPositions = new Map<string, { x: number, y: number }>(positions);
         
-        // Actualizamos las posiciones con los valores finales después de la inserción
+        // Actualizamos las posiciones de todos los nodos
         queueNodes.forEach((node, index) => {
             const x = margin.left + index * nodeSpacing;
             const y = (height - elementHeight) / 2;
@@ -239,135 +236,142 @@ export async function animateEnqueueNode(
         // Posicionamiento inicial del nodo a encolar
         newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
         
-        // PASO 1: Identificar los enlaces afectados por la inserción
-        // 1.1. Enlace del nodo previo que debe actualizarse (para ocultarlo)
-        let prevNodeLinkId = null;
-        if (prevNodeId && nextNodeId) {
-            prevNodeLinkId = `link-${prevNodeId}-${nextNodeId}-next`;
+        // PASO 1: Identificar y preparar todos los enlaces que necesitan ser modificados
+        
+        // 1. Enlace del nodo anterior al nuevo nodo (si existe)
+        let prevNodeLinkGroup = null;
+        if (prevNodeId) {
+            // Ocultamos el enlace existente que debe ser reemplazado
+            const oldNextLink = svg.select<SVGGElement>(`g#link-${prevNodeId}-${nextNodeId}-next`);
+            if (!oldNextLink.empty()) {
+                oldNextLink.select("path.node-link").style("opacity", 0);
+            }
             
-            // Ocultar solo el enlace que conecta el nodo anterior con el siguiente (que ahora se conectará con el nuevo)
-            svg.select(`g#${prevNodeLinkId} path.node-link`)
-                .transition()
-                .duration(400)
-                .style("opacity", 0);
+            // Preparamos el enlace del nodo anterior al nuevo nodo
+            prevNodeLinkGroup = svg.select<SVGGElement>(`g#link-${prevNodeId}-${nodeEnqueued}-next`);
+            if (prevNodeLinkGroup.empty()) {
+                prevNodeLinkGroup = svg.append("g")
+                    .attr("class", "link")
+                    .attr("id", `link-${prevNodeId}-${nodeEnqueued}-next`);
+                
+                prevNodeLinkGroup.append("path")
+                    .attr("class", "node-link next")
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", 1.5)
+                    .attr("marker-end", "url(#arrowhead)")
+                    .style("opacity", 0); // Inicialmente oculto, se animará después
+            } else {
+                prevNodeLinkGroup.select("path.node-link")
+                    .style("opacity", 0);
+            }
         }
         
-        // PASO 2: Mover los nodos existentes a sus nuevas posiciones para hacer espacio
-        const nodesToMove = queueNodes.filter(node => {
-            // Excluimos el nuevo nodo (lo animaremos por separado)
-            if (node.id === nodeEnqueued) return false;
-            
-            // Incluimos solo los nodos que necesitan moverse (los que están a partir de la posición del nuevo nodo)
-            const idx = queueNodes.findIndex(n => n.id === node.id);
-            return idx >= newNodeIndex;
-        });
-        
-        // Creamos promesas para esperar la finalización de la animación
-        const movePromises: Promise<unknown>[] = [];
-        
-        // Mapeamos los nodos a mover con sus enlaces para actualizarlos juntos
-        const nodesToMoveMap = new Map<string, { nodeGroup: d3.Selection<SVGGElement, unknown, null, undefined>, oldPos: { x: number, y: number }, newPos: { x: number, y: number } }>();
-        
-        // Primero recopilamos información de todos los nodos a mover
-        nodesToMove.forEach(node => {
-            const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
-            if (!nodeGroup.empty()) {
-                const oldPos = oldPositions.get(node.id);
-                const newPos = positions.get(node.id);
+        // 2. Enlace del nuevo nodo al siguiente nodo (si existe)
+        let newNodeLinkGroup = null;
+        if (nextNodeId) {
+            newNodeLinkGroup = svg.select<SVGGElement>(`g#link-${nodeEnqueued}-${nextNodeId}-next`);
+            if (newNodeLinkGroup.empty()) {
+                newNodeLinkGroup = svg.append("g")
+                    .attr("class", "link")
+                    .attr("id", `link-${nodeEnqueued}-${nextNodeId}-next`);
                 
-                if (oldPos && newPos) {
-                    nodesToMoveMap.set(node.id, { nodeGroup, oldPos, newPos });
+                newNodeLinkGroup.append("path")
+                    .attr("class", "node-link next")
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", 1.5)
+                    .attr("marker-end", "url(#arrowhead)")
+                    .style("opacity", 0); // Inicialmente oculto, se animará después
+            } else {
+                newNodeLinkGroup.select("path.node-link")
+                    .style("opacity", 0);
+            }
+        }
+        
+        // 3. Identificar todos los enlaces existentes que necesitan actualizarse
+        const linksToUpdate = new Map<string, {
+            linkGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
+            sourceId: string,
+            targetId: string
+        }>();
+        
+        queueNodes.forEach((node) => {
+            if (node.id === nodeEnqueued) return; // Excluimos el nuevo nodo
+            
+            if (node.next && node.id !== nodeEnqueued) {
+                // Solo si no es un enlace que ya estamos manejando específicamente
+                if (!(node.id === prevNodeId && node.next === nodeEnqueued) &&
+                    !(node.id === nodeEnqueued && nextNodeId === node.next)) {
+                    
+                    const linkId = `link-${node.id}-${node.next}-next`;
+                    const linkGroup = svg.select<SVGGElement>(`g#${linkId}`);
+                    
+                    if (!linkGroup.empty()) {
+                        linksToUpdate.set(linkId, {
+                            linkGroup,
+                            sourceId: node.id,
+                            targetId: node.next
+                        });
+                    }
                 }
             }
         });
         
-        // Ahora movemos cada nodo y actualizamos sus enlaces simultáneamente
-        nodesToMoveMap.forEach(({ nodeGroup, newPos }, nodeId) => {
-            // Animamos el movimiento del nodo
-            const promise = nodeGroup
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("transform", `translate(${newPos.x}, ${newPos.y})`)
-                .end();
+        // PASO 2: Animar tanto nodos como enlaces simultáneamente
+        const animationPromises: Promise<unknown>[] = [];
+        
+        // 2.1 Animamos el reposicionamiento de todos los nodos existentes (excepto el nuevo)
+        queueNodes.filter(node => node.id !== nodeEnqueued).forEach(node => {
+            const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+            const newPos = positions.get(node.id);
             
-            movePromises.push(promise);
-            
-            // También actualizamos los enlaces salientes de este nodo
-            svg.selectAll<SVGGElement, unknown>("g.link").each(function() {
-                const linkGroup = d3.select(this);
-                const linkId = linkGroup.attr("id");
-                if (!linkId) return;
+            if (!nodeGroup.empty() && newPos) {
+                const nodePromise = nodeGroup
+                    .transition()
+                    .duration(1000)
+                    .ease(d3.easeQuadOut)
+                    .attr("transform", `translate(${newPos.x}, ${newPos.y})`)
+                    .end();
                 
-                // Evitamos actualizar el enlace que se va a eliminar
-                if (linkId === prevNodeLinkId) return;
-                
-                // Extraer source y target del ID del enlace
-                const match = linkId.match(/link-([^-]+)-([^-]+)-([^-]+)/);
-                if (!match) return;
-                
-                const [, sourceId, targetId, type] = match;
-                
-                // Solo actualizamos los enlaces donde este nodo es el origen
-                if (sourceId === nodeId && positions.has(targetId)) {
-                    const linkData: LinkData = {
-                        sourceId,
-                        targetId,
-                        type: type as "next"
-                    };
-                    
-                    try {
-                        const newPath = calculateLinkPath(
-                            linkData,
-                            positions,
-                            elementWidth,
-                            elementHeight
-                        );
-                        
-                        // Actualizamos el path del enlace junto con el movimiento del nodo
-                        linkGroup.select("path.node-link")
-                            .transition()
-                            .duration(1000)
-                            .attr("d", newPath);
-                    } catch (error) {
-                        console.warn(`Error al actualizar el path para el enlace ${linkId}:`, error);
-                    }
-                }
-                
-                // También actualizamos los enlaces donde este nodo es el destino
-                if (targetId === nodeId && positions.has(sourceId)) {
-                    const linkData: LinkData = {
-                        sourceId,
-                        targetId,
-                        type: type as "next"
-                    };
-                    
-                    try {
-                        const newPath = calculateLinkPath(
-                            linkData,
-                            positions,
-                            elementWidth,
-                            elementHeight
-                        );
-                        
-                        // Actualizamos el path del enlace junto con el movimiento del nodo
-                        linkGroup.select("path.node-link")
-                            .transition()
-                            .duration(1000)
-                            .attr("d", newPath);
-                    } catch (error) {
-                        console.warn(`Error al actualizar el path para el enlace ${linkId}:`, error);
-                    }
-                }
-            });
+                animationPromises.push(nodePromise);
+            }
         });
         
-        // Esperamos a que todos los nodos terminen de moverse
-        if (movePromises.length > 0) {
-            await Promise.all(movePromises);
-        }
+        // 2.2 CAMBIO PRINCIPAL: Actualizar los enlaces simultáneamente
+        linksToUpdate.forEach((linkData) => {
+            const { linkGroup, sourceId, targetId } = linkData;
+            
+            if (!positions.has(sourceId) || !positions.has(targetId)) {
+                console.warn(`Posiciones no encontradas para enlace: ${sourceId} -> ${targetId}`);
+                return;
+            }
+            
+            try {
+                // Calculamos el camino final del enlace
+                const path = calculateLinkPath(
+                    { sourceId, targetId, type: 'next' },
+                    positions,
+                    elementWidth,
+                    elementHeight
+                );
+                
+                // Animamos la transición del enlace al mismo tiempo que los nodos
+                const linkPromise = linkGroup.select("path.node-link")
+                    .transition()
+                    .duration(1000) // Misma duración que los nodos
+                    .ease(d3.easeQuadOut) // Mismo tipo de ease que los nodos
+                    .attr("d", path)
+                    .end();
+                
+                animationPromises.push(linkPromise);
+            } catch (error) {
+                console.error(`Error al actualizar enlace ${sourceId} -> ${targetId}:`, error);
+            }
+        });
         
-        // PASO 3: Animación de la aparición del nuevo nodo
+        // Esperar a que terminen TODAS las animaciones juntas
+        await Promise.all(animationPromises);
+        
+        // 2.3 Después de reposicionar, mostramos el nuevo nodo con una animación
         await newNodeGroup
             .transition()
             .duration(800)
@@ -375,7 +379,7 @@ export async function animateEnqueueNode(
             .ease(d3.easePolyInOut)
             .end();
         
-        // PASO 4: Animar el movimiento del nuevo nodo a su posición final
+        // 2.4 Animamos el posicionamiento del nuevo nodo
         await newNodeGroup
             .transition()
             .duration(1200)
@@ -383,162 +387,126 @@ export async function animateEnqueueNode(
             .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
             .end();
         
-        // PASO 5: Crear/actualizar solo los enlaces relacionados con el nodo insertado
-        // IMPORTANTE: Esto se hace DESPUÉS de que el nodo ya está en su posición
-        const linkPromises: Promise<unknown>[] = [];
+        // PASO 3: Animar la aparición secuencial de los enlaces del nuevo nodo con animación de crecimiento
         
-        // 5.1. Si hay un nodo previo, creamos el enlace del nodo previo al nuevo nodo
-        if (prevNodeId) {
-            const newPrevLinkId = `link-${prevNodeId}-${nodeEnqueued}-next`;
-            let prevLinkGroup = svg.select<SVGGElement>(`g#${newPrevLinkId}`);
+        // Función auxiliar para animar el crecimiento del enlace
+        const animateLinkGrowth = async (
+            linkGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
+            sourceId: string, 
+            targetId: string, 
+            duration: number = 800
+        ) => {
+            const pathElement = linkGroup.select("path.node-link");
             
-            // Si el enlace no existe, lo creamos
-            if (prevLinkGroup.empty()) {
-                prevLinkGroup = svg.append("g")
-                    .attr("class", "link")
-                    .attr("id", newPrevLinkId);
-                
-                prevLinkGroup.append("path")
-                    .attr("class", "node-link next")
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", 1.5)
-                    .attr("marker-end", "url(#arrowhead)")
-                    .style("opacity", 0);
-            }
-            
-            // Calculamos el path del enlace
-            const prevLinkData: LinkData = {
-                sourceId: prevNodeId,
-                targetId: nodeEnqueued,
-                type: "next"
-            };
-            
-            const prevLinkPath = calculateLinkPath(
-                prevLinkData,
+            // Calcular el path completo
+            const fullPath = calculateLinkPath(
+                { sourceId, targetId, type: 'next' },
                 positions,
                 elementWidth,
                 elementHeight
             );
             
-            // Aplicamos el nuevo path y animamos su aparición
-            const prevLinkPromise = prevLinkGroup.select("path.node-link")
-                .attr("d", prevLinkPath)
+            // Configurar el path pero mantenerlo invisible
+            pathElement
+                .attr("d", fullPath)
+                .attr("stroke", "#4CAF50") // Color distintivo
+                .attr("stroke-width", 2)
+                .style("opacity", 1);
+            
+            // Obtener la longitud total del path
+            const totalLength = (pathElement.node() as SVGPathElement).getTotalLength();
+            
+            // Configurar el stroke-dasharray para que parezca vacío inicialmente
+            pathElement
+                .attr("stroke-dasharray", totalLength + " " + totalLength)
+                .attr("stroke-dashoffset", totalLength);
+            
+            // Animar el crecimiento
+            await pathElement
                 .transition()
-                .duration(600)
-                .style("opacity", 1)
+                .duration(duration)
+                .ease(d3.easeLinear)
+                .attr("stroke-dashoffset", 0) // Animar a 0 hace que el path se dibuje
+                .transition()
+                .duration(300)
+                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR) // Volver al color normal
+                .attr("stroke-width", 1.5)
+                .attr("stroke-dasharray", null) // Quitar el dasharray
                 .end();
-            
-            linkPromises.push(prevLinkPromise);
-        }
+        };
         
-        // Esperamos a que el enlace del nodo anterior al nuevo nodo termine de mostrarse
-        if (linkPromises.length > 0) {
-            await Promise.all(linkPromises);
-            // Limpiamos el array de promesas para el siguiente conjunto
-            linkPromises.length = 0;
-        }
-        
-        // 5.2. Creamos el enlace del nuevo nodo a su siguiente (si existe)
-        if (nextNodeId) {
-            const newNextLinkId = `link-${nodeEnqueued}-${nextNodeId}-next`;
-            let nextLinkGroup = svg.select<SVGGElement>(`g#${newNextLinkId}`);
-            
-            // Si el enlace no existe, lo creamos
-            if (nextLinkGroup.empty()) {
-                nextLinkGroup = svg.append("g")
-                    .attr("class", "link")
-                    .attr("id", newNextLinkId);
-                
-                nextLinkGroup.append("path")
-                    .attr("class", "node-link next")
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", 1.5)
-                    .attr("marker-end", "url(#arrowhead)")
-                    .style("opacity", 0);
+        // 3.1 Primero animamos el enlace desde el nodo anterior al nuevo nodo
+        if (prevNodeId && prevNodeLinkGroup) {
+            try {
+                await animateLinkGrowth(prevNodeLinkGroup, prevNodeId, nodeEnqueued);
+            } catch (error) {
+                console.error("Error al animar el enlace previo:", error);
             }
-            
-            // Calculamos el path del enlace
-            const nextLinkData: LinkData = {
-                sourceId: nodeEnqueued,
-                targetId: nextNodeId,
-                type: "next"
-            };
-            
-            const nextLinkPath = calculateLinkPath(
-                nextLinkData,
-                positions,
-                elementWidth,
-                elementHeight
-            );
-            
-            // Aplicamos el nuevo path y animamos su aparición
-            const nextLinkPromise = nextLinkGroup.select("path.node-link")
-                .attr("d", nextLinkPath)
-                .transition()
-                .duration(600)
-                .style("opacity", 1)
-                .end();
-            
-            linkPromises.push(nextLinkPromise);
         }
         
-        // Esperamos a que todos los enlaces del nuevo nodo terminen de mostrarse
-        if (linkPromises.length > 0) {
-            await Promise.all(linkPromises);
+        // 3.2 Después animamos el enlace desde el nuevo nodo al siguiente
+        if (nextNodeId && newNodeLinkGroup) {
+            try {
+                await animateLinkGrowth(newNodeLinkGroup, nodeEnqueued, nextNodeId);
+            } catch (error) {
+                console.error("Error al animar el enlace siguiente:", error);
+            }
         }
         
-        // PASO 6: Actualización de los indicadores de cabeza/fin
+        // PASO 4: Actualizar indicadores de cabeza/fin
+        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+        const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
         const updateIndicatorsPromises: Promise<unknown>[] = [];
         
-        // Actualizar indicador de cabeza
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-        if (!headIndicatorGroup.empty()) {
-            const headNodeId = queueNodes[0]?.id;
-            const headPos = headNodeId ? positions.get(headNodeId) : null;
-            
-            if (headPos) {
-                const headPromise = headIndicatorGroup
+        // Actualizar el indicador de cabeza si es necesario
+        if (newNodeIndex === 0 && !headIndicatorGroup.empty()) {
+            try {
+                const headIndicatorPromise = headIndicatorGroup
                     .transition()
-                    .duration(800)
+                    .duration(600)
                     .ease(d3.easeQuadInOut)
-                    .attr("transform", `translate(${headPos.x + elementWidth/2}, ${headPos.y})`)
+                    .attr("transform", () => {
+                        const indicatorX = finalPos.x + elementWidth / 2;
+                        const indicatorY = finalPos.y;
+                        return `translate(${indicatorX}, ${indicatorY})`;
+                    })
                     .end();
                 
-                updateIndicatorsPromises.push(headPromise);
+                updateIndicatorsPromises.push(headIndicatorPromise);
+            } catch (error) {
+                console.error("Error al animar el indicador de cabeza:", error);
             }
         }
         
-        // Actualizar indicador de fin
-        const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+        // Actualizar el indicador de fin
         if (!tailIndicatorGroup.empty()) {
-            const tailIndex = queueNodes.length - 1;
-            const tailNodeId = tailIndex >= 0 ? queueNodes[tailIndex].id : null;
-            const tailPos = tailNodeId ? positions.get(tailNodeId) : null;
-            
-            if (tailPos) {
-                const tailPromise = tailIndicatorGroup
-                    .transition()
-                    .duration(800)
-                    .ease(d3.easeQuadInOut)
-                    .attr("transform", `translate(${tailPos.x + elementWidth/2}, ${tailPos.y})`)
-                    .end();
+            try {
+                const lastNodeId = queueNodes[queueNodes.length - 1].id;
+                const lastNodePos = positions.get(lastNodeId);
                 
-                updateIndicatorsPromises.push(tailPromise);
+                if (lastNodePos) {
+                    const tailIndicatorPromise = tailIndicatorGroup
+                        .transition()
+                        .duration(600)
+                        .ease(d3.easeQuadInOut)
+                        .attr("transform", () => {
+                            const indicatorX = lastNodePos.x + elementWidth / 2;
+                            const indicatorY = lastNodePos.y;
+                            return `translate(${indicatorX}, ${indicatorY})`;
+                        })
+                        .end();
+                    
+                    updateIndicatorsPromises.push(tailIndicatorPromise);
+                }
+            } catch (error) {
+                console.error("Error al animar el indicador de fin:", error);
             }
         }
         
-        // Esperamos a que los indicadores terminen de actualizarse
+        // Esperar a que terminen las animaciones de los indicadores
         if (updateIndicatorsPromises.length > 0) {
             await Promise.all(updateIndicatorsPromises);
         }
-        
-        // PASO 7: Eliminar el enlace obsoleto entre el nodo previo y el siguiente
-        // Solo lo eliminamos cuando ya están establecidos los nuevos enlaces
-        if (prevNodeId && nextNodeId) {
-            const obsoleteLinkId = `link-${prevNodeId}-${nextNodeId}-next`;
-            svg.select(`g#${obsoleteLinkId}`).remove();
-        }
-        
     } catch (error) {
         console.error("Error en la animación de encolar:", error);
     } finally {
@@ -549,431 +517,6 @@ export async function animateEnqueueNode(
         setIsAnimating(false);
     }
 }
-
-/**
- * Función encargada de animar la inserción de un nuevo nodo en la cola de prioridad
- * @param svg Lienzo en el que se va a dibujar
- * @param nodeEnqueued Id del nodo encolado
- * @param queueNodes Array completo de nodos actuales en la cola
- * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función que restablece los valores de la query del usuario
- * @param setIsAnimating Función que establece el estado de animación
- */
-//Funciona excepto cuando hay mas de un elemento a la derecha del nuevo agregado
-// export async function animateEnqueueNode(   
-//     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-//     nodeEnqueued: string,
-//     queueNodes: PriorityQueueNodeData[],
-//     positions: Map<string, { x: number, y: number }>,
-//     resetQueryValues: () => void,
-//     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-// ) {
-//     try {
-//         // Margenes para el svg
-//         const margin = { left: SVG_QUEUE_VALUES.MARGIN_LEFT, right: SVG_QUEUE_VALUES.MARGIN_RIGHT };
-//         const elementWidth = SVG_QUEUE_VALUES.ELEMENT_WIDTH;
-//         const elementHeight = SVG_QUEUE_VALUES.ELEMENT_HEIGHT;
-//         const spacing = SVG_QUEUE_VALUES.SPACING;
-//         const nodeSpacing = elementWidth + spacing;
-//         const height = SVG_QUEUE_VALUES.HEIGHT;
-
-//         // Localizamos el nodo recién insertado en la cola de prioridad
-//         const newNodeIndex = queueNodes.findIndex(node => node.id === nodeEnqueued);
-//         if (newNodeIndex === -1) {
-//             resetQueryValues();
-//             setIsAnimating(false);
-//             return;
-//         }
-        
-//         // Determinamos el nodo que está antes y después del nuevo nodo (en base a la posición, no al enlace)
-//         const prevNodeId = newNodeIndex > 0 ? queueNodes[newNodeIndex - 1].id : null;
-//         const nextNodeId = newNodeIndex < queueNodes.length - 1 ? queueNodes[newNodeIndex + 1].id : null;
-        
-//         // Grupo del lienzo correspondiente al nuevo elemento
-//         const newNodeGroup = svg.select<SVGGElement>(`g#${nodeEnqueued}`);
-        
-//         // Verificamos que el nodo exista en el DOM
-//         if (newNodeGroup.empty()) {
-//             console.error(`No se encontró el nodo con ID: ${nodeEnqueued}`);
-//             resetQueryValues();
-//             setIsAnimating(false);
-//             return;
-//         }
-        
-//         // Enlaces que debemos animar
-//         // 1. Si hay un nodo anterior, este debe apuntar al nuevo nodo
-//         const prevNodeLinkGroup = prevNodeId ? svg.select<SVGGElement>(`g#link-${prevNodeId}-${nodeEnqueued}-next`) : null;
-        
-//         // 2. El nuevo nodo debe apuntar al siguiente (si existe)
-//         const newNodeLinkGroup = nextNodeId ? svg.select<SVGGElement>(`g#link-${nodeEnqueued}-${nextNodeId}-next`) : null;
-        
-//         // 3. IMPORTANTE: Tenemos que identificar y eliminar el enlace directo entre el nodo anterior y el siguiente
-//         //    (Este es el enlace que debe desaparecer cuando insertamos un nodo en medio)
-//         const directLinkToRemove = (prevNodeId && nextNodeId) ? 
-//             svg.select<SVGGElement>(`g#link-${prevNodeId}-${nextNodeId}-next`) : null;
-        
-//         // Grupo del lienzo correspondiente al indicador del elemento cabeza/fin
-//         const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-//         const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
-        
-//         // Calcular todas las posiciones finales de los nodos (desplazando los que sean necesarios)
-//         const oldPositions = new Map<string, { x: number, y: number }>(positions);
-        
-//         // Primero actualizamos las posiciones de todos los nodos considerando las nuevas posiciones
-//         queueNodes.forEach((node, index) => {
-//             const x = margin.left + index * nodeSpacing;
-//             const y = (height - elementHeight) / 2;
-//             positions.set(node.id, { x, y });
-//         });
-        
-//         // Posición final del nuevo nodo
-//         const finalPos = positions.get(nodeEnqueued);
-//         if (!finalPos) {
-//             console.error(`No se encontró posición para el nodo: ${nodeEnqueued}`);
-//             resetQueryValues();
-//             setIsAnimating(false);
-//             return;
-//         }
-        
-//         // Estado visual inicial del nuevo nodo y sus enlaces (ocultos)
-//         newNodeGroup.style("opacity", 0);
-//         if (prevNodeLinkGroup && !prevNodeLinkGroup.empty()) {
-//             prevNodeLinkGroup.select("path.node-link").style("opacity", 0);
-//         }
-//         if (newNodeLinkGroup && !newNodeLinkGroup.empty()) {
-//             newNodeLinkGroup.select("path.node-link").style("opacity", 0);
-//         }
-        
-//         // Posición de animación inicial del nuevo nodo (entrará desde arriba)
-//         const initialYOffset = -60;
-//         const initialPos = { x: finalPos.x, y: finalPos.y + initialYOffset };
-        
-//         // Mapa temporal de posiciones para calcular la forma inicial de los enlaces
-//         const tempPositions: Map<string, { x: number; y: number }> = new Map(oldPositions);
-//         tempPositions.set(nodeEnqueued, initialPos);
-        
-//         // Formas iniciales y finales de los enlaces
-//         let prevInitialPath = "M0,0";
-//         let prevFinalPath = "M0,0";
-//         let nextInitialPath = "M0,0";
-//         let nextFinalPath = "M0,0";
-        
-//         // Cálculo del enlace desde el nodo anterior al nuevo nodo
-//         if (prevNodeId && prevNodeLinkGroup && !prevNodeLinkGroup.empty()) {
-//             try {
-//                 prevInitialPath = calculateLinkPath(
-//                     { sourceId: prevNodeId, targetId: nodeEnqueued, type: 'next' },
-//                     tempPositions,
-//                     elementWidth,
-//                     elementHeight
-//                 );
-                
-//                 prevFinalPath = calculateLinkPath(
-//                     { sourceId: prevNodeId, targetId: nodeEnqueued, type: 'next' },
-//                     positions,
-//                     elementWidth,
-//                     elementHeight
-//                 );
-                
-//                 prevNodeLinkGroup.select("path.node-link").attr("d", prevInitialPath);
-//             } catch (error) {
-//                 console.error("Error al calcular el path del enlace previo:", error);
-//                 // Continuar con la animación, incluso si un enlace falla
-//             }
-//         }
-        
-//         // Cálculo del enlace desde el nuevo nodo al siguiente nodo
-//         if (nextNodeId && newNodeLinkGroup && !newNodeLinkGroup.empty()) {
-//             try {
-//                 nextInitialPath = calculateLinkPath(
-//                     { sourceId: nodeEnqueued, targetId: nextNodeId, type: 'next' },
-//                     tempPositions,
-//                     elementWidth,
-//                     elementHeight
-//                 );
-                
-//                 nextFinalPath = calculateLinkPath(
-//                     { sourceId: nodeEnqueued, targetId: nextNodeId, type: 'next' },
-//                     positions,
-//                     elementWidth,
-//                     elementHeight
-//                 );
-                
-//                 newNodeLinkGroup.select("path.node-link").attr("d", nextInitialPath);
-//             } catch (error) {
-//                 console.error("Error al calcular el path del enlace siguiente:", error);
-//                 // Continuar con la animación, incluso si un enlace falla
-//             }
-//         }
-        
-//         // Posicionamiento inicial del nodo a encolar
-//         newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
-        
-//         // PASO 0: Si hay un enlace directo entre el nodo anterior y el siguiente que debemos eliminar,
-//         // lo hacemos desaparecer antes de comenzar a mover los nodos
-//         if (directLinkToRemove && !directLinkToRemove.empty()) {
-//             try {
-//                 await directLinkToRemove.select("path.node-link")
-//                     .transition()
-//                     .duration(300)
-//                     .style("opacity", 0)
-//                     .end();
-//             } catch (error) {
-//                 console.error("Error al ocultar el enlace directo:", error);
-//             }
-//         }
-        
-//         // 1. PASO 1: Mover los nodos existentes a sus nuevas posiciones para hacer espacio
-//         //    Esto ocurre primero para que no haya solapamientos
-        
-//         // Identificar nodos que necesitan reposicionarse (los que están desde la posición de inserción en adelante)
-//         const nodesToReposition = queueNodes.filter((node, idx) => {
-//             // Excluimos el nuevo nodo (lo animaremos por separado)
-//             if (node.id === nodeEnqueued) return false;
-            
-//             // Excluimos los nodos que no cambian de posición (los que están antes del nuevo nodo)
-//             return idx >= newNodeIndex;
-//         });
-        
-//         // Crear un mapa para los nodos afectados y sus enlaces
-//         const affectedNodeGroups = new Map<string, {
-//             nodeGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
-//             prevLinkGroup?: d3.Selection<SVGGElement, unknown, null, undefined>,
-//             nextLinkGroup?: d3.Selection<SVGGElement, unknown, null, undefined>
-//         }>();
-        
-//         // Recopilar todas las selecciones de nodos y enlaces afectados
-//         nodesToReposition.forEach(node => {
-//             const nodeId = node.id;
-//             const nodeGroup = svg.select<SVGGElement>(`g#${nodeId}`);
-            
-//             if (nodeGroup.empty()) {
-//                 console.warn(`No se encontró el nodo con ID: ${nodeId} para reposicionar`);
-//                 return;
-//             }
-            
-//             // Enlaces entrantes y salientes (excluyendo el enlace directo que ya eliminamos)
-//             const prevIdx = queueNodes.findIndex(n => n.id === nodeId) - 1;
-//             const prevId = prevIdx >= 0 ? queueNodes[prevIdx].id : null;
-//             const nextIdx = queueNodes.findIndex(n => n.id === nodeId) + 1;
-//             const nextId = nextIdx < queueNodes.length ? queueNodes[nextIdx].id : null;
-            
-//             // Enlaces (excluyendo los que ya manejamos para el nuevo nodo)
-//             let prevLinkGroup;
-//             if (prevId && prevId !== nodeEnqueued && !(prevId === prevNodeId && nodeId === nextNodeId)) {
-//                 prevLinkGroup = svg.select<SVGGElement>(`g#link-${prevId}-${nodeId}-next`);
-//                 if (prevLinkGroup.empty()) {
-//                     prevLinkGroup = undefined;
-//                 }
-//             }
-            
-//             let nextLinkGroup;
-//             if (nextId && nodeId !== nodeEnqueued) {
-//                 nextLinkGroup = svg.select<SVGGElement>(`g#link-${nodeId}-${nextId}-next`);
-//                 if (nextLinkGroup.empty()) {
-//                     nextLinkGroup = undefined;
-//                 }
-//             }
-            
-//             affectedNodeGroups.set(nodeId, { nodeGroup, prevLinkGroup, nextLinkGroup });
-//         });
-        
-//         // Crear promesas para las animaciones de reposicionamiento
-//         const repositioningPromises: Promise<unknown>[] = [];
-        
-//         // Animar el movimiento de los nodos existentes a sus nuevas posiciones
-//         affectedNodeGroups.forEach((selections, nodeId) => {
-//             const { nodeGroup, prevLinkGroup, nextLinkGroup } = selections;
-//             const newPosition = positions.get(nodeId);
-            
-//             if (newPosition) {
-//                 // Animar movimiento del nodo
-//                 const nodePromise = nodeGroup
-//                     .transition()
-//                     .duration(1000)
-//                     .ease(d3.easeQuadOut)
-//                     .attr("transform", `translate(${newPosition.x}, ${newPosition.y})`)
-//                     .end();
-                
-//                 repositioningPromises.push(nodePromise);
-                
-//                 // Animar enlace previo si existe y no es el enlace directo que eliminamos
-//                 if (prevLinkGroup) {
-//                     try {
-//                         const prevIdx = queueNodes.findIndex(n => n.id === nodeId) - 1;
-//                         const sourceId = prevIdx >= 0 ? queueNodes[prevIdx].id : null;
-                        
-//                         if (sourceId && !(sourceId === prevNodeId && nodeId === nextNodeId)) {
-//                             const linkPath = calculateLinkPath(
-//                                 { sourceId, targetId: nodeId, type: 'next' },
-//                                 positions,
-//                                 elementWidth,
-//                                 elementHeight
-//                             );
-                            
-//                             const linkPromise = prevLinkGroup
-//                                 .select("path.node-link")
-//                                 .transition()
-//                                 .duration(1000)
-//                                 .ease(d3.easeQuadOut)
-//                                 .attr("d", linkPath)
-//                                 .end();
-                            
-//                             repositioningPromises.push(linkPromise);
-//                         }
-//                     } catch (error) {
-//                         console.error(`Error al animar enlace previo para nodo ${nodeId}:`, error);
-//                     }
-//                 }
-                
-//                 // Animar enlace siguiente si existe
-//                 if (nextLinkGroup) {
-//                     try {
-//                         const nextIdx = queueNodes.findIndex(n => n.id === nodeId) + 1;
-//                         const targetId = nextIdx < queueNodes.length ? queueNodes[nextIdx].id : null;
-                        
-//                         if (targetId) {
-//                             const linkPath = calculateLinkPath(
-//                                 { sourceId: nodeId, targetId, type: 'next' },
-//                                 positions,
-//                                 elementWidth,
-//                                 elementHeight
-//                             );
-                            
-//                             const linkPromise = nextLinkGroup
-//                                 .select("path.node-link")
-//                                 .transition()
-//                                 .duration(1000)
-//                                 .ease(d3.easeQuadOut)
-//                                 .attr("d", linkPath)
-//                                 .end();
-                            
-//                             repositioningPromises.push(linkPromise);
-//                         }
-//                     } catch (error) {
-//                         console.error(`Error al animar enlace siguiente para nodo ${nodeId}:`, error);
-//                     }
-//                 }
-//             }
-//         });
-        
-//         // Esperar a que todos los nodos existentes terminen de reposicionarse
-//         if (repositioningPromises.length > 0) {
-//             await Promise.all(repositioningPromises);
-//         }
-        
-//         // 2. PASO 2: Animación de la aparición del nuevo nodo
-//         await newNodeGroup
-//             .transition()
-//             .duration(800)
-//             .style("opacity", 1)
-//             .ease(d3.easePolyInOut)
-//             .end();
-        
-//         // 3. PASO 3: Animar el movimiento del nuevo nodo a su posición final
-//         await newNodeGroup
-//             .transition()
-//             .duration(1200)
-//             .ease(d3.easeBounce)
-//             .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-//             .end();
-            
-//         // 4. PASO 4: Animar la aparición de los enlaces del nuevo nodo de forma secuencial
-//         // 4.1 Primero mostramos el enlace desde el nodo anterior al nuevo nodo
-//         if (prevNodeLinkGroup && !prevNodeLinkGroup.empty()) {
-//             try {
-//                 await prevNodeLinkGroup
-//                     .select("path.node-link")
-//                     .transition()
-//                     .duration(600)
-//                     .style("opacity", 1)
-//                     .ease(d3.easeQuadOut)
-//                     .attr("d", prevFinalPath)
-//                     .end();
-//             } catch (error) {
-//                 console.error("Error al animar el enlace previo:", error);
-//             }
-//         }
-        
-//         // 4.2 Luego mostramos el enlace desde el nuevo nodo al siguiente
-//         if (newNodeLinkGroup && !newNodeLinkGroup.empty()) {
-//             try {
-//                 await newNodeLinkGroup
-//                     .select("path.node-link")
-//                     .transition()
-//                     .duration(600)
-//                     .style("opacity", 1)
-//                     .ease(d3.easeQuadOut)
-//                     .attr("d", nextFinalPath)
-//                     .end();
-//             } catch (error) {
-//                 console.error("Error al animar el enlace siguiente:", error);
-//             }
-//         }
-        
-//         // 5. PASO 5: Actualización de los indicadores de cabeza/fin
-//         const updateIndicatorsPromises: Promise<unknown>[] = [];
-        
-//         // Si el nuevo nodo es el primero, actualizamos el indicador de cabeza
-//         if (newNodeIndex === 0 && !headIndicatorGroup.empty()) {
-//             try {
-//                 const headIndicatorPromise = headIndicatorGroup
-//                     .transition()
-//                     .duration(800)
-//                     .ease(d3.easeQuadInOut)
-//                     .attr("transform", () => {
-//                         const indicatorX = finalPos.x + elementWidth / 2;
-//                         const indicatorY = finalPos.y;
-//                         return `translate(${indicatorX}, ${indicatorY})`;
-//                     })
-//                     .end();
-                
-//                 updateIndicatorsPromises.push(headIndicatorPromise);
-//             } catch (error) {
-//                 console.error("Error al animar el indicador de cabeza:", error);
-//             }
-//         }
-        
-//         // Siempre actualizamos el indicador de fin para que apunte al último elemento
-//         if (!tailIndicatorGroup.empty()) {
-//             try {
-//                 // Obtener el ID del último nodo en la cola
-//                 const lastNodeId = queueNodes[queueNodes.length - 1].id;
-//                 // Obtener la posición del último nodo
-//                 const lastNodePos = positions.get(lastNodeId);
-                
-//                 if (lastNodePos) {
-//                     const tailIndicatorPromise = tailIndicatorGroup
-//                         .transition()
-//                         .duration(800)
-//                         .ease(d3.easeQuadInOut)
-//                         .attr("transform", () => {
-//                             const indicatorX = lastNodePos.x + elementWidth / 2;
-//                             const indicatorY = lastNodePos.y;
-//                             return `translate(${indicatorX}, ${indicatorY})`;
-//                         })
-//                         .end();
-                    
-//                     updateIndicatorsPromises.push(tailIndicatorPromise);
-//                 }
-//             } catch (error) {
-//                 console.error("Error al animar el indicador de fin:", error);
-//             }
-//         }
-        
-//         if (updateIndicatorsPromises.length > 0) {
-//             await Promise.all(updateIndicatorsPromises);
-//         }
-//     } catch (error) {
-//         console.error("Error en la animación de encolar:", error);
-//     } finally {
-//         // Restablecimiento de los valores de las queries del usuario
-//         resetQueryValues();
-        
-//         // Finalización de la animación
-//         setIsAnimating(false);
-//     }
-// }
 
 /**
  * Función encargada de animar la salida de un nodo de la cola
