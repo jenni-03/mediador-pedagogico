@@ -177,6 +177,14 @@ export class ListaSimple implements LinkedListInterface {
     }
 
     /**
+     * Método que vacia la lista.
+     */
+    public vaciar(): void {
+        this.cabeza = null;
+        this.tamanio = 0;
+    }
+
+    /**
      * Método que verifica si la lista está vacía.
      * @returns True si se encuentra vacía, false en caso contrario.
      */
