@@ -1,9 +1,10 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { linkedListToArray } from "../listUtils";
 import { NodoS } from "../nodes/NodoS";
 
 /**
- * Clase que representa una Cola utilizando nodos dobles.
+ * Clase que representa una Cola utilizando nodos simples.
  */
 export class Cola {
 
@@ -36,7 +37,7 @@ export class Cola {
      * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
-        if (this.tamanio >= 10) throw new Error("No fue posible encolar: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+        if (this.tamanio >= 10) throw new Error("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
 
         const nuevoNodo = new NodoS(valor);
 
@@ -58,7 +59,7 @@ export class Cola {
      * @returns Elemento removido o null si la cola está vacía.
      */
     public decolar(): number | null {
-        if (this.esVacia()) throw new Error("No fue posible decolar: La cola está vacía (tamaño actual: 0).");
+        if (this.esVacia()) throw new Error("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");
 
         const valorEliminado = this.inicio?.getValor() ?? null;
 
@@ -123,7 +124,7 @@ export class Cola {
     public getTamanio(): number {
         return this.tamanio;
     }
-    
+
     /**
      * Método que retorna el tamaño en bytes de los nodos almacenados.
      * @returns Tamaño en bytes de los nodos.
@@ -145,23 +146,7 @@ export class Cola {
      * @returns Array de nodos con la información de la cola.
      */
     public getArrayDeNodos() {
-        const arregloNodos = [];
-        let nodoActual = this.inicio;
-
-        while (nodoActual !== null) {
-            const nodoSiguiente = nodoActual.getSiguiente();
-
-            arregloNodos.push({
-                id: nodoActual.getId(),
-                value: nodoActual.getValor(),
-                next: nodoSiguiente ? nodoSiguiente.getId() : null,
-                memoryAddress: nodoActual.getDireccionMemoria()
-            });
-
-            nodoActual = nodoActual.getSiguiente();
-        }
-
-        return arregloNodos;
+        return linkedListToArray(this.inicio);
     }
 
     /**

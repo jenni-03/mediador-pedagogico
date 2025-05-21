@@ -1,5 +1,17 @@
 import { TYPE_FILTER } from "./shared/constants/consts";
 
+export interface LinkedListInterface {
+    insertarAlInicio(valor: number): void;
+    insertarAlFinal(valor: number): void;
+    insertarEnPosicion(valor: number, posicion: number): void;
+    eliminarAlInicio(): void;
+    eliminarAlFinal(): void;
+    eliminarEnPosicion(posicion: number): void;
+    buscar(valor: number): boolean;
+    esVacia(): boolean;
+    getTamanio(): number;
+}
+
 export type CardListProps = {
     data: CardData[]
     filter: FilterState

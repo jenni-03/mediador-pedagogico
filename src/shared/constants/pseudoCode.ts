@@ -18,7 +18,7 @@ export const operationsCode: Record<string, any> = {
         ],
         insertLast: [
             `/**
- * Metodo que inserta un nuevo elemento a la secuencia. <br>
+ * Método que inserta un nuevo elemento a la secuencia. <br>
  * <b>post: </b> Se inserto un elemento en la Secuencia.<br>
  * @param elem es de tipo T que contiene el elemento a insertar
  */`,
@@ -31,7 +31,7 @@ export const operationsCode: Record<string, any> = {
         ],
         set: [
             `/**
- * Metodo que cambia un elemento de la secuencia en la posición indicada , por otro. <br>
+ * Método que cambia un elemento de la secuencia en la posición indicada , por otro. <br>
  * <b>post:</b> Se ha modificado un elemento de la Secuencia.<br>
  * @param i de tipo integer que contiene la posicion de la secuencia que se va ha cambiar.<br>
  * @param nuevo Representa el nuevo objeto que reemplazara al objeto editado. <br>
@@ -50,8 +50,8 @@ export const operationsCode: Record<string, any> = {
         ],
         delete: [
             `/**
- * Metodo que elimina un elemento a la secuencia dada su posicion. <br>
- * <b>post: </b> Se elimino un elemento en la Secuencia.<br>
+ * Método que elimina un elemento a la secuencia dada su posición. <br>
+ * <b>post: </b> Se eliminó un elemento en la Secuencia.<br>
  * @param pos es de tipo int que contiene la posicion del elemento a eliminar
  */`,
             `public void eliminarP(int pos){        `,
@@ -75,8 +75,8 @@ export const operationsCode: Record<string, any> = {
         ],
         get: [
             `/**
- * Metodo que retorna un objeto tipo T de la secuencia dada la posición. <br>
- * <b>post:</b> Se ha retornado un elemento de la Secuencia dada su posicion<br>
+ * Método que retorna un objeto tipo T de la secuencia dada la posición. <br>
+ * <b>post:</b> Se ha retornado un elemento de la Secuencia dada su posición<br>
  * @param i es de tipo integer y contiene la posicion en la secuencia. <br>
  * @return un tipo T que contiene el elemento del nodo en la posicion indicada <br>
  */`,
@@ -91,7 +91,7 @@ export const operationsCode: Record<string, any> = {
         ],
         clean: [
             `/**
- * Metodo que vacia la secuencia. <br>
+ * Método que vacia la secuencia. <br>
  * <b>post:</b> La Secuencia se encuentra vacia.
  */`,
             `public void vaciar(){`,
@@ -104,8 +104,8 @@ export const operationsCode: Record<string, any> = {
     pila: {
         push: [
             `/**
- * Metodo que inserta un elemento en la Pila. <br>
- * <b>post: </b> Se inserto un elemento dentro de la Pila.<br>
+ * Método que inserta un elemento en la Pila. <br>
+ * <b>post: </b> Se insertó un elemento dentro de la Pila.<br>
  * @param info es de tipo T y contiene la información a insertar en la pila.
  */`,
             `public void apilar(T info){`,
@@ -118,9 +118,9 @@ export const operationsCode: Record<string, any> = {
         ],
         pop: [
             `/**
- * Metodo que retira y devuelve un elemneto de la Pila. <br>
- * <b>post: </b> Se retiro y elimino el elemento tope de la Pila.<br>
- * @return un tipo T y contiene la información retirada de la pila.<br>
+ * Método que retira y devuelve un elemento de la Pila. <br>
+ * <b>post: </b> Se retiró y eliminó el elemento tope de la Pila.<br>
+ * @return un tipo T que contiene la información retirada de la pila.<br>
  */`,
             `public T desapilar(){`,
             `    if(this.esVacia())`,
@@ -135,8 +135,8 @@ export const operationsCode: Record<string, any> = {
         ],
         getTop: [
             `/**
- * Metodo devuelve el elemento que se encuentra en el tope de la Pila. <br>
- * <b>post: </b> Se retorno el elemento tope de la Pila.<br>
+ * Método devuelve el elemento que se encuentra en el tope de la Pila. <br>
+ * <b>post: </b> Se retornó el elemento tope de la Pila.<br>
  * @return El elemento que esta en el tope de la Pila.
  */`,
             `public T getTope(){`,
@@ -146,7 +146,7 @@ export const operationsCode: Record<string, any> = {
         clean: [
             `/**
  * Elimina todos los datos de la Pila. <br>
- * <b>post: </b> Se elimino todos los datos que se encontraban en la Pila.<br>
+ * <b>post: </b> Se eliminó todos los datos que se encontraban en la Pila.<br>
  */`,
             `public void vaciar(){`,
             `    this.tope = null;`,
@@ -157,40 +157,47 @@ export const operationsCode: Record<string, any> = {
     cola: {
         enqueue: [
             `/**
- * Metodo que permite agregar un elemento a la Cola. <br>
- * <b>post: </b> Se inserto un nuevo elemento a la Cola.<br>
- * @param info es de tipo T y contiene la informacion a en colar
+ * Método que permite agregar un elemento a la Cola. <br>
+ * <b>post: </b> Se insertó un nuevo elemento a la Cola.<br>
+ * @param info es de tipo T y contiene la informacion a encolar
  */`,
             `public void enColar(T info){`,
-            `    NodoD<T>x=new NodoD<T>(info,inicio,inicio.getAnt());`,
-            `    inicio.getAnt().setSig(x);`,
-            `    inicio.setAnt(x);`,
-            `    this.aumentarTamanio();`,
+            `    Nodo<T>nuevoNodo=new Nodo(valor);`,
+            `    if (this.esVacia()) {`,
+            `      this.inicio = nuevoNodo;`,
+            `      this.fin = nuevoNodo;`,
+            `    } else {`,
+            `      this.fin.setSiguiente(nuevoNodo);`,
+            `      this.fin = nuevoNodo;`,
+            `    }`,
+            `    this.tamanio++;`,
             `}`
         ],
         dequeue: [
             `/**
- * Metodo que permite retirar el primer elemento que fue insertado en la Cola. <br>
+ * Método que permite retirar el primer elemento que fue insertado en la Cola. <br>
  * <b>post: </b> Se elimina el primer elemento que fue insertado en la cola.<br>
  * @return un tipo T que contiene la informacion del nodo retirado.
  */`,
             `public T deColar(){`,
             `    if(this.esVacia())`,
             `        return (null);`,
-            `    NodoD<T> x=this.inicio.getSig();`,
-            `    this.inicio.setSig(x.getSig());`,
-            `    x.getSig().setAnt(inicio);`,
-            `    x.setSig(null);`,
-            `    x.setAnt(null);`,
+            `    NodoD<T> x=this.inicio`,
+            `    if (this.inicio === this.fin) {`,
+            `        this.inicio = null;`,
+            `        this.fin = null;`,
+            `    } else {`,
+            `        this.inicio = this.inicio.getSiguiente();`,
+            `    }`,
             `    this.tamanio--;`,
-            `    return(x.getInfo());`,
+            `    return x.getInfo();`,
             `}`
         ],
         getFront: [
             `/**
- * Metodo que permite conocer el primer elemento que fue insertado en la Cola. <br>
+ * Método que permite conocer el primer elemento que fue insertado en la Cola. <br>
  * <b>post: </b> Se obtiene el primer elemento que fue insertado en la Cola.<br>
- * @return El primer elemento que fue insertado en la cola
+ * @return El primer elemento insertado en la cola
  */`,
             `protected NodoD<T> getInicio(){`,
             `    return this.inicio;`,
@@ -198,13 +205,13 @@ export const operationsCode: Record<string, any> = {
         ],
         clean: [
             `/**
- * Metodo que permite elimar todos los datos que contiene la Cola. <br>
- * <b>post: </b> Se elimino todos los datos que se encontraban en la Cola.<br>
+ * Método que permite eliminar toda la información que contiene la Cola. <br>
+ * <b>post: </b> Se eliminó todos los datos que se encontraban en la Cola.<br>
  */`,
             `public void vaciar(){`,
-            `    this.inicio.setSig(this.inicio);`,
-            `    this.inicio.setAnt(this.inicio);`,
-            `    this.tamanio=0;`,
+            `    this.inicio = null;`,
+            `    this.fin = null;`,
+            `    this.tamanio = 0;`,
             `}`
         ]
     },
@@ -790,7 +797,7 @@ export const operationsCode: Record<string, any> = {
  * <b>post:</b> Se edito la informacion del elemento indicado por la posicion recibida.<br>
  * @param i Una Posición dentro de la Lista.<br>
  * @param dato es el nuevo valor que toma el elmento en la lista
- */`,        
+ */`,
             `public void set(int i, T dato){        `,
             `    try{`,
             `            Nodo t=this.getPos(i);   `,

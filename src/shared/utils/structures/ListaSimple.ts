@@ -1,0 +1,257 @@
+// Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
+
+import { LinkedListInterface } from "../../../types";
+import { linkedListToArray } from "../listUtils";
+import { NodoS } from "../nodes/NodoS";
+
+/**
+ * Clase que representa el funcionamiento de una lista simple.
+ */
+export class ListaSimple implements LinkedListInterface {
+
+    // Nodo cabecera de la lista.
+    private cabeza: NodoS | null;
+
+    // Tamaño de la lista.
+    private tamanio: number;
+
+    /**
+     * Constructor de la clase ListaSimple.
+     */
+    constructor() {
+        this.cabeza = null;
+        this.tamanio = 0;
+    }
+
+    /**
+     * Método que inserta un nuevo elemento al inicio de la lista.
+     * @param valor Elemento a insertar.
+     * @returns Nodo inicial insertado.
+     */
+    insertarAlInicio(valor: number): NodoS {
+        if (this.tamanio >= 10) throw new Error("No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+
+        const nuevoNodo = new NodoS(valor);
+
+        if (this.esVacia()) {
+            this.cabeza = nuevoNodo;
+        } else {
+            nuevoNodo.setSiguiente(this.cabeza);
+            this.cabeza = nuevoNodo;
+        }
+
+        this.tamanio++;
+        return nuevoNodo;
+    }
+
+    /**
+     * Método que inserta un nuevo elemento al final de la lista.
+     * @param valor Elemento a insertar.
+     * @returns Nodo final insertado.
+     */
+    insertarAlFinal(valor: number): NodoS {
+        if (this.tamanio >= 10) throw new Error("No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+
+        const nuevoNodo = new NodoS(valor);
+
+        if (this.esVacia()) {
+            this.cabeza = nuevoNodo;
+        } else {
+            const ultimoNodo = this.getPos(this.tamanio - 1)!;
+            ultimoNodo.setSiguiente(nuevoNodo);
+        }
+
+        this.tamanio++;
+        return nuevoNodo;
+    }
+
+    /**
+     * Método que inserta un nuevo elemento en una posición especifica de la lista.
+     * @param valor Elemento a insertar.
+     * @param posicion Posición en la que se desea insertar el elemento.
+     * @return Nodo insertado en la posición especificada.
+     */
+    insertarEnPosicion(valor: number, posicion: number): NodoS {
+        if (posicion < 0 || posicion > this.tamanio) {
+            throw new Error(`No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`);
+        }
+
+        if (this.tamanio >= 10) throw new Error("No fue posible insertar el nodo en la posición especificada: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+
+        const nuevoNodo = new NodoS(valor);
+
+        if (posicion === 0) {
+            nuevoNodo.setSiguiente(this.cabeza);
+            this.cabeza = nuevoNodo;
+        } else {
+            const nodoAnt = this.getPos(posicion - 1);
+            nuevoNodo.setSiguiente(nodoAnt?.getSiguiente() || null);
+            nodoAnt?.setSiguiente(nuevoNodo);
+        }
+
+        this.tamanio++;
+        return nuevoNodo;
+    }
+
+    /**
+     * Método que elimina el primer nodo de la lista.
+     * @returns Nodo inicial eliminado.
+     */
+    eliminarAlInicio(): NodoS {
+        if (this.esVacia()) throw new Error("No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).");
+
+        const nodoEliminado = this.cabeza;
+        if (this.cabeza) {
+            this.cabeza = this.cabeza.getSiguiente();
+        }
+
+        this.tamanio--;
+        return nodoEliminado!;
+    }
+
+    /**
+     * Método que elimina el último nodo de la lista.
+     * @returns Nodo final eliminado.
+     */
+    eliminarAlFinal(): NodoS {
+        if (this.esVacia()) throw new Error("No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0).");
+
+        let nodoEliminado: NodoS;
+
+        if (this.tamanio === 1) {
+            nodoEliminado = this.cabeza!;
+            this.cabeza = null;
+        } else {
+            const nodoAnt = this.getPos(this.tamanio - 2);
+            nodoEliminado = nodoAnt!.getSiguiente()!;
+            nodoAnt?.setSiguiente(null);
+        }
+
+        this.tamanio--;
+        return nodoEliminado;
+    }
+
+    /**
+     * Método que elimina un nodo en una posición especifica de la lista.
+     * @param posicion Posición del nodo a eliminar.
+     * @returns Nodo eliminado.
+     */
+    eliminarEnPosicion(posicion: number): NodoS {
+        if (this.esVacia()) throw new Error("No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).");
+
+        if (posicion < 0 || posicion >= this.tamanio) {
+            throw new Error(`No fue posible eliminar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`);
+        }
+
+        let nodoEliminado: NodoS;
+
+        if (posicion === 0) {
+            nodoEliminado = this.cabeza!;
+            this.cabeza = this.cabeza?.getSiguiente() || null;
+        } else {
+            const nodoAnt = this.getPos(posicion - 1);
+            nodoEliminado = nodoAnt!.getSiguiente()!;
+            nodoAnt?.setSiguiente(nodoEliminado.getSiguiente());
+        }
+
+        this.tamanio--;
+        return nodoEliminado;
+    }
+
+    /**
+     * Método que busca un nodo en la lista.
+     * @param valor Valor a buscar.
+     * @returns True si se encuentra el nodo, false en caso contrario.
+     */
+    buscar(valor: number): boolean {
+        let nodoActual = this.cabeza;
+
+        while (nodoActual) {
+            if (nodoActual.getValor() === valor) {
+                return true;
+            }
+            nodoActual = nodoActual.getSiguiente();
+        }
+
+        return false;
+    }
+
+    /**
+     * Método que verifica si la lista está vacía.
+     * @returns True si se encuentra vacía, false en caso contrario.
+     */
+    esVacia(): boolean {
+        return this.cabeza === null;
+    }
+
+    /**
+     * Método que obtiene el tamaño de la lista.
+     * @returns Número de elementos dentro de la lista.
+     */
+    getTamanio(): number {
+        return this.tamanio;
+    }
+
+    /**
+     * Método que transforma la lista en un array de nodos.
+     * @returns Array de nodos con la información de la lista.
+     */
+    public getArrayDeNodos() {
+        return linkedListToArray(this.cabeza);
+    }
+
+    /**
+     * Método que clona la lista actual.
+     * @returns Nueva lista clonada.
+     */
+    public clonar() {
+        const nuevaLista = new ListaSimple();
+
+        if (this.esVacia()) {
+            return nuevaLista;
+        }
+
+        let nodoActual = this.cabeza;
+        let ultimoNodoClonado: NodoS | null = null;
+
+        while (nodoActual !== null) {
+            const nuevoNodo = new NodoS(
+                nodoActual.getValor(),
+                nodoActual.getId(),
+                // nodoActual.getDireccionMemoria()
+            );
+
+            if (nuevaLista.cabeza === null) {
+                nuevaLista.cabeza = nuevoNodo;
+            } else {
+                if (ultimoNodoClonado) {
+                    ultimoNodoClonado.setSiguiente(nuevoNodo);
+                }
+            }
+
+            ultimoNodoClonado = nuevoNodo;
+            nodoActual = nodoActual.getSiguiente();
+        }
+
+        nuevaLista.tamanio = this.tamanio;
+        return nuevaLista;
+    }
+
+    /**
+     * Método auxiliar que obtiene el nodo en una posición específica.
+     * @param pos Posición del nodo a obtener.
+     * @returns Nodo en la posición especificada o null si no existe.
+     */
+    private getPos(pos: number) {
+        let nodoActual = this.cabeza;
+        while (pos > 0) {
+            if (nodoActual) {
+                nodoActual = nodoActual.getSiguiente();
+            }
+            pos--;
+        }
+
+        return nodoActual;
+    }
+
+}
