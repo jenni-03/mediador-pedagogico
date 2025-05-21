@@ -82,31 +82,43 @@ export interface CardData {
   toPracticar: string;
 }
 
-export type BaseQueryOperations<T extends string> =
-    T extends "secuencia" ? {
-        create: number | null;
-        toAdd: number | null;
-        toDelete: number | null;
-        toSearch: number | null;
-        toUpdate: [number, number] | [];
-    } :
-    T extends "cola" ? {
+export type BaseQueryOperations<T extends string> = T extends "secuencia"
+  ? {
+      create: number | null;
+      toAdd: number | null;
+      toDelete: number | null;
+      toSearch: number | null;
+      toUpdate: [number, number] | [];
+    }
+  : T extends "cola"
+    ? {
         toEnqueuedNode: string | null;
         toDequeuedNode: string | null;
         toGetFront: string | null;
         toClear: boolean;
-    } :
-    T extends "cola_de_prioridad" ? {
-        toEnqueuedNode: string | null;
-        toDequeuedNode: string | null;
-        toGetRear: string | null;
-    } :
-    T extends "pila" ? {
-        toPushNode: string | null;
-        toPopNode: string | null;
-        toGetTop: string | null;
-        toClear: boolean;
-    } : never; // Fallback para otros casos
+      }
+    : T extends "tabla_hash"
+      ? {
+          create: (cap: number) => void;
+          set: (key: number, value: number) => void;
+          get: (key: number) => void;
+          delete: (key: number) => void;
+          clean: () => void;
+        }
+      : T extends "cola_de_prioridad"
+        ? {
+            toEnqueuedNode: string | null;
+            toDequeuedNode: string | null;
+            toGetRear: string | null;
+          }
+        : T extends "pila"
+          ? {
+              toPushNode: string | null;
+              toPopNode: string | null;
+              toGetTop: string | null;
+              toClear: boolean;
+            }
+          : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -141,11 +153,11 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
           }
         : T extends "tabla_hash"
           ? {
-              create: (cap: number) => void; 
-              set: (key: number, value: number) => void; 
-              delete: (key: number) => void; 
-              get: (key: number) => void; 
-              clean: () => void; 
+              create: (cap: number) => void;
+              set: (key: number, value: number) => void;
+              delete: (key: number) => void;
+              get: (key: number) => void;
+              clean: () => void;
             }
           : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
@@ -161,28 +173,28 @@ export type CodeAnalysisProps = {
 };
 
 export type QueueNodeData = {
-    id: string;
-    value: number;
-    next: string | null;
-    memoryAddress: string;
+  id: string;
+  value: number;
+  next: string | null;
+  memoryAddress: string;
 };
 
 export type LinkData = {
-    sourceId: string;
-    targetId: string;
-    type: "next" | "prev";
-}
+  sourceId: string;
+  targetId: string;
+  type: "next" | "prev";
+};
 
 export type StackNodeData = {
-    id: string;
-    value: number;
-    next: string | null;
-    memoryAddress: string;
+  id: string;
+  value: number;
+  next: string | null;
+  memoryAddress: string;
 };
 
 export type IndicatorPositioningConfig = {
-    calculateTransform: (
-        nodePos: { x: number, y: number },
-        dims: { elementWidth: number, elementHeight: number }
-    ) => string;
+  calculateTransform: (
+    nodePos: { x: number; y: number },
+    dims: { elementWidth: number; elementHeight: number }
+  ) => string;
 };

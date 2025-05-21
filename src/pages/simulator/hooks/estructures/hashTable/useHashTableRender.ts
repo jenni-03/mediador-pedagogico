@@ -1,10 +1,8 @@
-// src/hooks/estructures/hashTable/useHashTableRender.ts
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import {
   drawHashTable,
-  animateHighlight,
-  drawSearchArrow,
+  animateGet,
   drawRemoveMark,
   DEFAULT_STYLE,
   StyleConfig,
@@ -36,48 +34,40 @@ export function useHashTableRender({
   useEffect(() => {
     if (!svgRef.current) return;
 
-    /* ——— fusión de estilos + refs d3 ——— */
-    const s: StyleConfig = { ...DEFAULT_STYLE, ...(style ?? {}) };
     const svg = d3.select(svgRef.current);
-    const flat = flatten(buckets); // lista plana para búsquedas
+    const s: StyleConfig = { ...DEFAULT_STYLE, ...(style ?? {}) };
+    const flat = flatten(buckets);
 
-    /* ——— siempre se redibuja la tabla base ——— */
-    drawHashTable(svg, buckets, memory, s);
+    // Índice de bucket para el panel superior
+    const showBucketIdx =
+      ["set", "get", "delete"].includes(lastAction?.type ?? "") &&
+      typeof lastAction?.bucketIdx === "number"
+        ? lastAction.bucketIdx
+        : undefined;
 
-    /* ===========================================================
-       GET  → highlight + flecha
-    =========================================================== */
+    // 1) Dibuja o redibuja la tabla
+    drawHashTable(svg, buckets, memory, s, showBucketIdx);
+
+    // ─── GET: solo resalta y anima el nodo con query.key ───
     if (query.key !== null) {
       setIsAnimating(true);
-
-      // 1) highlight
-      animateHighlight(svg, query.key, {
-        nodeFill: s.nodeFill,
-        hitFill: s.hitFill,
-      });
-
-      // 2) flecha
-      svg.selectAll("line.search-arrow").remove();
-      const target = flat.find((n) => n.key === query.key);
-      if (target) drawSearchArrow(svg, target, s);
+      animateGet(svg, query.key, s);
 
       const t = window.setTimeout(() => {
-        svg.selectAll("line.search-arrow").remove();
         setIsAnimating(false);
         resetQueryValues();
-      }, 600);
+      }, 1000);
+
       return () => clearTimeout(t);
     }
 
-    /* ===========================================================
-       SET  → pulso amarillo sobre el nodo
-    =========================================================== */
+    // ─── SET: pulso naranja sobre el nodo afectado ───
     if (lastAction?.type === "set" && lastAction.key != null) {
       setIsAnimating(true);
       svg
         .selectAll<SVGGElement, HashNode>("g.node")
         .filter((d) => d.key === lastAction.key)
-        .select("rect")
+        .select("rect.bg")
         .transition()
         .duration(200)
         .attr("stroke", "#f59e0b")
@@ -89,13 +79,12 @@ export function useHashTableRender({
         .on("end", () => setIsAnimating(false));
     }
 
-    /* ===========================================================
-       DELETE → dibuja “X” roja
-    =========================================================== */
+    // ─── DELETE: dibuja la “X” roja ───
     if (lastAction?.type === "delete" && lastAction.key != null) {
       setIsAnimating(true);
-
-      svg.selectAll("line.remove-mark").remove(); // limpia marcas previas
+      // limpio anteriores
+      svg.selectAll("line.remove-mark").remove();
+      // dibujo la nueva
       const target = flat.find((n) => n.key === lastAction.key);
       if (target) drawRemoveMark(svg, target, s);
 
@@ -103,17 +92,19 @@ export function useHashTableRender({
         svg.selectAll("line.remove-mark").remove();
         setIsAnimating(false);
       }, 600);
+
       return () => clearTimeout(t);
     }
-
-    // para create / clean no hacemos animación especial
   }, [
     buckets,
     memory,
     query.key,
     lastAction?.type,
     lastAction?.key,
-    JSON.stringify(style), // re‑ejecuta si cambian colores/tamaños
+    lastAction?.bucketIdx,
+    resetQueryValues,
+    JSON.stringify(style),
+    setIsAnimating,
   ]);
 
   return { svgRef };

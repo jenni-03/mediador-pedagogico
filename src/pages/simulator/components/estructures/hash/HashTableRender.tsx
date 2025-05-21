@@ -34,7 +34,7 @@ export function HashTableRender({
   });
 
   return (
-    <div className="overflow-auto">
+    <div>
       <svg ref={svgRef} />
     </div>
   );

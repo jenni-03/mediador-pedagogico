@@ -36,7 +36,13 @@ export function DataStructureInfo({
                                     ? structurePrueba.getTamanio()
                                     : item.key === "Capacidad"
                                       ? structurePrueba.vector.length
+                                      : item.key === "Número de elementos"
+                                      ? structurePrueba.getTamanio()
+                                      : item.key === "Número de slots"
+                                      ? structurePrueba.vector.length
                                       : "N/A";
+                                      
+                                      
 
                             return (
                                 <InfoModal
@@ -73,7 +79,7 @@ export function DataStructureInfo({
                 </div>
 
                 {/* Visualización de memoria */}
-                <div className="flex-[2]" data-tour="memory-visualization">
+                {/* <div className="flex-[2]" data-tour="memory-visualization">
                     {memoryAddress && (
                         <MemoryAllocationVisualizer
                             n={
@@ -91,7 +97,7 @@ export function DataStructureInfo({
                             structure={structure}
                         />
                     )}
-                </div>
+                </div> */}
             </div>
 
             {/* Contenido visual (estructura de datos) */}

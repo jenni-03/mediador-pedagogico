@@ -32,7 +32,7 @@ export interface StyleConfig {
 export const DEFAULT_STYLE: StyleConfig = {
   bucketWidth: 130,
   bucketHeight: 54,
-  nodeWidth: 96,
+  nodeWidth: 122,
   nodeHeight: 44,
   padding: 26,
 
@@ -72,14 +72,25 @@ export function posX(d: FlatNode, s: StyleConfig) {
     (s.bucketWidth - s.nodeWidth) / 2
   );
 }
-const nodeExtraGap = 8; // px adicionales entre nodos
 
+/* ①  aire entre la base del bucket y el primer nodo */
+const BUCKET_NODE_GAP = 40;
+
+/* ②  aire entre dos nodos de la misma cadena            */
+const BASE_NODE_GAP = 50;
+
+/* ③  regla: a partir del 4.º nodo ensancha 2 px por nivel */
+export function nodeGap(order: number) {
+  return order < 3 ? BASE_NODE_GAP : BASE_NODE_GAP + (order - 2) * 2;
+}
+
+/* ④  posiciones ---------------------------------------- */
 export function posY(d: FlatNode, s: StyleConfig) {
   return (
-    s.padding * 1.5 +
-    s.bucketHeight +
-    s.padding +
-    d.order * (s.nodeHeight + s.padding + nodeExtraGap)
+    s.padding * 1.5 + // margen superior global
+    s.bucketHeight + // tapa del bucket
+    BUCKET_NODE_GAP + // aire extra (①)
+    d.order * (s.nodeHeight + nodeGap(d.order))
   );
 }
 
@@ -88,24 +99,26 @@ export function drawHashTable(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   buckets: HashNode[][],
   memory: number[], // ← direcciones de cada bucket
-  style?: Partial<StyleConfig>
+  style?: Partial<StyleConfig>,
+  activeBucketIdx?: number
 ) {
+  let root = svg.select<SVGGElement>("g.ht-root");
+  if (root.empty()) {
+    root = svg.append("g").attr("class", "ht-root");
+  }
+
   /* fusiona estilos */
   const s: StyleConfig = { ...DEFAULT_STYLE, ...(style ?? {}) };
   const {
     bucketWidth,
     bucketHeight,
-    nodeWidth,
     nodeHeight,
     padding,
     bucketGradientFrom,
     bucketGradientTo,
-    nodeGradientFrom,
-    nodeGradientTo,
     shadowColor,
     shadowBlur,
     bucketStroke,
-    nodeStroke,
     textColor,
     fontSize,
     radius,
@@ -148,10 +161,10 @@ export function drawHashTable(
       .attr("id", "nodeGrad")
       .attr("x1", "0%")
       .attr("y1", "0%")
-      .attr("x2", "100%")
-      .attr("y2", "0%");
-    gN.append("stop").attr("offset", "0%").attr("stop-color", nodeGradientFrom);
-    gN.append("stop").attr("offset", "100%").attr("stop-color", nodeGradientTo);
+      .attr("x2", "0%")
+      .attr("y2", "100%");
+    gN.append("stop").attr("offset", "0%").attr("stop-color", "#E53935"); // bucket rojo claro
+    gN.append("stop").attr("offset", "100%").attr("stop-color", "#D32F2F"); // bucket rojo oscuro
 
     defs
       .append("marker")
@@ -165,12 +178,76 @@ export function drawHashTable(
       .append("path")
       .attr("d", "M0,0 L6,3 L0,6 Z") // triángulo equilátero
       .attr("fill", bucketStroke);
+
+    // ─── dentro de “defs” ───
+    defs
+      .append("marker")
+      .attr("id", "arrow-right-dash")
+      .attr("viewBox", "0 0 6 6")
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("refX", 0) // inicio del triángulo
+      .attr("refY", 3)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,0 L6,3 L0,6 Z")
+      .attr("fill", "#60A5FA");
+
+    defs
+      .append("marker")
+      .attr("id", "arrow-left-dash")
+      .attr("viewBox", "0 0 6 6")
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("refX", 6) // espejo: el vértice está en x=6
+      .attr("refY", 3)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M6,0 L0,3 L6,6 Z")
+      .attr("fill", "#60A5FA");
+
+    const gNodeRed = defs
+      .append("linearGradient")
+      .attr("id", "nodeRedGrad")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "100%");
+    gNodeRed.append("stop").attr("offset", "0%").attr("stop-color", "#ef4444"); // rojo claro
+    gNodeRed
+      .append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", "#991b1b"); // rojo oscuro
+
+    // ======= HALO animado para nodos recién insertados =======
+    const halo = defs
+      .append("filter")
+      .attr("id", "ht-halo")
+      .attr("x", "-60%")
+      .attr("y", "-60%")
+      .attr("width", "220%")
+      .attr("height", "220%");
+
+    halo
+      .append("feGaussianBlur")
+      .attr("in", "SourceGraphic")
+      .attr("stdDeviation", 4)
+      .attr("result", "blur");
+
+    halo
+      .append("feMerge")
+      .selectAll("feMergeNode")
+      .data(["blur", "SourceGraphic"])
+      .enter()
+      .append("feMergeNode")
+      .attr("in", (d) => d);
   }
 
-  /* ---------- canvas size ---------- */
+  /* -------------- tamaño del canvas -------------- */
   const slots = buckets.length;
   const maxChain = d3.max(buckets, (b) => b.length) ?? 1;
-  const svgWidth = slots * (bucketWidth + padding) + padding;
+
+  const svgWidth = padding + buckets.length * (bucketWidth + padding);
 
   /*   HASH-PANEL  ─────────────────────────────────────────────── */
   const panelData = slots ? [null] : [];
@@ -214,25 +291,33 @@ export function drawHashTable(
     .merge(panelEnter)
     .each(function () {
       const g = d3.select<SVGGElement, unknown>(this);
-      // actualiza texto
-      g.select("text.hash-text").text(`hash = key % ${slots}`);
-      // mide
+
+      // Construye el texto de la función hash
+      let hashText = `hash = key % ${slots}`;
+      // Si recibimos el índice de bucket activo, lo mostramos
+      if (typeof activeBucketIdx === "number" && !isNaN(activeBucketIdx)) {
+        hashText += `   →   B${activeBucketIdx}`;
+      }
+      g.select("text.hash-text").text(hashText);
+
+      // Calcula las dimensiones para el fondo del panel
       const txt = g.select<SVGTextElement>("text.hash-text").node()!;
-      const { width: w, height: h } = txt.getBBox();
-      panelW = w + padX * 2;
-      panelH = h + padY * 2;
-      // pon el grupo centrado en el margen izquierdo
+      const { width: textWidth, height: textHeight } = txt.getBBox();
+      panelW = textWidth + padX * 2;
+      panelH = textHeight + padY * 2;
+
+      // Centra el grupo y actualiza el fondo
       g.attr(
         "transform",
         `translate(${padding + panelW / 2},${padding + panelH / 2})`
       );
-      // actualiza fondo centrado en (0,0)
       g.select("rect.hash-bg")
         .attr("x", -panelW / 2)
         .attr("y", -panelH / 2)
         .attr("width", panelW)
         .attr("height", panelH);
-      // deja el texto en (0,0)
+
+      // Centra el texto en el panel
       g.select("text.hash-text").attr("x", 0).attr("y", 0);
     })
     .transition()
@@ -240,188 +325,396 @@ export function drawHashTable(
 
   /* ----- ahora reserva espacio arriba para el panel ------ */
   const topOffset = slots ? panelH + padding * 2 : padding;
+  const deepestOrder = maxChain - 1;
+  const stepY = nodeHeight + nodeGap(deepestOrder);
+
+  const svgHeight =
+    bucketHeight +
+    BUCKET_NODE_GAP + // ← nuevo
+    maxChain * stepY + // todas las cadenas
+    padding * 3 + // marco sup/inf
+    topOffset; // (panel hash)
 
   svg
-    .attr("width", svgWidth)
-    .attr(
-      "height",
-      maxChain * (nodeHeight + padding) + bucketHeight + padding * 3 + topOffset
-    );
+    .attr("viewBox", `0 0 ${svgWidth} ${svgHeight}`)
+    .attr("width", svgWidth) // ancho fijo → tu div hará scroll
+    .attr("height", svgHeight); // alto fijo
 
   // y-inicial de los buckets
   const bucketStartY = topOffset + padding;
   const yOffset = bucketStartY - s.padding * 1.5;
   /* ========== BUCKETS ========== */
-
   const bucketSel = svg
     .selectAll<SVGGElement, number>("g.bucket")
     .data(d3.range(buckets.length));
 
-  const bucketEnter = bucketSel
-    .enter()
-    .append("g")
-    .attr("class", "bucket")
-    .attr(
-      "transform",
-      (d) =>
-        `translate(${d * (bucketWidth + padding) + padding},${bucketStartY})`
-    );
+  /* ── defs extra (solo una vez) ───────────────────────────── */
+  if (svg.select("#bucketLidGrad").empty()) {
+    const defs = svg.select("defs");
 
-  /* dirección (arriba) */
+    /* tapa roja con luz cenital */
+    const lidGrad = defs
+      .append("linearGradient")
+      .attr("id", "bucketLidGrad")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "0%")
+      .attr("y2", "100%");
+    lidGrad.append("stop").attr("offset", "0%").attr("stop-color", "#ff7676");
+    lidGrad.append("stop").attr("offset", "65%").attr("stop-color", "#D32F2F");
+
+    /* cuerpo blanco con sombreado suave (top-down) */
+    const bodyGrad = defs
+      .append("linearGradient")
+      .attr("id", "bucketBodyGrad")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "0%")
+      .attr("y2", "100%");
+    bodyGrad.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff");
+    bodyGrad
+      .append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", "#f3f4f6"); // slate-100
+
+    /* sombreado interior sutil */
+    defs
+      .append("filter")
+      .attr("id", "bucketInsetShadow")
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 2)
+      .attr("stdDeviation", 2)
+      .attr("flood-opacity", 0.25);
+  }
+
+  /* ── ENTER ──────────────────────────────────────────────── */
+  const bucketEnter = bucketSel.enter().append("g").attr("class", "bucket");
+
+  /* medidas reutilizadas */
+  const w = bucketWidth;
+  const h = bucketHeight;
+  const r = radius;
+  const half = h / 2;
+
+  /* 1️⃣  tapa “toffee” */
+  bucketEnter
+    .append("path")
+    .attr("class", "bucket-top-path")
+    .attr(
+      "d",
+      `M0,${half} L0,${r} A${r},${r} 0 0,1 ${r},0
+       L${w - r},0 A${r},${r} 0 0,1 ${w},${r}
+       L${w},${half} Z`
+    )
+    .attr("fill", "url(#bucketLidGrad)");
+
+  /* 2️⃣  cuerpo nacarado */
+  bucketEnter
+    .append("path")
+    .attr("class", "bucket-bottom-path")
+    .attr(
+      "d",
+      `M0,${half} L0,${h - r} A${r},${r} 0 0,0 ${r},${h}
+       L${w - r},${h} A${r},${r} 0 0,0 ${w},${h - r}
+       L${w},${half} Z`
+    )
+    .attr("fill", "url(#bucketBodyGrad)")
+    .attr("stroke", "#bb2525") /* rojo más oscuro */
+    .attr("stroke-width", 1.5)
+    .attr("filter", "url(#bucketInsetShadow)");
+
+  /* 2️⃣.b  destaque glossy (reflejo) */
+  bucketEnter
+    .append("path")
+    .attr(
+      "d",
+      `M${r},${half + 2} 
+              Q${w / 2},${half - 4} ${w - r},${half + 2}`
+    )
+    .attr("fill", "none")
+    .attr("stroke", "#ffffffaa")
+    .attr("stroke-width", 2)
+    .attr("stroke-linecap", "round");
+
+  /* 3️⃣  índice “burbuja” */
+  bucketEnter
+    .append("text")
+    .attr("class", "bucket-index")
+    .attr("x", w / 2)
+    .attr("y", half / 2 + fontSize / 2)
+    .attr("text-anchor", "middle")
+    .style("fill", "#ffffff")
+    .style("stroke", "#00000033") /* contorno sutil */
+    .style("stroke-width", 1)
+    .style("font-family", "Fira Code, monospace")
+    .style("font-size", `${fontSize + 4}px`)
+    .style("font-weight", "900")
+    .text((d) => `B${d}`);
+
+  /* 4️⃣  dirección hexadecimal */
   bucketEnter
     .append("text")
     .attr("class", "bucket-addr")
-    .attr("x", bucketWidth / 2)
-    .attr("y", -fontSize * 0.6)
+    .attr("x", w / 2)
+    .attr("y", half + half / 2 + (fontSize - 2) / 2)
     .attr("text-anchor", "middle")
-    .style("font-size", `${fontSize}px`)
-    .style("fill", textColor)
+    .style("fill", "#374151")
+    .style("font-family", "Fira Code, monospace")
+    .style("font-size", `${fontSize - 1}px`)
     .text((d) => `0x${memory[d].toString(16).toUpperCase()}`);
 
-  /* rectángulo */
-  bucketEnter
-    .append("rect")
-    .attr("class", "bucket-bg")
-    .attr("width", bucketWidth)
-    .attr("height", bucketHeight)
-    .attr("rx", radius)
-    .attr("ry", radius)
-    .attr("fill", "url(#bucketGrad)")
-    .attr("stroke", bucketStroke)
-    .attr("stroke-width", 1.2)
-    .attr("filter", "url(#ht-shadow)");
+  /* ── ANIMACIÓN “drop-in”… (igual que antes) ───────────────── */
+  const isFirstCreation = !svg.attr("data-buckets-init");
 
   bucketEnter
-    .append("rect")
-    .attr("class", "bucket-halo")
-    .attr("width", bucketWidth - 4)
-    .attr("height", bucketHeight - 4)
-    .attr("x", 2)
-    .attr("y", 2)
-    .attr("rx", radius - 2)
-    .attr("ry", radius - 2)
-    .attr("fill", "transparent")
-    .attr("stroke", bucketStroke)
-    .attr("stroke-width", 2)
-    .attr("opacity", 0.35);
+    .attr("transform", (d) =>
+      isFirstCreation
+        ? `translate(${d * (bucketWidth + padding) + padding},
+                   ${bucketStartY - 120}) scale(0.3) rotate(-25)`
+        : `translate(${d * (bucketWidth + padding) + padding},
+                   ${bucketStartY})`
+    )
+    .style("opacity", isFirstCreation ? 0 : 1);
 
-  /* índice dentro */
-  bucketEnter
-    .append("text")
-    .attr("x", bucketWidth / 2)
-    .attr("y", bucketHeight / 2 + fontSize / 2)
-    .attr("text-anchor", "middle")
-    .style("font-size", `${fontSize + 2}px`)
-    .style("font-weight", "700")
-    .style("fill", textColor)
-    .text((d) => `B${d}`);
+  if (isFirstCreation) {
+    bucketEnter
+      .transition()
+      .delay((d) => d * 90)
+      .duration(900)
+      .ease(d3.easeBounceOut)
+      .attr(
+        "transform",
+        (d) =>
+          `translate(${d * (bucketWidth + padding) + padding},
+                   ${bucketStartY}) scale(1) rotate(0)`
+      )
+      .style("opacity", 1)
+      .transition()
+      .duration(180)
+      .ease(d3.easeSinInOut)
+      .attrTween("transform", function () {
+        const [tx, ty] = this.getAttribute("transform")!
+          .match(/translate\(([^,]+),([^)]+)\)/)!
+          .slice(1)
+          .map(Number);
+        return (t) =>
+          `translate(${tx},${ty})
+         scale(${1 + 0.08 * Math.sin(Math.PI * t)},
+               ${1 - 0.08 * Math.sin(Math.PI * t)})`;
+      })
+      .on("end", () => svg.attr("data-buckets-init", "1"));
+  }
 
-  /* ========== NODOS ========== */
+  /* ========== NODOS (auto-resize + centrado) ========== */
   const flat = flatten(buckets);
   const nodeSel = svg
     .selectAll<SVGGElement, FlatNode>("g.node")
-    .data<FlatNode>(flat, (d) => d.key.toString()); // usamos key como id
+    .data(flat, (d) => d.key.toString()); // clave → id
 
-  // 1) Parámetros de alturas
-  const addrH = fontSize - 2 + 6; // altura de la franja de dirección
-  const kvH = nodeHeight - addrH; // resto para key+value
-  const halfW = nodeWidth / 2; // mitad del ancho
+  /* ---- medidas base ------------------------------------------------ */
+  const BASE_W = s.bucketWidth;
+  const HEADER_H = 14; // franja “KEY / VALUE”
+  const NUM_H = 19; // altura números
+  const ADDR_H = 22; // franja dirección
+  const BASE_H = HEADER_H + NUM_H + ADDR_H;
+  const R = s.radius * 0.8;
+  const HALO_PAD = 4;
 
-  // ---- EXIT ----
-  (
-    nodeSel.exit() as d3.Selection<
-      SVGGElement,
-      FlatNode,
-      SVGSVGElement,
-      unknown
-    >
-  )
+  const LABEL_Y = HEADER_H / 2 + 6; // centra verticalmente (~9px)
+  const NUM_Y = HEADER_H + NUM_H / 2 + 4;
+  const ADDR_Y = HEADER_H + NUM_H;
+
+  /* inicializamos ancho de referencia para posX() */
+  s.nodeWidth = BASE_W;
+  s.nodeHeight = BASE_H;
+  /* -------- EXIT (DELETE – toon style) -------------------------- */
+  const exitSel = nodeSel.exit() as d3.Selection<
+    SVGGElement, // GElement   → el grupo `<g>`
+    FlatNode, // Datum
+    SVGGElement, // ParentG
+    unknown // ParentDatum
+  >;
+
+  exitSel
+    /* 1️⃣  Dibuja la “X” roja */
+    .each(function () {
+      const g = d3.select<SVGGElement, unknown>(this);
+      [
+        { x1: 6, y1: 6, x2: BASE_W - 6, y2: BASE_H - 6 },
+        { x1: BASE_W - 6, y1: 6, x2: 6, y2: BASE_H - 6 },
+      ].forEach(({ x1, y1, x2, y2 }) =>
+        g
+          .append("line")
+          .attr("x1", x1)
+          .attr("y1", y1)
+          .attr("x2", x2)
+          .attr("y2", y2)
+          .attr("stroke", "#ef4444")
+          .attr("stroke-width", 3)
+          .attr("stroke-linecap", "round")
+      );
+    })
+
+    /* 2️⃣  Mini temblor (anticipación) */
     .transition()
-    .duration(250)
+    .duration(180)
+    .ease(d3.easeSinInOut)
+    .attrTween("transform", function () {
+      const { x, y } = getXY(this);
+      return (t) => `translate(${x + (t < 0.5 ? -5 : 5)},${y}) scale(1)`;
+    })
+
+    /* 3️⃣  Squash-&-Stretch */
+    .transition()
+    .duration(260)
+    .attrTween("transform", function () {
+      const { x, y } = getXY(this);
+      return (t) =>
+        `translate(${x},${y}) scale(${1 + 0.18 * t},${1 - 0.18 * t})`;
+    })
+
+    /* 4️⃣  Lanzamiento con giro y fade-out */
+    .transition()
+    .duration(800) // ⬅️  más lenta
+    .ease(d3.easeBackIn)
+    .attrTween("transform", function () {
+      const { x, y } = getXY(this);
+      return (t) =>
+        `translate(${x + 90 * t},${y + 70 * t}) ` +
+        `scale(${1 - 0.85 * t}) rotate(${-540 * t})`;
+    })
     .style("opacity", 0)
-    .attr(
-      "transform",
-      (d) => `translate(${posX(d, s)},${posY(d, s) + yOffset}) scale(.3)`
-    )
     .remove();
 
-  // ---- ENTER ----
+  /* util ————————————————————————————————————————————— */
+  function getXY(el: SVGGElement) {
+    const d = (el as any).__data__ as FlatNode;
+    return { x: posX(d, s), y: posY(d, s) + yOffset };
+  }
+
+  /* ── defs extra (una vez) ─────────────────────────── */
+  if (svg.select("#nodeRadGrad").empty()) {
+    const defs = svg.select("defs");
+
+    /* gradiente radial centro-cyan → violeta */
+    const gRad = defs
+      .append("radialGradient")
+      .attr("id", "nodeRadGrad")
+      .attr("cx", "30%")
+      .attr("cy", "30%");
+    gRad.append("stop").attr("offset", "0%").attr("stop-color", "#3cf9ff");
+    gRad.append("stop").attr("offset", "100%").attr("stop-color", "#6366f1");
+
+    /* filtro cartoon-shadow */
+    defs
+      .append("filter")
+      .attr("id", "nodeOuterGlow")
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 3)
+      .attr("stdDeviation", 3.5)
+      .attr("flood-color", "#000")
+      .attr("flood-opacity", 0.35);
+  }
+
+  /* -------- ENTER (nuevo diseño) ------------------------------ */
   const nodeEnter = nodeSel
     .enter()
     .append("g")
     .attr("class", "node")
     .attr(
       "transform",
-      (d) => `translate(${posX(d, s)},${posY(d, s) + yOffset}) scale(.3)`
+      (d) => `translate(${posX(d, s)},${posY(d, s) + yOffset}) scale(.25)`
     )
     .style("opacity", 0);
 
-  // a) fondo key+value
+  /* 1️⃣ fondo degradado rojo */
   nodeEnter
     .append("rect")
-    .attr("class", "node-kv-bg")
-    .attr("width", nodeWidth)
-    .attr("height", kvH)
-    .attr("rx", radius / 2)
-    .attr("ry", radius / 2)
-    .attr("fill", "url(#nodeGrad)")
-    .attr("stroke", nodeStroke);
+    .attr("class", "bg")
+    .attr("width", BASE_W)
+    .attr("height", BASE_H)
+    .attr("rx", R * 1.2)
+    .attr("ry", R * 1.2)
+    .attr("fill", "url(#nodeRedGrad)")
+    .attr("stroke", "#b91c1c")
+    .attr("stroke-width", 3)
+    .attr("stroke-linecap", "round")
+    .attr("filter", "url(#nodeOuterGlow)");
 
-  // b) divisor vertical
+  /* 2️⃣ cartel dirección (inclinado) */
   nodeEnter
-    .append("line")
-    .attr("class", "kv-divider")
-    .attr("x1", halfW)
-    .attr("y1", 0)
-    .attr("x2", halfW)
-    .attr("y2", kvH)
-    .attr("stroke", nodeStroke)
-    .attr("stroke-width", 1);
+    .append("rect")
+    .attr("class", "addrBox")
+    .attr("x", 0)
+    .attr("y", ADDR_Y - 2)
+    .attr("width", BASE_W)
+    .attr("height", ADDR_H + 4)
+    .attr("rx", R)
+    .attr("ry", R)
+    .attr("fill", "#fef2f2") // rojo muy claro
+    .attr("stroke", "#ef4444")
+    .attr("stroke-width", 1.5)
+    .attr("transform", `rotate(-2 ${BASE_W / 2} ${ADDR_Y + ADDR_H / 2})`);
 
-  // c) texto KEY (izquierda)
+  /* 3️⃣ KEY / VALUE etiquetas estilo sticker */
+  [
+    ["KEY", 0.26],
+    ["VALUE", 0.74],
+  ].forEach(([txt, fx]) => {
+    nodeEnter
+      .append("text")
+      .attr("class", "lbl")
+      .attr("x", BASE_W * (fx as number))
+      .attr("y", LABEL_Y)
+      .attr("text-anchor", "middle")
+      .style("font-family", "Fira Code, monospace")
+      .style("font-size", `${s.fontSize - 1}px`)
+      .style("font-weight", "700")
+      .style("letter-spacing", "0.5px")
+      .style("fill", "#ffffff")
+      .style("text-shadow", "1px 1px #00000066")
+      .text(txt as string);
+  });
+
+  /* 4️⃣ Números KEY y VALUE */
   nodeEnter
     .append("text")
-    .attr("class", "txt-key")
-    .attr("x", halfW / 2)
-    .attr("y", kvH / 2 + fontSize / 2 - 2)
+    .attr("class", "keyNum")
+    .attr("x", BASE_W * 0.26)
+    .attr("y", NUM_Y + 2)
     .attr("text-anchor", "middle")
-    .style("fill", textColor)
-    .style("font-size", `${fontSize}px`)
-    .style("font-weight", 600)
+    .style("font-family", "Fira Code, monospace")
+    .style("font-size", `${s.fontSize + 4}px`)
+    .style("font-weight", "800")
+    .style("fill", "#ffffff")
+    .style("text-shadow", "2px 2px #00000033")
     .text((d) => d.key);
 
-  // d) texto VALUE (derecha)
   nodeEnter
     .append("text")
-    .attr("class", "txt-val")
-    .attr("x", halfW + halfW / 2)
-    .attr("y", kvH / 2 + fontSize / 2 - 2)
+    .attr("class", "valNum")
+    .attr("x", BASE_W * 0.74)
+    .attr("y", NUM_Y + 2)
     .attr("text-anchor", "middle")
-    .style("fill", textColor)
-    .style("font-size", `${fontSize}px`)
+    .style("font-family", "Fira Code, monospace")
+    .style("font-size", `${s.fontSize + 4}px`)
+    .style("font-weight", "800")
+    .style("fill", "#ffffff")
+    .style("text-shadow", "2px 2px #00000033")
     .text((d) => d.value);
 
-  // e) rectángulo de dirección (abajo)
-  nodeEnter
-    .append("rect")
-    .attr("class", "node-addr-bg")
-    .attr("y", kvH)
-    .attr("width", nodeWidth)
-    .attr("height", addrH)
-    .attr("fill", "#1A1A1F")
-    .attr("stroke", nodeStroke)
-    .attr("rx", 0)
-    .attr("ry", 0);
-
-  // f) texto DIRECCIÓN
+  /* 5️⃣ dirección hexadecimal */
   nodeEnter
     .append("text")
-    .attr("class", "txt-addr")
-    .attr("x", halfW)
-    .attr("y", kvH + addrH / 2 + (fontSize - 2) / 2)
+    .attr("class", "addr")
+    .attr("x", BASE_W / 2)
+    .attr("y", ADDR_Y + ADDR_H / 2 + 5)
     .attr("text-anchor", "middle")
-    .style("fill", "#a0a0a0")
-    .style("font-size", `${fontSize - 2}px`)
+    .style("font-family", "Fira Code, monospace")
+    .style("font-size", `${s.fontSize - 1}px`)
+    .style("fill", "#991b1b")
     .text(
       (d) =>
         `0x${(memory[d.bucketIdx] + (d.order + 1) * 4)
@@ -429,154 +722,395 @@ export function drawHashTable(
           .toUpperCase()}`
     );
 
-  // g) animación de entrada
+  /* guarda value para detectar cambios */
+  nodeEnter.attr("data-val", (d) => d.value);
+
+  /* ---------- Animación + halo ---------- */
   nodeEnter
     .transition()
-    .duration(250)
+    .duration(650)
+    .ease(d3.easeBackOut)
     .attr(
       "transform",
       (d) => `translate(${posX(d, s)},${posY(d, s) + yOffset}) scale(1)`
     )
-    .style("opacity", 1);
-
-  // ---- UPDATE ----
-  nodeSel
+    .style("opacity", 1)
+    .on("end", (d) => flashSideArrows(svg, d, s, yOffset))
+    .selection()
+    .insert("rect", ":first-child") // halo
+    .attr("x", -HALO_PAD)
+    .attr("y", -HALO_PAD)
+    .attr("width", () => s.nodeWidth + HALO_PAD * 2)
+    .attr("height", BASE_H + HALO_PAD * 2)
+    .attr("rx", R + HALO_PAD)
+    .attr("ry", R + HALO_PAD)
+    .attr("fill", "none")
+    .attr("stroke", "#60A5FA")
+    .attr("stroke-width", 3)
+    .attr("filter", "url(#ht-halo)")
+    .style("opacity", 0)
     .transition()
-    .duration(250)
+    .duration(220)
+    .style("opacity", 0.85)
+    .transition()
+    .duration(600)
+    .style("opacity", 0)
+    .remove();
+
+  /* ---- UPDATE (re-flow + cambios de value) ------------------ */
+  const upd = nodeSel as d3.Selection<SVGGElement, FlatNode, any, any>;
+
+  /* 1️⃣  Desplaza TODOS los nodos vivos a su nueva posición */
+  upd
+    .transition()
+    .duration(350)
+    .ease(d3.easeCubicOut)
     .attr(
       "transform",
-      (d) => `translate(${posX(d, s)},${posY(d, s) + yOffset})`
-    )
-    .each(function (d) {
-      const g = d3.select(this);
-      g.select<SVGTextElement>("text.txt-key").text(d.key);
-      g.select<SVGTextElement>("text.txt-val").text(d.value);
-      g.select<SVGTextElement>("text.txt-addr").text(
-        `0x${(memory[d.bucketIdx] + (d.order + 1) * 4)
-          .toString(16)
-          .toUpperCase()}`
+      (d) => `translate(${posX(d, s)},${posY(d, s) + yOffset}) scale(1)`
+    );
+
+  /* 2️⃣  Para cada nodo comprueba si cambió su value.
+       Solo entonces aplica bounce/flash               */
+  upd.each(function (d) {
+    const g = d3.select(this);
+
+    /* refresca textos (value + dirección) */
+    g.select<SVGTextElement>("text.valNum").text(d.value);
+    g.select<SVGTextElement>("text.addr").text(
+      `0x${(memory[d.bucketIdx] + (d.order + 1) * 4)
+        .toString(16)
+        .toUpperCase()}`
+    );
+
+    const prevVal = +g.attr("data-val");
+    if (prevVal === d.value) return; // sin cambio → nada extra
+    g.attr("data-val", d.value); // guarda nuevo value
+
+    /* --- animación bounce después del re-flow --- */
+    g.transition()
+      .delay(350) // espera a que termine el re-flow
+      .duration(180)
+      .ease(d3.easeQuadOut)
+      .attr(
+        "transform",
+        `translate(${posX(d, s)},${posY(d, s) + yOffset - 8}) scale(1)`
+      )
+      .transition()
+      .duration(420)
+      .ease(d3.easeBounceOut)
+      .attr(
+        "transform",
+        `translate(${posX(d, s)},${posY(d, s) + yOffset}) scale(1)`
       );
-    });
 
-  // ── Parámetros ────────────────────────────────────────────────
-  const arrowGap = 4; // separación desde el borde de cada rect
-  const arrowStrokeW = 2; // grosor de la línea
-  const arrowCap = "round"; // extremos redondeados
+    /* flash de color en el número */
+    g.select<SVGTextElement>("text.valNum")
+      .transition()
+      .delay(350)
+      .duration(100)
+      .style("fill", "#f472b6") // rosa-500
+      .transition()
+      .duration(300)
+      .style("fill", "#ffffff");
 
-  // 0) elimina flechas anteriores
-  svg.selectAll("path.chain").remove();
+    /* anillo animado alrededor */
+    const ring = g
+      .insert("circle", ":first-child")
+      .attr("cx", s.nodeWidth / 2)
+      .attr("cy", BASE_H / 2)
+      .attr("r", Math.max(s.nodeWidth, BASE_H) / 2 + 4)
+      .attr("fill", "none")
+      .attr("stroke", "#facc15") // amarillo-400
+      .attr("stroke-width", 3)
+      .attr("stroke-dasharray", "6 4")
+      .style("opacity", 0);
 
-  // 1) prepara un array combinado de “bucket→primer nodo” y “nodo→nodo”:
-  const chainData: { x: number; y1: number; y2: number }[] = [];
+    ring
+      .transition()
+      .delay(350)
+      .duration(120)
+      .style("opacity", 0.8)
+      .transition()
+      .duration(380)
+      .style("opacity", 0)
+      .remove();
+  });
+  /* ───────── LÍNEA bucket ↓ cadena (una por bucket) ───────── */
+  const PAD_TOP = -50; // espacio bajo la tapa del bucket
+  const PAD_BOT = -16; // se “clava” 4 px dentro del último nodo
+  const COLOR = "#8b5cf6";
+  const WIDTH = 4;
+  const DASH = "6 4";
 
-  // 1a) bucket → primer nodo
+  /* 1. capa detrás de todos los nodos (se crea una sola vez) */
+  let chainLayer = svg.select<SVGGElement>("g.chain-lines");
+  if (chainLayer.empty()) {
+    chainLayer = svg
+      .insert("g", "g.node") // ← queda justo detrás
+      .attr("class", "chain-lines")
+      .attr("pointer-events", "none");
+  }
+  chainLayer.selectAll("*").remove(); // limpiamos antes de redibujar
+
+  /* 2. calculamos una línea vertical por cada bucket con al menos un nodo */
+  interface VLine {
+    id: string;
+    d: string;
+  }
+  const vLines: VLine[] = [];
+
   buckets.forEach((bucket, bi) => {
-    if (bucket.length === 0) return;
-    // centro X del bucket
-    const bx = padding + bi * (bucketWidth + padding) + bucketWidth / 2;
-    // Y de salida: justo debajo del bucket
-    const by1 = bucketStartY + bucketHeight + arrowGap;
-    // Y de llegada: justo encima del primer nodo (order=0)
-    const firstNode = flat.find((fn) => fn.bucketIdx === bi && fn.order === 0)!;
-    const fnY = posY(firstNode, s) + yOffset - arrowGap;
-    chainData.push({ x: bx, y1: by1, y2: fnY });
+    if (!bucket.length) return; // bucket vacío → nada que dibujar
+
+    /* ‣ X centrado en el nodo (todos alineados) */
+    const x = posX({ bucketIdx: bi, order: 0 } as any, s) + s.nodeWidth / 2;
+
+    /* ‣ Y de inicio: parte inferior del bucket */
+    const y1 = bucketStartY + bucketHeight + PAD_TOP;
+
+    /* ‣ Y final: base del último nodo de la cadena */
+    const last = flat
+      .filter((n) => n.bucketIdx === bi)
+      .reduce((a, b) => (a.order > b.order ? a : b));
+    const y2 = posY(last, s) + s.nodeHeight - PAD_BOT;
+
+    vLines.push({ id: `cl-${bi}`, d: `M${x},${y1} L${x},${y2}` });
   });
 
-  // 1b) nodo → siguiente nodo
-  flat.forEach((fn) => {
-    if (fn.order === 0) return;
-    const cx = posX(fn, s) + nodeWidth / 2;
-    // padre:
-    const parent = { ...fn, order: fn.order - 1 };
-    const py1 = posY(parent, s) + yOffset + nodeHeight + arrowGap;
-    const py2 = posY(fn, s) + yOffset - arrowGap;
-    chainData.push({ x: cx, y1: py1, y2: py2 });
-  });
-
-  // 2) dibuja TODO de una vez, usando join para manejar enter/update/exit
-  svg
-    .selectAll("path.chain")
-    .data(chainData)
+  /* 3. pintamos / actualizamos las líneas */
+  chainLayer
+    .selectAll<SVGPathElement, VLine>("path.chain-line")
+    .data(vLines, (d) => d.id)
     .join(
       (enter) =>
-        enter.append("path").attr("class", "chain").attr("fill", "none"),
-      (update) => update,
+        enter
+          .append("path")
+          .attr("class", "chain-line")
+          .attr("fill", "none")
+          .attr("stroke", COLOR)
+          .attr("stroke-width", WIDTH)
+          .attr("stroke-linecap", "round")
+          .attr("stroke-dasharray", DASH)
+          .attr("d", (d) => d.d),
+      (update) => update.attr("d", (d) => d.d),
       (exit) => exit.remove()
-    )
-    .attr("d", (d) => `M${d.x},${d.y1} V${d.y2}`)
-    .attr("stroke", bucketStroke)
-    .attr("stroke-width", arrowStrokeW)
-    .attr("stroke-linecap", arrowCap)
-    .attr("marker-end", "url(#ht-arrow)");
+    );
+  /* ─────────────────────────────────────────────────────────── */
 }
 
-/* ---------- Highlight ---------- */
-export function animateHighlight(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  queryKey: number | null,
-  colors: { nodeFill: string; hitFill: string }
-) {
-  svg
-    .selectAll<SVGRectElement, HashNode>("g.node rect")
-    .transition()
-    .duration(250)
-    .attr("fill", (d) =>
-      d.key === queryKey ? colors.hitFill : colors.nodeFill
-    )
-    .attr("stroke-width", (d) => (d.key === queryKey ? 3 : 1.5));
-}
-/* ── NUEVA FUNCIÓN: Dibuja flecha para GET ─────────────────── */
-export function drawSearchArrow(
+/** Flecha caricaturesca que “sale del bucket y apunta al nodo” */
+function drawGetArrow(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   target: FlatNode,
-  style: StyleConfig
+  s: StyleConfig
 ) {
-  const centerX = posX(target, style) + style.nodeWidth / 2;
-  const bottomY = posY(target, style) + style.nodeHeight;
+  const x = posX(target, s) + s.nodeWidth / 2;
+  const topOffset = s.padding * 2 + 40; // mismo offset que en drawHashTable
+  const bucketStartY = topOffset + s.padding;
+  const bucketY = bucketStartY + s.bucketHeight + 10; // ← ya lo puedes usar aquí
+  const nodeTop = posY(target, s) +80; // justo encima del nodo
+  const yMid = (bucketY + nodeTop) / 2;
 
+  const pathData = `M${x},${bucketY}
+                    C${x},${yMid - 24} ${x},${yMid + 24} ${x},${nodeTop}`;
+
+  // ——— línea animada ———
   svg
-    .append("line")
-    .attr("class", "search-arrow")
-    .attr("x1", centerX)
-    .attr("y1", 0)
-    .attr("x2", centerX)
-    .attr("y2", bottomY)
-    .attr("stroke", style.hitFill)
-    .attr("stroke-width", 2)
-    .attr("marker-end", "url(#ht-arrow)");
+    .append("path")
+    .attr("class", "get-arrow")
+    .attr("d", pathData)
+    .attr("fill", "none")
+    .attr("stroke", "#facc15")
+    .attr("stroke-width", 4)
+    .attr("stroke-linecap", "round")
+    .attr("stroke-dasharray", "12 8")
+    .attr("stroke-dashoffset", 160)
+    .style("opacity", 0.9)
+    .transition()
+    .duration(500)
+    .ease(d3.easeLinear)
+    .attr("stroke-dashoffset", 0)
+    .transition()
+    .delay(700)
+    .duration(300)
+    .style("opacity", 0)
+    .remove();
+
+  // ——— punta amarilla ———
+  svg
+    .append("polygon")
+    .attr("class", "get-arrow-tip")
+    .attr(
+      "points",
+      `${x},${nodeTop} ${x - 7},${nodeTop - 14} ${x + 7},${nodeTop - 14}`
+    )
+    .attr("fill", "#facc15")
+    .style("opacity", 0)
+    .transition()
+    .delay(450)
+    .duration(150)
+    .style("opacity", 1)
+    .transition()
+    .delay(400)
+    .duration(300)
+    .style("opacity", 0)
+    .remove();
 }
+
+/** Resalta UN solo nodo para GET (toon-style) */
+export function animateGet(
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  queryKey: number | null,
+  s: StyleConfig
+) {
+  const hitColor = "#facc15"; // 🟡 amarillo (tw: yellow-400)
+  const restoreFill = "url(#nodeRedGrad)";
+  const restoreStroke = "#b91c1c";
+
+  /* 1️⃣  Restaura el nodo que estaba activo */
+  svg
+    .selectAll<SVGGElement, unknown>("g.node.active-get")
+    .classed("active-get", false)
+    .select<SVGRectElement>("rect.bg")
+    .transition()
+    .duration(220)
+    .attr("fill", restoreFill)
+    .attr("stroke", restoreStroke)
+    .attr("stroke-width", 3)
+    .attr("transform", "scale(1)");
+
+  // Si no hay nueva key, limpiamos y salimos
+  if (queryKey == null) {
+    svg.selectAll(".get-arrow, .get-arrow-tip").remove();
+    return;
+  }
+
+  /* 2️⃣  Nuevo nodo objetivo */
+  const g = svg
+    .selectAll<SVGGElement, FlatNode>("g.node")
+    .filter((d) => d.key === queryKey)
+    .classed("active-get", true);
+
+  /* 3️⃣  Animación de pulso + cambio a amarillo */
+  const bg = g.select<SVGRectElement>("rect.bg");
+  bg.transition()
+    .duration(140)
+    .ease(d3.easeQuadOut)
+    .attr("transform", "scale(1.12)")
+    .attr("fill", hitColor)
+    .attr("stroke", "#fde68a") // borde amarillo claro
+    .transition()
+    .duration(440)
+    .ease(d3.easeBounceOut)
+    .attr("transform", "scale(1)");
+
+  /* 4️⃣  Halo blanco de flash */
+  g.insert("rect", ":first-child")
+    .attr("x", -6)
+    .attr("y", -6)
+    .attr("width", s.nodeWidth + 12)
+    .attr("height", s.nodeHeight + 12)
+    .attr("rx", s.radius + 6)
+    .attr("ry", s.radius + 6)
+    .attr("fill", "none")
+    .attr("stroke", "#ffffff")
+    .attr("stroke-width", 4)
+    .style("opacity", 0)
+    .transition()
+    .duration(90)
+    .style("opacity", 0.9)
+    .transition()
+    .duration(260)
+    .style("opacity", 0)
+    .remove();
+
+  /* 5️⃣  Flecha animada */
+  svg.selectAll(".get-arrow, .get-arrow-tip").remove();
+  drawGetArrow(svg, g.datum()!, s);
+}
+
+function flashSideArrows(
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  d: FlatNode,
+  s: StyleConfig,
+  yOffset: number
+) {
+  const addrH = s.fontSize - 2 + 6;
+  const kvH = s.nodeHeight - addrH;
+  const arrowLen = 40; // longitud inicial de la flecha
+  const yMid = posY(d, s) + yOffset + kvH / 2;
+
+  // calculamos X de inicio y fin
+  const leftStart = posX(d, s) - arrowLen;
+  const leftEnd = posX(d, s);
+  const rightStart = posX(d, s) + s.nodeWidth + arrowLen;
+  const rightEnd = posX(d, s) + s.nodeWidth;
+
+  // helper para dibujar y animar cada flecha
+  function draw(dir: "left" | "right") {
+    const x0 = dir === "left" ? leftStart : rightStart;
+    const x1 = dir === "left" ? leftEnd : rightEnd;
+    const markerId = dir === "left" ? "arrow-right-dash" : "arrow-left-dash";
+
+    svg
+      .append("path")
+      .attr("class", "insert-arrow")
+      .attr("d", `M${x0},${yMid} L${x0},${yMid}`) // segmento de longitud 0
+      .attr("fill", "none")
+      .attr("stroke", "#60A5FA")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "6 4") // guiones de 6px separados 4px
+      .attr("marker-end", `url(#${markerId})`)
+      .style("opacity", 0.8)
+      .transition()
+      .duration(400)
+      .attr("d", `M${x0},${yMid} L${x1},${yMid}`) // extiende hasta el nodo
+      .transition()
+      .duration(400)
+      .style("opacity", 0)
+      .remove();
+  }
+
+  draw("left");
+  draw("right");
+}
+
 /** Dibuja una “X” roja sobre el nodo eliminado */
 export function drawRemoveMark(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   target: FlatNode,
   style: StyleConfig
 ) {
+  // calcula posición y tamaño del nodo
   const x = posX(target, style);
   const y = posY(target, style);
   const w = style.nodeWidth;
   const h = style.nodeHeight;
+  const strokeWidth = 3;
+  const pad = 4;
 
-  // Línea diagonal 1
+  // primera línea diagonal
   svg
     .append("line")
     .attr("class", "remove-mark")
-    .attr("x1", x + 4)
-    .attr("y1", y + 4)
-    .attr("x2", x + w - 4)
-    .attr("y2", y + h - 4)
+    .attr("x1", x + pad)
+    .attr("y1", y + pad)
+    .attr("x2", x + w - pad)
+    .attr("y2", y + h - pad)
     .attr("stroke", "#ef4444")
-    .attr("stroke-width", 3)
+    .attr("stroke-width", strokeWidth)
     .attr("stroke-linecap", "round");
 
-  // Línea diagonal 2
+  // segunda línea diagonal
   svg
     .append("line")
     .attr("class", "remove-mark")
-    .attr("x1", x + w - 4)
-    .attr("y1", y + 4)
-    .attr("x2", x + 4)
-    .attr("y2", y + h - 4)
+    .attr("x1", x + w - pad)
+    .attr("y1", y + pad)
+    .attr("x2", x + pad)
+    .attr("y2", y + h - pad)
     .attr("stroke", "#ef4444")
-    .attr("stroke-width", 3)
+    .attr("stroke-width", strokeWidth)
     .attr("stroke-linecap", "round");
 }

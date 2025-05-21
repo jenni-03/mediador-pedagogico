@@ -175,5 +175,6 @@ export function useHashTable(initialSlots = 0) {
     actions: operations,
     getMemory: () => memory,
     resetQueryValues,
+    lastInsertedBucket: state.lastAction?.bucketIdx ?? null
   };
 }
