@@ -1,12 +1,12 @@
 import { infoStructures } from "../../../../shared/constants/infoStructures";
-import MemoryAllocationVisualizer from "./MemoryAllocationVisualizer";
+// 
 import { InfoModal } from "../molecules/InfoModal";
 
 export function DataStructureInfo({
     children,
     structure,
     structurePrueba,
-    memoryAddress,
+    // memoryAddress,
 }: {
     children: React.ReactNode;
     structure: string;
@@ -36,7 +36,13 @@ export function DataStructureInfo({
                                     ? structurePrueba.getTamanio()
                                     : item.key === "Capacidad"
                                       ? structurePrueba.vector.length
+                                      : item.key === "Número de elementos"
+                                      ? structurePrueba.getTamanio()
+                                      : item.key === "Número de slots"
+                                      ? structurePrueba.vector.length
                                       : "N/A";
+                                      
+                                      
 
                             return (
                                 <InfoModal
@@ -62,7 +68,7 @@ export function DataStructureInfo({
                                                 </h3>
                                             </div>
                                         </div>
-                                        <span className="text-[#D72638] text-sm font-semibold">
+                                        <span className=" ml-4 text-[#D72638] text-sm font-semibold">
                                             Ver más
                                         </span>
                                     </div>
@@ -73,7 +79,7 @@ export function DataStructureInfo({
                 </div>
 
                 {/* Visualización de memoria */}
-                <div className="flex-[2]" data-tour="memory-visualization">
+                {/* <div className="flex-[2]" data-tour="memory-visualization">
                     {memoryAddress && (
                         <MemoryAllocationVisualizer
                             n={
@@ -91,7 +97,7 @@ export function DataStructureInfo({
                             structure={structure}
                         />
                     )}
-                </div>
+                </div> */}
             </div>
 
             {/* Contenido visual (estructura de datos) */}

@@ -8,8 +8,9 @@ export const TYPE_FILTER = {
 export const STRUCTURE_NAME = {
     SEQUENCE: 'secuencia',
     QUEUE: 'cola',
-    PRIORITY_QUEUE: 'cola_de_prioridad',
+    PRIORITY_QUEUE: 'cola de prioridad',
     STACK: 'pila',
+    HASHTABLE: 'tabla_hash',
 } as const
 
 export const SVG_STYLE_VALUES = {

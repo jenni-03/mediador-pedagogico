@@ -33,20 +33,21 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
   useEffect(() => {
     if (!isActive) return;
-  
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (step?.type === "enter") return;
+
       if (e.key === "Enter") {
         e.preventDefault();
         nextStep();
       }
     };
-  
+
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isActive, currentStep]);
-  
 
   useEffect(() => {
     if (!isActive || !step) return;
@@ -122,7 +123,6 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       } else {
         ids = [step.id];
       }
-      
 
       const elements = ids
         .map(

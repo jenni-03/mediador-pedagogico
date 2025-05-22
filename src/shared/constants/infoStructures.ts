@@ -31,7 +31,7 @@ export const infoStructures: Record<string, any> = {
             },
         ],
     },
-    cola_de_prioridad: {
+    "cola de prioridad": {
         info: [
             {
                 key: "Tamaño",
