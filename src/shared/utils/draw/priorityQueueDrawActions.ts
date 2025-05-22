@@ -206,10 +206,6 @@ export async function animateEnqueueNode(
             setIsAnimating(false);
             return;
         }
-        
-        // Calcular todas las posiciones finales de los nodos
-        const oldPositions = new Map<string, { x: number, y: number }>(positions);
-        
         // Actualizamos las posiciones de todos los nodos
         queueNodes.forEach((node, index) => {
             const x = margin.left + index * nodeSpacing;
