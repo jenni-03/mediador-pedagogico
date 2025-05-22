@@ -3,13 +3,17 @@ import { conceptosData } from "../../shared/constants/conceptsData";
 import { SequenceSimulator } from "./SequenceSimulator";
 import { QueueSimulator } from "./QueueSimulator";
 import { StackSimulator } from "./StackSimulator";
+import { HashTableSimulator } from "./HashTableSimulator";
+import { PriorityQueueSimulator } from "./PriorityQueueSimulator";
 import { SimpleLinkedListSimulator } from "./SimpleLinkedListSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
     Secuencia: SequenceSimulator, // Si nombre = "Secuencia", renderiza <SequenceSimulator />
     Cola: QueueSimulator,
+    tabla_hash: HashTableSimulator,
     Pila: StackSimulator,
+    "Cola de Prioridad": PriorityQueueSimulator,
     "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
 };
 

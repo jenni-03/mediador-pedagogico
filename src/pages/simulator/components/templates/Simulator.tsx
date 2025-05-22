@@ -128,7 +128,7 @@ export function Simulator<T extends string>({
                                 </span>
                                 <div
                                     data-tour="execution-code"
-                                    className="flex-1 bg-[#1F1F22] rounded-xl p-4 overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
+                                    className="flex-1 bg-[#1F1F22] rounded-xl p-4 max-h-[450px] overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
                                 >
                                     <PseudoCodeRunner lines={executionCode} />
                                 </div>

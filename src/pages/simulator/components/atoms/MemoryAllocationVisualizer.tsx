@@ -56,18 +56,44 @@ export default function MemoryAllocationVisualizer({
             ];
         }
     };
+
+    // const getCodeLines = () => {
+    //     if (structure === "secuencia") {
+    //         return [
+    //             `public static String[] generarDireccionesSecuencia(int direccionBase, int tamanioNodo, int n) {`,
+    //             `    String[] vectorMemoria = new String[n];`,
+    //             ``,
+    //             `    for (int i = 0; i < n; i++) {`,
+    //             `        int dirDecimal = direccionBase + (i * tamanioNodo);`,
+    //             `        vectorMemoria[i] = String.format("0x%06X", dirDecimal);`,
+    //             `    }`,
+    //             ``,
+    //             `    return vectorMemoria;`,
+    //             `}`,
+    //             ``,
+    //             `// Ejecución con valores actuales:` ,
+    //             `// generarDireccionesSecuencia(${direccionBase}, ${tamanioNodo}, ${n});`,
+    //         ];
+    //     } else {
+    //         return [
+    //             `public static String[] generarDireccionesAleatorias(int direccionBase, int tamanioNodo, int n, int maxPasosAlea, int tamPasoExtra) {`,
+    //             `    String[] direcciones = new String[n];`,
+    //             `    for (int i = 0; i < n; i++) {`,
+    //             `        int incremAlea = (int)(Math.random() * (maxPasosAlea + 1)) * tamPasoExtra;`,
+    //             `        int incrementoTotal = tamanioNodo + incremAlea;`,
+    //             `        int direccionDecimal = direccionBase;`,
+    //             `        direcciones[i] = String.format("0x%06X", direccionDecimal);`,
+    //             `        direccionBase += incrementoTotal;`,
+    //             `    }`,
+    //             `    return direcciones;`,
+    //             `}`,
+    //             `// Ejecución con valores actuales:`,
+    //             `// generarDireccionesAleatorias(${direccionBase}, ${tamanioNodo}, ${n}, 4, 6);`,
+    //         ];
+    //     }
+    // };
     
     const codeLines = getCodeLines();
-
-    // const codeLines = [
-    //     `// Se define la dirección base: dirBase = ${direccionBase}`,
-    //     `// Se define el tamaño de cada nodo en bytes: tamNodo = ${tamanioNodo}`,
-    //     `for (let i = 0; i < ${n}; i++) {`,
-    //     `    vectorMemoria[i] = dirBase + (i * tamNodo);`,
-    //     `    // Ejm: vectorMemoria[i] = ${direccionBase} + (i * ${tamanioNodo})`,
-    //     `}`,
-    //     `// Fin del proceso.`,
-    // ];
 
     const isShowingCode = step === 0;
     const isShowingMemory = step > 0 && step <= n;
@@ -86,13 +112,13 @@ export default function MemoryAllocationVisualizer({
     };
 
     return (
-        <div className="flex flex-col bg-[#1F1F22] text-[#E0E0E0] rounded-2xl p-6 border border-[#2E2E2E] space-y-6">
+        <div className="flex flex-col lg:w-[90%] bg-[#1F1F22] text-[#E0E0E0] rounded-2xl p-4 border border-[#2E2E2E] space-y-6">
             <h2 className="text-xl font-semibold text-[#A0A0A0] text-center">
                 Visualización Paso a Paso de Asignación de Memoria
             </h2>
 
             {isShowingCode && (
-                <pre className="bg-[#2E2E2E] p-4 rounded-lg text-sm leading-6">
+                <pre className="bg-[#2E2E2E] p-2 rounded-lg text-sm leading-6 max-h-[200px] overflow-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
                     {codeLines.map((line, index) => (
                         <div key={index} className="text-[#40B4C4]">
                             {line}
@@ -136,14 +162,14 @@ export default function MemoryAllocationVisualizer({
                 <button
                     onClick={handlePrev}
                     disabled={step === 0}
-                    className="px-4 py-2 rounded-lg bg-[#2E2E2E] border border-[#3A3A3A] hover:bg-[#3A3A3A] disabled:opacity-40 transition"
+                    className="px-4 py-1 rounded-lg bg-[#2E2E2E] border border-[#3A3A3A] hover:bg-[#3A3A3A] disabled:opacity-40 transition"
                 >
                     Anterior
                 </button>
                 <button
                     onClick={handleNext}
                     disabled={step >= n}
-                    className="px-4 py-2 rounded-lg bg-[#D72638] text-white hover:bg-[#b71c2e] disabled:opacity-40 transition"
+                    className="px-4 py-1 rounded-lg bg-[#D72638] text-white hover:bg-[#b71c2e] disabled:opacity-40 transition"
                 >
                     Siguiente
                 </button>
