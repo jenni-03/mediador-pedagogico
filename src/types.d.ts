@@ -99,38 +99,34 @@ export interface CardData {
   toPracticar: string;
 }
 
-export type BaseQueryOperations<T extends string> = T extends "secuencia"
-  ? {
+export type BaseQueryOperations<T extends string> =
+  T extends "secuencia" ? {
     create: number | null;
     toAdd: number | null;
     toDelete: number | null;
     toSearch: number | null;
     toUpdate: [number, number] | [];
   }
-  : T extends "cola"
-  ? {
+  : T extends "cola" ? {
     toEnqueuedNode: string | null;
     toDequeuedNode: string | null;
     toGetFront: string | null;
     toClear: boolean;
   }
-  : T extends "tabla_hash"
-  ? {
+  : T extends "tabla_hash" ? {
     create: (cap: number) => void;
     set: (key: number, value: number) => void;
     get: (key: number) => void;
     delete: (key: number) => void;
     clean: () => void;
   }
-  : T extends "cola_de_prioridad"
-  ? {
+  : T extends "cola_de_prioridad" ? {
     toEnqueuedNode: string | null;
     toDequeuedNode: string | null;
     toGetFront: string | null;
     toClear: boolean;
   }
-  : T extends "pila"
-  ? {
+  : T extends "pila" ? {
     toPushNode: string | null;
     toPopNode: string | null;
     toGetTop: string | null;
@@ -177,6 +173,16 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     getTop: () => void;
     clean: () => void;
   } :
+  T extends "lista_enlazada" ? {
+    insertFirst: (element: number) => void;
+    insertLast: (element: number) => void;
+    insertAt: (element: number, pos: number) => void;
+    removeFirst: () => void;
+    removeLast: () => void;
+    removeAt: (pos: number) => void;
+    search: (element: number) => void;
+    clean: () => void;
+  } :
   Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
@@ -189,6 +195,13 @@ export type CodeAnalysisProps = {
   operationalCost: string[];
   complexity: string;
 }
+
+export type ListNodeData = {
+  id: string;
+  value: number;
+  next: string | null;
+  memoryAddress: string;
+};
 
 export type QueueNodeData = {
   id: string;

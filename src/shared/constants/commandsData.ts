@@ -210,7 +210,6 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-
   bst: {
     buttons: [
       {
@@ -639,5 +638,4 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-},
 };

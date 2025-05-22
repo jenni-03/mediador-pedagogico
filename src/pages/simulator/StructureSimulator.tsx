@@ -9,7 +9,7 @@ import { SimpleLinkedListSimulator } from "./SimpleLinkedListSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
-    Secuencia: SequenceSimulator, // Si nombre = "Secuencia", renderiza <SequenceSimulator />
+    Secuencia: SequenceSimulator,
     Cola: QueueSimulator,
     tabla_hash: HashTableSimulator,
     Pila: StackSimulator,
@@ -29,7 +29,7 @@ export function StructureSimulator() {
 
     return (
         <div>
-            <DynamicComponent /> {/* Renderiza el componente dinámico aquí */}
+            <DynamicComponent />
         </div>
     );
 }
