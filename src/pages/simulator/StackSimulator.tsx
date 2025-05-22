@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { Pila } from "../../shared/utils/structures/Pila";
-import { StackRender } from "./components/estructures/secuencia/StackRender";
+import { StackRender } from "./components/estructures/pila/StackRender";
 import { Simulator } from "./components/templates/Simulator";
 import { useStack } from "./hooks/estructures/pila/useStack";
 import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";

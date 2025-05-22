@@ -109,8 +109,9 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
         ? {
             toEnqueuedNode: string | null;
             toDequeuedNode: string | null;
-            toGetRear: string | null;
-          }
+            toGetFront: string | null;
+              toClear: boolean;
+    }
         : T extends "pila"
           ? {
               toPushNode: string | null;
@@ -135,31 +136,21 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
         dequeue: () => void;
         getFront: () => void;
         clean: () => void;
-      }
-    : T extends "cola de prioridad"
-      ? {
-          enqueue: (element: number) => void;
-          dequeue: () => void;
-          getFront: () => void;
-          getRear: () => void;
-          clean: () => void;
-        }
-      : T extends "pila"
-        ? {
-            push: (element: number) => void;
-            pop: () => void;
-            getTop: () => void;
-            clean: () => void;
-          }
-        : T extends "tabla_hash"
-          ? {
-              create: (cap: number) => void;
-              set: (key: number, value: number) => void;
-              delete: (key: number) => void;
-              get: (key: number) => void;
-              clean: () => void;
-            }
-          : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+    } :
+    T extends "cola de prioridad" ? {
+        enqueue: (element: number) => void;
+        dequeue: () => void;
+        getFront: () => void;
+        getRear: () => void;
+        clean: () => void;
+    } :
+    T extends "pila" ? {
+        push: (element: number) => void;
+        pop: () => void;
+        getTop: () => void;
+        clean: () => void;
+    } :
+    Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
@@ -177,6 +168,14 @@ export type QueueNodeData = {
   value: number;
   next: string | null;
   memoryAddress: string;
+};
+
+export type PriorityQueueNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
+    priority: number;
 };
 
 export type LinkData = {
