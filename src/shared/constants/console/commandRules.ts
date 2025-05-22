@@ -4,70 +4,86 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
             case "create":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                {
+                    if (parts.length !== 2) {
+                        return { valid: false, message: "Debe proporcionar la capacidad de la secuencia como argumento." };
+                    }
+                    const num = Number(parts[1]);
+                    if (isNaN(num)) {
+                        return { valid: false, message: "La capacidad de la secuencia debe ser un número válido." };
+                    }
+                    const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
+                    if (!createPattern.test(parts[1])) {
+                        return { valid: false, message: "La capacidad de la secuencia debe ser un número entero mayor que 0 y menor que 21." };
+                    }
+                    return true;
                 }
-                const num = Number(parts[1]);
-                if (isNaN(num)) {
-                    return { valid: false, message: "El argumento debe ser un número válido." };
-                }
-                const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
-                if (!createPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor debe ser un número entero mayor que 0 y menor que 21." };
-                }
-                return true;
 
             case "insertlast": {
                 if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                    return { valid: false, message: "Debe proporcionar el valor a insertar como argumento." };
                 }
                 const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
                 if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
+                    return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
                 }
                 return true;
             }
 
             case "delete":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                const positionDelPattern = /^-?\d+$/; // Número entero para la posición
+                {
+                    if (parts.length !== 2) {
+                        return { valid: false, message: "Debe proporcionar el índice del elemento a eliminar como argumento." };
+                    }
+                    if (isNaN(Number(parts[1]))) {
+                        return { valid: false, message: "El índice del elemento a eliminar debe ser un número válido." };
+                    }
+                    const positionDelPattern = /^-?\d+$/; // Número entero para la posición
 
-                if (!positionDelPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición del valor a eliminar debe ser un número entero." };
+                    if (!positionDelPattern.test(parts[1])) {
+                        return { valid: false, message: "El índice del valor a eliminar debe ser un número entero positivo." };
+                    }
+                    return true;
                 }
-                return true;
 
             case "get":
-                return parts.length === 2 && !isNaN(Number(parts[1]));
+                {
+                    if (parts.length !== 2) {
+                        return { valid: false, message: "Debe proporcionar el valor a obtener como argumento." };
+                    }
+                    if (isNaN(Number(parts[1]))) {
+                        return { valid: false, message: "El valor a obtener debe ser un número válido." };
+                    }
+                    return true;
+                }
 
             case "set":
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
-                }
-                if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
-                    return { valid: false, message: "Ambos argumentos deben ser números válidos." };
-                }
-                const positionPattern = /^-?\d+$/; // Número entero para la posición
-                const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
+                {
+                    if (parts.length !== 3) {
+                        return { valid: false, message: "Debe proporcionar dos números como argumentos (posición, valor)." };
+                    }
+                    if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
+                        return { valid: false, message: "Ambos argumentos deben ser números válidos." };
+                    }
+                    const positionPattern = /^-?\d+$/; // Número entero para la posición
+                    const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
 
-                if (!positionPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición debe ser un número entero." };
+                    if (!positionPattern.test(parts[1])) {
+                        return { valid: false, message: "La posición debe ser un número entero positivo." };
+                    }
+                    if (!valuePattern.test(parts[2])) {
+                        return { valid: false, message: "El nuevo valor debe ser un número entero positivo de hasta 4 dígitos." };
+                    }
+                    return true;
                 }
-                if (!valuePattern.test(parts[2])) {
-                    return { valid: false, message: "El nuevo valor debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
 
             case "clean":
-                if (parts.length !== 1) {
-                    return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
+                {
+                    if (parts.length !== 1) {
+                        return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
+                    }
+                    return true;
                 }
-                return true;
 
             default:
                 return false;
@@ -78,14 +94,16 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
             case "push":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                {
+                    if (parts.length !== 2) {
+                        return { valid: false, message: "Debe proporcionar el valor a apilar como argumento." };
+                    }
+                    const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+                    if (!insertPattern.test(parts[1])) {
+                        return { valid: false, message: "El valor a apilar debe ser un número entero positivo de hasta 4 dígitos." };
+                    }
+                    return true;
                 }
-                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
 
             case "pop":
             case "gettop":
@@ -104,14 +122,16 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
             case "enqueue":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                {
+                    if (parts.length !== 2) {
+                        return { valid: false, message: "Debe proporcionar el valor a encolar como argumento." };
+                    }
+                    const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+                    if (!insertPattern.test(parts[1])) {
+                        return { valid: false, message: "El valor a encolar debe ser un número entero positivo de hasta 4 dígitos." };
+                    }
+                    return true;
                 }
-                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
 
             case "dequeue":
             case "getfront":
@@ -156,370 +176,77 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         }
     },
 
-    lista_simple: (parts) => {
+    lista_enlazada: (parts) => {
         const keyword = parts[0]?.toLowerCase();
         switch (keyword) {
-            case "create": // Crea una lista vacía o con un valor inicial
-                if (parts.length !== 1 && parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
-                }
-                if (parts.length === 2) {
-                    const num = Number(parts[1]);
-                    if (isNaN(num)) {
-                        return { valid: false, message: "El argumento debe ser un número válido." };
-                    }
-                    const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
-                    if (!createPattern.test(parts[1])) {
-                        return { valid: false, message: "El valor debe ser un número entero mayor que 0 y menor que 21." };
-                    }
-                }
-                return true;
-
             case "insertfirst":
             case "insertlast":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                {
+                    if (parts.length !== 2) {
+                        return { valid: false, message: "Debe proporcionar el valor a insertar como argumento." };
+                    }
+                    const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+                    if (!insertPattern.test(parts[1])) {
+                        return { valid: false, message: "El valor a insertar debe ser un número entero positivode hasta 4 dígitos." };
+                    }
+                    return true;
                 }
-                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
 
-            case "delete":
+            case "insertat":
+                {
+                    if (parts.length !== 3) {
+                        return { valid: false, message: "Debe proporcionar 2 números como argumentos (posición, valor)." };
+                    }
+                    const positionPattern = /^-?\d+$/; // Número entero para la posición
+                    const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el valor
+                    if (!valuePattern.test(parts[1])) {
+                        return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
+                    }
+                    if (!positionPattern.test(parts[2])) {
+                        return { valid: false, message: "La posición a insertar debe ser un número entero positivo." };
+                    }
+                    return true;
+                }
+
+            case "removefirst":
+            case "removelast":
+                {
+                    if (parts.length !== 1) {
+                        return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
+                    }
+                    return true;
+                }
+
+            case "removeat": {
                 if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
+                    return { valid: false, message: "Debe proporcionar la posición del elemento a remover como argumento." };
                 }
                 if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
+                    return { valid: false, message: "El argumento debe ser un número válido." };
                 }
                 const positionDelPattern = /^-?\d+$/; // Número entero para la posición
                 if (!positionDelPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición del valor a eliminar debe ser un número entero." };
+                    return { valid: false, message: "La posición del elemento a remover debe ser un número entero positivo." };
                 }
                 return true;
+            }
 
-            case "get":
+            case "search":
                 if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un valor como argumento." };
+                    return { valid: false, message: "Debe proporcionar el valor a buscar como argumento." };
                 }
                 if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                return true;
-
-            case "insertsorted": // Inserta en una posición específica
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos: (posición,valor)." };
-                }
-                const insertSortedPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertSortedPattern.test(parts[2])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "set":
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
-                }
-                if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
-                    return { valid: false, message: "Ambos argumentos deben ser números válidos." };
-                }
-                const positionPattern = /^-?\d+$/; // Número entero para la posición
-                const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
-
-                if (!positionPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición debe ser un número entero." };
-                }
-                if (!valuePattern.test(parts[2])) {
-                    return { valid: false, message: "El nuevo valor debe ser un número entero de hasta 4 dígitos." };
+                    return { valid: false, message: "El valor a buscar debe ser un número válido." };
                 }
                 return true;
 
             case "clean":
-            case "traverse": // Recorre la lista
-                if (parts.length !== 1) {
-                    return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
-                }
-                return true;
-
-            default:
-                return false;
-        }
-    },
-
-    lista_doble: (parts) => {
-        const keyword = parts[0]?.toLowerCase();
-        switch (keyword) {
-            case "create": // Crea una lista vacía o con un valor inicial
-                if (parts.length !== 1 && parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
-                }
-                if (parts.length === 2) {
-                    const num = Number(parts[1]);
-                    if (isNaN(num)) {
-                        return { valid: false, message: "El argumento debe ser un número válido." };
+                {
+                    if (parts.length !== 1) {
+                        return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
                     }
-                    const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
-                    if (!createPattern.test(parts[1])) {
-                        return { valid: false, message: "El valor debe ser un número entero mayor que 0 y menor que 21." };
-                    }
+                    return true;
                 }
-                return true;
-
-            case "insertfirst":
-            case "insertlast":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "delete":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                const positionDelPattern = /^-?\d+$/; // Número entero para la posición
-                if (!positionDelPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición del valor a eliminar debe ser un número entero." };
-                }
-                return true;
-
-            case "get":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un valor como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                return true;
-
-            case "insertsorted": // Inserta en una posición específica
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos: (posición,valor)." };
-                }
-                const insertSortedPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertSortedPattern.test(parts[2])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "set":
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
-                }
-                if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
-                    return { valid: false, message: "Ambos argumentos deben ser números válidos." };
-                }
-                const positionPattern = /^-?\d+$/; // Número entero para la posición
-                const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
-
-                if (!positionPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición debe ser un número entero." };
-                }
-                if (!valuePattern.test(parts[2])) {
-                    return { valid: false, message: "El nuevo valor debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "clean":
-            case "traverseforward": // Recorre la lista hacia adelante
-            case "traversebackward": // Recorre la lista hacia atrás
-                if (parts.length !== 1) {
-                    return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
-                }
-                return true;
-
-            default:
-                return false;
-        }
-    },
-
-    lista_circular: (parts) => {
-        const keyword = parts[0]?.toLowerCase();
-        switch (keyword) {
-            case "create": // Crea una lista vacía o con un valor inicial
-                if (parts.length !== 1 && parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
-                }
-                if (parts.length === 2) {
-                    const num = Number(parts[1]);
-                    if (isNaN(num)) {
-                        return { valid: false, message: "El argumento debe ser un número válido." };
-                    }
-                    const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
-                    if (!createPattern.test(parts[1])) {
-                        return { valid: false, message: "El valor debe ser un número entero mayor que 0 y menor que 21." };
-                    }
-                }
-                return true;
-
-            case "insertfirst":
-            case "insertlast":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "delete":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                const positionDelPattern = /^-?\d+$/; // Número entero para la posición
-                if (!positionDelPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición del valor a eliminar debe ser un número entero." };
-                }
-                return true;
-
-            case "get":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un valor como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                return true;
-
-            case "insertsorted": // Inserta en una posición específica
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos: (posición,valor)." };
-                }
-                const insertSortedPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertSortedPattern.test(parts[2])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "set":
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
-                }
-                if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
-                    return { valid: false, message: "Ambos argumentos deben ser números válidos." };
-                }
-                const positionPattern = /^-?\d+$/; // Número entero para la posición
-                const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
-
-                if (!positionPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición debe ser un número entero." };
-                }
-                if (!valuePattern.test(parts[2])) {
-                    return { valid: false, message: "El nuevo valor debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "clean":
-            case "traverse": // Recorre la lista
-                if (parts.length !== 1) {
-                    return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
-                }
-                return true;
-
-            default:
-                return false;
-        }
-    },
-
-    lista_circular_doble: (parts) => {
-        const keyword = parts[0]?.toLowerCase();
-        switch (keyword) {
-            case "create": // Crea una lista vacía o con un valor inicial
-                if (parts.length !== 1 && parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar entre cero y un argumento." };
-                }
-                if (parts.length === 2) {
-                    const num = Number(parts[1]);
-                    if (isNaN(num)) {
-                        return { valid: false, message: "El argumento debe ser un número válido." };
-                    }
-                    const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
-                    if (!createPattern.test(parts[1])) {
-                        return { valid: false, message: "El valor debe ser un número entero mayor que 0 y menor que 21." };
-                    }
-                }
-                return true;
-
-            case "insertfirst":
-            case "insertlast":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertPattern.test(parts[1])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "delete":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un número como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                const positionDelPattern = /^-?\d+$/; // Número entero para la posición
-                if (!positionDelPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición del valor a eliminar debe ser un número entero." };
-                }
-                return true;
-
-            case "get":
-                if (parts.length !== 2) {
-                    return { valid: false, message: "Debe proporcionar un valor como argumento." };
-                }
-                if (isNaN(Number(parts[1]))) {
-                    return { valid: false, message: "El argumento deben ser un número válido." };
-                }
-                return true;
-
-            case "insertsorted": // Inserta en una posición específica
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos: (posición,valor)." };
-                }
-                const insertSortedPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-                if (!insertSortedPattern.test(parts[2])) {
-                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "set":
-                if (parts.length !== 3) {
-                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
-                }
-                if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
-                    return { valid: false, message: "Ambos argumentos deben ser números válidos." };
-                }
-                const positionPattern = /^-?\d+$/; // Número entero para la posición
-                const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el nuevo valor
-
-                if (!positionPattern.test(parts[1])) {
-                    return { valid: false, message: "La posición debe ser un número entero." };
-                }
-                if (!valuePattern.test(parts[2])) {
-                    return { valid: false, message: "El nuevo valor debe ser un número entero de hasta 4 dígitos." };
-                }
-                return true;
-
-            case "clean":
-            case "traverseforward": // Recorre la lista hacia adelante
-            case "traversebackward": // Recorre la lista hacia atrás
-                if (parts.length !== 1) {
-                    return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
-                }
-                return true;
 
             default:
                 return false;

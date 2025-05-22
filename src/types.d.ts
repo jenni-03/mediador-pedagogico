@@ -1,14 +1,18 @@
 import { TYPE_FILTER } from "./shared/constants/consts";
+import { NodoS } from "./shared/utils/nodes/NodoS";
 
 export interface LinkedListInterface {
-    insertarAlInicio(valor: number): void;
-    insertarAlFinal(valor: number): void;
-    insertarEnPosicion(valor: number, posicion: number): void;
-    eliminarAlInicio(): void;
-    eliminarAlFinal(): void;
-    eliminarEnPosicion(posicion: number): void;
+    insertarAlInicio(valor: number): NodoS;
+    insertarAlFinal(valor: number): NodoS;
+    insertarEnPosicion(valor: number, posicion: number): NodoS;
+    eliminarAlInicio(): NodoS;
+    eliminarAlFinal(): NodoS;
+    eliminarEnPosicion(posicion: number): NodoS;
     buscar(valor: number): boolean;
     esVacia(): boolean;
+    vaciar(): void;
+    clonar(): this;
+    getArrayDeNodos(): ListNodeData[];
     getTamanio(): number;
 }
 
@@ -69,6 +73,7 @@ export type CustomModalProps = {
 
 export type SimulatorProps<T extends string> = {
     structureName: T,
+    structureType?: string,
     structure: unknown,
     actions: BaseStructureActions<T>;
     query: BaseQueryOperations;
@@ -118,7 +123,18 @@ export type BaseQueryOperations<T extends string> =
         toPopNode: string | null;
         toGetTop: string | null;
         toClear: boolean;
-    } : never; // Fallback para otros casos
+    } :
+    T extends "lista_enlazada" ? {
+        toAddFirst: string | null;
+        toAddLast: string | null;
+        toAddAt: [string, number] | [];
+        toDeleteFirst: string | null;
+        toDeleteLast: string | null;
+        toDeleteAt: [string, number] | [];
+        toSearch: number | null;
+        toClear: boolean;
+    } :
+    never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> =
     T extends "secuencia" ? {
@@ -148,7 +164,17 @@ export type BaseStructureActions<T extends string> =
         getTop: () => void;
         clean: () => void;
     } :
-    Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+    T extends "lista_enlazada" ? {
+        insertFirst: (element: number) => void;
+        insertLast: (element: number) => void;
+        insertAt: (element: number, pos: number) => void;
+        removeFirst: () => void;
+        removeLast: () => void;
+        removeAt: (pos: number) => void;
+        search: (element: number) => void;
+        clean: () => void;
+    }
+    : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
     isAnimating: boolean;
@@ -159,6 +185,13 @@ export type CodeAnalysisProps = {
     code: string;
     operationalCost: string[];
     complexity: string;
+}
+
+export type ListNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
 }
 
 export type QueueNodeData = {

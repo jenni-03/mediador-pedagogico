@@ -10,6 +10,8 @@ export const STRUCTURE_NAME = {
     QUEUE: 'cola',
     PRIORITY_QUEUE: 'cola_de_prioridad',
     STACK: 'pila',
+    LINKED_LIST: 'lista_enlazada',
+    SIMPLE_LINKED_LIST: 'Lista Simplemente Enlazada'
 } as const
 
 export const SVG_STYLE_VALUES = {

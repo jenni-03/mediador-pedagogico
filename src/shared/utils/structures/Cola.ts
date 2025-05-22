@@ -129,7 +129,7 @@ export class Cola {
      * Método que retorna el tamaño en bytes de los nodos almacenados.
      * @returns Tamaño en bytes de los nodos.
      */
-    getTamanioNodo() {
+    getTamanioNodo(): number {
         return this.tamanioNodo;
     }
 

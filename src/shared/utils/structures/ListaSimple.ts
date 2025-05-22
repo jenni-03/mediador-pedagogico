@@ -213,7 +213,7 @@ export class ListaSimple implements LinkedListInterface {
      * @returns Nueva lista clonada.
      */
     public clonar() {
-        const nuevaLista = new ListaSimple();
+        const nuevaLista = new (this.constructor as new () => this)();
 
         if (this.esVacia()) {
             return nuevaLista;
@@ -226,7 +226,7 @@ export class ListaSimple implements LinkedListInterface {
             const nuevoNodo = new NodoS(
                 nodoActual.getValor(),
                 nodoActual.getId(),
-                // nodoActual.getDireccionMemoria()
+                nodoActual.getDireccionMemoria()
             );
 
             if (nuevaLista.cabeza === null) {
