@@ -192,33 +192,22 @@ export const commandRules: Record<
     }
   },
 
-  cola_de_prioridad: (parts) => {
-    const keyword = parts[0]?.toLowerCase();
-    switch (keyword) {
-      case "enqueue":
-        if (parts.length !== 3) {
-          return {
-            valid: false,
-            message: "Debe proporcionar dos números como argumentos.",
-          };
-        }
-        const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-        if (!insertPattern.test(parts[1])) {
-          return {
-            valid: false,
-            message:
-              "El valor a insertar debe ser un número entero de hasta 4 dígitos.",
-          };
-        }
-        const priorityPattern = /^(10|[1-9])$/;
-        if (!priorityPattern.test(parts[2])) {
-          return {
-            valid: false,
-            message:
-              "La prioridad debe ser un número entero desde el 1 hasta el 10.",
-          };
-        }
-        return true;
+    "cola de prioridad": (parts) => {
+        const keyword = parts[0]?.toLowerCase();
+        switch (keyword) {
+            case "enqueue":
+                if (parts.length !== 3) {
+                    return { valid: false, message: "Debe proporcionar dos números como argumentos." };
+                }
+                const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+                if (!insertPattern.test(parts[1])) {
+                    return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
+                }
+                const priorityPattern = /^(10|[1-9])$/;
+                if (!priorityPattern.test(parts[2])) {
+                    return { valid: false, message: "La prioridad debe ser un número entero desde el 1 hasta el 10." };
+                }
+                return true;
 
       case "dequeue":
       case "getfront":
