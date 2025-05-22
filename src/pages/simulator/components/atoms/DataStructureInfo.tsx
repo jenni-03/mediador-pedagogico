@@ -68,7 +68,7 @@ export function DataStructureInfo({
                                                 </h3>
                                             </div>
                                         </div>
-                                        <span className="text-[#D72638] text-sm font-semibold">
+                                        <span className=" ml-4 text-[#D72638] text-sm font-semibold">
                                             Ver más
                                         </span>
                                     </div>

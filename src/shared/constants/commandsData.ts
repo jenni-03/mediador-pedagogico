@@ -98,7 +98,7 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  cola_de_prioridad: {
+  "cola de prioridad": {
     buttons: [
       {
         title: "enqueue",

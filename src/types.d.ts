@@ -109,7 +109,8 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
         ? {
             toEnqueuedNode: string | null;
             toDequeuedNode: string | null;
-            toGetRear: string | null;
+            toGetFront: string | null;
+        toClear: boolean;
           }
         : T extends "pila"
           ? {
@@ -138,11 +139,10 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
       }
     : T extends "cola de prioridad"
       ? {
-          enqueue: (element: number) => void;
+          enqueue: (element: number, priority: number) => void;
           dequeue: () => void;
           getFront: () => void;
-          getRear: () => void;
-          clean: () => void;
+            clean: () => void;
         }
       : T extends "pila"
         ? {
@@ -177,6 +177,14 @@ export type QueueNodeData = {
   value: number;
   next: string | null;
   memoryAddress: string;
+};
+
+export type PriorityQueueNodeData = {
+    id: string;
+    value: number;
+    next: string | null;
+    memoryAddress: string;
+    priority: number;
 };
 
 export type LinkData = {
