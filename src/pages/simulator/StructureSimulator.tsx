@@ -3,8 +3,8 @@ import { conceptosData } from "../../shared/constants/conceptsData";
 import { SequenceSimulator } from "./SequenceSimulator";
 import { QueueSimulator } from "./QueueSimulator";
 import { StackSimulator } from "./StackSimulator";
-import { PriorityQueueSimulator } from "./PriorityQueueSimulator";
 import { HashTableSimulator } from "./HashTableSimulator";
+import { PriorityQueueSimulator } from "./PriorityQueueSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {

@@ -1,12 +1,12 @@
 import { infoStructures } from "../../../../shared/constants/infoStructures";
-import MemoryAllocationVisualizer from "./MemoryAllocationVisualizer";
+// 
 import { InfoModal } from "../molecules/InfoModal";
 
 export function DataStructureInfo({
     children,
     structure,
     structurePrueba,
-    memoryAddress,
+    // memoryAddress,
 }: {
     children: React.ReactNode;
     structure: string;

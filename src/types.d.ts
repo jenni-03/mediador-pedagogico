@@ -110,8 +110,8 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
             toEnqueuedNode: string | null;
             toDequeuedNode: string | null;
             toGetFront: string | null;
-        toClear: boolean;
-          }
+              toClear: boolean;
+    }
         : T extends "pila"
           ? {
               toPushNode: string | null;
