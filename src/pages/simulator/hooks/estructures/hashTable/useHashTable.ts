@@ -73,8 +73,8 @@ function reducer(st: State, ac: Action): State {
 
     case "CLEAN":
       return {
-        ...st,
-        buckets: Array.from({ length: st.buckets.length }, () => []),
+        buckets: [],
+        hashFn: () => 0,
         lastAction: { type: "clean" },
       };
 
@@ -181,13 +181,6 @@ export function useHashTable(initialSlots = 0) {
   };
 
   const clean = () => {
-    if (!validateTableExists()) return;
-
-    if (state.buckets.every((b) => b.length === 0)) {
-      setError("🧹 La tabla ya está vacía. No hay nada que limpiar.");
-      return;
-    }
-
     setError(null);
     dispatch({ type: "CLEAN" });
   };
