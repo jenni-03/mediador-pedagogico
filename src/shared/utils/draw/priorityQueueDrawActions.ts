@@ -3,8 +3,86 @@ import * as d3 from "d3";
 import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateLinkPath } from "./calculateLinkPath";
 
+// Función para obtener el color según la prioridad (ahora retorna un objeto con fill y stroke)
+export function getPriorityColor(priority: number): { fill: string; stroke: string } {
+    if (priority >= 1 && priority <= 3) {
+        return {
+            fill: "#FFB3B3",    // Rojo claro
+            stroke: "#CC0000"   // Rojo oscuro
+        };
+    } else if (priority >= 4 && priority <= 6) {
+        return {
+            fill: "#FFD4AA",    // Naranja claro
+            stroke: "#CC6600"   // Naranja oscuro
+        };
+    } else if (priority >= 7 && priority <= 10) {
+        return {
+            fill: "#B3D4FF",    // Azul claro
+            stroke: "#0066CC"   // Azul oscuro
+        };
+    } else {
+        return {
+            fill: "#CCCCCC",    // Gris claro por defecto
+            stroke: "#666666"   // Gris oscuro por defecto
+        };
+    }
+}
+
+// Función auxiliar para crear una animación de "pulso" en el nodo nuevo (MODIFICADA)
+export function addPriorityPulseAnimation(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodeId: string,
+    priority: number
+): Promise<void> {
+    return new Promise((resolve) => {
+        const nodeGroup = svg.select<SVGGElement>(`g#${nodeId}`);
+        const nodeContainer = nodeGroup.select(".node-container");
+        const priorityBadge = nodeGroup.select(".priority-badge");
+        const priorityColors = getPriorityColor(priority);
+        
+        // Animación de pulso del color del nodo con colores más intensos
+        nodeContainer
+            .transition()
+            .duration(300)
+            .attr("fill", d3.color(priorityColors.fill)?.brighter(0.3)?.toString() || priorityColors.fill)
+            .attr("stroke", d3.color(priorityColors.stroke)?.brighter(0.3)?.toString() || priorityColors.stroke)
+            .transition()
+            .duration(300)
+            .attr("fill", priorityColors.fill)
+            .attr("stroke", priorityColors.stroke)
+            .transition()
+            .duration(300)
+            .attr("fill", d3.color(priorityColors.fill)?.brighter(0.3)?.toString() || priorityColors.fill)
+            .attr("stroke", d3.color(priorityColors.stroke)?.brighter(0.3)?.toString() || priorityColors.stroke)
+            .transition()
+            .duration(300)
+            .attr("fill", priorityColors.fill)
+            .attr("stroke", priorityColors.stroke);
+
+        // Animación especial para el badge de prioridad
+        priorityBadge
+            .transition()
+            .duration(200)
+            .attr("r", 16) // Crecer
+            .attr("fill", "rgba(255,255,255,0.9)")
+            .transition()
+            .duration(200)
+            .attr("r", 14) // Volver al tamaño normal
+            .attr("fill", "rgba(0,0,0,0.7)")
+            .transition()
+            .duration(200)
+            .attr("r", 16) // Crecer de nuevo
+            .attr("fill", "rgba(255,255,255,0.9)")
+            .transition()
+            .duration(200)
+            .attr("r", 14) // Tamaño final
+            .attr("fill", "rgba(0,0,0,0.7)")
+            .on("end", () => resolve());
+    });
+}
+
 /**
- * Función encargada renderizar los nodos de la cola dentro del lienzo
+ * Función encargada renderizar los nodos de la cola dentro del lienzo (MODIFICADA)
  * @param svg Lienzo en el que se va a dibujar
  * @param queueNodes Nodos a renderizar
  * @param positions Mapa de posiciones de cada uno de los nodos dentro del lienzo
@@ -26,7 +104,7 @@ export function drawNodes(
     const { margin, elementWidth, elementHeight, nodeSpacing, height } = dims;
 
     // Data join para la creación de los nodos
-    svg.selectAll<SVGGElement, QueueNodeData>("g.node")
+    svg.selectAll<SVGGElement, PriorityQueueNodeData>("g.node")
         .data(queueNodes, d => d.id)
         .join(
             enter => {
@@ -43,27 +121,66 @@ export function drawNodes(
                         return `translate(${x}, ${y})`;
                     });
 
-                // Contenedor del nodo
+                // Contenedor del nodo con color dinámico según prioridad
                 gEnter.append("rect")
+                    .attr("class", "node-container")
                     .attr("width", elementWidth)
                     .attr("height", elementHeight)
                     .attr("rx", 6)
                     .attr("ry", 6)
-                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+                    .attr("fill", d => getPriorityColor(d.priority).fill)
+                    .attr("stroke", d => getPriorityColor(d.priority).stroke)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                    .style("filter", "drop-shadow(2px 2px 4px rgba(0,0,0,0.2))"); // Sombra sutil
 
                 // Valor del nodo
                 gEnter.append("text")
+                    .attr("class", "node-value")
                     .attr("x", elementWidth / 2)
-                    .attr("y", elementHeight / 2)
+                    .attr("y", elementHeight / 2 - 5) // Movido ligeramente hacia arriba
                     .attr("dy", "0.35em")
                     .attr("text-anchor", "middle")
-                    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
-                    .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
-                    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+                    .attr("fill", "black") // Texto blanco para mejor contraste
+                    .style("font-weight", "bold")
+                    .style("font-size", "14px")
                     .text(d => d.value)
                     .style("letter-spacing", "0.5px");
+
+                // MEJORA: Círculo de fondo para la prioridad más grande y llamativo
+                gEnter.append("circle")
+                    .attr("class", "priority-badge")
+                    .attr("cx", elementWidth - 14) // Movido más hacia adentro
+                    .attr("cy", 14) // Movido más hacia abajo
+                    .attr("r", 14) // Radio aumentado de 8 a 14
+                    .attr("fill", "rgba(0,0,0,0.7)") // Fondo más opaco
+                    .attr("stroke", "rgba(255,255,255,0.9)") // Borde más visible
+                    .attr("stroke-width", 2) // Borde más grueso
+                    .style("filter", "drop-shadow(1px 1px 3px rgba(0,0,0,0.4))"); // Sombra para profundidad
+
+                // MEJORA: Texto de prioridad más grande y mejor posicionado
+                gEnter.append("text")
+                    .attr("class", "node-priority")
+                    .attr("x", elementWidth - 14) // Centrado con el círculo
+                    .attr("y", 14) // Centrado con el círculo
+                    .attr("dy", "0.35em") // Centrado vertical
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "white")
+                    .style("font-size", "12px") // Aumentado de 10px a 12px
+                    .style("font-weight", "bold")
+                    .style("letter-spacing", "0.5px") // Espaciado para mejor legibilidad
+                    .text(d => `P${d.priority}`);
+
+                // MEJORA: Añadir un resplandor sutil al badge de prioridad (MODIFICADO)
+                gEnter.append("circle")
+                    .attr("class", "priority-glow")
+                    .attr("cx", elementWidth - 14)
+                    .attr("cy", 14)
+                    .attr("r", 16) // Ligeramente más grande que el badge
+                    .attr("fill", "none")
+                    .attr("stroke", d => d3.color(getPriorityColor(d.priority).stroke)?.brighter(0.8)?.toString() || getPriorityColor(d.priority).stroke)
+                    .attr("stroke-width", 1)
+                    .attr("opacity", 0.6)
+                    .style("filter", "blur(1px)"); // Efecto de resplandor
 
                 // Bloque de dirección de memoria
                 gEnter
@@ -99,6 +216,19 @@ export function drawNodes(
                     const y = (height - elementHeight) / 2;
                     positions.set(d.id, { x, y });
                 });
+
+                // Actualizar colores en caso de que la prioridad haya cambiado (MODIFICADO)
+                update.select(".node-container")
+                    .attr("fill", d => getPriorityColor(d.priority).fill)
+                    .attr("stroke", d => getPriorityColor(d.priority).stroke);
+
+                // Actualizar texto de prioridad
+                update.select(".node-priority")
+                    .text(d => `P${d.priority}`);
+
+                // MEJORA: Actualizar el color del resplandor según la nueva prioridad (MODIFICADO)
+                update.select(".priority-glow")
+                    .attr("stroke", d => d3.color(getPriorityColor(d.priority).stroke)?.brighter(0.8)?.toString() || getPriorityColor(d.priority).stroke);
 
                 return update;
             },
@@ -336,7 +466,7 @@ export async function animateEnqueueNode(
             }
         });
         
-        // 2.2 CAMBIO PRINCIPAL: Actualizar los enlaces simultáneamente
+        // 2.2 Actualizar los enlaces simultáneamente
         linksToUpdate.forEach((linkData) => {
             const { linkGroup, sourceId, targetId } = linkData;
             
@@ -386,6 +516,12 @@ export async function animateEnqueueNode(
             .ease(d3.easeBounce)
             .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
             .end();
+        
+        // 2.5 MEJORADO - Animación de pulso de prioridad más llamativa
+        const enqueuedNode = queueNodes.find(node => node.id === nodeEnqueued);
+        if (enqueuedNode) {
+            await addPriorityPulseAnimation(svg, nodeEnqueued, enqueuedNode.priority);
+        }
         
         // PASO 3: Animar la aparición secuencial de los enlaces del nuevo nodo con animación de crecimiento
         
@@ -507,6 +643,38 @@ export async function animateEnqueueNode(
         if (updateIndicatorsPromises.length > 0) {
             await Promise.all(updateIndicatorsPromises);
         }
+
+        // PASO 5: MEJORADO - Animación final de confirmación de inserción más llamativa
+        if (enqueuedNode) {
+            const nodeContainer = newNodeGroup.select(".node-container");
+            const priorityBadge = newNodeGroup.select(".priority-badge");
+            const priorityGlow = newNodeGroup.select(".priority-glow");
+            
+            // Animación de confirmación con el badge de prioridad como protagonista
+            await priorityBadge
+                .transition()
+                .duration(150)
+                .attr("r", 18) // Crecer más
+                .attr("stroke-width", 3)
+                .transition()
+                .duration(150)
+                .attr("r", 14) // Volver al tamaño normal
+                .attr("stroke-width", 2)
+                .end();
+
+            // Hacer que el resplandor pulse también
+            await priorityGlow
+                .transition()
+                .duration(300)
+                .attr("opacity", 1)
+                .attr("r", 20)
+                .transition()
+                .duration(300)
+                .attr("opacity", 0.6)
+                .attr("r", 16)
+                .end();
+        }
+        
     } catch (error) {
         console.error("Error en la animación de encolar:", error);
     } finally {
@@ -684,7 +852,7 @@ export function animateGetFront(
     const topNodeGroup = svg.select<SVGGElement>(`#${headNodeId}`);
 
     // Color de resaltado para el nodo
-    const highlightColor = "#00e676";
+    const highlightColor = "#0066CC";
 
     // Grupo correspondiente al contenedor principal del nodo y al valor de este  
     const rect = topNodeGroup.select("rect");
@@ -705,12 +873,12 @@ export function animateGetFront(
     text.transition()
         .duration(300)
         .attr("fill", highlightColor)
-        .style("font-size", "18px")
+        .style("font-size", "20px")
         .style("font-weight", "bold")
         .transition()
         .delay(800)
         .duration(300)
-        .attr("fill", "white")
+        .attr("fill", "black")
         .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
         .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT);
 
