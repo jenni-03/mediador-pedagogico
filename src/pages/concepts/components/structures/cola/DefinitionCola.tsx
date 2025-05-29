@@ -2,7 +2,7 @@ import img1 from "../../../../../assets/images/definicion_cola_1.jpg";
 export function DefinitionCola() {
     return (
         <div className="py-4 px-10">
-            <h1 className="text-3xl font-extrabold mb-1 text-white">COLA</h1>
+            <h1 className="text-2xl font-extrabold mb-1 text-white">COLA</h1>
             <h1 className="text-sm text-red-400 mb-4">Estructura Lineal</h1>
             <hr className="mt-2 mb-4 border-red-500 border-t-2" />
             <div className="text-sm text-gray-300 leading-6">
