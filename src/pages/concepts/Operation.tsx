@@ -1,11 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
-// Importa todos los componentes que se pueden renderizar
-import { OperationSecuencia } from "./components/structures/secuencia/OperationSecuencia";
-import { OperationCola } from "./components/structures/cola/OperationCola";
-import { OperationColaPrioridad } from "./components/structures/cola_de_prioridad/OperationColaPrioridad";
-import { OperationListaSimple } from "./components/structures/lista_simple/OperationListaSimple";
-import { OperationArbolBinario } from "./components/structures/arbol_binario/OperationArbolBinario";
+import { OperationArbolBinario, OperationCola, OperationColaPrioridad, OperationListaSimple, OperationPila, OperationSecuencia } from "./concepts";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -13,7 +8,8 @@ const componentMap: Record<string, React.FC> = {
     "Cola": OperationCola,
     "Cola de Prioridad": OperationColaPrioridad, 
     "Lista Simplemente Enlazada": OperationListaSimple, 
-    "Árbol Binario" : OperationArbolBinario
+    "Árbol Binario" : OperationArbolBinario,
+    "Pila": OperationPila
 };
 
 export function Operation() {
