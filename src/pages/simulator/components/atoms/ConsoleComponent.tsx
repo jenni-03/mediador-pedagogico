@@ -43,13 +43,7 @@ export function ConsoleComponent({
     }, [error?.id]);
 
     // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos
-    const structuresRequiringCreate = [
-        "secuencia",
-        "lista_simple",
-        "lista_doble",
-        "lista_circular",
-        "lista_circular_doble",
-    ];
+    const structuresRequiringCreate = ["secuencia"];
 
     // Manejo de Enter manual para el input, en el caso del tutorial
     useEffect(() => {

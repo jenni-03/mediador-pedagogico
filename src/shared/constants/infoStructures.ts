@@ -40,39 +40,12 @@ export const infoStructures: Record<string, any> = {
             },
         ],
     },
-    lista_simple: {
+    lista_enlazada: {
         info: [
             {
                 key: "Tamaño",
                 description:
-                    "Cantidad actual de elementos almacenados en la lista simple.",
-            },
-        ],
-    },
-    lista_doble: {
-        info: [
-            {
-                key: "Tamaño",
-                description:
-                    "Cantidad actual de elementos almacenados en la lista doble.",
-            },
-        ],
-    },
-    lista_circular: {
-        info: [
-            {
-                key: "Tamaño",
-                description:
-                    "Cantidad actual de elementos almacenados en la lista circular.",
-            },
-        ],
-    },
-    lista_circular_doble: {
-        info: [
-            {
-                key: "Tamaño",
-                description:
-                    "Cantidad actual de elementos almacenados en la lista circular doble.",
+                    "Cantidad actual de elementos almacenados en la lista.",
             },
         ],
     },

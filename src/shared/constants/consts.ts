@@ -10,6 +10,9 @@ export const STRUCTURE_NAME = {
     QUEUE: 'cola',
     PRIORITY_QUEUE: 'cola de prioridad',
     STACK: 'pila',
+    LINKED_LIST: 'lista_enlazada',
+    SIMPLE_LINKED_LIST: 'Lista Simplemente Enlazada',
+    HASHTABLE: 'tabla_hash',
 } as const
 
 export const SVG_STYLE_VALUES = {
@@ -59,3 +62,12 @@ export const SVG_STACK_VALUES = {
     SPACING: 10,
     WIDTH: 120,
 } as const;
+
+export const SVG_LINKED_LIST_VALUES = {
+    MARGIN_LEFT: 50,
+    MARGIN_RIGHT: 50,
+    ELEMENT_WIDTH: 80,
+    ELEMENT_HEIGHT: 40,
+    SPACING: 55,
+    HEIGHT: 230,
+} as const

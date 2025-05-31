@@ -12,6 +12,7 @@ import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
 
 export function Simulator<T extends string>({
     structureName,
+    structureType,
     structure,
     actions,
     error,
@@ -28,11 +29,17 @@ export function Simulator<T extends string>({
     // Estado para el manejo de la animación
     const { setIsAnimating } = useAnimation();
 
+    // Título de la página del simulador
+    const pageTitle = structureType ? structureType : structureName;
+
+    // Elemento para la selección de los datos referentes a la estructura a mostrar
+    const dataSelector = structureName;
+
     // Botones de comandos propios de la estructura
-    const buttons = commandsData[structureName].buttons;
+    const buttons = commandsData[dataSelector].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operationsCode[structureName];
+    const operations_code = operationsCode[dataSelector];
 
     // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);
@@ -95,7 +102,7 @@ export function Simulator<T extends string>({
                         data-tour="structure-title"
                         className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6"
                     >
-                        {structureName.replace(/_/g, " ").toUpperCase()}{" "}
+                        {pageTitle.replace(/_/g, " ").toUpperCase()}{" "}
                         <span className="text-[#D72638]">&lt;Integer&gt;</span>
                     </h1>
                     {/* Contenedor principal */}
@@ -107,7 +114,7 @@ export function Simulator<T extends string>({
                                 className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 rounded-xl space-y-3 overflow-hidden"
                             >
                                 <DataStructureInfo
-                                    structure={structureName}
+                                    structure={dataSelector}
                                     structurePrueba={structure}
                                     memoryAddress={memoryCode}
                                 >
@@ -136,7 +143,7 @@ export function Simulator<T extends string>({
                                 data-tour="console"
                             >
                                 <ConsoleComponent
-                                    structureType={structureName}
+                                    structureType={dataSelector}
                                     onCommand={handleCommand}
                                     error={error}
                                 />
@@ -149,7 +156,7 @@ export function Simulator<T extends string>({
                     </div>
                 </div>
             </div>
-            <CustomTour tipo={structureName as TourType} />
+            <CustomTour tipo={pageTitle as TourType} />
         </>
     );
 }
