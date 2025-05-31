@@ -1,5 +1,6 @@
 import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { BaseQueryOperations, ListNodeData } from "../../../../../types";
+import { useLinkedListRender } from "./useLinkedListRender";
 
 export function LinkedListRender({
     linkedList,
@@ -10,11 +11,11 @@ export function LinkedListRender({
     query: BaseQueryOperations<"lista_enlazada">;
     resetQueryValues: () => void;
 }) {
-    // const { svgRef } = useQueueRender(queue, query, resetQueryValues);
+    const { svgRef } = useLinkedListRender(linkedList, query, resetQueryValues);
 
     return (
         <div>
-            <svg id={`linked-list-svg`}>
+            <svg id={`linked-list-svg`} ref={svgRef}>
                 <defs>
                     <marker
                         id="arrowhead"

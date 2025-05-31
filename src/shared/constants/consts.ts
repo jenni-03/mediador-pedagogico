@@ -62,3 +62,12 @@ export const SVG_STACK_VALUES = {
     SPACING: 10,
     WIDTH: 120,
 } as const;
+
+export const SVG_LINKED_LIST_VALUES = {
+    MARGIN_LEFT: 50,
+    MARGIN_RIGHT: 50,
+    ELEMENT_WIDTH: 80,
+    ELEMENT_HEIGHT: 40,
+    SPACING: 55,
+    HEIGHT: 230,
+} as const
