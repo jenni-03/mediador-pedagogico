@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
-import { BaseQueryOperations, IndicatorPositioningConfig, QueueNodeData } from "../../../../../types";
+import { useEffect, useMemo, useRef } from "react";
+import { BaseQueryOperations, IndicatorPositioningConfig, LinkData, QueueNodeData } from "../../../../../types";
 import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { drawNodes, drawLinks, animateDequeueNode, animateEnqueueNode, animateClearQueue, animateGetFront } from "../../../../../shared/utils/draw/queueDrawActions";
+import { drawQueueNodes, animateDequeueNode, animateEnqueueNode, animateClearQueue, animateGetFront } from "../../../../../shared/utils/draw/queueDrawActions";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { drawArrowIndicator } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
 
 export function useQueueRender(
     queueNodes: QueueNodeData[],
@@ -23,6 +23,21 @@ export function useQueueRender(
 
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
+
+    // Memo para calcular los enlaces entre nodos
+    const linksData = useMemo<LinkData[]>(() => {
+        const links: LinkData[] = [];
+        queueNodes.forEach(n => {
+            if (n.next) {
+                links.push({
+                    sourceId: n.id,
+                    targetId: n.next,
+                    type: "next"
+                })
+            }
+        });
+        return links;
+    }, [queueNodes]);
 
     // Renderizado base de la cola
     useEffect(() => {
@@ -53,17 +68,17 @@ export function useQueueRender(
             .attr("width", width);
 
         // Renderizado de los nodos pertenecientes a la cola
-        drawNodes(
+        drawQueueNodes(
             svg,
             queueNodes,
             nodePositions,
             { margin, elementWidth, elementHeight, nodeSpacing, height }
         );
 
-        // Renderizado de los enlaces entre nodos
-        drawLinks(
+        // Renderizado de los enlaces entre nodos 
+        drawListLinks(
             svg,
-            queueNodes,
+            linksData,
             nodePositions,
             elementWidth,
             elementHeight
@@ -140,18 +155,8 @@ export function useQueueRender(
         // Id del nodo encolado
         const nodeIdEnqueued = query.toEnqueuedNode;
 
-        // Obtenemos el nodo encolado
-        const newNode = queueNodes.find(node => node.id === nodeIdEnqueued);
-
         // Obtenemos el nodo que anteriormente era el último
         const prevLastNode = prevNodes.length > 0 ? prevNodes[prevNodes.length - 1] : null;
-
-        // En caso de no ubicar al nuevo nodo
-        if (!newNode) {
-            resetQueryValues();
-            setIsAnimating(false);
-            return;
-        };
 
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
@@ -173,7 +178,10 @@ export function useQueueRender(
         if (!queueNodes || !svgRef.current || !query.toDequeuedNode || !prevNodes || prevNodes.length === 0) return;
 
         // Obtenemos el nodo que anteriormente era el primero (nodo a desencolar)
-        const prevFirstNode = prevNodes[0];
+        const prevFirstNode = prevNodes[0].id;
+
+        // Obtenemos el primer nodo actual de la lista 
+        const newFirstNode = queueNodes.length > 0 ? queueNodes[0].id : null;
 
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
@@ -181,8 +189,8 @@ export function useQueueRender(
         // Animación de desvinculación del nodo
         animateDequeueNode(
             svg,
-            prevFirstNode,
-            queueNodes,
+            { dequeuedNode: prevFirstNode, newFirstNode },
+            { remainingNodesData: queueNodes, remainingLinksData: linksData },
             nodePositions,
             resetQueryValues,
             setIsAnimating
