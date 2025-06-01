@@ -1,4 +1,4 @@
-export const complexitySecuencia = [
+export const complexityListaSimple = [
     {
         title: "1. Constructor (ListaS)",
         operationalCost: [
