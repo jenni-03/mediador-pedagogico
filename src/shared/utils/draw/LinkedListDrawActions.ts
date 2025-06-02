@@ -14,36 +14,35 @@ import * as d3 from "d3";
  */
 export async function animateInsertFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolvedInsertion: { newNodeHead: string, prevNodeHead: string | null },
+    nodesInvolved: { newHeadNode: string, prevHeadNode: string | null },
     listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[] },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     // Nodos implicados en la inserción
-    const { newNodeHead, prevNodeHead } = nodesInvolvedInsertion;
-
-    // Información de la lista
-    const { existingNodesData, existingLinksData } = listData;
+    const { newHeadNode, prevHeadNode } = nodesInvolved;
 
     // Grupo del lienzo correspondiente al nuevo nodo
-    const newNodeGroup = svg.select<SVGGElement>(`g#${newNodeHead}`);
-
-    // Grupo del lienzo correspondiente al indicador del nodo cabeza
-    const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-
-    // Posición de animación final del nuevo nodo
-    const finalNewNodePos = positions.get(newNodeHead)!;
+    const newNodeGroup = svg.select<SVGGElement>(`g#${newHeadNode}`);
 
     // Estado inicial del nuevo nodo
     newNodeGroup.style("opacity", 0);
 
-    // En caso de que exista un nodo cabeza previo
-    if (prevNodeHead) {
-        // Grupo del lienzo correspondiente al enlace que apunta al anterior primer nodo
-        const nextLinkGroup = svg.select<SVGGElement>(`g#link-${newNodeHead}-${prevNodeHead}-next`);
+    if (prevHeadNode) {
+        // Información de la lista
+        const { existingNodesData, existingLinksData } = listData;
 
-        // Estado inicial del enlace que apunta a la anterior cabeza de la lista
+        // Grupo del lienzo correspondiente al indicador del nodo cabeza
+        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+
+        // Posición de animación final del nuevo nodo
+        const finalNewNodePos = positions.get(newHeadNode)!;
+
+        // Grupo del lienzo correspondiente al enlace entre el nuevo nodo y el anterior primer nodo
+        const nextLinkGroup = svg.select<SVGGElement>(`g#link-${newHeadNode}-${prevHeadNode}-next`);
+
+        // Estado inicial del enlace entre el nuevo nodo y la anterior cabeza de la lista
         nextLinkGroup.select("path.node-link").style("opacity", 0);
 
         // Array de promesas para animaciones de desplazamiento de nodos y enlaces
@@ -81,7 +80,7 @@ export async function animateInsertFirst(
         );
 
         // Posición de animación inicial del indicador de cabeza
-        const initialHeadIndicatorPos = positions.get(prevNodeHead)!;
+        const initialHeadIndicatorPos = positions.get(prevHeadNode)!;
         shiftPromises.push(
             headIndicatorGroup
                 .transition()
@@ -133,7 +132,7 @@ export async function animateInsertFirst(
             })
             .end();
     } else {
-        // Animación simple de aparición del nuevo nodo
+        // Animación de aparición simple del nuevo nodo
         await newNodeGroup
             .transition()
             .duration(1000)
@@ -160,25 +159,25 @@ export async function animateInsertFirst(
  */
 export async function animateInsertLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolvedInsertion: { newLastNode: string, prevLastNode: string | null },
+    nodesInvolved: { newLastNode: string, prevLastNode: string | null },
     existingNodesData: ListNodeData[],
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     // Nodos implicados en la inserción
-    const { newLastNode, prevLastNode } = nodesInvolvedInsertion;
+    const { newLastNode, prevLastNode } = nodesInvolved;
 
     // Grupo del lienzo correspondiente al nuevo elemento
     const newNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
-
-    // Posición de animación final del nuevo nodo
-    const finalNewNodePos = positions.get(newLastNode)!;
 
     // Estado inicial del nuevo nodo
     newNodeGroup.style("opacity", 0);
 
     if (prevLastNode) {
+        // Posición de animación final del nuevo nodo
+        const finalNewNodePos = positions.get(newLastNode)!;
+
         // Grupo del lienzo correspondiente al enlace que apunta al nuevo último nodo
         const nextLinkGroup = svg.select<SVGGElement>(`g#link-${prevLastNode}-${newLastNode}-next`);
 
@@ -246,7 +245,7 @@ export async function animateInsertLast(
             .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
             .end();
     } else {
-        // Animación simple de aparición del nuevo nodo
+        // Animación de aparición simple del nuevo nodo
         await newNodeGroup
             .transition()
             .duration(1000)
@@ -274,7 +273,7 @@ export async function animateInsertLast(
  */
 export async function animateInsertAtPosition(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolvedInsertion: { newNode: string, prevNode: string, nextNode: string },
+    nodesInvolved: { newNode: string, prevNode: string, nextNode: string },
     listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[] },
     insertionPosition: number,
     positions: Map<string, { x: number, y: number }>,
@@ -282,7 +281,7 @@ export async function animateInsertAtPosition(
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     // Nodos implicados en la inserción
-    const { newNode, prevNode, nextNode } = nodesInvolvedInsertion;
+    const { newNode, prevNode, nextNode } = nodesInvolved;
 
     // Información de la lista
     const { existingNodesData, existingLinksData } = listData;
@@ -299,8 +298,8 @@ export async function animateInsertAtPosition(
     // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nuevo nodo
     const nextLinkToNewNodeGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${newNode}-next`);
 
-    // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo que apunta al siguiente del nodo previo
-    const nextLinkNewNodeGroup = svg.select<SVGGElement>(`g#link-${newNode}-${nextNode}-next`);
+    // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
+    const nextLinkOfNewNodeGroup = svg.select<SVGGElement>(`g#link-${newNode}-${nextNode}-next`);
 
     // Estado inicial del nuevo nodo
     newNodeGroup.style("opacity", 0);
@@ -309,7 +308,7 @@ export async function animateInsertAtPosition(
     nextLinkToNewNodeGroup.select("path.node-link").style("opacity", 0);
 
     // Estado inicial del enlace que apunta al siguiente del nuevo nodo
-    nextLinkNewNodeGroup.select("path.node-link").style("opacity", 0);
+    nextLinkOfNewNodeGroup.select("path.node-link").style("opacity", 0);
 
     // Nodos a recorrer para insertar el nodo
     const nodesToTraverse = existingNodesData.slice(0, insertionPosition);
@@ -404,12 +403,12 @@ export async function animateInsertAtPosition(
 
     // Forma inicial de los nuevos enlaces producto de la inserción
     const initialNextPathToNewNode = calculateLinkPath({ sourceId: prevNode, targetId: newNode, type: 'next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
-    const initialNextPathNewNode = calculateLinkPath({ sourceId: newNode, targetId: nextNode, type: 'next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+    const initialNextPathOfNewNode = calculateLinkPath({ sourceId: newNode, targetId: nextNode, type: 'next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
 
     // Posicionamiento inicial de los elementos asociados al nuevo nodo
     newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
     nextLinkToNewNodeGroup.select("path.node-link").attr("d", initialNextPathToNewNode);
-    nextLinkNewNodeGroup.select("path.node-link").attr("d", initialNextPathNewNode);
+    nextLinkOfNewNodeGroup.select("path.node-link").attr("d", initialNextPathOfNewNode);
 
     // Array de promesas para animaciones de aparición de todos los elementos relacionados al nuevo nodo
     const newNodeAppearancePromises: Promise<void>[] = [];
@@ -425,7 +424,7 @@ export async function animateInsertAtPosition(
 
     // Promesa para animación de aparición del enlace siguiente del nuevo nodo
     newNodeAppearancePromises.push(
-        nextLinkNewNodeGroup.select("path.node-link")
+        nextLinkOfNewNodeGroup.select("path.node-link")
             .transition()
             .duration(1000)
             .style("opacity", 1)
@@ -446,7 +445,7 @@ export async function animateInsertAtPosition(
 
     // Forma final de los nuevos enlaces producto de la inserción
     const finalNextPathToNewNode = calculateLinkPath({ sourceId: prevNode, targetId: newNode, type: 'next' }, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
-    const finalNextPathNewNode = calculateLinkPath({ sourceId: newNode, targetId: nextNode, type: 'next' }, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+    const finalNextPathOfNewNode = calculateLinkPath({ sourceId: newNode, targetId: nextNode, type: 'next' }, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
 
     // Array de promesas para animaciones de movimiento de los elementos relacionados al nuevo nodo a su posición final
     const newNodeFinalMovementPromises: Promise<void>[] = [];
@@ -471,11 +470,11 @@ export async function animateInsertAtPosition(
     );
 
     newNodeFinalMovementPromises.push(
-        nextLinkNewNodeGroup.select("path.node-link")
+        nextLinkOfNewNodeGroup.select("path.node-link")
             .transition()
             .duration(1500)
             .ease(d3.easeBounce)
-            .attr("d", finalNextPathNewNode)
+            .attr("d", finalNextPathOfNewNode)
             .end()
     );
 
@@ -490,6 +489,147 @@ export async function animateInsertAtPosition(
         .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
         .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
         .end();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+/**
+ * Función encargada de animar la eliminación del nodo al inicio de la lista
+ * @param svg Lienzo en el que se va a dibujar
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la eliminación 
+ * @param listData Objeto con información de los nodos y enlaces de la lista
+ * @param positions Mapa de posiciones de cada nodo dentro del lienzo
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario 
+ * @param setIsAnimating Función para establecer el estado de animación 
+ */
+export async function animateDeleteFirst(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodesInvolved: { prevHeadNode: string, newHeadNode: string | null },
+    listData: { remainingNodesData: ListNodeData[], remainingLinksData: LinkData[] },
+    positions: Map<string, { x: number, y: number }>,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Nodos implicados en la eliminación
+    const { newHeadNode, prevHeadNode } = nodesInvolved;
+
+    // Grupo del lienzo correspondiente al nodo a eliminar
+    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevHeadNode}`);
+
+    if (newHeadNode) {
+        // Información de la lista
+        const { remainingNodesData, remainingLinksData } = listData;
+
+        // Grupo del lienzo correspondiente al indicador del nodo cabeza
+        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+
+        // Grupo del lienzo correspondiente al enlace entre el nodo a eliminar y el nuevo nodo cabeza
+        const nextLinkToRemoveGroup = svg.select<SVGGElement>(`g#link-${prevHeadNode}-${newHeadNode}-next`);
+
+        // Posición actual del nodo a eliminar
+        const nodeToRemoveCurrentPos = positions.get(prevHeadNode)!;
+
+        // Movimiento del nodo a eliminar 
+        const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
+
+        // Animación de salida del enlace entre el nodo a eliminar y su siguiente
+        await nextLinkToRemoveGroup
+            .select("path.node-link")
+            .transition()
+            .duration(1000)
+            .ease(d3.easePolyInOut)
+            .style("opacity", 0)
+            .end();
+
+        // Animación de salida del nodo a eliminar
+        await nodeToRemoveGroup
+            .transition()
+            .duration(1500)
+            .ease(d3.easePolyInOut)
+            .attr("transform", () => {
+                const x = nodeToRemoveCurrentPos.x;
+                const y = nodeToRemoveCurrentPos.y + nodeMoveOffsetY;
+                return `translate(${x}, ${y})`;
+            })
+            .style("opacity", 0)
+            .end();
+
+        // Eliminación de los elementos del DOM asociados al nodo eliminado
+        nodeToRemoveGroup.remove();
+        nextLinkToRemoveGroup.remove();
+
+        // Eliminación de la posición del nodo eliminado
+        positions.delete(prevHeadNode);
+
+        // Animación de salida del indicador de cabeza
+        await headIndicatorGroup
+            .transition()
+            .duration(1000)
+            .style("opacity", 0)
+            .end();
+
+        // Array de promesas para la animación de desplazamiento de nodos y enlaces restantes
+        const shiftPromises: Promise<void>[] = [];
+
+        // Selección de nodos restantes (re-vinculación de datos)
+        const remainingNodes = svg.selectAll<SVGGElement, ListNodeData>("g.node")
+            .data(remainingNodesData, d => d.id);
+
+        // Promesa para animación de desplazamiento de nodos restantes a su posición final
+        shiftPromises.push(
+            remainingNodes
+                .transition()
+                .duration(1500)
+                .ease(d3.easePolyInOut)
+                .attr("transform", (d) => {
+                    const finalPos = positions.get(d.id)!;
+                    return `translate(${finalPos.x}, ${finalPos.y})`;
+                })
+                .end()
+        );
+
+        // Selección de enlaces restantes (re-vinculación de datos)
+        const remainingLinks = svg.selectAll<SVGGElement, LinkData>("g.link")
+            .data(remainingLinksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`);
+
+        // Promesa para animación de desplazamiento de enlaces restantes a su posición final
+        shiftPromises.push(
+            remainingLinks.select("path.node-link")
+                .transition()
+                .duration(1500)
+                .ease(d3.easePolyInOut)
+                .attr("d", d => calculateLinkPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT))
+                .end()
+        );
+
+        // Resolución de las promesas de animación de movimiento
+        await Promise.all(shiftPromises);
+
+        // Animación de entrada del indicador de cabeza
+        await headIndicatorGroup
+            .transition()
+            .duration(1000)
+            .style("opacity", 1)
+            .end();
+    } else {
+        // Animación de salida simple del nodo
+        await nodeToRemoveGroup
+            .transition()
+            .duration(1000)
+            .style("opacity", 0)
+            .ease(d3.easePolyInOut)
+            .end();
+
+        // Eliminación de los elementos del DOM asociados al nodo eliminado
+        nodeToRemoveGroup.remove();
+
+        // Eliminación de la posición del nodo eliminado
+        positions.delete(prevHeadNode);
+    }
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();

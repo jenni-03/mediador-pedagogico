@@ -275,8 +275,8 @@ export async function animateDequeueNode(
         // Animación de salida del nodo a decolar
         await nodeToRemoveGroup
             .transition()
-            .ease(d3.easePolyInOut)
             .duration(1500)
+            .ease(d3.easePolyInOut)
             .attr("transform", () => {
                 const currentPos = positions.get(dequeuedNode);
                 const x = currentPos?.x ?? 0;
@@ -286,7 +286,7 @@ export async function animateDequeueNode(
             .style("opacity", 0)
             .end();
 
-        // Eliminación de los elementos del DOM correspondientes al nodo decolado
+        // Eliminación de los elementos del DOM asociados al nodo decolado
         nodeToRemoveGroup.remove();
         linkToRemoveGroup.remove();
 
