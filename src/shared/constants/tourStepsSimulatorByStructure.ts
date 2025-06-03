@@ -40,7 +40,26 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         donde el primer elemento en ingresar es también el primero en ser removido. Los elementos se agregan al final de la cola
                         y se eliminan al principio, asegurando un orden de procesamiento justo y predecible.`,
         },
-    ]
+    ],
+    "cola de prioridad": [
+        {
+            type: "info",
+            description: `Imagina una sala de emergencias donde los pacientes no son atendidos por orden de llegada, sino según la gravedad de su condición. 
+                        Un paciente en estado crítico será atendido antes que alguien con una dolencia menor, incluso si llegó después. 
+                        Esa es la idea básica detrás de una cola de prioridad.`,
+        },
+        {
+            type: "info",
+            description: `Una cola de prioridad es una estructura de datos donde cada elemento tiene una prioridad asociada. 
+                        A diferencia de una cola tradicional (FIFO), los elementos se ingresan a la cola según su prioridad, no su orden de llegada. 
+                        El elemento con la mayor prioridad es el primero en ser procesado.`,
+        },
+        {
+            type: "info",
+            description: `Técnicamente, al insertar un elemento (enqueue), este se coloca en una posición determinada por su prioridad.
+                        Al eliminar un elemento (dequeue), se remueve el que tenga la prioridad más alta.`,
+        },
+    ],
 };
 
 export const tourStepsCommands: Record<string, TourStep[]> = {
@@ -172,7 +191,46 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             description:
                 "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
         },
-    ]
+    ],
+    "cola de prioridad": [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una cola de prioridad, tales como, encolar por prioridad (enqueue), decolar (dequeue), y consultar la cabeza de la cola (getFront).",
+            type: "element",
+        },
+        {
+            id: "console",
+            type: "action",
+        },
+        {
+            id: "inputConsola",
+            text: "enqueue(10,3);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para encolar un elemento, en este caso, el número 10 con una prioridad de 3.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la estructura cola de prioridad con su elemento recién encolado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
+        },
+    ],
 };
 
 export const getTourSteps = (structureType: string): TourStep[] => [
