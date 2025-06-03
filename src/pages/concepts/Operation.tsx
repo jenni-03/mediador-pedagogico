@@ -1,7 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
-import { OperationArbolBinario, OperationCola, OperationColaPrioridad, OperationListaSimple, OperationPila, OperationSecuencia } from "./concepts";
-import { OperationTablaHash} from "./components/structures/tabla_hash/OperationTablaHash";
+import { OperationArbolBinario, OperationCola, OperationColaPrioridad, OperationListaSimple, OperationPila, OperationSecuencia, OperationTablaHash } from "./concepts";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {

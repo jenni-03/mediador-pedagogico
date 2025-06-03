@@ -1,7 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
-import { DefinitionArbolBinario, DefinitionCola, DefinitionColaPrioridad, DefinitionListaSimple, DefinitionPila, DefinitionSecuencia } from "./concepts";
-import { DefinitionTablaHash } from "./components/structures/tabla_hash/DefinitionTablaHash";
+import { DefinitionArbolBinario, DefinitionCola, DefinitionColaPrioridad, DefinitionListaSimple, DefinitionPila, DefinitionSecuencia, DefinitionTablaHash } from "./concepts";
+
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
     "Secuencia": DefinitionSecuencia,  // Si nombre = "Secuencia", renderiza <DefinitionSecuencia />
