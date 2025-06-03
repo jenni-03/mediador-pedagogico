@@ -27,6 +27,39 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         es decir, el último elemento que se inserta es el primero en salir. Solo se permite el acceso al elemento en el tope de la pila.`,
         },
     ],
+    cola: [
+        {
+            type: "info",
+            description: `Visualicemos una fila de personas esperando para comprar una entrada de cine. Las personas se forman en el orden en que llegan y solo
+                        pueden llegar a comprar su entrada en ese mismo orden, sin saltarse ni adelantar a otros. A medida que cada persona compra su entrada, 
+                        el siguiente en la fila se mueve hacia adelante. Esa es la idea detrás de una cola.`,
+        },
+        {
+            type: "info",
+            description: `Formalmente, una cola es una estrucura de datos lineal que sigue el principio FIFO (First In, First Out), 
+                        donde el primer elemento en ingresar es también el primero en ser removido. Los elementos se agregan al final de la cola
+                        y se eliminan al principio, asegurando un orden de procesamiento justo y predecible.`,
+        },
+    ],
+    "cola de prioridad": [
+        {
+            type: "info",
+            description: `Imagina una sala de emergencias donde los pacientes no son atendidos por orden de llegada, sino según la gravedad de su condición. 
+                        Un paciente en estado crítico será atendido antes que alguien con una dolencia menor, incluso si llegó después. 
+                        Esa es la idea básica detrás de una cola de prioridad.`,
+        },
+        {
+            type: "info",
+            description: `Una cola de prioridad es una estructura de datos donde cada elemento tiene una prioridad asociada. 
+                        A diferencia de una cola tradicional (FIFO), los elementos se ingresan a la cola según su prioridad, no su orden de llegada. 
+                        El elemento con la mayor prioridad es el primero en ser procesado.`,
+        },
+        {
+            type: "info",
+            description: `Técnicamente, al insertar un elemento (enqueue), este se coloca en una posición determinada por su prioridad.
+                        Al eliminar un elemento (dequeue), se remueve el que tenga la prioridad más alta.`,
+        },
+    ],
 };
 
 export const tourStepsCommands: Record<string, TourStep[]> = {
@@ -79,7 +112,7 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
         {
             id: "console",
             description:
-                "En la consola puedes realizar todas las operaciones de una pila, tales como, apilar (push), desapilar(pop), y consultar el tope de la pila(getTop).",
+                "En la consola puedes realizar todas las operaciones de una pila, tales como, apilar (push), desapilar (pop), y consultar el tope de la pila (getTop).",
             type: "element",
         },
         {
@@ -94,7 +127,7 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
         {
             id: "console",
             description:
-                "Este comando sirve para apilar un 4.",
+                "Este comando sirve para apilar un elemento, en este caso, el número 4.",
             type: "element",
         },
         {
@@ -111,13 +144,91 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             id: "info-cards",
             type: "element",
             description:
-                "Como puedes ver, el tamaño de la pila es 1, ya que se insertó el número 2, que es el primer elemento de esta.",
+                "Como puedes ver, el tamaño de la pila es 1, ya que se insertó el número 4, que es el primer elemento de esta.",
         },
         {
             id: "memory-visualization",
             type: "element",
             description:
                 "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la pila y cómo se calcula el espacio necesario para cada uno de sus elementos.",
+        },
+    ],
+    cola: [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una cola, tales como, encolar (enqueue), decolar (dequeue), y consultar la cabeza de la cola (getFront).",
+            type: "element",
+        },
+        {
+            id: "console",
+            type: "action",
+        },
+        {
+            id: "inputConsola",
+            text: "enqueue(10);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para encolar un elemento, en este caso, el número 10.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la estructura cola con su elemento recién encolado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
+        },
+    ],
+    "cola de prioridad": [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una cola de prioridad, tales como, encolar por prioridad (enqueue), decolar (dequeue), y consultar la cabeza de la cola (getFront).",
+            type: "element",
+        },
+        {
+            id: "console",
+            type: "action",
+        },
+        {
+            id: "inputConsola",
+            text: "enqueue(10,3);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para encolar un elemento, en este caso, el número 10 con una prioridad de 3.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la estructura cola de prioridad con su elemento recién encolado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
         },
     ],
 };

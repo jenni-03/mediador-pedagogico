@@ -68,7 +68,7 @@ export class Secuencia {
     eliminarPos(pos: number) {
         if (this.cant === 0) {
             throw new Error(
-                "No fue posible eliminar: la secuencia está vacía (tamaño actual: 0)."
+                "No fue posible eliminar el elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0)."
             );
         }
 
@@ -99,7 +99,6 @@ export class Secuencia {
      */
     get(i: number): number | null {
         if (i < 0 || i >= this.cant) {
-            console.error("Indíce fuera de rango!");
             return null;
         }
         return this.vector[i];

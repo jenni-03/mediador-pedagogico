@@ -1,13 +1,14 @@
 import img1 from "../../../../../assets/images/definicion_cola_1.jpg";
+
 export function DefinitionCola() {
     return (
         <div className="py-4 px-10">
-            <h1 className="text-2xl font-bold mb-1">COLA</h1>
-            <h1 className="text-sm text-gray-500 mb-3">Estructura Lineal</h1>
+            <h1 className="text-2xl font-extrabold mb-1 text-white">COLA</h1>
+            <h1 className="text-sm text-red-400 mb-4">Estructura Lineal</h1>
             <hr className="mt-2 mb-4 border-red-500 border-t-2" />
-            <div>
-                <h1 className="text-xl font-bold mb-3">Descripción</h1>
-                <p className="text-gray-800 text-sm mb-5 leading-6">
+            <div className="text-sm text-gray-300 leading-6">
+                <h1 className="text-xl font-bold text-red-500 mb-3">Descripción</h1>
+                <p className="mb-5">
                     Las colas son un conjunto de elementos caracterizadas porque
                     las operaciones de inserción y borrado se realizan sobre
                     extremos opuestos de la estructura. La inserción se produce
@@ -23,7 +24,7 @@ export function DefinitionCola() {
                     sale”.
                 </p>
                 <img src={img1} alt="img 1" />
-                <p className="text-gray-800 text-sm mb-5 leading-6">
+                <p className="mb-5">
                     Las colas, al igual que las pilas, resultan de aplicación
                     habitual en muchos problemas informáticos. Quizás la
                     aplicación más común de las colas es la organización de
@@ -45,8 +46,8 @@ export function DefinitionCola() {
                     dispositivo, no enviando un trabajo hasta que la impresora
                     no termine con el anterior.
                 </p>
-                <h1 className="text-xl font-bold mb-3">COLA SIMPLE</h1>
-                <p className="text-gray-800 text-sm mb-5 leading-6">
+                <h1 className="text-xl font-bold text-red-500 mb-3">COLA SIMPLE</h1>
+                <p className="mb-5">
                     Se inserta por un sitio y se saca por otro, en el caso de la
                     cola simple se inserta por el final y se saca por el
                     principio. Para gestionar este tipo de cola hay que recordar

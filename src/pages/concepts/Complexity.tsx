@@ -1,11 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
-// Importa todos los componentes que se pueden renderizar
-import { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
-import { ComplexityCola } from "./components/structures/cola/ComplexityCola";
-import { ComplexityColaPrioridad } from "./components/structures/cola_de_prioridad/ComplexityColaPrioridad";
-import { ComplexityListaSimple } from "./components/structures/lista_simple/ComplexityListaSimple";
-import { ComplexityArbolBinario } from "./components/structures/arbol_binario/ComplexityArbolBinario";
+import { ComplexityArbolBinario, ComplexityCola, ComplexityColaPrioridad, ComplexityListaSimple, ComplexityPila, ComplexitySecuencia, ComplexityTablaHash } from "./concepts";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -14,6 +9,8 @@ const componentMap: Record<string, React.FC> = {
     "Cola de Prioridad": ComplexityColaPrioridad, 
     "Lista Simplemente Enlazada": ComplexityListaSimple, 
     "Árbol Binario" : ComplexityArbolBinario,
+    "Pila": ComplexityPila,
+    "tabla_hash": ComplexityTablaHash,
 };
 
 export function Complexity() {
