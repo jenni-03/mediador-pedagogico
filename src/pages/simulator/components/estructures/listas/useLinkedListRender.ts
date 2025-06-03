@@ -5,7 +5,7 @@ import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateDeleteFirst } from "../../../../../shared/utils/draw/LinkedListDrawActions";
+import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateDeleteFirst, animateDeleteLast, animateSearchElement } from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
     listNodes: ListNodeData[],
@@ -264,8 +264,49 @@ export function useLinkedListRender(
                 resetQueryValues,
                 setIsAnimating
             );
+        } else if (query.toDeleteLast) {
+            // Id del último nodo anterior (nodo eliminado)
+            const prevLastNode = query.toDeleteLast;
+
+            // Obtenemos el Id del nuevo último nodo de la lista
+            const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+
+            // Selección del elemento SVG a partir de su referencia
+            const svg = d3.select(svgRef.current);
+
+            // Animación de eliminación del primer nodo de la lista
+            animateDeleteLast(
+                svg,
+                { prevLastNode, newLastNode },
+                listNodes,
+                nodePositions,
+                resetQueryValues,
+                setIsAnimating
+            );
         }
     });
+
+    // Efecto para manejar la búsqueda de un nodo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!listNodes || !svgRef.current || !query.toSearch || !prevNodes) return;
+
+        // Obtenemos el elemento de la lista a buscar
+        const elementToSearch = query.toSearch;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Animación de búsqueda del elemento especificado
+        animateSearchElement(
+            svg,
+            elementToSearch,
+            listNodes,
+            resetQueryValues,
+            setIsAnimating
+        );
+
+    }, [listNodes, prevNodes, query.toSearch, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }
