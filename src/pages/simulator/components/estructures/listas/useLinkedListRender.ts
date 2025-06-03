@@ -5,7 +5,7 @@ import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateDeleteFirst, animateDeleteLast, animateSearchElement } from "../../../../../shared/utils/draw/LinkedListDrawActions";
+import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateDeleteFirst, animateDeleteLast, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
     listNodes: ListNodeData[],
@@ -307,6 +307,18 @@ export function useLinkedListRender(
         );
 
     }, [listNodes, prevNodes, query.toSearch, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la limpieza de lienzo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!listNodes || !svgRef.current || !query.toClear) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Animación de limpieza de la lista
+        animateClearList(svg, nodePositions, resetQueryValues, setIsAnimating);
+    }, [query.toClear, listNodes, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }

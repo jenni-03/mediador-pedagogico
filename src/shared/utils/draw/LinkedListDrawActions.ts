@@ -826,3 +826,44 @@ export async function animateSearchElement(
     // Finalización de la animación
     setIsAnimating(false);
 }
+
+/**
+ * Función encargada de eliminar todos los nodos y enlaces del lienzo
+ * @param svg Lienzo que se va a limpiar
+ * @param nodePositions Mapa de posiciones de los nodos dentro del lienzo
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario
+ * @param setIsAnimating Función para establecer el estado de animación
+ */
+export async function animateClearList(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodePositions: Map<string, { x: number, y: number }>,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Animación de salida de los enlaces
+    await svg.selectAll("g.link")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Animacición de salida de los nodos
+    await svg.selectAll("g.node")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Eliminación de los nodos y enlaces del DOM
+    svg.selectAll("g.node").remove();
+    svg.selectAll("g.link").remove();
+
+    // Liempiza del mapa de posiciones
+    nodePositions.clear();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
