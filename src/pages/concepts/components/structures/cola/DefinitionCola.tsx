@@ -1,4 +1,5 @@
 import img1 from "../../../../../assets/images/definicion_cola_1.jpg";
+
 export function DefinitionCola() {
     return (
         <div className="py-4 px-10">

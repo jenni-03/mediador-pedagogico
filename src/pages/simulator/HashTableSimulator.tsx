@@ -33,10 +33,34 @@ export function HashTableSimulator() {
 
   /* 4) Proxy de info para <DataStructureInfo> */
   const structureProxy = {
-    getTamanio: () => buckets.flat().length, // número de nodos actuales
-    vector: buckets, // los buckets actúan de “vector”
+    getTamanio: () => buckets.flat().length,
+    vector: buckets,
     direccionBase: 1000,
     tamanioNodo: 4,
+    getDireccionesBuckets: () =>
+      buckets.map(
+        (_, i) => `0x${(0x1000 * (i + 1)).toString(16).padStart(6, "0")}`
+      ),
+    getArrayDeNodos: () => {
+      const BASE_SEG = 0x1000;
+      const result: { key: number; value: number; memoryAddress: string }[] =
+        [];
+
+      for (let i = 0; i < buckets.length; i++) {
+        const bucket = buckets[i];
+        const baseAddress = BASE_SEG * (i + 1);
+
+        for (let j = 0; j < bucket.length; j++) {
+          result.push({
+            key: bucket[j].key,
+            value: bucket[j].value,
+            memoryAddress: `0x${(baseAddress + j).toString(16).padStart(6, "0")}`,
+          });
+        }
+      }
+
+      return result;
+    },
   };
 
   /* 5) Render */

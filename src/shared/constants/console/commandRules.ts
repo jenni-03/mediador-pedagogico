@@ -265,85 +265,14 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
   tabla_hash: (parts: string[]) => {
     const keyword = parts[0]?.toLowerCase();
 
-    /* utilidades */
-    const isInt = (s: string) => /^-?\d+$/.test(s);
-    const isValue = (s: string) => /^\d{1,4}$/.test(s); // 0-9999
-    const isCapacity = (s: string) => {
-      const n = parseInt(s, 10);
-      return Number.isInteger(n) && n > 0 && n < 21;
-    };
-
     switch (keyword) {
-      /* ────── create(n) ────── */
-      case "create": {
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message: "Debe proporcionar la capacidad: create(n);",
-          };
-        }
-        if (!isCapacity(parts[1])) {
-          return {
-            valid: false,
-            message: "n debe ser un entero mayor que 0 y menor que 21.",
-          };
-        }
-        return true;
-      }
-
-      /* ────── set(k,v) ────── */
-      case "set": {
-        if (parts.length !== 3) {
-          return {
-            valid: false,
-            message: "Debe proporcionar clave y valor: put(k,v);",
-          };
-        }
-        const [, k, v] = parts;
-        if (!isInt(k)) {
-          return {
-            valid: false,
-            message: "La clave debe ser un número entero.",
-          };
-        }
-        if (!isValue(v)) {
-          return {
-            valid: false,
-            message: "El valor debe ser un entero de hasta 4 dígitos (0-9999).",
-          };
-        }
-        return true;
-      }
-
-      /* ────── get / delete ────── */
+      case "create":
+      case "set":
       case "get":
-      case "delete": {
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message: `${keyword}(k) espera exactamente una clave.`,
-          };
-        }
-        if (!isInt(parts[1])) {
-          return {
-            valid: false,
-            message: "La clave debe ser un número entero.",
-          };
-        }
-        return true;
-      }
-
+      case "delete":
       case "clean": {
-        if (parts.length !== 1) {
-          return {
-            valid: false,
-            message: `${keyword}() no recibe argumentos.`,
-          };
-        }
         return true;
       }
-
-      /* ────── comando desconocido ────── */
       default:
         return false;
     }

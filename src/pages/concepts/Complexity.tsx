@@ -9,7 +9,8 @@ const componentMap: Record<string, React.FC> = {
     "Cola de Prioridad": ComplexityColaPrioridad, 
     "Lista Simplemente Enlazada": ComplexityListaSimple, 
     "Árbol Binario" : ComplexityArbolBinario,
-    "Pila": ComplexityPila
+    "Pila": ComplexityPila,
+    "tabla_hash": ComplexityTablaHash,
 };
 
 export function Complexity() {
