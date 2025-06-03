@@ -196,7 +196,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
           }
           const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
           if (!insertPattern.test(parts[1])) {
-            return { valid: false, message: "El valor a insertar debe ser un número entero positivode hasta 4 dígitos." };
+            return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
           }
           return true;
         }
@@ -204,7 +204,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "insertat":
         {
           if (parts.length !== 3) {
-            return { valid: false, message: "Debe proporcionar 2 números como argumentos (posición, valor)." };
+            return { valid: false, message: "Debe proporcionar 2 números como argumentos (valor, posición)." };
           }
           const positionPattern = /^-?\d+$/; // Número entero para la posición
           const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el valor

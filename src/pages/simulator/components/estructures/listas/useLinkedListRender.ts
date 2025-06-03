@@ -5,7 +5,7 @@ import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertAtPosition, animateInsertFirst, animateInsertLast } from "../../../../../shared/utils/draw/LinkedListDrawActions";
+import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateDeleteFirst, animateDeleteLast, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
     listNodes: ListNodeData[],
@@ -139,21 +139,21 @@ export function useLinkedListRender(
         // Si la inserción es en la cabeza de la lista
         if (query.toAddFirst) {
             // Id del nuevo nodo cabeza
-            const newNodeHead = query.toAddFirst;
+            const newHeadNode = query.toAddFirst;
 
             // Obtenemos el Id del nodo que era la cabeza de la lista antes de la inserción
-            const prevNodeHead = prevNodes.length > 0 ? prevNodes[0].id : null;
+            const prevHeadNode = prevNodes.length > 0 ? prevNodes[0].id : null;
 
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
 
             // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
-            const existingLinksData = linksData.filter(link => link.sourceId !== newNodeHead);
+            const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode);
 
             // Animación de inserción del nodo como nuevo primer elemento de la lista
             animateInsertFirst(
                 svg,
-                { newNodeHead, prevNodeHead },
+                { newHeadNode, prevHeadNode },
                 { existingNodesData: prevNodes, existingLinksData },
                 nodePositions,
                 resetQueryValues,
@@ -181,9 +181,6 @@ export function useLinkedListRender(
         } else {
             const [newNode, insertionPosition] = query.toAddAt;
 
-            console.log("xd1", newNode);
-            console.log("xd2", insertionPosition);
-
             if (!newNode || insertionPosition === undefined) return;
 
             // Selección del elemento SVG a partir de su referencia
@@ -191,7 +188,7 @@ export function useLinkedListRender(
 
             if (insertionPosition === 0) {
                 // Obtenemos el nodo que era la cabeza antes de la inserción
-                const prevNodeHead = prevNodes.length > 0 ? prevNodes[0].id : null;
+                const prevHeadNode = prevNodes.length > 0 ? prevNodes[0].id : null;
 
                 // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
                 const existingLinksData = linksData.filter(link => link.sourceId !== newNode);
@@ -199,7 +196,7 @@ export function useLinkedListRender(
                 // Animación de inserción del nodo como nuevo primer elemento de la lista
                 animateInsertFirst(
                     svg,
-                    { newNodeHead: newNode, prevNodeHead },
+                    { newHeadNode: newNode, prevHeadNode },
                     { existingNodesData: prevNodes, existingLinksData },
                     nodePositions,
                     resetQueryValues,
@@ -241,6 +238,87 @@ export function useLinkedListRender(
             }
         }
     }, [query.toAddFirst, query.toAddLast, query.toAddAt, listNodes, linksData, prevNodes, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la eliminación de un nodo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!listNodes || !svgRef.current || (!query.toDeleteFirst && !query.toDeleteLast && query.toDeleteAt.length !== 2) || !prevNodes) return;
+
+        // Si la eliminación es en la cabeza de la lista
+        if (query.toDeleteFirst) {
+            // Id del nodo cabeza anterior (nodo eliminado)
+            const prevHeadNode = query.toDeleteFirst;
+
+            // Obtenemos el Id del nodo cabeza actual de la lista
+            const newHeadNode = listNodes.length > 0 ? listNodes[0].id : null;
+
+            // Selección del elemento SVG a partir de su referencia
+            const svg = d3.select(svgRef.current);
+
+            // Animación de eliminación del primer nodo de la lista
+            animateDeleteFirst(
+                svg,
+                { prevHeadNode, newHeadNode },
+                { remainingNodesData: listNodes, remainingLinksData: linksData },
+                nodePositions,
+                resetQueryValues,
+                setIsAnimating
+            );
+        } else if (query.toDeleteLast) {
+            // Id del último nodo anterior (nodo eliminado)
+            const prevLastNode = query.toDeleteLast;
+
+            // Obtenemos el Id del nuevo último nodo de la lista
+            const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+
+            // Selección del elemento SVG a partir de su referencia
+            const svg = d3.select(svgRef.current);
+
+            // Animación de eliminación del primer nodo de la lista
+            animateDeleteLast(
+                svg,
+                { prevLastNode, newLastNode },
+                listNodes,
+                nodePositions,
+                resetQueryValues,
+                setIsAnimating
+            );
+        }
+    });
+
+    // Efecto para manejar la búsqueda de un nodo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!listNodes || !svgRef.current || !query.toSearch || !prevNodes) return;
+
+        // Obtenemos el elemento de la lista a buscar
+        const elementToSearch = query.toSearch;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Animación de búsqueda del elemento especificado
+        animateSearchElement(
+            svg,
+            elementToSearch,
+            listNodes,
+            resetQueryValues,
+            setIsAnimating
+        );
+
+    }, [listNodes, prevNodes, query.toSearch, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la limpieza de lienzo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!listNodes || !svgRef.current || !query.toClear) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Animación de limpieza de la lista
+        animateClearList(svg, nodePositions, resetQueryValues, setIsAnimating);
+    }, [query.toClear, listNodes, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }
