@@ -642,7 +642,6 @@ export async function animateEnqueueNode(
 
         // PASO 5: MEJORADO - Animación final de confirmación de inserción más llamativa
         if (enqueuedNode) {
-            const nodeContainer = newNodeGroup.select(".node-container");
             const priorityBadge = newNodeGroup.select(".priority-badge");
             const priorityGlow = newNodeGroup.select(".priority-glow");
             

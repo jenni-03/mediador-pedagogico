@@ -161,10 +161,9 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     clean: () => void;
   } :
   T extends "cola de prioridad" ? {
-    enqueue: (element: number) => void;
+    enqueue: (element: number, priority: number) => void;
     dequeue: () => void;
     getFront: () => void;
-    getRear: () => void;
     clean: () => void;
   } :
   T extends "pila" ? {
