@@ -506,7 +506,7 @@ export async function animateInsertAtPosition(
  * @param resetQueryValues Función para restablecer los valores de la query del usuario 
  * @param setIsAnimating Función para establecer el estado de animación 
  */
-export async function animateDeleteFirst(
+export async function animateRemoveFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { prevHeadNode: string, newHeadNode: string | null },
     listData: { remainingNodesData: ListNodeData[], remainingLinksData: LinkData[] },
@@ -647,7 +647,7 @@ export async function animateDeleteFirst(
  * @param resetQueryValues Función para restablecer los valores de la query del usuario 
  * @param setIsAnimating Función para establecer el estado de animación 
  */
-export async function animateDeleteLast(
+export async function animateRemoveLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { prevLastNode: string, newLastNode: string | null },
     remainingNodesData: ListNodeData[],
@@ -752,6 +752,226 @@ export async function animateDeleteLast(
         // Eliminación de la posición del nodo eliminado
         positions.delete(prevLastNode);
     }
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+/**
+ * Función encargada de animar la eliminación de un nodo en una posición especifica
+ * @param svg Lienzo en el que se va a dibujar
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la eliminación 
+ * @param listData Objeto con información de los nodos y enlaces de la lista
+ * @param deletePosition Posición del nodo a eliminar dentro de la lista 
+ * @param positions Mapa de posiciones de cada nodo dentro del lienzo
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario 
+ * @param setIsAnimating Función para establecer el estado de animación 
+ */
+export async function animateRemoveAtPosition(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodesInvolved: { nodeToRemove: string, prevNode: string, nextNode: string },
+    listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[] },
+    deletePosition: number,
+    positions: Map<string, { x: number, y: number }>,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Nodos implicados en la eliminación
+    const { nodeToRemove, prevNode, nextNode } = nodesInvolved;
+
+    // Información de la lista
+    const { existingNodesData, existingLinksData } = listData;
+
+    // Grupo del lienzo correspondiente al nodo a eliminar
+    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeToRemove}`);
+
+    // Grupo del lienzo correspondiente al nodo anterior al nodo a eliminar
+    const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
+
+    // Grupo del lienzo correspondiente al enlace siguiente formado entre el nodo anterior y siguiente del nodo a eliminar
+    const prevNodeToNextNodeLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${nextNode}-next`);
+
+    // Estado inicial del enlace siguiente entre el nodo previo y siguiente del nodo a eliminar
+    prevNodeToNextNodeLinkGroup.select("path.node-link").style("opacity", 0);
+
+    // Nodos a recorrer para eliminar el nodo
+    const nodesToTraverse = existingNodesData.slice(0, deletePosition);
+
+    for (const node of nodesToTraverse) {
+        // Selección del grupo correspondiente al nodo actual
+        const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+
+        // Selección del elemento a animar
+        const nodeElement = nodeGroup.select("rect");
+
+        // Resaltado del nodo actual
+        await nodeElement
+            .transition()
+            .duration(700)
+            .attr("stroke", "#f87171")
+            .attr("stroke-width", 3)
+            .end();
+
+        // Restablecimiento del estilo original del nodo (excepto para el último nodo)
+        if (node.id !== prevNode) {
+            await nodeElement
+                .transition()
+                .duration(700)
+                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                .end();
+        }
+    }
+
+    // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nodo eliminado
+    const nextLinkToRemovalNodeGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${nodeToRemove}-next`);
+
+    // Grupo del lienzo correspondiente al enlace siguiente del nodo eliminado
+    const nextLinkOfRemovalNodeGroup = svg.select<SVGGElement>(`g#link-${nodeToRemove}-${nextNode}-next`);
+
+    // Posición inicial en x del nodo siguiente al nodo a eliminar
+    const nextNodeInitialXPos = SVG_LINKED_LIST_VALUES.MARGIN_LEFT + (deletePosition + 1) * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING);
+
+    // Posición de animación inicial del nodo a eliminar
+    const initialRemovalNodePos = positions.get(nodeToRemove)!;
+
+    // Posición de animación final del nodo a eliminar
+    const initialYOffset = -75;
+    const finalPos = { x: initialRemovalNodePos.x, y: initialRemovalNodePos.y + initialYOffset };
+
+    // Mapa temporal de posiciones para calular la forma final de los enlaces asociados al nodo a eliminar
+    const tempPositions: Map<string, {
+        x: number;
+        y: number;
+    }> = new Map(positions);
+    tempPositions.set(nodeToRemove, finalPos);
+    tempPositions.set(nextNode, { x: nextNodeInitialXPos, y: initialRemovalNodePos.y });
+
+    // Forma final de los enlaces asociados al nodo a eliminar
+    const finalNextPathToRemovalNode = calculateLinkPath({ sourceId: prevNode, targetId: nodeToRemove, type: 'next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+    const finalNextPathOfRemovalNode = calculateLinkPath({ sourceId: nodeToRemove, targetId: nextNode, type: 'next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+
+    // Array de promesas para animaciones de desplazamiento del nodo a eliminar y sus enlaces
+    const removalNodeShiftPromises: Promise<void>[] = [];
+
+    removalNodeShiftPromises.push(
+        nextLinkToRemovalNodeGroup.select("path.node-link")
+            .transition()
+            .duration(1000)
+            .ease(d3.easeQuadInOut)
+            .attr("d", finalNextPathToRemovalNode)
+            .end()
+    );
+
+    removalNodeShiftPromises.push(
+        nodeToRemoveGroup
+            .transition()
+            .duration(1000)
+            .ease(d3.easeQuadInOut)
+            .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+            .end()
+    );
+
+    removalNodeShiftPromises.push(
+        nextLinkOfRemovalNodeGroup.select("path.node-link")
+            .transition()
+            .duration(1000)
+            .ease(d3.easeQuadInOut)
+            .attr("d", finalNextPathOfRemovalNode)
+            .end()
+    );
+
+    // Resolución de las promesas para animación de movimiento de elementos asociados al nodo a eliminar
+    await Promise.all(removalNodeShiftPromises);
+
+    // Animación de desconexión entre el nodo previo y el nodo a eliminar
+    await nextLinkToRemovalNodeGroup.select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .end();
+    nextLinkToRemovalNodeGroup.remove();
+
+    // Forma inicial del enlace entre el nodo anterior y el nodo siguiente al nodo eliminado
+    const initialNextPathToNextNode = calculateLinkPath({ sourceId: prevNode, targetId: nextNode, type: 'next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+    await prevNodeToNextNodeLinkGroup.select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .attr("d", initialNextPathToNextNode)
+        .end();
+
+    // Animación de desconexión y sálida del nodo a eliminar
+    await nextLinkOfRemovalNodeGroup.select("path.node-link")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end()
+
+    await nodeToRemoveGroup
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Eliminación de los elementos asociados en el DOM
+    nextLinkOfRemovalNodeGroup.remove();
+    nodeToRemoveGroup.remove();
+
+    // Eliminación de la posición del nodo eliminado
+    positions.delete(nodeToRemove);
+
+    // Nodos a mover para la inclusión del nuevo nodo
+    const nodesToMove = existingNodesData.slice(deletePosition, existingNodesData.length);
+
+    // Array de promesas para animaciones de desplazamiento de nodos y enlaces
+    const shiftPromises: Promise<void>[] = [];
+
+    // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
+    const remainingNodes = svg.selectAll<SVGGElement, ListNodeData>("g.node")
+        .data(nodesToMove, d => d.id);
+
+    // Promesa para animación de desplazamiento de nodos existentes a su posición final
+    shiftPromises.push(
+        remainingNodes
+            .transition()
+            .duration(1500)
+            .ease(d3.easeQuadInOut)
+            .attr("transform", (d) => {
+                const finalPos = positions.get(d.id)!;
+                return `translate(${finalPos.x}, ${finalPos.y})`;
+            })
+            .end()
+    );
+
+    // Selección de enlaces restantes (re-vinculación de datos)
+    const remainingLinks = svg.selectAll<SVGGElement, LinkData>("g.link")
+        .data(existingLinksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`);
+
+    // Promesa para animación de desplazamiento de enlaces existentes a su posición final
+    shiftPromises.push(
+        remainingLinks.select("path.node-link")
+            .transition()
+            .duration(1500)
+            .ease(d3.easeQuadInOut)
+            .attr("d", d => calculateLinkPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT))
+            .end()
+    );
+
+    // Resolución de las promesas para animación de movimiento
+    await Promise.all(shiftPromises);
+
+    // Restablecimiento del estilo del nodo anterior al nuevo nodo
+    await prevNodeGroup
+        .select("rect")
+        .transition()
+        .duration(500)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+        .end();
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();

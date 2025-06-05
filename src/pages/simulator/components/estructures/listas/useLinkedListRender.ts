@@ -5,7 +5,7 @@ import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateDeleteFirst, animateDeleteLast, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
+import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateRemoveFirst, animateRemoveLast, animateRemoveAtPosition, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
     listNodes: ListNodeData[],
@@ -256,7 +256,7 @@ export function useLinkedListRender(
             const svg = d3.select(svgRef.current);
 
             // Animación de eliminación del primer nodo de la lista
-            animateDeleteFirst(
+            animateRemoveFirst(
                 svg,
                 { prevHeadNode, newHeadNode },
                 { remainingNodesData: listNodes, remainingLinksData: linksData },
@@ -274,8 +274,8 @@ export function useLinkedListRender(
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
 
-            // Animación de eliminación del primer nodo de la lista
-            animateDeleteLast(
+            // Animación de eliminación del último nodo de la lista
+            animateRemoveLast(
                 svg,
                 { prevLastNode, newLastNode },
                 listNodes,
@@ -283,6 +283,62 @@ export function useLinkedListRender(
                 resetQueryValues,
                 setIsAnimating
             );
+        } else {
+            const [nodeToRemove, deletePosition] = query.toDeleteAt;
+
+            if (!nodeToRemove || deletePosition === undefined) return;
+
+            // Selección del elemento SVG a partir de su referencia
+            const svg = d3.select(svgRef.current);
+
+            if (deletePosition === 0) {
+                // Obtenemos el Id del nodo cabeza actual de la lista
+                const newHeadNode = listNodes.length > 0 ? listNodes[0].id : null;
+
+                // Animación de eliminación de primer nodo de la lista
+                animateRemoveFirst(
+                    svg,
+                    { prevHeadNode: nodeToRemove, newHeadNode },
+                    { remainingNodesData: listNodes, remainingLinksData: linksData },
+                    nodePositions,
+                    resetQueryValues,
+                    setIsAnimating
+                );
+            } else if (deletePosition === prevNodes.length - 1) {
+                // Obtenemos el Id del nuevo último nodo de la lista
+                const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+
+                // Animación de eliminación del último nodo de la lista
+                animateRemoveLast(
+                    svg,
+                    { prevLastNode: nodeToRemove, newLastNode },
+                    listNodes,
+                    nodePositions,
+                    resetQueryValues,
+                    setIsAnimating
+                );
+            } else {
+                console.log("Eliminando por posicion");
+
+                // Obtenemos el nodo anterior al nodo a eliminar
+                const prevNode = prevNodes[deletePosition - 1].id;
+                console.log("Nodo previo", prevNode);
+
+                // Obtenemos el nodo siguiente al nodo a eliminar
+                const nextNode = prevNodes[deletePosition + 1].id;
+                console.log("Siguiente Nodo", nextNode)
+
+                // Animación de eliminación del nodo en una posición especifica
+                animateRemoveAtPosition(
+                    svg,
+                    { nodeToRemove, prevNode, nextNode },
+                    { existingNodesData: listNodes, existingLinksData: linksData },
+                    deletePosition,
+                    nodePositions,
+                    resetQueryValues,
+                    setIsAnimating
+                );
+            }
         }
     });
 
