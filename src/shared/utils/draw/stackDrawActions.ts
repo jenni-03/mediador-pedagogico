@@ -131,8 +131,8 @@ export function drawStackNodes(
  * @param nodeStacked ID del nodo apilado
  * @param remainingNodesData Información de los nodos dentro de la pila
  * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función que restablece los valores de la query del usuario
- * @param setIsAnimating Función que establece el estado de animación
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario
+ * @param setIsAnimating Función para establecer el estado de animación
  */
 export async function animatePushNode(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -145,9 +145,6 @@ export async function animatePushNode(
     // Grupo del lienzo correspondiente al nuevo elemento
     const newNodeGroup = svg.select<SVGGElement>(`g#${nodeStacked}`);
 
-    // Grupo del lienzo correspondiente al indicador del elemento tope
-    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
-
     // Posición final del nuevo nodo
     const finalPos = positions.get(nodeStacked)!;
 
@@ -158,7 +155,7 @@ export async function animatePushNode(
         y: topMargin
     };
 
-    // Establecimiento del estado visual inicial para el nuevo nodo
+    // Estado visual inicial para el nuevo nodo
     newNodeGroup
         .style("opacity", 0)
         .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
@@ -173,39 +170,31 @@ export async function animatePushNode(
 
     // En caso de haber mas nodos dentro de la pila
     if (remainingNodesData.length >= 1) {
+        // Grupo del lienzo correspondiente al indicador del elemento tope
+        const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
+
         // Animación de salida del indicador tope
         await topeIndicatorGroup
             .transition()
             .duration(1000)
-            .ease(d3.easeBounce)
             .style("opacity", 0)
             .end();
 
-        // Array de promesas para concretar animaciones de desplazamiento de nodos.
-        const shiftPromises: Promise<void>[] = [];
-
-        // Selección de nodos adicionales (re-vinculación de datos)
+        // Selección de nodos restantes (re-vinculación de datos)
         const remainingNodes = svg
             .selectAll<SVGGElement, StackNodeData>("g.node")
             .data(remainingNodesData, (d) => d.id);
 
-        // Por cada nodo dentro de la pila cálculamos la transición a su posición final
-        remainingNodes.each(function (d) {
-            const group = d3.select(this);
-            const finalPos = positions.get(d.id);
-            if (finalPos) {
-                shiftPromises.push(
-                    group.transition()
-                        .duration(1500)
-                        .ease(d3.easeCubicInOut)
-                        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-                        .end()
-                );
-            }
-        });
-
-        // Resolución de las promesas de animación de desplazamiento
-        await Promise.all(shiftPromises);
+        // Animación de desplazamiento para nodos restantes
+        await remainingNodes
+            .transition()
+            .duration(1500)
+            .ease(d3.easeCubicInOut)
+            .attr("transform", (d) => {
+                const finalPos = positions.get(d.id)!;
+                return `translate(${finalPos.x}, ${finalPos.y})`;
+            })
+            .end();
 
         // Animación de entrada del indicador tope
         await topeIndicatorGroup
@@ -237,8 +226,8 @@ export async function animatePushNode(
  * @param nodeIdPop Id del nodo desapilado 
  * @param remainingNodesData Información de los nodos restantes de la pila
  * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función que restablece los valores de la query del usuario
- * @param setIsAnimating Función que establece el estado de animación
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario
+ * @param setIsAnimating Función para establecer el estado de animación
  */
 export async function animatePopNode(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -250,9 +239,6 @@ export async function animatePopNode(
 ) {
     // Grupo del lienzo correspondiente al elemento a desapilar
     const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdPop}`);
-
-    // Grupo del lienzo correspondiente al indicador del elemento tope
-    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
     // Movimiento del nodo a desapilar
     const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
@@ -279,39 +265,31 @@ export async function animatePopNode(
 
     // Si hay nodos por mover
     if (remainingNodesData.length > 0) {
+        // Grupo del lienzo correspondiente al indicador del elemento tope
+        const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
+
         // Animación de salida del indicador de tope
         await topeIndicatorGroup
             .transition()
             .duration(1000)
-            .ease(d3.easeBounce)
             .style("opacity", 0)
             .end();
-
-        // Array de promesas para animaciones de desplazamiento de los nodos restantes
-        const shiftPromises: Promise<void>[] = [];
 
         // Selección de nodos restantes (re-vinculación de datos)
         const remainingNodes = svg
             .selectAll<SVGGElement, StackNodeData>("g.node")
             .data(remainingNodesData, (d) => d.id);
 
-        // Por cada nodo restante, se calcula la transición a su posición final
-        remainingNodes.each(function (d) {
-            const group = d3.select(this);
-            const finalPos = positions.get(d.id);
-            if (finalPos) {
-                shiftPromises.push(
-                    group.transition()
-                        .duration(1500)
-                        .ease(d3.easeBounce)
-                        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-                        .end()
-                );
-            }
-        });
-
-        // Resolución de las promesas de animación de desplazamiento
-        await Promise.all(shiftPromises);
+        // Animación de desplazamiento para nodos restantes
+        await remainingNodes
+            .transition()
+            .duration(1500)
+            .ease(d3.easeCubicInOut)
+            .attr("transform", (d) => {
+                const finalPos = positions.get(d.id)!;
+                return `translate(${finalPos.x}, ${finalPos.y})`;
+            })
+            .end();
 
         // Animación de entrada del indicador de tope
         await topeIndicatorGroup
@@ -327,82 +305,6 @@ export async function animatePopNode(
 
     // Finalización de la animación
     setIsAnimating(false);
-}
-
-/**
- * Función encargada de resaltar el nodo tope de la pila
- * @param svg Lienzo en el que se va a dibujar
- * @param topNodeId ID del nodo tope de la pila
- * @param onEnd Función que ejecuta la lógica al finalizar la animación
- */
-export function highlightTopNode(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    topNodeId: string,
-    onEnd: () => void
-) {
-    // Grupo del lienzo correspondiente al elemento tope de la pila 
-    const topNodeGroup = svg.select<SVGGElement>(`#${topNodeId}`);
-
-    // Color de resaltado para el nodo tope
-    const highlightColor = "#00e676";
-
-    // Animación de expación del nodo tope
-    topNodeGroup
-        .raise()
-        .transition()
-        .duration(300)
-        .ease(d3.easeCubicOut)
-        .attr("transform", function () {
-            const current = d3.select(this).attr("transform");
-            const match = /translate\(([^,]+),([^)]+)\)/.exec(current);
-            if (!match) return current;
-            const [x, y] = [parseFloat(match[1]), parseFloat(match[2])];
-            return `translate(${x}, ${y}) scale(1)`;
-        });
-
-    // Grupo correspondiente al contenedor principal del nodo y al valor de este  
-    const rect = topNodeGroup.select(".node-container");
-    const text = topNodeGroup.select(".value-text");
-
-    // Animación de sobresalto del contenedor del nodo
-    rect.transition()
-        .duration(300)
-        .attr("stroke", highlightColor)
-        .attr("stroke-width", 3)
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-        .attr("stroke-width", 1.5);
-
-    // Animación de sobresalto del valor del nodo
-    text.transition()
-        .duration(300)
-        .attr("fill", highlightColor)
-        .style("font-size", "18px")
-        .style("font-weight", "bold")
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("fill", "white")
-        .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-        .style("font-weight", "bold");
-
-    // Animación de restablecimiento de tamaño para el nodo tope
-    d3.timeout(() => {
-        topNodeGroup
-            .transition()
-            .duration(300)
-            .attr("transform", function () {
-                const current = d3.select(this).attr("transform");
-                const match = /translate\(([^,]+),([^)]+)\)/.exec(current);
-                if (!match) return current;
-                const [x, y] = [parseFloat(match[1]), parseFloat(match[2])];
-                return `translate(${x}, ${y}) scale(1)`;
-            });
-
-        onEnd();
-    }, 1500);
 }
 
 /**

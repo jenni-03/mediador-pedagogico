@@ -133,13 +133,13 @@ export async function animateEnqueueNode(
         // Grupo del lienzo correspondiente al enlace que apunta al nuevo nodo
         const nextLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${enqueuedNode}-next`);
 
-        // Grupo del lienzo correspondiente al indicador del elemento cabeza
+        // Grupo del lienzo correspondiente al indicador del elemento final
         const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
         // Posición de animación final del nuevo nodo
         const finalPos = positions.get(enqueuedNode)!;
 
-        // Estado inicial del nuevo nodo
+        // Estado inicial del enlace que apunta al nuevo nodo
         nextLinkGroup.select("path.node-link").style("opacity", 0);
 
         // Posición de animación inicial del nuevo nodo
@@ -193,10 +193,10 @@ export async function animateEnqueueNode(
             .attr("d", finalPath)
             .end();
 
-        // Resolución de las promesas de animación de movimiento
+        // Resolución de las promesas para animación de movimiento del nuevo nodo
         await Promise.all([nodeMovePromise, linkMovePromise]);
 
-        // Animación de movimiento del indicador de tope
+        // Animación de movimiento del indicador del elemento final
         await tailIndicatorGroup
             .transition()
             .duration(1000)
@@ -257,11 +257,18 @@ export async function animateDequeueNode(
         // Grupo del lienzo correspondiente al indicador del elemento cabeza
         const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-        // Grupo del lienzo correspondiente al indicador del elemento tope
+        // Grupo del lienzo correspondiente al indicador del elemento final
         const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
         // Movimiento del nodo a decolar 
         const nodeMoveOffsetY = SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
+
+        // Animación de salida del indicador de cabeza
+        await headIndicatorGroup
+            .transition()
+            .duration(1000)
+            .style("opacity", 0)
+            .end();
 
         // Animación de salida del enlace entre el nodo a decolar y su siguiente
         await linkToRemoveGroup
@@ -292,14 +299,6 @@ export async function animateDequeueNode(
 
         // Eliminación de la posición del nodo decolado
         positions.delete(dequeuedNode);
-
-        // Animación de salida del indicador de cabeza
-        await headIndicatorGroup
-            .transition()
-            .duration(1000)
-            .ease(d3.easeBounce)
-            .style("opacity", 0)
-            .end();
 
         // Array de promesas para animaciones de desplazamiento de nodos y enlaces restantes
         const shiftPromises: Promise<void>[] = [];
@@ -335,7 +334,7 @@ export async function animateDequeueNode(
                 .end()
         );
 
-        // Promesa para animación de posicionamiento del indicador de cabeza a su elemento correspondiente
+        // Promesa para animación de posicionamiento del indicador del elemento final a su correspondiente elemento
         const finalTailIndicatorPos = positions.get(remainingNodesData[remainingNodesData.length - 1].id)!;
         shiftPromises.push(
             tailIndicatorGroup
@@ -380,60 +379,6 @@ export async function animateDequeueNode(
     resetQueryValues();
 
     // Finalización de la animación
-    setIsAnimating(false);
-}
-
-/**
- * Función encargada de resaltar el elemento cabeza o frente de la cola
- * @param svg Lienzo en el que se va a dibujar
- * @param headNodeId Id del nodo cabeza actual de la cola
- * @param resetQueryValues Función para restablecer los valores de la query del usuario 
- * @param setIsAnimating Función para establecer el estado de animación 
- */
-export function animateGetFront(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    headNodeId: string,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-) {
-    // Grupo del lienzo correspondiente al elemento cabeza de la cola 
-    const topNodeGroup = svg.select<SVGGElement>(`#${headNodeId}`);
-
-    // Color de resaltado para el nodo
-    const highlightColor = "#00e676";
-
-    // Grupo correspondiente al contenedor principal del nodo y al valor de este  
-    const rect = topNodeGroup.select("rect");
-    const text = topNodeGroup.select("text");
-
-    // Animación de sobresalto del contenedor del nodo
-    rect.transition()
-        .duration(300)
-        .attr("stroke", highlightColor)
-        .attr("stroke-width", 3)
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
-
-    // Animación de sobresalto del valor del nodo
-    text.transition()
-        .duration(300)
-        .attr("fill", highlightColor)
-        .style("font-size", "18px")
-        .style("font-weight", "bold")
-        .transition()
-        .delay(800)
-        .duration(300)
-        .attr("fill", "white")
-        .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-        .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT);
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animacion
     setIsAnimating(false);
 }
 

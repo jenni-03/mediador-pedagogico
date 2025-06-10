@@ -1,5 +1,5 @@
 import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { BaseQueryOperations } from "../../../../../types";
+import { BaseQueryOperations, QueueNodeData } from "../../../../../types";
 import { useQueueRender } from "../../../hooks/estructures/cola/useQueueRender";
 
 export function QueueRender({
@@ -7,12 +7,7 @@ export function QueueRender({
     query,
     resetQueryValues,
 }: {
-    queue: {
-        id: string;
-        value: number;
-        next: string | null;
-        memoryAddress: string;
-    }[];
+    queue: QueueNodeData[];
     query: BaseQueryOperations<"cola">;
     resetQueryValues: () => void;
 }) {

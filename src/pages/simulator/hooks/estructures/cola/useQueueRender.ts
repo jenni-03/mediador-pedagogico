@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BaseQueryOperations, IndicatorPositioningConfig, LinkData, QueueNodeData } from "../../../../../types";
 import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { drawQueueNodes, animateDequeueNode, animateEnqueueNode, animateClearQueue, animateGetFront } from "../../../../../shared/utils/draw/queueDrawActions";
+import { drawQueueNodes, animateDequeueNode, animateEnqueueNode, animateClearQueue } from "../../../../../shared/utils/draw/queueDrawActions";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { drawArrowIndicator, drawListLinks, animateHighlightNode } from "../../../../../shared/utils/draw/drawActionsUtilities";
 
 export function useQueueRender(
     queueNodes: QueueNodeData[],
@@ -118,12 +118,12 @@ export function useQueueRender(
             sharedDims
         );
 
-        // Creación del indicador para elemento tope de la cola
+        // Creación del indicador para el elemento final de la cola
         const tailId = queueNodes.length > 0 ? queueNodes[queueNodes.length - 1].id : null;
         const tailPos = tailId ? nodePositions.get(tailId)! : null;
         const arrowTailPathData = "M0,0 L-9.5,10 L-4,10 L-4,20 L4,20 L4,10 L9.5,10 Z";
 
-        // Configuración de estilos y de posicionamiento para el indicador de tope
+        // Configuración de estilos y de posicionamiento para el indicador del elemento final
         const tailStyleConfig = {
             text: "FIN",
             textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
@@ -135,7 +135,7 @@ export function useQueueRender(
             arrowTransform: `translate(0, ${SVG_QUEUE_VALUES.ELEMENT_HEIGHT + 35})`
         }
 
-        // Renderizado del indicador de tope
+        // Renderizado del indicador de elemento ifnal
         drawArrowIndicator(
             svg,
             "tail-indicator",
@@ -145,7 +145,7 @@ export function useQueueRender(
             indicatorPositioningTransform,
             sharedDims
         );
-    }, [queueNodes, prevNodes]);
+    }, [queueNodes, linksData, prevNodes]);
 
     // Efecto para manejar la animación de encolar
     useEffect(() => {
@@ -197,7 +197,7 @@ export function useQueueRender(
         );
     }, [query.toDequeuedNode, queueNodes, prevNodes, resetQueryValues, setIsAnimating]);
 
-    // Efecto para manejar la animación de obtención del elemento cabeza
+    // Efecto para manejar la animación de resaltado del elemento cabeza
     useEffect(() => {
         if (
             !svgRef.current ||
@@ -214,7 +214,7 @@ export function useQueueRender(
         const headNodeId = query.toGetFront;
 
         // Animación de resaltado para nodo cabeza de la cola
-        animateGetFront(svg, headNodeId, resetQueryValues, setIsAnimating);
+        animateHighlightNode(svg, headNodeId, "#00e676", resetQueryValues, setIsAnimating);
     }, [query.toGetFront, queueNodes, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la limpieza de lienzo

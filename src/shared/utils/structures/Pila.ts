@@ -1,4 +1,3 @@
-import { linkedListToArray } from "../listUtils";
 import { NodoS } from "../nodes/NodoS";
 
 /**
@@ -6,13 +5,13 @@ import { NodoS } from "../nodes/NodoS";
  */
 export class Pila {
 
-    // Nodo en la cima (tope) de la pila.
+    // Nodo tope de la pila.
     private tope: NodoS | null;
 
     // Tamaño de la pila.
     private tamanio: number;
 
-    // Tamaño simulado de cada elemento en bytes
+    // Tamaño simulado de cada nodo en bytes.
     private tamanioNodo: number;
 
     /**
@@ -31,7 +30,7 @@ export class Pila {
      * @param valor Elemento a apilar.
      */
     public apilar(valor: number): void {
-        if (this.tamanio >= 10) throw new Error("No fue posible apilar el elemento: Cantidad de elementos máxima alcanzada (tamaño máximo: 15).");
+        if (this.tamanio >= 15) throw new Error("No fue posible apilar el elemento: Cantidad de elementos máxima alcanzada (tamaño máximo: 15).");
 
         const nuevoNodo = new NodoS(valor);
 
@@ -113,7 +112,23 @@ export class Pila {
      * @returns Array con la información de los nodos de la pila.
      */
     public getArrayDeNodos() {
-        return linkedListToArray(this.tope);
+        const resultArray = [];
+        let currentNode = this.tope;
+
+        while (currentNode !== null) {
+            const nextNode = currentNode.getSiguiente();
+
+            resultArray.push({
+                id: currentNode.getId(),
+                value: currentNode.getValor(),
+                next: nextNode ? nextNode.getId() : null,
+                memoryAddress: currentNode.getDireccionMemoria()
+            });
+
+            currentNode = nextNode;
+        }
+
+        return resultArray;
     }
 
     /**

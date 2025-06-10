@@ -1,6 +1,5 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { linkedListToArray } from "../listUtils";
 import { NodoS } from "../nodes/NodoS";
 
 /**
@@ -17,7 +16,7 @@ export class Cola {
     // Tamaño de la cola.
     private tamanio: number;
 
-    // Tamaño simulado de cada elemento en bytes
+    // Tamaño simulado de cada nodo en bytes.
     private tamanioNodo: number;
 
     /**
@@ -37,7 +36,7 @@ export class Cola {
      * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
-        if (this.tamanio >= 10) throw new Error("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+        if (this.tamanio >= 15) throw new Error("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: 15).");
 
         const nuevoNodo = new NodoS(valor);
 
@@ -146,7 +145,23 @@ export class Cola {
      * @returns Array de nodos con la información de la cola.
      */
     public getArrayDeNodos() {
-        return linkedListToArray(this.inicio);
+        const resultArray = [];
+        let currentNode = this.inicio;
+
+        while (currentNode !== null) {
+            const nextNode = currentNode.getSiguiente();
+
+            resultArray.push({
+                id: currentNode.getId(),
+                value: currentNode.getValor(),
+                next: nextNode ? nextNode.getId() : null,
+                memoryAddress: currentNode.getDireccionMemoria()
+            });
+
+            currentNode = nextNode;
+        }
+
+        return resultArray;
     }
 
     /**

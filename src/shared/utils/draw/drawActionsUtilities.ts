@@ -220,3 +220,56 @@ export function drawListLinks(
             exit => exit
         )
 }
+
+/**
+ * Función encargada de resaltar un nodo especifico 
+ * @param svg Lienzo en el que se va a dibujar
+ * @param nodeId Id del nodo a resaltar
+ * @param highlightColor Color de resaltado para el nodo
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario
+ * @param setIsAnimating Función para establecer el estado de animación
+ */
+export function animateHighlightNode(
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodeId: string,
+    highlightColor: string,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Grupo del lienzo correspondiente al nodo a resaltar 
+    const nodeGroup = svg.select<SVGGElement>(`#${nodeId}`);
+
+    // Grupo correspondiente al contenedor principal del nodo y al valor de este  
+    const rect = nodeGroup.select("rect");
+    const text = nodeGroup.select("text");
+
+    // Animación de sobresalto del contenedor del nodo
+    rect.transition()
+        .duration(300)
+        .attr("stroke", highlightColor)
+        .attr("stroke-width", 3)
+        .transition()
+        .delay(800)
+        .duration(300)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+
+    // Animación de sobresalto del valor del nodo
+    text.transition()
+        .duration(300)
+        .attr("fill", highlightColor)
+        .style("font-size", "18px")
+        .style("font-weight", "bold")
+        .transition()
+        .delay(800)
+        .duration(300)
+        .attr("fill", "white")
+        .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+        .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT);
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animacion
+    setIsAnimating(false);
+}

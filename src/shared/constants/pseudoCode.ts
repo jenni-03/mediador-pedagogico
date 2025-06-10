@@ -109,10 +109,14 @@ export const operationsCode: Record<string, any> = {
  * @param info es de tipo T y contiene la información a insertar en la pila.
  */`,
             `public void apilar(T info){`,
-            `    if(this.esVacia())`,
-            `        this.tope = new Nodo<T>(info, null);`,
-            `    else`,
-            `        this.tope=new Nodo<T>(info, this.tope);`,
+            `    Nodo<T>nuevoNodo = new Nodo(info);`,
+            `    if(this.esVacia()) {`,
+            `        this.tope = nuevoNodo;`,
+            `    }`,
+            `    else {`,
+            `        nuevoNodo.setSig(this.tope);`,
+            `        this.tope=nuevoNodo;`,
+            `    }`,
             `    this.tamanio++;`,
             `}`
         ],
@@ -124,12 +128,10 @@ export const operationsCode: Record<string, any> = {
  */`,
             `public T desapilar(){`,
             `    if(this.esVacia())`,
-            `        return (null);`,
-            `    Nodo<T> x=this.tope;`,
+            `        return null;`,
+            `    Nodo<T> x = this.tope;`,
             `    this.tope = tope.getSig();`,
             `    this.tamanio--;`,
-            `    if(tamanio==0)`,
-            `        this.tope=null;`,
             `    return(x.getInfo());`,
             `}`
         ],
@@ -139,8 +141,8 @@ export const operationsCode: Record<string, any> = {
  * <b>post: </b> Se retornó el elemento tope de la Pila.<br>
  * @return El elemento que esta en el tope de la Pila.
  */`,
-            `public T getTope(){`,
-            `    return (this.tope.getInfo());`,
+            `public Nodo<T> getTope(){`,
+            `    return this.tope;`,
             `}`
         ],
         clean: [
@@ -150,7 +152,7 @@ export const operationsCode: Record<string, any> = {
  */`,
             `public void vaciar(){`,
             `    this.tope = null;`,
-            `    this.tamanio=0;`,
+            `    this.tamanio = 0;`,
             `}`
         ]
     },
@@ -162,12 +164,12 @@ export const operationsCode: Record<string, any> = {
  * @param info es de tipo T y contiene la informacion a encolar
  */`,
             `public void enColar(T info){`,
-            `    Nodo<T>nuevoNodo=new Nodo(valor);`,
+            `    Nodo<T>nuevoNodo = new Nodo(info);`,
             `    if (this.esVacia()) {`,
             `      this.inicio = nuevoNodo;`,
             `      this.fin = nuevoNodo;`,
             `    } else {`,
-            `      this.fin.setSiguiente(nuevoNodo);`,
+            `      this.fin.setSig(nuevoNodo);`,
             `      this.fin = nuevoNodo;`,
             `    }`,
             `    this.tamanio++;`,
@@ -181,13 +183,13 @@ export const operationsCode: Record<string, any> = {
  */`,
             `public T deColar(){`,
             `    if(this.esVacia())`,
-            `        return (null);`,
-            `    NodoD<T> x=this.inicio`,
+            `        return null;`,
+            `    NodoD<T> x = this.inicio`,
             `    if (this.inicio === this.fin) {`,
             `        this.inicio = null;`,
             `        this.fin = null;`,
             `    } else {`,
-            `        this.inicio = this.inicio.getSiguiente();`,
+            `        this.inicio = this.inicio.getSig();`,
             `    }`,
             `    this.tamanio--;`,
             `    return x.getInfo();`,
@@ -199,7 +201,7 @@ export const operationsCode: Record<string, any> = {
  * <b>post: </b> Se obtiene el primer elemento que fue insertado en la Cola.<br>
  * @return El primer elemento insertado en la cola
  */`,
-            `protected NodoD<T> getInicio(){`,
+            `protected Nodo<T> getInicio(){`,
             `    return this.inicio;`,
             `}`
         ],

@@ -6,7 +6,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "create":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: "Debe proporcionar la capacidad de la secuencia como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar la capacidad de la secuencia como argumento." : "El método únicamente espera la capacidad de la secuencia como argumento." };
           }
           const num = Number(parts[1]);
           if (isNaN(num)) {
@@ -21,7 +21,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
 
       case "insertlast": {
         if (parts.length !== 2) {
-          return { valid: false, message: "Debe proporcionar el valor a insertar como argumento." };
+          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a insertar como argumento." : "El método únicamente espera el valor a insertar como argumento." };
         }
         const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
         if (!insertPattern.test(parts[1])) {
@@ -33,7 +33,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "delete":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: "Debe proporcionar el índice del elemento a eliminar como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el índice del elemento a eliminar como argumento." : "El método únicamente espera el índice del elemento a eliminar como argumento." };
           }
           if (isNaN(Number(parts[1]))) {
             return { valid: false, message: "El índice del elemento a eliminar debe ser un número válido." };
@@ -41,7 +41,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
           const positionDelPattern = /^-?\d+$/; // Número entero para la posición
 
           if (!positionDelPattern.test(parts[1])) {
-            return { valid: false, message: "El índice del valor a eliminar debe ser un número entero positivo." };
+            return { valid: false, message: "El índice del elemento a eliminar debe ser un número entero positivo." };
           }
           return true;
         }
@@ -49,7 +49,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "get":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: "Debe proporcionar el valor a obtener como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a obtener como argumento." : "El método únicamente acepta el valor a obtener como argumento." };
           }
           if (isNaN(Number(parts[1]))) {
             return { valid: false, message: "El valor a obtener debe ser un número válido." };
@@ -60,7 +60,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "set":
         {
           if (parts.length !== 3) {
-            return { valid: false, message: "Debe proporcionar dos números como argumentos (posición, valor)." };
+            return { valid: false, message: "Debe proporcionar únicamente dos argumentos (posición, valor)." };
           }
           if (isNaN(Number(parts[1])) || isNaN(Number(parts[2]))) {
             return { valid: false, message: "Ambos argumentos deben ser números válidos." };
@@ -80,7 +80,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "clean":
         {
           if (parts.length !== 1) {
-            return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
+            return { valid: false, message: "El método no espera ningún argumento." };
           }
           return true;
         }
@@ -96,7 +96,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "push":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: "Debe proporcionar el valor a apilar como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a apilar como argumento." : "El método únicamente espera el valor a apilar como argumento." };
           }
           const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
           if (!insertPattern.test(parts[1])) {
@@ -111,7 +111,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         if (parts.length !== 1) {
           return {
             valid: false,
-            message: "El método debe ser vacío, no espera ningún argumento.",
+            message: "El método no espera ningún argumento.",
           };
         }
         return true;
@@ -127,7 +127,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "enqueue":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: "Debe proporcionar el valor a encolar como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a encolar como argumento." : "El método únicamente espera el valor a encolar como argumento." };
           }
           const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
           if (!insertPattern.test(parts[1])) {
@@ -142,7 +142,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         if (parts.length !== 1) {
           return {
             valid: false,
-            message: "El método debe ser vacío, no espera ningún argumento.",
+            message: "El método no espera ningún argumento.",
           };
         }
         return true;
