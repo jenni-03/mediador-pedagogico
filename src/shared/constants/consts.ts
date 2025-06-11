@@ -11,7 +11,7 @@ export const STRUCTURE_NAME = {
     PRIORITY_QUEUE: 'cola de prioridad',
     STACK: 'pila',
     LINKED_LIST: 'lista_enlazada',
-    SIMPLE_LINKED_LIST: 'Lista Simplemente Enlazada',
+    SIMPLE_LINKED_LIST: 'lista_simplemente_enlazada',
     HASHTABLE: 'tabla_hash',
 } as const
 

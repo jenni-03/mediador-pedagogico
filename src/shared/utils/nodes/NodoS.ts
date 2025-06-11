@@ -27,10 +27,10 @@ export class NodoS {
      * @param direccion Dirección de memoria del nodo (opcional).
      */
     constructor(valor: number, id?: string, direccion?: string) {
-        this.id = id ?? `node-${uuidv4()}`;
         this.valor = valor;
-        this.siguiente = null;
+        this.id = id ?? `node-${uuidv4()}`;
         this.direccionMemoria = direccion ?? dynamicAddressGenerator.generateNextAddress();
+        this.siguiente = null;
     }
 
     /**

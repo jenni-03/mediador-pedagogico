@@ -40,6 +40,26 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         donde el primer elemento en ingresar es también el primero en ser removido. Los elementos se agregan al final de la cola
                         y se eliminan al principio, asegurando un orden de procesamiento justo y predecible.`,
         },
+    ],
+    lista_simplemente_enlazada: [
+        {
+            type: "info",
+            description: `Imagina que estás en una búsqueda del tesoro. No te dan un mapa con todas las ubicaciones a la vez. En su lugar, comienzas con una sola pista. 
+                        Esta primera pista contiene una pequeña parte del acertijo y, lo más importante, te dice dónde encontrar la siguiente pista.
+                        Al llegar a esa segunda ubicación, encuentras otro fragmento del acertijo y la ubicación de la tercera pista.`,
+        },
+        {
+            type: "info",
+            description: `Continúas este proceso, siguiendo el rastro de una pista a la siguiente, hasta que llegas a la última, 
+                        que te revela la ubicación del tesoro. Solo puedes avanzar en una dirección: de tu pista actual a la siguiente. No hay forma de saber cuál fue la pista anterior basándote en la que tienes en la mano.
+                        Esa es la idea detrás de una lista simplemente enlazada.`
+        },
+        {
+            type: "info",
+            description: `Formalmente, una lista simplemente enlazada es una estructura de datos dinámica y lineal compuesta por una secuencia de elementos llamados nodos.
+                        Cada nodo contiene un valor (información a almacenar) y un único puntero a la dirección del siguiente nodo. Para saber donde empezar, se mantiene una referencia al primer nodo, 
+                        conocido como cabeza de la lista. El último nodo de la lista es especial, su puntero no apunta a nada, indicando el final de la cadena.`,
+        },
     ]
 };
 
@@ -171,6 +191,45 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
             description:
                 "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
+        },
+    ],
+    lista_simplemente_enlazada: [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una lista simple, tales como, inserción y eliminación de elementos desde diferentes posiciones, y consultar si un elemento se encuentra en la lista.",
+            type: "element",
+        },
+        {
+            id: "console",
+            type: "action",
+        },
+        {
+            id: "inputConsola",
+            text: "insertLast(30);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para insertar un elemento al final de la lista, en este caso, el número 30.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la lista con su elemento recién insertado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 30, correspondiente al único elemento en esta.",
         },
     ]
 };

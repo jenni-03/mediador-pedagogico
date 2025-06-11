@@ -39,7 +39,7 @@ export function Simulator<T extends string>({
     const buttons = commandsData[dataSelector].buttons;
 
     // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operationsCode[dataSelector];
+    const operations_code = operationsCode[pageTitle];
 
     // Referencia al elemento de consola
     const consoleRef = useRef<HTMLDivElement>(null);

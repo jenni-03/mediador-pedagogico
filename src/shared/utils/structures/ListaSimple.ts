@@ -78,16 +78,19 @@ export class ListaSimple implements LinkedListInterface {
 
         if (this.tamanio >= 10) throw new Error("No fue posible insertar el nodo en la posición especificada: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
 
-        const nuevoNodo = new NodoS(valor);
-
         if (posicion === 0) {
-            nuevoNodo.setSiguiente(this.cabeza);
-            this.cabeza = nuevoNodo;
-        } else {
-            const nodoAnt = this.getPos(posicion - 1);
-            nuevoNodo.setSiguiente(nodoAnt?.getSiguiente() || null);
-            nodoAnt?.setSiguiente(nuevoNodo);
+            return this.insertarAlInicio(valor);
         }
+
+        if (posicion === this.tamanio) {
+            return this.insertarAlFinal(valor);
+        }
+
+        const nuevoNodo = new NodoS(valor);
+        const nodoAnt = this.getPos(posicion - 1)!;
+
+        nuevoNodo.setSiguiente(nodoAnt.getSiguiente());
+        nodoAnt.setSiguiente(nuevoNodo);
 
         this.tamanio++;
         return nuevoNodo;
@@ -143,16 +146,18 @@ export class ListaSimple implements LinkedListInterface {
             throw new Error(`No fue posible eliminar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`);
         }
 
-        let nodoEliminado: NodoS;
-
         if (posicion === 0) {
-            nodoEliminado = this.cabeza!;
-            this.cabeza = this.cabeza?.getSiguiente() || null;
-        } else {
-            const nodoAnt = this.getPos(posicion - 1);
-            nodoEliminado = nodoAnt!.getSiguiente()!;
-            nodoAnt?.setSiguiente(nodoEliminado.getSiguiente());
+            return this.eliminarAlInicio();
         }
+
+        if (posicion === this.tamanio - 1) {
+            return this.eliminarAlFinal();
+        }
+
+        const nodoAnt = this.getPos(posicion - 1)!;
+        const nodoEliminado = nodoAnt.getSiguiente()!;
+
+        nodoAnt.setSiguiente(nodoEliminado.getSiguiente());
 
         this.tamanio--;
         return nodoEliminado;
