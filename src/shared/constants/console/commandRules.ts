@@ -21,11 +21,11 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
 
       case "insertlast": {
         if (parts.length !== 2) {
-          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a insertar como argumento." : "El método únicamente espera el valor a insertar como argumento." };
+          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor del elemento a insertar como argumento." : "El método únicamente espera el valor del elemento a insertar como argumento." };
         }
         const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
         if (!insertPattern.test(parts[1])) {
-          return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
+          return { valid: false, message: "El valor del elemento a insertar debe ser un número entero positivo de hasta 4 dígitos." };
         }
         return true;
       }
@@ -33,15 +33,15 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "delete":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el índice del elemento a eliminar como argumento." : "El método únicamente espera el índice del elemento a eliminar como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar la posición del elemento a eliminar como argumento." : "El método únicamente espera la posición del elemento a eliminar como argumento." };
           }
           if (isNaN(Number(parts[1]))) {
-            return { valid: false, message: "El índice del elemento a eliminar debe ser un número válido." };
+            return { valid: false, message: "La posición del elemento a eliminar debe ser un número válido." };
           }
           const positionDelPattern = /^-?\d+$/; // Número entero para la posición
 
           if (!positionDelPattern.test(parts[1])) {
-            return { valid: false, message: "El índice del elemento a eliminar debe ser un número entero positivo." };
+            return { valid: false, message: "La posición del elemento a eliminar debe ser un número entero positivo." };
           }
           return true;
         }
@@ -49,10 +49,10 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "get":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a obtener como argumento." : "El método únicamente acepta el valor a obtener como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar la posición del elemento a obtener como argumento." : "El método únicamente acepta la posición del elemento a obtener como argumento." };
           }
           if (isNaN(Number(parts[1]))) {
-            return { valid: false, message: "El valor a obtener debe ser un número válido." };
+            return { valid: false, message: "La posición del elemento a obtener debe ser un número válido." };
           }
           return true;
         }
@@ -72,7 +72,18 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
             return { valid: false, message: "La posición debe ser un número entero positivo." };
           }
           if (!valuePattern.test(parts[2])) {
-            return { valid: false, message: "El nuevo valor debe ser un número entero positivo de hasta 4 dígitos." };
+            return { valid: false, message: "El nuevo valor del elemento debe ser un número entero positivo de hasta 4 dígitos." };
+          }
+          return true;
+        }
+
+      case "search":
+        {
+          if (parts.length !== 2) {
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el elemento a buscar como argumento." : "El método únicamente acepta el valor a buscar como argumento." };
+          }
+          if (isNaN(Number(parts[1]))) {
+            return { valid: false, message: "El elemento a buscar debe ser un número válido." };
           }
           return true;
         }

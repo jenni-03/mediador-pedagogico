@@ -17,6 +17,7 @@ export function SequenceSimulator() {
         createSequence,
         insertElement,
         deleteElementByPos,
+        getElement,
         updateElement,
         searchElement,
         clearSequence,
@@ -32,9 +33,10 @@ export function SequenceSimulator() {
                 create: createSequence,
                 insertLast: insertElement,
                 delete: deleteElementByPos,
-                get: searchElement,
-                clean: clearSequence,
+                get: getElement,
                 set: updateElement,
+                search: searchElement,
+                clean: clearSequence,
             }}
             query={query}
             error={error}

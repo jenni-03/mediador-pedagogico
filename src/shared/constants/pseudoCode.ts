@@ -2,100 +2,111 @@ export const operationsCode: Record<string, any> = {
     secuencia: {
         create: [
             `/**
- * Constructor con parametros de la clase secuencia. <br>
- * <b>post: </b> Se construye una Secuencia vacia. <br>
- * @param n es de tipo integer que contiene el tamaño en capacidad de la Secuencia. <br>
+ * Constructor con parámetros de la clase secuencia.
+ * post: Se construye una secuencia vacia.
+ * @param n de tipo integer que contiene el tamaño en capacidad de la secuencia. 
  */`,
             `public Secuencia(int n){`,
-            `    if (n<=0){`,
-            `        System.err.println("Tamaño de secuencia no valido!");`,
+            `    if (n <= 0){`,
+            `        System.err.println("Tamaño de secuencia no válido!");`,
             `        return;`,
             `    }    `,
-            `    Object r[]=new Object[n];`,
-            `    cant=0;`,
-            `    this.vector=(T[])r;`,
+            `    Object r[] = new Object[n];`,
+            `    cant = 0;`,
+            `    this.vector = (T[])r;`,
             `}`
         ],
         insertLast: [
             `/**
- * Método que inserta un nuevo elemento a la secuencia. <br>
- * <b>post: </b> Se inserto un elemento en la Secuencia.<br>
- * @param elem es de tipo T que contiene el elemento a insertar
+ * Método que inserta un nuevo elemento en la secuencia.
+ * post: Se insertó un elemento en la secuencia.
+ * @param elem de tipo T que contiene el elemento a insertar.
  */`,
             `public void insertar(T elem){        `,
-            `    if(this.cant>=this.vector.length)`,
+            `    if(this.cant >= this.vector.length)`,
             `        System.err.println("No hay más espacio!");`,
             `    else`,
             `        this.vector[this.cant++]=elem;`,
             `}`
         ],
+        get: [
+            `/**
+ * Método que obtiene un elemento dentro de la secuecia por su posición.
+ * post: Se ha retornado el elemento de la secuencia en la posición especificada.
+ * @param i es de tipo integer y contiene la posición del elemento en la secuencia.
+ * @return un tipo T que contiene el valor del elemento.
+ */`,
+            `public T get(int i){        `,
+            `    if (i<0 || i>this.cant){`,
+            `        System.err.println("Indíce fuera de rango!");`,
+            `        return null;`,
+            `    }`,
+            `    return this.vector[i];`,
+            `}`
+        ],
         set: [
             `/**
- * Método que cambia un elemento de la secuencia en la posición indicada , por otro. <br>
- * <b>post:</b> Se ha modificado un elemento de la Secuencia.<br>
- * @param i de tipo integer que contiene la posicion de la secuencia que se va ha cambiar.<br>
- * @param nuevo Representa el nuevo objeto que reemplazara al objeto editado. <br>
+ * Método que cambia un elemento de la secuencia en la posición indicada por otro.
+ * post: Se ha modificado un elemento de la secuencia.
+ * @param i de tipo integer que contiene la posición del elemento en la secuencia que se va a cambiar.
+ * @param nuevo elemento que reemplazará al elemento indicado.
  */`,
             `public void set(int i, T nuevo){        `,
-            `    if (i<0 || i>this.cant){`,
+            `    if (i < 0 || i > this.cant){`,
             `        System.err.println("Indíce fuera de rango!");`,
             `        return;`,
             `    }`,
-            `    if(nuevo==null){`,
-            `        System.err.println("No se pueden ingresar datos nulos!");`,
-            `        return;`,
-            `    }`,
-            `    this.vector[i]=nuevo;`,
+            `    this.vector[i] = nuevo;`,
             `}`
         ],
         delete: [
             `/**
- * Método que elimina un elemento a la secuencia dada su posición. <br>
- * <b>post: </b> Se eliminó un elemento en la Secuencia.<br>
- * @param pos es de tipo int que contiene la posicion del elemento a eliminar
+ * Método que elimina un elemento en la secuencia dada su posición.
+ * post: Se eliminó un elemento en la secuencia.
+ * @param pos Posicion del elemento a eliminar.
  */`,
             `public void eliminarP(int pos){        `,
-            `    if (pos<0 || pos>this.cant){`,
+            `    if (pos < 0 || pos > this.cant){`,
             `        System.err.println("Indíce fuera de rango!");`,
             `        return;`,
             `    }`,
             `    boolean e = false;`,
-            `    for( int i=0, j=0; i < this.cant; i++ ){`,
-            `        if(i!=pos){`,
-            `            this.vector[j]=vector[i];`,
+            `    for(int i=0, j=0; i < this.cant; i++){`,
+            `        if(i != pos){`,
+            `            this.vector[j] = vector[i];`,
             `            j++;`,
             `        }else{`,
-            `            e=true;`,
-            `            this.vector[j]=null;`,
+            `            e = true;`,
+            `            this.vector[j] = null;`,
             `        }`,
             `    }`,
             `    if(e)`,
             `        this.cant--;`,
             `}`
         ],
-        get: [
+        search: [
             `/**
- * Método que retorna un objeto tipo T de la secuencia dada la posición. <br>
- * <b>post:</b> Se ha retornado un elemento de la Secuencia dada su posición<br>
- * @param i es de tipo integer y contiene la posicion en la secuencia. <br>
- * @return un tipo T que contiene el elemento del nodo en la posicion indicada <br>
+ * Método que recibe un elemento y comprueba si existe en la secuencia.
+ * post: Se ha retornado true si el elemento se encuentra en la secuencia.
+ * @param elem es de tipo T y contiene el elemnto que se va a buscar.
+ * @return un tipo boolean, retorna true si el objeto existe y false en caso contrario.
  */`,
-            `public T get(int i){        `,
-            `    if (i<0 || i>this.cant){`,
-            `        System.err.println("Indíce fuera de rango!");`,
-            `        return (null);`,
+            `public boolean search(T elem){        `,
+            `    for (int i = 0; i < this.cant; i++){`,
+            `        if (this.vector[i].equals(elem)) {`,
+            `          return true;`,
+            `        }`,
             `    }`,
-            `    else`,
-            `        return (this.vector[i]);`,
+            `    return false;`,
             `}`
         ],
         clean: [
             `/**
- * Método que vacia la secuencia. <br>
- * <b>post:</b> La Secuencia se encuentra vacia.
+ * Método que vacia la secuencia.
+ * post: La Secuencia se encuentra vacia.
  */`,
             `public void vaciar(){`,
-            `    for( int i = 0; i < this.cant; i++ )`,
+            `    for(int i = 0; i < this.cant; i++)`,
             `        this.vector[i] = null;`,
             `    this.cant = 0;`,
             `}`
@@ -104,8 +115,8 @@ export const operationsCode: Record<string, any> = {
     pila: {
         push: [
             `/**
- * Método que inserta un elemento en la Pila. <br>
- * <b>post: </b> Se insertó un elemento dentro de la Pila.<br>
+ * Método que inserta un elemento en la Pila.
+ * post: Se insertó un elemento dentro de la Pila.
  * @param info es de tipo T y contiene la información a insertar en la pila.
  */`,
             `public void apilar(T info){`,
@@ -122,9 +133,9 @@ export const operationsCode: Record<string, any> = {
         ],
         pop: [
             `/**
- * Método que retira y devuelve un elemento de la Pila. <br>
- * <b>post: </b> Se retiró y eliminó el elemento tope de la Pila.<br>
- * @return un tipo T que contiene la información retirada de la pila.<br>
+ * Método que retira un elemento de la Pila.
+ * post: Se retiró el elemento tope de la Pila.
+ * @return Elemento retirado de la pila.
  */`,
             `public T desapilar(){`,
             `    if(this.esVacia())`,
@@ -137,9 +148,9 @@ export const operationsCode: Record<string, any> = {
         ],
         getTop: [
             `/**
- * Método devuelve el elemento que se encuentra en el tope de la Pila. <br>
- * <b>post: </b> Se retornó el elemento tope de la Pila.<br>
- * @return El elemento que esta en el tope de la Pila.
+ * Método que devuelve el elemento tope de la Pila.
+ * post: Se retornó el elemento tope de la Pila.
+ * @return Elemento tope de la Pila.
  */`,
             `public Nodo<T> getTope(){`,
             `    return this.tope;`,
@@ -147,8 +158,8 @@ export const operationsCode: Record<string, any> = {
         ],
         clean: [
             `/**
- * Elimina todos los datos de la Pila. <br>
- * <b>post: </b> Se eliminó todos los datos que se encontraban en la Pila.<br>
+ * Método que elimina todos los datos de la Pila.
+ * post: Se eliminó todos los datos que se encontraban en la Pila.
  */`,
             `public void vaciar(){`,
             `    this.tope = null;`,
@@ -159,9 +170,9 @@ export const operationsCode: Record<string, any> = {
     cola: {
         enqueue: [
             `/**
- * Método que permite agregar un elemento a la Cola. <br>
- * <b>post: </b> Se insertó un nuevo elemento a la Cola.<br>
- * @param info es de tipo T y contiene la informacion a encolar
+ * Método que permite agregar un elemento a la cola.
+ * post: Se insertó un nuevo elemento a la cola.
+ * @param info es de tipo T y contiene la informacion a encolar.
  */`,
             `public void enColar(T info){`,
             `    Nodo<T>nuevoNodo = new Nodo(info);`,
@@ -177,8 +188,8 @@ export const operationsCode: Record<string, any> = {
         ],
         dequeue: [
             `/**
- * Método que permite retirar el primer elemento que fue insertado en la Cola. <br>
- * <b>post: </b> Se elimina el primer elemento que fue insertado en la cola.<br>
+ * Método que permite retirar el primer elemento insertado en la cola.
+ * post: Se eliminó el primer elemento que insertado en la cola.
  * @return un tipo T que contiene la informacion del nodo retirado.
  */`,
             `public T deColar(){`,
@@ -197,9 +208,9 @@ export const operationsCode: Record<string, any> = {
         ],
         getFront: [
             `/**
- * Método que permite conocer el primer elemento que fue insertado en la Cola. <br>
- * <b>post: </b> Se obtiene el primer elemento que fue insertado en la Cola.<br>
- * @return El primer elemento insertado en la cola
+ * Método que permite conocer el primer elemento insertado en la cola.
+ * post: Se obtiene el primer elemento insertado en la cola.
+ * @return El primer elemento insertado en la cola.
  */`,
             `protected Nodo<T> getInicio(){`,
             `    return this.inicio;`,
@@ -207,8 +218,8 @@ export const operationsCode: Record<string, any> = {
         ],
         clean: [
             `/**
- * Método que permite eliminar toda la información que contiene la Cola. <br>
- * <b>post: </b> Se eliminó todos los datos que se encontraban en la Cola.<br>
+ * Método que permite eliminar toda la información que contiene la cola.
+ * post: Se eliminó todos los datos que se encontraban en la Cola.
  */`,
             `public void vaciar(){`,
             `    this.inicio = null;`,
@@ -308,152 +319,148 @@ export const operationsCode: Record<string, any> = {
             `}`
         ]
     },
-    lista_enlazada: {
+    lista_simplemente_enlazada: {
         insertFirst: [
             `/**
- * Metodo que inserta un Elemento al Inicio de la Lista. <br>
- * <b>post: </b> Se inserto un nuevo elemento al inicio de la Lista.<br>
- * @param x Informacion que desea almacenar en la Lista. La informacion debe ser un Objeto.
+ * Método que inserta un nodo al inicio de la lista.
+ * post: Se insertó un nuevo nodo al inicio de la lista.
+ * @param info Informacion que desea almacenar en la lista.
  */`,
-            `public void insertarAlInicio(T x){`,
-            `    this.cabeza=new Nodo<T>(x, this.cabeza);`,
+            `public void insertarAlInicio(T info){`,
+            `    Nodo<T>nuevoNodo = new Nodo(info);`,
+            `    if (this.esVacia()) {`,
+            `      this.cabeza = nuevoNodo;`,
+            `    } else {`,
+            `      nuevoNodo.setSig(this.cabeza);`,
+            `      this.cabeza = nuevoNodo;`,
+            `    }`,
             `    this.tamanio++;`,
             `}`
         ],
         insertLast: [
             `/**
- * Metodo que inserta un Elemento al Final de la Lista. <br>
- * <b>post: </b> Se inserto un nuevo elemento al final de la Lista.<br>
- * @param x Información que desea almacenar en la Lista. 
+ * Método que inserta un nodo al final de la lista.
+ * post: Se insertó un nuevo nodo al final de la lista.
+ * @param info Información que desea almacenar en la Lista. 
  */`,
-            `public void insertarAlFinal(T x){`,
-            `    if(this.cabeza==null)`,
-            `        this.insertarAlInicio(x);`,
-            `    else {`,
-            `        try {`,
-            `            Nodo<T> ult=this.getPos(this.tamanio-1);`,
-            `            if(ult==null)`,
-            `                return;`,
-            `            ult.setSig(new Nodo<T>(x, null));`,
-            `            this.tamanio++;`,
-            `        }catch(ExceptionUFPS e) {`,
-            `            System.err.println(e.getMensaje());`,
-            `        }`,
+            `public void insertarAlFinal(T info){`,
+            `    Nodo<T>nuevoNodo = new Nodo(info);`,
+            `    if (this.esVacia()) {`,
+            `      this.cabeza = nuevoNodo;`,
+            `    } else {`,
+            `      Nodo<T>nodoUlt = this.getPos(this.tamanio - 1);`,
+            `      nodoUlt.setSig(nuevoNodo);`,
             `    }`,
+            `    this.tamanio++;`,
             `}`
         ],
         insertAt: [
             `/**
- * Metodo que inserta un Elemento  de manera Ordenada desde la cabeza de la Lista. <br>
- * <b>post: </b> Se inserto un nuevo elemento en la posicion segun el Orden de la Lista.<br>
- * @param info Información que desea almacenar en la Lista de manera Ordenada.
+ * Método que inserta un nodo en una posición especifica de la lista.
+ * post: Se insertó un nuevo nodo en la posición especificada.
+ * @param info Información que desea almacenar en la lista.
+ * @param pos Posición a insertar.
  */`,
-            `public void insertarOrdenado(T info){`,
-            `    if (this.esVacia())`,
-            `        this.insertarAlInicio(info);`,
-            `    else{`,
-            `        Nodo<T> x=this.cabeza;`,
-            `        Nodo<T> y=x;`,
-            `            while(x!=null){`,
-            `                Comparable comparador=(Comparable)info;`,
-            `                int rta=comparador.compareTo(x.getInfo());`,
-            `                if(rta<0)`,
-            `                    break;`,
-            `                y=x;`,
-            `                x=x.getSig();`,
-            `            }`,
-            `        if(x==y)`,
-            `            this.insertarAlInicio(info);`,
-            `        else{`,
-            `            y.setSig(new Nodo<T>(info, x));`,
-            `            this.tamanio++;`,
-            `            }`,
-            `        }`,
+            `public void insertarEnPosicion(T info, int pos){`,
+            `    if (pos < 0 || pos > this.tamanio) {`,
+            `      System.err.println("Posición de inserción no válida!");`,
+            `      return;`,
+            `    }`,
+            `    if (pos == 0) {`,
+            `      this.insertarAlInicio(info);`,
+            `    }`,
+            `    if (pos == this.tamanio) {`,
+            `      this.insertarAlFinal(info);`,
+            `    }`,
+            `    Nodo<T>nuevoNodo = new Nodo(info);`,
+            `    Nodo<T>nodoAnt = this.getPos(pos - 1);`,
+            `    nuevoNodo.setSig(nodoAnt.getSig());`,
+            `    nodoAnt.setSig(nuevoNodo);`,
+            `    this.tamanio++;`,
             `}`
         ],
         removeFirst: [
             `/**
- * Metodo que edita el elemento que se encuentre en una posición dada. <br>
- * <b>post: </b> Se edito la informacion del elemento indicado por la posicion recibida.<br>
- * @param i Una Posición dentro de la Lista. <br>
- * @param dato es el nuevo valor que toma el elmento en la lista
+ * Método que remueve el nodo inicial de la lista.
+ * post: Se eliminó el nodo inicial de la lista.
  */`,
-            `public void set(int i, T dato){`,
-            `    try{`,
-            `        Nodo<T> t=this.getPos(i);`,
-            `         t.setInfo(dato);`,
-            `    }catch(ExceptionUFPS e){`,
-            `        System.err.println(e.getMensaje());`,
+            `public void removerAlInicio(){`,
+            `    if (this.esVacia()) {`,
+            `      System.err.println("Lista vacía!");`,
+            `      return;`,
             `    }`,
+            `    this.cabeza = this.cabeza.getSig();`,
+            `    this.tamanio--;`,
             `}`
         ],
         removeLast: [
             `/**
- * Metodo que edita el elemento que se encuentre en una posición dada. <br>
- * <b>post: </b> Se edito la informacion del elemento indicado por la posicion recibida.<br>
- * @param i Una Posición dentro de la Lista. <br>
- * @param dato es el nuevo valor que toma el elmento en la lista
+ * Método que remueve el nodo final de la lista.
+ * post: Se eliminó el nodo final de la lista.
  */`,
-            `public void set(int i, T dato){`,
-            `    try{`,
-            `        Nodo<T> t=this.getPos(i);`,
-            `         t.setInfo(dato);`,
-            `    }catch(ExceptionUFPS e){`,
-            `        System.err.println(e.getMensaje());`,
+            `public void removerAlFinal(){`,
+            `    if (this.esVacia()) {`,
+            `      System.err.println("Lista vacía!");`,
+            `      return;`,
             `    }`,
+            `    if (this.tamanio === 1) {`,
+            `      this.cabeza = null`,
+            `    } else {`,
+            `      Nodo<T>nodoAntUlt = this.getPos(this.tamanio - 2);`,
+            `      nodoAntUlt.setSig(null);`,
+            `    }`,
+            `    this.tamanio--;`,
             `}`
         ],
         removeAt: [
             `/**
- * Metodo que elimina un elemento dada una posición. <br>
- * <b>post: </b> Se elimino el dato en la posicion de la lista indicada.<br>
- * @param i Una posición en la Lista <br>
- * @return El elemento que elimino. Si la posición no es válida retorna NULL.
+ * Método que elimina un nodo dada su posición.
+ * post: Se eliminó el nodo en la posicion especificada.
+ * @param pos Posición del nodo a eliminar.
  */`,
-            `public T eliminar(int i) {`,
-            `    if(this.esVacia())`,
-            `        return null;`,
-            `    Nodo<T> t=this.cabeza;`,
-            `    if(i==0)`,
-            `        this.cabeza=this.cabeza.getSig();`,
-            `    else{`,
-            `        try {`,
-            `            Nodo<T> y=this.getPos(i-1);`,
-            `            t=y.getSig();`,
-            `            y.setSig(t.getSig());`,
-            `        }catch(ExceptionUFPS e){`,
-            `                System.err.println(e.getMensaje());`,
-            `                return (null);`,
-            `        }`,
+            `public void removerEnPosición(int pos){`,
+            `    if (this.esVacia()) {`,
+            `      System.err.println("Lista vacía!");`,
+            `      return;`,
             `    }`,
-            `    t.setSig(null);`,
+            `    if (pos < 0 || pos >= this.tamanio) {`,
+            `      System.err.println("Posición de eliminación no válida!");`,
+            `      return;`,
+            `    }`,
+            `    if (pos == 0) {`,
+            `      this.removerAlInicio();`,
+            `    }`,
+            `    if (pos == this.tamanio - 1) {`,
+            `      this.removerAlFinal();`,
+            `    }`,
+            `    Nodo<T>nodoAnt = this.getPos(pos - 1);`,
+            `    Nodo<T>nodoEliminado = nodoAnt.getSig();`,
+            `    nodoAnt.setSig(nodoEliminado.getSig());`,
             `    this.tamanio--;`,
-            `    return(t.getInfo());`,
             `}`
         ],
         search: [
             `/**
- * Metodo que retorna el elemento que se encuentre en una posicion dada. <br>
- * <b>post: </b> Se retorno el elemento indicado por la posicion recibida.<br>
- * @param i Una Posición dentro de la Lista. <br>
- * @return El objeto que se encuentra en esa posición. El objeto <br>
- * retorna su valor parametrizada "T". Si la posición no se <br>
- * encuentra en la Lista retorna null.
+ * Método que busca el elemento especificado en la lista.
+ * post: Se retorno un booleano que indica si el elemento especificado fue encontrado en la lista.
+ * @param elem Elemento a buscar.
+ * @return True o false si el elemento fue encontrado.
  */`,
-            `public T get(int i) {`,
-            `    try {`,
-            `        Nodo<T> t=this.getPos(i);`,
-            `        return (t.getInfo());`,
-            `    }catch(ExceptionUFPS e) {`,
-            `        System.err.println(e.getMensaje());`,
-            `        return (null);`,
+            `public boolean search(T elem) {`,
+            `    Nodo<T> nodoActual = this.cabeza;`,
+            `    while(nodoActual) {`,
+            `        if (nodoActual.getValor().equals(elem)) {`,
+            `          return true;`,
+            `        }`,
+            `        nodoActual = nodoActual.getSig();`,
             `    }`,
+            `    return false;`,
             `}`,
         ],
         clean: [
             `/**
- * Metodo que elimina todos los datos de la Lista Simple. <br>
- * <b>post:</b> La Lista Simple se encuentra vacia.
+ * Método que elimina todos los datos de la lista.
+ * post: Se eliminó todos los datos encontrados en la lista.
  */`,
             `public void vaciar(){`,
             `    this.cabeza=null;`,

@@ -1,5 +1,5 @@
 export const structureCommands: Record<string, string[]> = {
-    secuencia: ["insertLast", "delete", "set", "clean", "create", "get"],
+    secuencia: ["insertLast", "delete", "set", "clean", "create", "get", "search"],
     pila: ["push", "pop", "getTop", "clean"],
     cola: ["enqueue", "dequeue", "getFront", "clean"],
     "cola de prioridad": ["enqueue", "dequeue", "getFront", "clean"],

@@ -98,8 +98,15 @@ export class Secuencia {
      * @returns El elemento indicado o null si la posición es inválida.
      */
     get(i: number): number | null {
+        if (this.cant === 0) {
+            throw new Error(
+                "No fue posible acceder al elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0)."
+            );
+        }
         if (i < 0 || i >= this.cant) {
-            return null;
+            throw new Error(
+                `Posición inválida: se intentó acceder a la posición ${i}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`
+            );
         }
         return this.vector[i];
     }
