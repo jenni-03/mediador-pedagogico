@@ -72,14 +72,14 @@ export type CustomModalProps = {
 };
 
 export type SimulatorProps<T extends string> = {
-  structureName: T,
-  structureType?: string,
-  structure: unknown,
+  structureName: T;
+  structureType?: string;
+  structure: unknown;
   actions: BaseStructureActions<T>;
   query: BaseQueryOperations;
-  error: { message: string, id: number } | null;
+  error: { message: string; id: number } | null;
   children: React.ReactNode;
-}
+};
 
 export type FilterState = {
   query: string;
@@ -196,7 +196,7 @@ export type CodeAnalysisProps = {
   code: string;
   operationalCost: string[];
   complexity: string;
-}
+};
 
 export type ListNodeData = {
   id: string;

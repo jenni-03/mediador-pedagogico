@@ -1,13 +1,13 @@
-import { complexityColaPrioridad } from "../../../../../shared/constants/complexityStructures/complexityColaPrioridad";
+import { complexityPila } from "../../../../../shared/constants/complexityStructures/complexityPila";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
-export function ComplexityColaPrioridad() {
+export function ComplexityPila() {
     return (
         <div className="py-4 px-10">
             <h1 className="text-2xl font-extrabold text-white mb-1">
                 COSTO OPERACIONAL Y COMPLEJIDAD
             </h1>
-            <h1 className="text-sm text-red-400 mb-3">Cola de Prioridad</h1>
+            <h1 className="text-sm text-red-400 mb-3">Pila</h1>
             <hr className="mt-2 mb-4 border-red-500 border-t-2" />
             <div>
                 <h1 className="text-2xl font-bold text-red-500 mb-3">
@@ -15,14 +15,6 @@ export function ComplexityColaPrioridad() {
                 </h1>
             </div>
             <div>
-                {/* <p className="mb-4">
-                    <a
-                        href="https://gitlab.com/Yoner_Silva/proyecto-seed/-/blob/master/src/ufps/util/colecciones_seed/Secuencia.java"
-                        className="text-blue-600 hover:underline"
-                    >
-                        CODIGO FUENTE (SECUENCIAS)
-                    </a>
-                </p> */}
                 <div className="bg-[#1f1f1f] text-gray-300 text-sm leading-6 rounded-xl p-5 shadow-md border border-gray-700 mb-6">
                     <p>
                         Los análisis que se harán a continuación son para el
@@ -43,8 +35,11 @@ export function ComplexityColaPrioridad() {
                 </div>
 
                 <div className="space-y-8">
-                    {complexityColaPrioridad.map((method, index) => (
-                        <div key={index} className="border-b border-gray-700 pb-4">
+                    {complexityPila.map((method, index) => (
+                        <div
+                            key={index}
+                            className="border-b border-gray-700 pb-4"
+                        >
                             <h2 className="text-xl font-semibold text-red-400 mb-2">
                                 {method.title}
                             </h2>
@@ -65,10 +60,16 @@ export function ComplexityColaPrioridad() {
                     </h2>
                     <p className="text-gray-300 text-sm leading-6">
                         En el análisis anterior se pudo observar que la
-                        estructura Cola prioridad toma como base la cola simple,
-                        sin embargo esta al tener que recorrer multiples veces
-                        su tamaño y al mismo tiempo dar prioridad esta llega en
-                        el peor de los casos a ser cuadratica.
+                        estructura Pila obta en el mejor de los casos a ser
+                        constante y en el peor de los casos a ser lineal.
+                        Teniendo en cuenta que su comportamiento lineal es en
+                        base a{" "}
+                        <code className="bg-gray-800 px-1 rounded">
+                            this.tamanio
+                        </code>
+                        , esté mismo se puede considerar su{" "}
+                        <code className="bg-gray-800 px-1 rounded">n</code> para
+                        saber el coste operacional de cada algoritmo.
                     </p>
                 </div>
             </div>

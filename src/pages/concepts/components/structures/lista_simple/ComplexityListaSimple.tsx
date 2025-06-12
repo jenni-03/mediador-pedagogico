@@ -1,4 +1,4 @@
-import { complexitySecuencia } from "../../../../../shared/constants/complexityStructures/complexitySecuencia";
+import { complexityListaSimple } from "../../../../../shared/constants/complexityStructures/complexityListaSimple";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityListaSimple() {
@@ -41,7 +41,7 @@ export function ComplexityListaSimple() {
       </section>
 
       <section className="space-y-8">
-        {complexitySecuencia.map((method, index) => (
+        {complexityListaSimple.map((method, index) => (
           <div key={index} className="border-b border-gray-700 pb-4">
             <h3 className="text-xl font-semibold text-red-400 mb-3">
               {method.title}
