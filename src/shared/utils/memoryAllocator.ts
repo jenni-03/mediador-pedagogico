@@ -79,5 +79,8 @@ class AddressGenerator {
 // Instancia de AddressGenerator para asignación dinámica
 export const dynamicAddressGenerator = new AddressGenerator(1000, 16, 4, 6);
 
+// Instancia de AddressGenerator para nodos dobles
+export const doubleNodeAddressGenerator = new AddressGenerator(1000, 24, 4, 6);
+
 // Instancia de AddressGenerator para asignación secuencial
 export const sequentialAddressGenerator = new AddressGenerator(1000, 4, 0, 0);

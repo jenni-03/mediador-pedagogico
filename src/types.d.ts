@@ -2,12 +2,12 @@ import { TYPE_FILTER } from "./shared/constants/consts";
 import { NodoS } from "./shared/utils/nodes/NodoS";
 
 export interface LinkedListInterface {
-  insertarAlInicio(valor: number): NodoS;
-  insertarAlFinal(valor: number): NodoS;
-  insertarEnPosicion(valor: number, posicion: number): NodoS;
-  eliminarAlInicio(): NodoS;
-  eliminarAlFinal(): NodoS;
-  eliminarEnPosicion(posicion: number): NodoS;
+  insertarAlInicio(valor: number): NodoS | NodoD;
+  insertarAlFinal(valor: number): NodoS | NodoD;
+  insertarEnPosicion(valor: number, posicion: number): NodoS | NodoD;
+  eliminarAlInicio(): NodoS | NodoD;
+  eliminarAlFinal(): NodoS | NodoD;
+  eliminarEnPosicion(posicion: number): NodoS | NodoD;
   buscar(valor: number): boolean;
   esVacia(): boolean;
   vaciar(): void;
@@ -104,6 +104,7 @@ export type BaseQueryOperations<T extends string> =
     create: number | null;
     toAdd: number | null;
     toDelete: number | null;
+    toGet: number | null;
     toSearch: number | null;
     toUpdate: [number, number] | [];
   }
@@ -149,7 +150,8 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     create: (n: number) => void;
     insertLast: (element: number) => void;
     delete: (element: number) => void;
-    get: (element: number) => void;
+    get: (pos: number) => void;
+    search: (element: number) => void;
     clean: () => void;
     set: (pos: number, element: number) => void;
   }
@@ -200,6 +202,7 @@ export type ListNodeData = {
   id: string;
   value: number;
   next: string | null;
+  prev?: string | null;
   memoryAddress: string;
 };
 
