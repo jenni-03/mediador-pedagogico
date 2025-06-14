@@ -53,6 +53,7 @@ export function SimpleLinkedListSimulator() {
                 linkedList={list.getArrayDeNodos()}
                 query={query}
                 resetQueryValues={resetQueryValues}
+                listType={"simple"}
             />
         </Simulator>
     );

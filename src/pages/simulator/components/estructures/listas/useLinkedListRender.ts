@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, IndicatorPositioningConfig, LinkData, ListNodeData } from "../../../../../types";
+import { BaseQueryOperations, LinkData, ListNodeData } from "../../../../../types";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { LIST_RENDER_CONFIGS, SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateRemoveFirst, animateRemoveLast, animateRemoveAtPosition, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
@@ -10,7 +10,8 @@ import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animate
 export function useLinkedListRender(
     listNodes: ListNodeData[],
     query: BaseQueryOperations<"lista_enlazada">,
-    resetQueryValues: () => void
+    resetQueryValues: () => void,
+    listType: keyof typeof LIST_RENDER_CONFIGS
 ) {
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
@@ -24,6 +25,9 @@ export function useLinkedListRender(
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
 
+    // Configuración de animación predefinida para la lista
+    const config = LIST_RENDER_CONFIGS[listType];
+
     // Memo para calcular los enlaces entre nodos
     const linksData = useMemo<LinkData[]>(() => {
         const links: LinkData[] = [];
@@ -35,10 +39,20 @@ export function useLinkedListRender(
                     type: "next"
                 })
             }
+            if (n.prev) {
+                links.push({
+                    sourceId: n.id,
+                    targetId: n.prev,
+                    type: "prev"
+                })
+            }
         });
         return links;
     }, [listNodes]);
 
+    console.log("Tipo de lista: ", listType);
+    console.log("Configuración");
+    console.log(config);
     console.log("Nodos de la lista");
     console.log(listNodes);
     console.log("Data de los enlaces de la lista");
@@ -97,39 +111,64 @@ export function useLinkedListRender(
             elementHeight
         );
 
-        // Transición inicial del indicador de cabeza
-        const indicatorPositioningTransform: IndicatorPositioningConfig = {
-            calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})`
-        };
+        // Creación de indicador para elemento cabeza
+        if (config.showHeadIndicator) {
+            const headId = listNodes.length > 0 ? listNodes[0].id : null;
+            const headPos = headId ? nodePositions.get(headId)! : null;
 
-        // Creación de indicador para elemento cabeza de la cola
-        const headId = listNodes.length > 0 ? listNodes[0].id : null;
-        const headPos = headId ? nodePositions.get(headId)! : null;
-        const arrowHeadPathData = "M0,0 L-9.5,-10 L-4,-10 L-4,-20 L4,-20 L4,-10 L9.5,-10 Z";
+            // Configuración de estilos y de posicionamiento para el indicador del elemento cabeza
+            const headStyleConfig = {
+                text: "CABEZA",
+                textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
+                arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
+                fontSize: "14px",
+                fontWeight: "bold",
+                arrowPathData: "M0,0 L-9.5,-10 L-4,-10 L-4,-20 L4,-20 L4,-10 L9.5,-10 Z",
+                textRelativeY: -30,
+                arrowTransform: `translate(0, -5)`
+            }
 
-        // Configuración de estilos y de posicionamiento para el indicador de cabeza
-        const headStyleConfig = {
-            text: "INICIO",
-            textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
-            arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
-            fontSize: "14px",
-            fontWeight: "bold",
-            arrowPathData: arrowHeadPathData,
-            textRelativeY: -30,
-            arrowTransform: `translate(0, -5)`
+            // Renderizado del indicador de cabeza
+            drawArrowIndicator(
+                svg,
+                "head-indicator",
+                "head-indicator-group",
+                headPos,
+                headStyleConfig,
+                { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
+                { elementWidth, elementHeight }
+            );
         }
 
-        // Renderizado del indicador de cabeza
-        drawArrowIndicator(
-            svg,
-            "head-indicator",
-            "head-indicator-group",
-            headPos,
-            headStyleConfig,
-            indicatorPositioningTransform,
-            { elementWidth, elementHeight }
-        );
-    }, [listNodes, linksData, prevNodes]);
+        // Creación de indicador para elemento cabeza
+        if (config.showTailIndicator) {
+            const tailId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+            const tailPos = tailId ? nodePositions.get(tailId)! : null;
+
+            // Configuración de estilos y de posicionamiento para el indicador del elemento cola
+            const tailStyleConfig = {
+                text: "COLA",
+                textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
+                arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
+                fontSize: "14px",
+                fontWeight: "bold",
+                arrowPathData: "M0,0 L-9.5,10 L-4,10 L-4,20 L4,20 L4,10 L9.5,10 Z",
+                textRelativeY: elementHeight + 70,
+                arrowTransform: `translate(0, ${elementHeight + 35})`
+            }
+
+            // Renderizado del indicador de cola
+            drawArrowIndicator(
+                svg,
+                "tail-indicator",
+                "tail-indicator-group",
+                tailPos,
+                tailStyleConfig,
+                { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
+                { elementWidth, elementHeight }
+            );
+        }
+    }, [listNodes, linksData, prevNodes, config]);
 
     // Efecto para manejar la inserción de un nuevo nodo
     useEffect(() => {
@@ -142,19 +181,24 @@ export function useLinkedListRender(
             const newHeadNode = query.toAddFirst;
 
             // Obtenemos el Id del nodo que era la cabeza de la lista antes de la inserción
-            const prevHeadNode = prevNodes.length > 0 ? prevNodes[0].id : null;
+            const prevHeadNode = listNodes.length > 1 ? listNodes[1].id : null;
 
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
 
             // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
-            const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode);
+            const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode || link.targetId !== newHeadNode);
 
             // Animación de inserción del nodo como nuevo primer elemento de la lista
             animateInsertFirst(
                 svg,
-                { newHeadNode, prevHeadNode },
-                { existingNodesData: prevNodes, existingLinksData },
+                { newHeadNode, prevHeadNode, },
+                {
+                    existingNodesData: prevNodes,
+                    existingLinksData,
+                    showDoubleLinks: config.showDoubleLinks,
+                    showTailIndicator: config.showTailIndicator
+                },
                 nodePositions,
                 resetQueryValues,
                 setIsAnimating
@@ -173,7 +217,11 @@ export function useLinkedListRender(
             animateInsertLast(
                 svg,
                 { newLastNode, prevLastNode },
-                prevNodes,
+                {
+                    existingNodesData: prevNodes,
+                    showDoubleLinks: config.showDoubleLinks,
+                    showTailIndicator: config.showTailIndicator
+                },
                 nodePositions,
                 resetQueryValues,
                 setIsAnimating
@@ -197,7 +245,12 @@ export function useLinkedListRender(
                 animateInsertFirst(
                     svg,
                     { newHeadNode: newNode, prevHeadNode },
-                    { existingNodesData: prevNodes, existingLinksData },
+                    {
+                        existingNodesData: prevNodes,
+                        existingLinksData,
+                        showDoubleLinks: config.showDoubleLinks,
+                        showTailIndicator: config.showTailIndicator
+                    },
                     nodePositions,
                     resetQueryValues,
                     setIsAnimating
@@ -210,7 +263,11 @@ export function useLinkedListRender(
                 animateInsertLast(
                     svg,
                     { newLastNode: newNode, prevLastNode },
-                    prevNodes,
+                    {
+                        existingNodesData: prevNodes,
+                        showDoubleLinks: config.showDoubleLinks,
+                        showTailIndicator: config.showTailIndicator
+                    },
                     nodePositions,
                     resetQueryValues,
                     setIsAnimating

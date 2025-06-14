@@ -1,3 +1,5 @@
+import { ListRenderConfig } from "../../types"
+
 export const TYPE_FILTER = {
     NONE: 'none',
     ESTRUCTURA_LINEAL: 'estructura_lineal',
@@ -72,3 +74,30 @@ export const SVG_LINKED_LIST_VALUES = {
     SPACING: 55,
     HEIGHT: 230,
 } as const
+
+export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
+    simple: {
+        showHeadIndicator: true,
+        showTailIndicator: false,
+        showDoubleLinks: false,
+        showCircularLinks: false
+    },
+    double: {
+        showHeadIndicator: true,
+        showTailIndicator: true,
+        showDoubleLinks: true,
+        showCircularLinks: false
+    },
+    circular: {
+        showHeadIndicator: true,
+        showTailIndicator: false,
+        showDoubleLinks: false,
+        showCircularLinks: true
+    },
+    double_circular: {
+        showHeadIndicator: true,
+        showTailIndicator: false,
+        showDoubleLinks: true,
+        showCircularLinks: true
+    }
+};

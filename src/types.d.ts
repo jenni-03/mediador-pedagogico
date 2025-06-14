@@ -16,6 +16,13 @@ export interface LinkedListInterface {
   getTamanio(): number;
 }
 
+export type ListRenderConfig = {
+  showHeadIndicator: boolean;
+  showTailIndicator: boolean;
+  showDoubleLinks: boolean;
+  showCircularLinks: booelan;
+}
+
 export type CardListProps = {
   data: CardData[];
   filter: FilterState;

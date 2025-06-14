@@ -6,7 +6,7 @@ import * as d3 from "d3";
 /**
  * Función encargada de animar la inserción de un nuevo nodo al inicio de la lista
  * @param svg Lienzo en el que se va a dibujar
- * @param nodesInvolvedInsertion Objeto con información de los nodos involucrados en la inserción
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción
  * @param listData Objeto con información de los nodos y enlaces de la lista
  * @param positions Mapa de posiciones de cada nodo dentro del lienzo
  * @param resetQueryValues Función para restablecer los valores de la query del usuario
@@ -15,7 +15,7 @@ import * as d3 from "d3";
 export async function animateInsertFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { newHeadNode: string, prevHeadNode: string | null },
-    listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[] },
+    listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[], showDoubleLinks: boolean, showTailIndicator: boolean },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
@@ -31,10 +31,13 @@ export async function animateInsertFirst(
 
     if (prevHeadNode) {
         // Información de la lista
-        const { existingNodesData, existingLinksData } = listData;
+        const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator } = listData;
 
         // Grupo del lienzo correspondiente al indicador del nodo cabeza
         const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+
+        // Grupo del lienzo correspondiente al indicador del nodo cola
+        const tailIndicatorGroup = showTailIndicator ? svg.select<SVGGElement>("g#tail-indicator") : null;
 
         // Posición de animación final del nuevo nodo
         const finalNewNodePos = positions.get(newHeadNode)!;
@@ -42,10 +45,18 @@ export async function animateInsertFirst(
         // Grupo del lienzo correspondiente al enlace entre el nuevo nodo y el anterior primer nodo
         const nextLinkGroup = svg.select<SVGGElement>(`g#link-${newHeadNode}-${prevHeadNode}-next`);
 
-        // Estado inicial del enlace entre el nuevo nodo y la anterior cabeza de la lista
+        // Estado visual inicial del enlace entre el nuevo nodo y la anterior cabeza de la lista
         nextLinkGroup.select("path.node-link").style("opacity", 0);
 
-        // Array de promesas para animaciones de desplazamiento de nodos y enlaces
+        // Grupo del lienzo correspondiente al enlace previo del anterior primer nodo (solo para listas dobles)
+        const prevLinkToNewNodeGroup = showDoubleLinks ? svg.select<SVGGElement>(`g#link-${prevHeadNode}-${newHeadNode}-prev`) : null;
+
+        if (prevLinkToNewNodeGroup) {
+            // Estado visual inicial del enlace previo del anterior primer nodo
+            prevLinkToNewNodeGroup.select("path.node-link").style("opacity", 0);
+        }
+
+        // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
         const shiftPromises: Promise<void>[] = [];
 
         // Selección de nodos restantes (re-vinculación de datos)
@@ -94,6 +105,23 @@ export async function animateInsertFirst(
                 .end()
         );
 
+        if (tailIndicatorGroup) {
+            // Posición de animación final del indicador de cola
+            const finalTailIndicatorPos = positions.get(existingNodesData[existingNodesData.length - 1].id)!;
+            shiftPromises.push(
+                tailIndicatorGroup
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easePolyInOut)
+                    .attr("transform", () => {
+                        const finalX = finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+                        const finalY = finalTailIndicatorPos.y;
+                        return `translate(${finalX}, ${finalY})`;
+                    })
+                    .end()
+            );
+        }
+
         // Resolución de las promesas de animación de movimiento
         await Promise.all(shiftPromises);
 
@@ -102,7 +130,7 @@ export async function animateInsertFirst(
         const initialNewNodePos = { x: finalNewNodePos.x, y: finalNewNodePos.y + initialYOffset };
         newNodeGroup.attr("transform", `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`);
 
-        // Animación de desplazamiento del nuevo nodo hacia su posición final
+        // Desplazamiento del nuevo nodo hacia su posición final
         await newNodeGroup
             .transition()
             .duration(1500)
@@ -111,16 +139,25 @@ export async function animateInsertFirst(
             .attr("transform", `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`)
             .end();
 
-        // Animación de aparición del enlace entre el nuevo nodo y el nodo cabeza anterior
+        // Aparición del enlace entre el nuevo nodo y el nodo cabeza anterior
         await nextLinkGroup
             .select("path.node-link")
             .transition()
-            .duration(1200)
-            .ease(d3.easePolyInOut)
+            .duration(1000)
             .style("opacity", 1)
             .end();
 
-        // Animación de movimiento del indicador de cabeza hacia el nuevo nodo
+        if (prevLinkToNewNodeGroup) {
+            // Aparición del enlace previo del nodo cabeza anterior que apunta al nuevo nodo
+            await prevLinkToNewNodeGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        }
+
+        // Movimiento del indicador de cabeza hacia el nuevo nodo
         await headIndicatorGroup
             .transition()
             .duration(1000)
@@ -137,7 +174,6 @@ export async function animateInsertFirst(
             .transition()
             .duration(1000)
             .style("opacity", 1)
-            .ease(d3.easePolyInOut)
             .end();
     }
 
@@ -151,8 +187,8 @@ export async function animateInsertFirst(
 /**
  * Función encargada de animar la inserción de un nuevo nodo al final de la lista
  * @param svg Lienzo en el que se va a dibujar
- * @param nodesInvolvedInsertion Objeto con información de los nodos involucrados en la inserción
- * @param existingNodesData Nodos existentes dentro de la lista anterior a la inserción 
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción
+ * @param listData Objeto con información relacionada a los nodos de la lista 
  * @param positions Mapa de posiciones de cada nodo dentro del lienzo
  * @param resetQueryValues Función para restablecer los valores de la query del usuario
  * @param setIsAnimating Función para establecer el estado de animación
@@ -160,7 +196,7 @@ export async function animateInsertFirst(
 export async function animateInsertLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { newLastNode: string, prevLastNode: string | null },
-    existingNodesData: ListNodeData[],
+    listData: { existingNodesData: ListNodeData[], showDoubleLinks: boolean, showTailIndicator: boolean },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
@@ -171,46 +207,72 @@ export async function animateInsertLast(
     // Grupo del lienzo correspondiente al nuevo elemento
     const newNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
 
-    // Estado inicial del nuevo nodo
+    // Estado visual inicial del nuevo nodo
     newNodeGroup.style("opacity", 0);
 
     if (prevLastNode) {
+        // Información de la lista
+        const { existingNodesData, showDoubleLinks, showTailIndicator } = listData;
+
         // Posición de animación final del nuevo nodo
         const finalNewNodePos = positions.get(newLastNode)!;
 
-        // Grupo del lienzo correspondiente al enlace que apunta al nuevo último nodo
-        const nextLinkGroup = svg.select<SVGGElement>(`g#link-${prevLastNode}-${newLastNode}-next`);
+        // Grupo del lienzo correspondiente al indicador del nodo cola
+        const tailIndicatorGroup = showTailIndicator ? svg.select<SVGGElement>("g#tail-indicator") : null;
 
-        // Estado inicial del enlace que apunta al nuevo último nodo
-        nextLinkGroup.select("path.node-link").style("opacity", 0);
+        // Grupo del lienzo correspondiente al enlace que apunta al nuevo último nodo
+        const nextLinkToNewNodeGroup = svg.select<SVGGElement>(`g#link-${prevLastNode}-${newLastNode}-next`);
+
+        // Estado visual inicial del enlace que apunta al nuevo último nodo
+        nextLinkToNewNodeGroup.select("path.node-link").style("opacity", 0);
+
+        // Grupo del lienzo correspondiente al enlace previo del nuevo último nodo (solo para listas dobles)
+        const newNodePrevLinkGroup = showDoubleLinks ? svg.select<SVGGElement>(`g#link-${newLastNode}-${prevLastNode}-prev`) : null;
+
+        if (newNodePrevLinkGroup) {
+            // Estado visual inicial del enlace previo del nuevo último nodo
+            newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
+        }
 
         // Grupo del lienzo correspondiente al nodo anterior al nuevo último nodo
-        const prevNodeGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
+        const prevLastNodeGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
 
-        for (const node of existingNodesData) {
-            // Selección del grupo del nodo actual
-            const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+        // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
+        if (!showDoubleLinks) {
+            for (const node of existingNodesData) {
+                // Selección del grupo del nodo actual
+                const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
 
-            // Selección del elemento a animar
-            const nodeElement = nodeGroup.select("rect");
+                // Selección del elemento a animar
+                const nodeElement = nodeGroup.select("rect");
 
-            // Resaltado del nodo actual
-            await nodeElement
-                .transition()
-                .duration(700)
-                .attr("stroke", "#f87171")
-                .attr("stroke-width", 3)
-                .end();
-
-            // Restablecimiento del estilo original del nodo (excepto para el último nodo)
-            if (node.id !== prevLastNode) {
+                // Resaltado del nodo actual
                 await nodeElement
                     .transition()
                     .duration(700)
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                    .attr("stroke", "#f87171")
+                    .attr("stroke-width", 3)
                     .end();
+
+                // Restablecimiento del estilo original del nodo (excepto para el último nodo)
+                if (node.id !== prevLastNode) {
+                    await nodeElement
+                        .transition()
+                        .duration(700)
+                        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                        .end();
+                }
             }
+        } else {
+            // Resaltado del nodo anterior al nuevo útlimo nodo
+            await prevLastNodeGroup
+                .select("rect")
+                .transition()
+                .duration(1000)
+                .attr("stroke", "#f87171")
+                .attr("stroke-width", 3)
+                .end();
         }
 
         // Posición de animación inicial del nuevo nodo
@@ -218,7 +280,7 @@ export async function animateInsertLast(
         const initialNewNodePos = { x: finalNewNodePos.x, y: finalNewNodePos.y + initialYOffset };
         newNodeGroup.attr("transform", `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`);
 
-        // Animación de desplazamiento del nuevo nodo hacia su posición final
+        // Desplazamiento del nuevo nodo hacia su posición final
         await newNodeGroup
             .transition()
             .duration(1500)
@@ -227,30 +289,53 @@ export async function animateInsertLast(
             .attr("transform", `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`)
             .end();
 
-        // Animación de aparición del enlace que apunta al nuevo último nodo
-        await nextLinkGroup
+        // Aparición del enlace que apunta al nuevo último nodo
+        await nextLinkToNewNodeGroup
             .select("path.node-link")
             .transition()
-            .duration(1200)
-            .ease(d3.easePolyInOut)
+            .duration(1000)
             .style("opacity", 1)
             .end();
 
+        if (newNodePrevLinkGroup) {
+            // Aparición del enlace previo del nuevo último nodo
+            await newNodePrevLinkGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        }
+
         // Restablecimiento del estilo del nodo anterior al nuevo último nodo
-        await prevNodeGroup
+        await prevLastNodeGroup
             .select("rect")
             .transition()
             .duration(500)
             .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
             .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
             .end();
+
+        if (tailIndicatorGroup) {
+            // Desplazamiento del indicador de cola a la posición del nuevo último nodo
+            const finalTailIndicatorPos = positions.get(newLastNode)!;
+            await tailIndicatorGroup
+                .transition()
+                .duration(1000)
+                .ease(d3.easeQuadInOut)
+                .attr("transform", () => {
+                    const finalX = finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+                    const finalY = finalTailIndicatorPos.y;
+                    return `translate(${finalX}, ${finalY})`;
+                })
+                .end();
+        }
     } else {
         // Animación de aparición simple del nuevo nodo
         await newNodeGroup
             .transition()
             .duration(1000)
             .style("opacity", 1)
-            .ease(d3.easePolyInOut)
             .end();
     }
 

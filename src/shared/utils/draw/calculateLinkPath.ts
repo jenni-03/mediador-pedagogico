@@ -21,7 +21,7 @@ export const calculateLinkPath = (
     const offset = 3;
 
     // Offset vertical para separar los enlaces
-    const verticalOffset = link.type === 'prev' ? 3 : -3;
+    const verticalOffset = link.type === 'prev' ? 5 : -5;
 
     // Calculamos las coordenadas
     if (link.type === 'next') {
@@ -36,7 +36,7 @@ export const calculateLinkPath = (
         x1 = sourcePos.x - offset;
         y1 = sourcePos.y + nodeCenterY + verticalOffset;
         // Entra al borde derecho del nodo anterior
-        x2 = targetPos.x - offset;
+        x2 = targetPos.x + elementWidth + offset;
         y2 = targetPos.y + nodeCenterY + verticalOffset;
     }
 

@@ -53,6 +53,7 @@ export function DoubleLinkedListSimulator() {
                 linkedList={list.getArrayDeNodos()}
                 query={query}
                 resetQueryValues={resetQueryValues}
+                listType={"double"}
             />
         </Simulator>
     );

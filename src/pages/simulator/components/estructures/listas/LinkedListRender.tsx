@@ -1,4 +1,7 @@
-import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import {
+    LIST_RENDER_CONFIGS,
+    SVG_STYLE_VALUES,
+} from "../../../../../shared/constants/consts";
 import { BaseQueryOperations, ListNodeData } from "../../../../../types";
 import { useLinkedListRender } from "./useLinkedListRender";
 
@@ -6,12 +9,19 @@ export function LinkedListRender({
     linkedList,
     query,
     resetQueryValues,
+    listType,
 }: {
     linkedList: ListNodeData[];
     query: BaseQueryOperations<"lista_enlazada">;
     resetQueryValues: () => void;
+    listType: keyof typeof LIST_RENDER_CONFIGS;
 }) {
-    const { svgRef } = useLinkedListRender(linkedList, query, resetQueryValues);
+    const { svgRef } = useLinkedListRender(
+        linkedList,
+        query,
+        resetQueryValues,
+        listType
+    );
 
     return (
         <div>
