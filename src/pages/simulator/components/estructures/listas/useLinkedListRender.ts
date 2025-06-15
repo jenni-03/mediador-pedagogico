@@ -286,7 +286,12 @@ export function useLinkedListRender(
                 animateInsertAtPosition(
                     svg,
                     { newNode, prevNode, nextNode },
-                    { existingNodesData: listNodes, existingLinksData },
+                    {
+                        existingNodesData: listNodes,
+                        existingLinksData,
+                        showDoubleLinks: config.showDoubleLinks,
+                        showTailIndicator: config.showTailIndicator
+                    },
                     insertionPosition,
                     nodePositions,
                     resetQueryValues,
@@ -294,7 +299,7 @@ export function useLinkedListRender(
                 );
             }
         }
-    }, [query.toAddFirst, query.toAddLast, query.toAddAt, listNodes, linksData, prevNodes, resetQueryValues, setIsAnimating]);
+    }, [query.toAddFirst, query.toAddLast, query.toAddAt, listNodes, linksData, prevNodes, config, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
