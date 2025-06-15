@@ -321,7 +321,12 @@ export function useLinkedListRender(
             animateRemoveFirst(
                 svg,
                 { prevHeadNode, newHeadNode },
-                { remainingNodesData: listNodes, remainingLinksData: linksData },
+                {
+                    remainingNodesData: listNodes,
+                    remainingLinksData: linksData,
+                    showDoubleLinks: config.showDoubleLinks,
+                    showTailIndicator: config.showTailIndicator
+                },
                 nodePositions,
                 resetQueryValues,
                 setIsAnimating
@@ -361,7 +366,12 @@ export function useLinkedListRender(
                 animateRemoveFirst(
                     svg,
                     { prevHeadNode: nodeToRemove, newHeadNode },
-                    { remainingNodesData: listNodes, remainingLinksData: linksData },
+                    {
+                        remainingNodesData: listNodes,
+                        remainingLinksData: linksData,
+                        showDoubleLinks: config.showDoubleLinks,
+                        showTailIndicator: config.showTailIndicator
+                    },
                     nodePositions,
                     resetQueryValues,
                     setIsAnimating

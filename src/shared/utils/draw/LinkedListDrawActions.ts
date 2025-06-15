@@ -682,18 +682,19 @@ export async function animateInsertAtPosition(
 }
 
 /**
- * Función encargada de animar la eliminación del nodo al inicio de la lista
- * @param svg Lienzo en el que se va a dibujar
- * @param nodesInvolved Objeto con información de los nodos involucrados en la eliminación 
- * @param listData Objeto con información de los nodos y enlaces de la lista
- * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función para restablecer los valores de la query del usuario 
- * @param setIsAnimating Función para establecer el estado de animación 
+ * Función encargada de animar la eliminación del nodo al inicio de la lista.
+ * 
+ * @param svg - Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodesInvolved - Objeto con información de los nodos involucrados en la eliminación. 
+ * @param listData - Objeto con información de los nodos y enlaces de la lista.
+ * @param positions - Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues - Función para restablecer los valores de la query del usuario. 
+ * @param setIsAnimating - Función para establecer el estado de animación. 
  */
 export async function animateRemoveFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { prevHeadNode: string, newHeadNode: string | null },
-    listData: { remainingNodesData: ListNodeData[], remainingLinksData: LinkData[] },
+    listData: { remainingNodesData: ListNodeData[], remainingLinksData: LinkData[], showDoubleLinks: boolean, showTailIndicator: boolean },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
@@ -706,13 +707,16 @@ export async function animateRemoveFirst(
 
     if (newHeadNode) {
         // Información de la lista
-        const { remainingNodesData, remainingLinksData } = listData;
+        const { remainingNodesData, remainingLinksData, showDoubleLinks, showTailIndicator } = listData;
 
         // Grupo del lienzo correspondiente al indicador del nodo cabeza
         const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-        // Grupo del lienzo correspondiente al enlace entre el nodo a eliminar y el nuevo nodo cabeza
-        const nextLinkToRemoveGroup = svg.select<SVGGElement>(`g#link-${prevHeadNode}-${newHeadNode}-next`);
+        // Grupo del lienzo correspondiente al enlace siguiente entre el nodo a eliminar y el nuevo nodo cabeza
+        const nextLinkOfNodeToRemoveGroup = svg.select<SVGGElement>(`g#link-${prevHeadNode}-${newHeadNode}-next`);
+
+        // Grupo del lienzo correspondiente al enlace previo entre el nuevo nodo cabeza y el nodo a eliminar (solo para listas dobles)
+        const prevLinkToNodeToRemoveGroup = showDoubleLinks ? svg.select<SVGGElement>(`g#link-${newHeadNode}-${prevHeadNode}-prev`) : null;
 
         // Posición actual del nodo a eliminar
         const nodeToRemoveCurrentPos = positions.get(prevHeadNode)!;
@@ -720,16 +724,25 @@ export async function animateRemoveFirst(
         // Movimiento del nodo a eliminar 
         const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
 
-        // Animación de salida del enlace entre el nodo a eliminar y su siguiente
-        await nextLinkToRemoveGroup
+        // Salida del enlace sig entre el nodo a eliminar y su siguiente
+        await nextLinkOfNodeToRemoveGroup
             .select("path.node-link")
             .transition()
             .duration(1000)
-            .ease(d3.easePolyInOut)
             .style("opacity", 0)
             .end();
 
-        // Animación de salida del nodo a eliminar
+        // Salida el enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
+        if (prevLinkToNodeToRemoveGroup) {
+            await prevLinkToNodeToRemoveGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .end();
+        }
+
+        // Salida del nodo a eliminar
         await nodeToRemoveGroup
             .transition()
             .duration(1500)
@@ -744,19 +757,20 @@ export async function animateRemoveFirst(
 
         // Eliminación de los elementos del DOM asociados al nodo eliminado
         nodeToRemoveGroup.remove();
-        nextLinkToRemoveGroup.remove();
+        nextLinkOfNodeToRemoveGroup.remove();
+        if (prevLinkToNodeToRemoveGroup) prevLinkToNodeToRemoveGroup.remove();
 
         // Eliminación de la posición del nodo eliminado
         positions.delete(prevHeadNode);
 
-        // Animación de salida del indicador de cabeza
+        // Salida del indicador de cabeza
         await headIndicatorGroup
             .transition()
-            .duration(1000)
+            .duration(500)
             .style("opacity", 0)
             .end();
 
-        // Array de promesas para la animación de desplazamiento de nodos y enlaces restantes
+        // Array de promesas para desplazamiento de nodos y enlaces restantes
         const shiftPromises: Promise<void>[] = [];
 
         // Selección de nodos restantes (re-vinculación de datos)
@@ -790,13 +804,33 @@ export async function animateRemoveFirst(
                 .end()
         );
 
+        if (showTailIndicator) {
+            // Grupo del lienzo correspondiente al indicador del nodo cola
+            const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+            // Posición de animación final del indicador de cola
+            const finalTailIndicatorPos = positions.get(remainingNodesData[remainingNodesData.length - 1].id)!;
+            shiftPromises.push(
+                tailIndicatorGroup
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easePolyInOut)
+                    .attr("transform", () => {
+                        const finalX = finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+                        const finalY = finalTailIndicatorPos.y;
+                        return `translate(${finalX}, ${finalY})`;
+                    })
+                    .end()
+            );
+        }
+
         // Resolución de las promesas de animación de movimiento
         await Promise.all(shiftPromises);
 
-        // Animación de entrada del indicador de cabeza
+        // Entrada del indicador de cabeza
         await headIndicatorGroup
             .transition()
-            .duration(1000)
+            .duration(500)
             .style("opacity", 1)
             .end();
     } else {
