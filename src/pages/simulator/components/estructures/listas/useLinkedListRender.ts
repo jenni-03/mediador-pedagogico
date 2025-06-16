@@ -345,7 +345,11 @@ export function useLinkedListRender(
             animateRemoveLast(
                 svg,
                 { prevLastNode, newLastNode },
-                listNodes,
+                {
+                    remainingNodesData: listNodes,
+                    showDoubleLinks: config.showDoubleLinks,
+                    showTailIndicator: config.showTailIndicator
+                },
                 nodePositions,
                 resetQueryValues,
                 setIsAnimating
@@ -384,7 +388,11 @@ export function useLinkedListRender(
                 animateRemoveLast(
                     svg,
                     { prevLastNode: nodeToRemove, newLastNode },
-                    listNodes,
+                    {
+                        remainingNodesData: listNodes,
+                        showDoubleLinks: config.showDoubleLinks,
+                        showTailIndicator: config.showTailIndicator
+                    },
                     nodePositions,
                     resetQueryValues,
                     setIsAnimating

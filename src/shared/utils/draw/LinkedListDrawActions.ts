@@ -857,18 +857,19 @@ export async function animateRemoveFirst(
 }
 
 /**
- * Función encargada de animar la eliminación del nodo al final de la lista
- * @param svg Lienzo en el que se va a dibujar
- * @param nodesInvolved Objeto con información de los nodos involucrados en la eliminación 
- * @param listData Objeto con información de los nodos y enlaces de la lista
- * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función para restablecer los valores de la query del usuario 
- * @param setIsAnimating Función para establecer el estado de animación 
+ * Función encargada de animar la eliminación del nodo al final de la lista.
+ * 
+ * @param svg - Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodesInvolved - Objeto con información de los nodos involucrados en la eliminación. 
+ * @param listData - Objeto con información relacionada a los nodos de la lista.
+ * @param positions - Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues - Función para restablecer los valores de la query del usuario. 
+ * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateRemoveLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { prevLastNode: string, newLastNode: string | null },
-    remainingNodesData: ListNodeData[],
+    listData: { remainingNodesData: ListNodeData[], showDoubleLinks: boolean, showTailIndicator: boolean },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
@@ -880,8 +881,14 @@ export async function animateRemoveLast(
     const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
 
     if (newLastNode) {
-        // Grupo del lienzo correspondiente al enlace entre el nodo a eliminar y el nuevo nodo cabeza
-        const nextLinkToRemoveGroup = svg.select<SVGGElement>(`g#link-${newLastNode}-${prevLastNode}-next`);
+        // Información de la lista
+        const { remainingNodesData, showDoubleLinks, showTailIndicator } = listData;
+
+        // Grupo del lienzo correspondiente al enlace siguiente entre el nuevo último nodo y el nuevo a eliminar
+        const nextLinkToNodeToRemoveGroup = svg.select<SVGGElement>(`g#link-${newLastNode}-${prevLastNode}-next`);
+
+        // Grupo del lienzo correspondiente al enlace previo del nodo a eliminar (solo para listas dobles)
+        const prevLinkOfNodeToRemoveGroup = showDoubleLinks ? svg.select<SVGGElement>(`g#link-${prevLastNode}-${newLastNode}-prev`) : null;
 
         // Grupo del lienzo correspondiente al nuevo último nodo
         const newLastNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
@@ -892,34 +899,55 @@ export async function animateRemoveLast(
         // Movimiento del nodo a eliminar 
         const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
 
-        for (const node of remainingNodesData) {
-            // Selección del grupo del nodo actual
-            const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+        // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
+        if (!showDoubleLinks) {
+            for (const node of remainingNodesData) {
+                // Selección del grupo del nodo actual
+                const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
 
-            // Selección del elemento a animar
-            const nodeElement = nodeGroup.select("rect");
+                // Selección del elemento a animar
+                const nodeElement = nodeGroup.select("rect");
 
-            // Resaltado del nodo actual
-            await nodeElement
-                .transition()
-                .duration(700)
-                .attr("stroke", "#f87171")
-                .attr("stroke-width", 3)
-                .end();
-
-            // Restablecimiento del estilo original del nodo (excepto para el nuevo último nodo)
-            if (node.id !== newLastNode) {
+                // Resaltado del nodo actual
                 await nodeElement
                     .transition()
                     .duration(700)
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                    .attr("stroke", "#f87171")
+                    .attr("stroke-width", 3)
                     .end();
+
+                // Restablecimiento del estilo original del nodo (excepto para el nuevo último nodo)
+                if (node.id !== newLastNode) {
+                    await nodeElement
+                        .transition()
+                        .duration(700)
+                        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                        .end();
+                }
             }
         }
 
-        // Animación de salida del enlace entre el nuevo último nodo y el nodo a eliminar
-        await nextLinkToRemoveGroup
+        if (showTailIndicator) {
+            // Grupo del lienzo correspondiente al indicador del nodo cola
+            const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+            // Desplazamiento del indicador de cola a la posición del nuevo último nodo
+            const finalTailIndicatorPos = positions.get(newLastNode)!;
+            await tailIndicatorGroup
+                .transition()
+                .duration(1000)
+                .ease(d3.easeQuadInOut)
+                .attr("transform", () => {
+                    const finalX = finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+                    const finalY = finalTailIndicatorPos.y;
+                    return `translate(${finalX}, ${finalY})`;
+                })
+                .end();
+        }
+
+        // Salida del enlace entre el nuevo último nodo y el nodo a eliminar
+        await nextLinkToNodeToRemoveGroup
             .select("path.node-link")
             .transition()
             .duration(1000)
@@ -927,7 +955,18 @@ export async function animateRemoveLast(
             .style("opacity", 0)
             .end();
 
-        // Animación de salida del nodo a eliminar
+        // Salida del enlace previo del nodo a eliminar (solo para listas dobles)
+        if (prevLinkOfNodeToRemoveGroup) {
+            await prevLinkOfNodeToRemoveGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .ease(d3.easePolyInOut)
+                .style("opacity", 0)
+                .end();
+        }
+
+        // Salida del nodo a eliminar
         await nodeToRemoveGroup
             .transition()
             .duration(1500)
@@ -941,17 +980,20 @@ export async function animateRemoveLast(
             .end();
 
         // Restablecimiento del estilo del nuevo último nodo
-        await newLastNodeGroup
-            .select("rect")
-            .transition()
-            .duration(500)
-            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-            .end();
+        if (!showDoubleLinks) {
+            await newLastNodeGroup
+                .select("rect")
+                .transition()
+                .duration(500)
+                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                .end();
+        }
 
         // Eliminación de los elementos del DOM asociados al nodo eliminado
         nodeToRemoveGroup.remove();
-        nextLinkToRemoveGroup.remove();
+        nextLinkToNodeToRemoveGroup.remove();
+        if (prevLinkOfNodeToRemoveGroup) prevLinkOfNodeToRemoveGroup.remove();
 
         // Eliminación de la posición del nodo eliminado
         positions.delete(prevLastNode);
