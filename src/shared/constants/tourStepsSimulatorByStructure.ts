@@ -80,6 +80,24 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         conocido como cabeza de la lista. El último nodo de la lista es especial, su puntero no apunta a nada, indicando el final de la cadena.`,
         },
     ],
+    lista_doblemente_enlazada: [
+        {
+            type: "info",
+            description: `Pensemos en un tren de pasajeros. Cada vagón está conectado con el que tiene delante y con el que tiene detrás. 
+                        Si estás en un vagón, puedes caminar hacia el siguiente para ir hacia la locomotora o caminar hacia el vagón anterior para ir hacia el final del tren.`,
+        },
+        {
+            type: "info",
+            description: `Cada vagón conoce a su vecino inmediato en ambas direcciones. Esto te da la libertad de moverte por todo el tren hacia adelante o hacia atrás sin tener que volver al inicio. 
+                        Si quisieras desenganchar un vagón, solo necesitarias saber cuáles son sus 2 vecinos directos (el de adelante y el de atrás) para volver a conectar la cadena sin romper el tren.`
+        },
+        {
+            type: "info",
+            description: `Formalmente, una lista doblemente enlazada, al igual que su contraparte simple, es una estructura de datos dinámica y lineal compuesta por una secuencia nodos.
+                        Cada nodo contiene un valor, un puntero al siguiente nodo y otro puntero que apunta al nodo anterior en la secuencia.
+                        Esta estructura de doble enlace permite que la lista sea recorrida de manera eficiente en ambas direcciones: Desde la cabeza hasta la cola y visceversa.`,
+        },
+    ],
 };
 
 export const tourStepsCommands: Record<string, TourStep[]> = {
@@ -288,6 +306,45 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
             description:
                 "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 30, correspondiente al único elemento en esta.",
+        },
+    ],
+    lista_doblemente_enlazada: [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una lista doble, tales como, inserción y eliminación de elementos desde diferentes posiciones, y consultar si un elemento se encuentra en la lista.",
+            type: "element",
+        },
+        {
+            id: "console",
+            type: "action",
+        },
+        {
+            id: "inputConsola",
+            text: "insertFirst(50);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para insertar un elemento al inicio de la lista, en este caso, el número 50.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la lista con su elemento recién insertado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 50, correspondiente al único elemento en esta.",
         },
     ],
 };

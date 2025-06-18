@@ -186,7 +186,7 @@ export function useLinkedListRender(
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
 
-            // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
+            // Filtramos los enlaces que requieren posicionamiento producto de la inserción 
             const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode || link.targetId !== newHeadNode);
 
             // Animación de inserción del nodo como nuevo primer elemento de la lista
@@ -412,7 +412,12 @@ export function useLinkedListRender(
                 animateRemoveAtPosition(
                     svg,
                     { nodeToRemove, prevNode, nextNode },
-                    { existingNodesData: listNodes, existingLinksData: linksData },
+                    {
+                        existingNodesData: prevNodes,
+                        existingLinksData: linksData,
+                        showDoubleLinks: config.showDoubleLinks,
+                        showTailIndicator: config.showTailIndicator
+                    },
                     deletePosition,
                     nodePositions,
                     resetQueryValues,
@@ -420,7 +425,7 @@ export function useLinkedListRender(
                 );
             }
         }
-    });
+    }, [query.toDeleteFirst, query.toDeleteLast, query.toDeleteAt, listNodes, linksData, prevNodes, config, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la búsqueda de un nodo
     useEffect(() => {

@@ -203,7 +203,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "insertlast":
         {
           if (parts.length !== 2) {
-            return { valid: false, message: "Debe proporcionar el valor a insertar como argumento." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a insertar como argumento." : "El método únicamente espera el valor a insertar como argumento." };
           }
           const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
           if (!insertPattern.test(parts[1])) {
@@ -215,15 +215,15 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "insertat":
         {
           if (parts.length !== 3) {
-            return { valid: false, message: "Debe proporcionar 2 números como argumentos (valor, posición)." };
+            return { valid: false, message: "Debe proporcionar únicamente 2 números como argumentos (valor, posición)." };
           }
-          const positionPattern = /^-?\d+$/; // Número entero para la posición
+          const positionPattern = /^\d+$/; // Número entero para la posición
           const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el valor
           if (!valuePattern.test(parts[1])) {
             return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
           }
           if (!positionPattern.test(parts[2])) {
-            return { valid: false, message: "La posición a insertar debe ser un número entero positivo." };
+            return { valid: false, message: "La posición a insertar debe ser un número entero positivo o 0." };
           }
           return true;
         }
@@ -232,21 +232,21 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "removelast":
         {
           if (parts.length !== 1) {
-            return { valid: false, message: "El método debe ser vacío, no espera ningún argumento." };
+            return { valid: false, message: "El método no espera ningún argumento." };
           }
           return true;
         }
 
       case "removeat": {
         if (parts.length !== 2) {
-          return { valid: false, message: "Debe proporcionar la posición del elemento a remover como argumento." };
+          return { valid: false, message: parts.length === 1 ? "Debe proporcionar la posición del elemento a remover como argumento." : "El método únicamente espera la posición del elemento a remover como argumento." };
         }
         if (isNaN(Number(parts[1]))) {
-          return { valid: false, message: "El argumento debe ser un número válido." };
+          return { valid: false, message: "La posición del elemento a remover debe ser un número válido." };
         }
-        const positionDelPattern = /^-?\d+$/; // Número entero para la posición
+        const positionDelPattern = /^\d+$/; // Número entero para la posición
         if (!positionDelPattern.test(parts[1])) {
-          return { valid: false, message: "La posición del elemento a remover debe ser un número entero positivo." };
+          return { valid: false, message: "La posición del elemento a remover debe ser un número entero positivo o 0." };
         }
         return true;
       }

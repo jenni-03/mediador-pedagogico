@@ -88,7 +88,7 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que recibe un elemento y comprueba si existe en la secuencia.
  * post: Se ha retornado true si el elemento se encuentra en la secuencia.
- * @param elem es de tipo T y contiene el elemnto que se va a buscar.
+ * @param elem es de tipo T y contiene el elemento que se va a buscar.
  * @return un tipo boolean, retorna true si el objeto existe y false en caso contrario.
  */`,
             `public boolean search(T elem){        `,
@@ -115,8 +115,8 @@ export const operationsCode: Record<string, any> = {
     pila: {
         push: [
             `/**
- * Método que inserta un elemento en la Pila.
- * post: Se insertó un elemento dentro de la Pila.
+ * Método que inserta un elemento en la pila.
+ * post: Se insertó un elemento dentro de la pila.
  * @param info es de tipo T y contiene la información a insertar en la pila.
  */`,
             `public void apilar(T info){`,
@@ -126,16 +126,16 @@ export const operationsCode: Record<string, any> = {
             `    }`,
             `    else {`,
             `        nuevoNodo.setSig(this.tope);`,
-            `        this.tope=nuevoNodo;`,
+            `        this.tope = nuevoNodo;`,
             `    }`,
             `    this.tamanio++;`,
             `}`
         ],
         pop: [
             `/**
- * Método que retira un elemento de la Pila.
- * post: Se retiró el elemento tope de la Pila.
- * @return Elemento retirado de la pila.
+ * Método que retira un elemento de la pila.
+ * post: Se retiró el elemento tope de la pila.
+ * @return un tipo T que contiene la informacion del elemento retirado.
  */`,
             `public T desapilar(){`,
             `    if(this.esVacia())`,
@@ -148,9 +148,9 @@ export const operationsCode: Record<string, any> = {
         ],
         getTop: [
             `/**
- * Método que devuelve el elemento tope de la Pila.
- * post: Se retornó el elemento tope de la Pila.
- * @return Elemento tope de la Pila.
+ * Método que devuelve el elemento tope de la pila.
+ * post: Se retornó el elemento tope de la pila.
+ * @return Elemento tope de la pila.
  */`,
             `public Nodo<T> getTope(){`,
             `    return this.tope;`,
@@ -158,8 +158,8 @@ export const operationsCode: Record<string, any> = {
         ],
         clean: [
             `/**
- * Método que elimina todos los datos de la Pila.
- * post: Se eliminó todos los datos que se encontraban en la Pila.
+ * Método que elimina todos los datos de la pila.
+ * post: Se eliminó todos los datos que se encontraban en la pila.
  */`,
             `public void vaciar(){`,
             `    this.tope = null;`,
@@ -171,7 +171,7 @@ export const operationsCode: Record<string, any> = {
         enqueue: [
             `/**
  * Método que permite agregar un elemento a la cola.
- * post: Se insertó un nuevo elemento a la cola.
+ * post: Se insertó un nuevo elemento en la cola.
  * @param info es de tipo T y contiene la informacion a encolar.
  */`,
             `public void enColar(T info){`,
@@ -189,13 +189,13 @@ export const operationsCode: Record<string, any> = {
         dequeue: [
             `/**
  * Método que permite retirar el primer elemento insertado en la cola.
- * post: Se eliminó el primer elemento que insertado en la cola.
- * @return un tipo T que contiene la informacion del nodo retirado.
+ * post: Se eliminó el primer elemento de la cola.
+ * @return un tipo T que contiene la informacion del elemento retirado.
  */`,
             `public T deColar(){`,
             `    if(this.esVacia())`,
             `        return null;`,
-            `    NodoD<T> x = this.inicio`,
+            `    NodoD<T>x = this.inicio`,
             `    if (this.inicio === this.fin) {`,
             `        this.inicio = null;`,
             `        this.fin = null;`,
@@ -209,8 +209,8 @@ export const operationsCode: Record<string, any> = {
         getFront: [
             `/**
  * Método que permite conocer el primer elemento insertado en la cola.
- * post: Se obtiene el primer elemento insertado en la cola.
- * @return El primer elemento insertado en la cola.
+ * post: Se obtuvó el primer elemento de la cola.
+ * @return El primer elemento de la cola.
  */`,
             `protected Nodo<T> getInicio(){`,
             `    return this.inicio;`,
@@ -324,7 +324,7 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que inserta un nodo al inicio de la lista.
  * post: Se insertó un nuevo nodo al inicio de la lista.
- * @param info Informacion que desea almacenar en la lista.
+ * @param info es de tipo T y contiene la información a almacenar en la lista.
  */`,
             `public void insertarAlInicio(T info){`,
             `    Nodo<T>nuevoNodo = new Nodo(info);`,
@@ -341,7 +341,7 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que inserta un nodo al final de la lista.
  * post: Se insertó un nuevo nodo al final de la lista.
- * @param info Información que desea almacenar en la Lista. 
+ * @param info es de tipo T y contiene la información a almacenar en la lista. 
  */`,
             `public void insertarAlFinal(T info){`,
             `    Nodo<T>nuevoNodo = new Nodo(info);`,
@@ -358,8 +358,8 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que inserta un nodo en una posición especifica de la lista.
  * post: Se insertó un nuevo nodo en la posición especificada.
- * @param info Información que desea almacenar en la lista.
- * @param pos Posición a insertar.
+ * @param info es de tipo T y contiene la información a almacenar en la lista.
+ * @param pos es de tipo integer y corresponde a la posición de inserción.
  */`,
             `public void insertarEnPosicion(T info, int pos){`,
             `    if (pos < 0 || pos > this.tamanio) {`,
@@ -416,7 +416,7 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que elimina un nodo dada su posición.
  * post: Se eliminó el nodo en la posicion especificada.
- * @param pos Posición del nodo a eliminar.
+ * @param pos es de tipo integer y corresponde a la posición del nodo a eliminar.
  */`,
             `public void removerEnPosición(int pos){`,
             `    if (this.esVacia()) {`,
@@ -442,8 +442,8 @@ export const operationsCode: Record<string, any> = {
         search: [
             `/**
  * Método que busca el elemento especificado en la lista.
- * post: Se retorno un booleano que indica si el elemento especificado fue encontrado en la lista.
- * @param elem Elemento a buscar.
+ * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en la lista.
+ * @param elem es de tipo T y corresponde al elemento a buscar.
  * @return True o false si el elemento fue encontrado.
  */`,
             `public boolean search(T elem) {`,
@@ -463,8 +463,8 @@ export const operationsCode: Record<string, any> = {
  * post: Se eliminó todos los datos encontrados en la lista.
  */`,
             `public void vaciar(){`,
-            `    this.cabeza=null;`,
-            `    this.tamanio=0;`,
+            `    this.cabeza = null;`,
+            `    this.tamanio = 0;`,
             `}`
         ]
     },
@@ -473,14 +473,16 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que inserta un nodo al inicio de la lista.
  * post: Se insertó un nuevo nodo al inicio de la lista.
- * @param info Informacion que desea almacenar en la lista.
+ * @param info es de tipo T y contiene la información a almacenar en la lista.
  */`,
             `public void insertarAlInicio(T info){`,
-            `    Nodo<T>nuevoNodo = new Nodo(info);`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
             `    if (this.esVacia()) {`,
             `      this.cabeza = nuevoNodo;`,
+            `      this.cola = nuevoNodo;`,
             `    } else {`,
             `      nuevoNodo.setSig(this.cabeza);`,
+            `      this.cabeza.setAnt(nuevoNodo);`,
             `      this.cabeza = nuevoNodo;`,
             `    }`,
             `    this.tamanio++;`,
@@ -490,15 +492,17 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que inserta un nodo al final de la lista.
  * post: Se insertó un nuevo nodo al final de la lista.
- * @param info Información que desea almacenar en la Lista. 
+ * @param info es de tipo T y contiene la información a almacenar en la lista. 
  */`,
             `public void insertarAlFinal(T info){`,
-            `    Nodo<T>nuevoNodo = new Nodo(info);`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
             `    if (this.esVacia()) {`,
             `      this.cabeza = nuevoNodo;`,
+            `      this.cola = nuevoNodo;`,
             `    } else {`,
-            `      Nodo<T>nodoUlt = this.getPos(this.tamanio - 1);`,
-            `      nodoUlt.setSig(nuevoNodo);`,
+            `      this.cola.setSig(nuevoNodo);`,
+            `      nuevoNodo.setAnt(this.cola);`,
+            `      this.cola = nuevoNodo;`,
             `    }`,
             `    this.tamanio++;`,
             `}`
@@ -507,8 +511,8 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que inserta un nodo en una posición especifica de la lista.
  * post: Se insertó un nuevo nodo en la posición especificada.
- * @param info Información que desea almacenar en la lista.
- * @param pos Posición a insertar.
+ * @param info es de tipo T y contiene la información a almacenar en la lista.
+ * @param pos es de tipo integer y corresponde a la posición de inserción.
  */`,
             `public void insertarEnPosicion(T info, int pos){`,
             `    if (pos < 0 || pos > this.tamanio) {`,
@@ -521,9 +525,11 @@ export const operationsCode: Record<string, any> = {
             `    if (pos == this.tamanio) {`,
             `      this.insertarAlFinal(info);`,
             `    }`,
-            `    Nodo<T>nuevoNodo = new Nodo(info);`,
-            `    Nodo<T>nodoAnt = this.getPos(pos - 1);`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    NodoD<T>nodoAnt = this.getPos(pos - 1);`,
             `    nuevoNodo.setSig(nodoAnt.getSig());`,
+            `    nuevoNodo.setAnt(nodoAnt);`,
+            `    nodoAnt.getSig().setAnt(nuevoNodo);`,
             `    nodoAnt.setSig(nuevoNodo);`,
             `    this.tamanio++;`,
             `}`
@@ -539,6 +545,7 @@ export const operationsCode: Record<string, any> = {
             `      return;`,
             `    }`,
             `    this.cabeza = this.cabeza.getSig();`,
+            `    this.cabeza.setAnt(null);`,
             `    this.tamanio--;`,
             `}`
         ],
@@ -552,12 +559,8 @@ export const operationsCode: Record<string, any> = {
             `      System.err.println("Lista vacía!");`,
             `      return;`,
             `    }`,
-            `    if (this.tamanio === 1) {`,
-            `      this.cabeza = null`,
-            `    } else {`,
-            `      Nodo<T>nodoAntUlt = this.getPos(this.tamanio - 2);`,
-            `      nodoAntUlt.setSig(null);`,
-            `    }`,
+            `    this.cola = this.cola.getAnt();`,
+            `    this.cola.setSig(null);`,
             `    this.tamanio--;`,
             `}`
         ],
@@ -565,7 +568,7 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que elimina un nodo dada su posición.
  * post: Se eliminó el nodo en la posicion especificada.
- * @param pos Posición del nodo a eliminar.
+ * @param pos es de tipo integer y corresponde a la posición del nodo a eliminar.
  */`,
             `public void removerEnPosición(int pos){`,
             `    if (this.esVacia()) {`,
@@ -582,9 +585,9 @@ export const operationsCode: Record<string, any> = {
             `    if (pos == this.tamanio - 1) {`,
             `      this.removerAlFinal();`,
             `    }`,
-            `    Nodo<T>nodoAnt = this.getPos(pos - 1);`,
-            `    Nodo<T>nodoEliminado = nodoAnt.getSig();`,
-            `    nodoAnt.setSig(nodoEliminado.getSig());`,
+            `    NodoD<T>nodoEliminado = this.getPos(pos);`,
+            `    nodoEliminado.getAnt().setSig(nodoEliminado.getSig());`,
+            `    nodoEliminado.getSig().setAnt(nodoEliminado.getAnt());`,
             `    this.tamanio--;`,
             `}`
         ],
@@ -592,11 +595,11 @@ export const operationsCode: Record<string, any> = {
             `/**
  * Método que busca el elemento especificado en la lista.
  * post: Se retorno un booleano que indica si el elemento especificado fue encontrado en la lista.
- * @param elem Elemento a buscar.
+ * @param elem es de tipo T y corresponde al elemento a buscar.
  * @return True o false si el elemento fue encontrado.
  */`,
             `public boolean search(T elem) {`,
-            `    Nodo<T> nodoActual = this.cabeza;`,
+            `    NodoD<T> nodoActual = this.cabeza;`,
             `    while(nodoActual) {`,
             `        if (nodoActual.getValor().equals(elem)) {`,
             `          return true;`,
@@ -612,8 +615,9 @@ export const operationsCode: Record<string, any> = {
  * post: Se eliminó todos los datos encontrados en la lista.
  */`,
             `public void vaciar(){`,
-            `    this.cabeza=null;`,
-            `    this.tamanio=0;`,
+            `    this.cabeza = null;`,
+            `    this.cola = null;`,
+            `    this.tamanio = 0;`,
             `}`
         ]
     },
