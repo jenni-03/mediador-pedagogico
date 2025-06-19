@@ -16,6 +16,9 @@ export class ListaDoble implements LinkedListInterface {
     // Tamaño de la lista.
     private tamanio: number;
 
+    // Tamaño máximo permitido para la lista doble.
+    private readonly MAX_TAMANIO = 15;
+
     /**
      * Constructor de la clase ListaDoble.
      */
@@ -31,7 +34,7 @@ export class ListaDoble implements LinkedListInterface {
      * @returns Nodo inicial insertado.
      */
     insertarAlInicio(valor: number): NodoD {
-        if (this.tamanio >= 12) throw new Error("No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: 12).");
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoD(valor);
 
@@ -54,7 +57,7 @@ export class ListaDoble implements LinkedListInterface {
      * @returns Nodo final insertado.
      */
     insertarAlFinal(valor: number): NodoD {
-        if (this.tamanio >= 12) throw new Error("No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: 12).");
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoD(valor);
 
@@ -82,7 +85,7 @@ export class ListaDoble implements LinkedListInterface {
             throw new Error(`No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Doble.`);
         }
 
-        if (this.tamanio >= 12) throw new Error("No fue posible insertar el nodo en la posición especificada: Cantidad de nodos máxima alcanzada (tamaño máximo: 12).");
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo en la posición especificada: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         if (posicion === 0) {
             return this.insertarAlInicio(valor);

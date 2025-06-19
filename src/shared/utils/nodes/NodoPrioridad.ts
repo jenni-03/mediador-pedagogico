@@ -1,65 +1,105 @@
+// Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
+
 import { v4 as uuidv4 } from "uuid";
+import { priorityQueueAddressGenerator } from "../memoryAllocator";
 
+/**
+ * Clase que representa un Nodo de Prioridad.
+ */
 export class NodoPrioridad {
-    private id: string;
-    private valor: number;
-    private prioridad: number;
-    private siguiente: NodoPrioridad | null;
-    private direccionMemoria: string;
-    private tamanio: number;
 
-    constructor(valor: number, prioridad: number, id?: string, direccionMemoria?: number) {
-        this.id = id ?? `node-${uuidv4()}`;
+    // ID único del nodo.
+    private id: string;
+
+    // Información almacenada en el nodo.
+    private valor: number;
+
+    // Prioridad del nodo
+    private prioridad: number;
+
+    // Información del nodo siguiente.
+    private siguiente: NodoPrioridad | null;
+
+    // Dirección de memoria del nodo.
+    private direccionMemoria: string;
+
+    /**
+     * Constructor de la clase NodoPrioridad.
+     * @param valor Valor a almacenar en el nodo.
+     * @param prioridad Prioridad del nodo.
+     * @param id Identificador único del nodo (opcional).
+     * @param direccionMemoria Dirección de memoria del nodo (opcional).
+     */
+    constructor(valor: number, prioridad: number, id?: string, direccionMemoria?: string) {
         this.valor = valor;
+        this.id = id ?? `node-${uuidv4()}`;
         this.prioridad = prioridad;
+        this.direccionMemoria = direccionMemoria ?? priorityQueueAddressGenerator.generateNextAddress();
         this.siguiente = null;
-        const direccion = direccionMemoria ?? Math.floor(Math.random() * 100000);
-        this.direccionMemoria = "0x" + direccion.toString(16).padStart(8, "0");
-        this.tamanio = 20; // Por ejemplo: 4 bytes extra por la prioridad
     }
 
+    /**
+     * Método que obtiene la información almacenada en el nodo.
+     * @returns Valor almacenado en el nodo.
+     */
     public getValor(): number {
         return this.valor;
     }
 
-    public getPrioridad(): number {
-        return this.prioridad;
-    }
-
-    public setPrioridad(p: number): void {
-        this.prioridad = p;
-    }
-
+    /**
+     * Método que obtiene la referencia al nodo siguiente.
+     * @returns Nodo siguiente o null según corresponda.
+     */
     public getSiguiente(): NodoPrioridad | null {
         return this.siguiente;
     }
 
-    public setSiguiente(nodo: NodoPrioridad | null): void {
-        this.siguiente = nodo;
-    }
-
+    /**
+     * Método que obtiene el ID del nodo.
+     * @returns ID del nodo.
+     */
     public getId(): string {
         return this.id;
     }
 
+    /**
+     * Método que obtiene el valor de prioridad del nodo.
+     * @returns Prioridad actual del nodo.
+     */
+    public getPrioridad(): number {
+        return this.prioridad;
+    }
+
+    /**
+     * Método que obtiene la dirección de memoria del nodo.
+     * @returns Dirección de memoria del nodo.
+     */
     public getDireccionMemoria(): string {
         return this.direccionMemoria;
     }
 
-    public getTamanio(): number {
-        return this.tamanio;
+    /**
+     * Método que establece el valor del nodo.
+     * @param valor Valor a establecer.
+     */
+    public setValor(valor: number): void {
+        this.valor = valor;
     }
 
-    public setId(id: string): void {
-        this.id = id;
+    /**
+     * Método que establece la referencia al nodo siguiente.
+     * @param nodo Nodo a establecer como siguiente.
+     */
+    public setSiguiente(nodo: NodoPrioridad | null): void {
+        this.siguiente = nodo;
     }
 
-    public setDireccionMemoria(direccion: string): void {
-        this.direccionMemoria = direccion;
-    }
-
-    public setTamanio(tamanio: number): void {
-        this.tamanio = tamanio;
+    /**
+     * Método que establece la prioridad del nodo.
+     * @param p Prioridad del nodo a establecer.
+     */
+    public setPrioridad(p: number): void {
+        this.prioridad = p;
     }
 
 }

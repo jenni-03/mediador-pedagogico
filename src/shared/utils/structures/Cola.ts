@@ -19,6 +19,9 @@ export class Cola {
     // Tamaño simulado de cada nodo en bytes.
     private tamanioNodo: number;
 
+    // Tamaño máximo permitido para la cola.
+    private readonly MAX_TAMANIO = 15;
+
     /**
      * Constructor de la clase Cola.
      */
@@ -36,7 +39,7 @@ export class Cola {
      * @param valor Elemento a encolar.
      */
     public encolar(valor: number): void {
-        if (this.tamanio >= 15) throw new Error("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: 15).");
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoS(valor);
 

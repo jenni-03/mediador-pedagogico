@@ -14,6 +14,9 @@ export class Pila {
     // Tamaño simulado de cada nodo en bytes.
     private tamanioNodo: number;
 
+    // Tamaño máximo permitido para la pila.
+    private readonly MAX_TAMANIO = 15;
+
     /**
      * Constructor de la clase Pila.
      */
@@ -30,7 +33,7 @@ export class Pila {
      * @param valor Elemento a apilar.
      */
     public apilar(valor: number): void {
-        if (this.tamanio >= 15) throw new Error("No fue posible apilar el elemento: Cantidad de elementos máxima alcanzada (tamaño máximo: 15).");
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible apilar el elemento: Cantidad de elementos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoS(valor);
 
