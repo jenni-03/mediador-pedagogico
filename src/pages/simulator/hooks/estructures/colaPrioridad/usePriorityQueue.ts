@@ -45,14 +45,11 @@ export function usePriorityQueue(structure: ColaDePrioridad) {
     // Operación de decolar
     const dequeueElement = () => {
         try {
-            // Obtener el nodo a ser eliminado para acceder a su ID
-            const nodeToDelete = queue.getInicio();
-
             // Clonar la cola para asegurar la inmutabilidad del estado
             const clonedQueue = queue.clonar();
 
-            // Decolamos el nodo
-            clonedQueue.decolar();
+            // Obtener el nodo eliminado para acceder a su ID
+            const nodeToDelete = clonedQueue.decolar();
 
             // Actualizar el estado de la cola
             setQueue(clonedQueue);
@@ -60,7 +57,7 @@ export function usePriorityQueue(structure: ColaDePrioridad) {
             // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toDequeuedNode: nodeToDelete ? nodeToDelete.getId() : null
+                toDequeuedNode: nodeToDelete.getId()
             }));
 
             // Limpieza del error existente

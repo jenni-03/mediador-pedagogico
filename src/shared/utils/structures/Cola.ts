@@ -38,7 +38,7 @@ export class Cola {
      * Método que encola un nuevo elemento en la cola.
      * @param valor Elemento a encolar.
      */
-    public encolar(valor: number): void {
+    public encolar(valor: number): NodoS {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoS(valor);
@@ -54,16 +54,17 @@ export class Cola {
         }
 
         this.tamanio++;
+        return nuevoNodo;
     }
 
     /**
      * Método que decola (remueve) el primer elemento de la cola.
-     * @returns Elemento removido o null si la cola está vacía.
+     * @returns Elemento decolado.
      */
-    public decolar(): number | null {
+    public decolar(): NodoS {
         if (this.esVacia()) throw new Error("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");
 
-        const valorEliminado = this.inicio?.getValor() ?? null;
+        const nodoAEliminar = this.inicio!;
 
         if (this.inicio === this.fin) {
             this.inicio = null;
@@ -75,7 +76,7 @@ export class Cola {
         }
 
         this.tamanio--;
-        return valorEliminado;
+        return nodoAEliminar;
     }
 
     /**
@@ -88,7 +89,7 @@ export class Cola {
     }
 
     /**
-     * Método que obtiene el nodo inicial de la cola.
+     * Método que obtiene el elemento inicial de la cola.
      * @returns NodoS o null si la cola está vacía.
      */
     public getInicio(): NodoS | null {
@@ -96,7 +97,7 @@ export class Cola {
     }
 
     /**
-     * Método que obtiene el valor del nodo inicial de la cola.
+     * Método que obtiene el valor del elemento inicial de la cola.
      * @returns Valor del nodo o null si la cola está vacía.
      */
     public getInfoInicio(): number | null {
@@ -104,7 +105,7 @@ export class Cola {
     }
 
     /**
-     * Método que obtiene el nodo final de la cola.
+     * Método que obtiene el elemento final de la cola.
      * @returns NodoS o null si la cola está vacía.
      */
     public getFin(): NodoS | null {
@@ -112,7 +113,7 @@ export class Cola {
     }
 
     /**
-     * Método que obtiene el valor del nodo final de la cola.
+     * Método que obtiene el valor del elemento final de la cola.
      * @returns Valor del nodo o null si la cola está vacía.
      */
     public getInfoFin(): number | null {
@@ -172,7 +173,7 @@ export class Cola {
      * @returns Nueva cola clonada.
      */
     public clonar() {
-        const nuevaCola = new Cola();
+        const nuevaCola = new (this.constructor as new () => this)();
 
         if (this.esVacia()) {
             return nuevaCola;

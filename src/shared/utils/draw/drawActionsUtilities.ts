@@ -3,14 +3,14 @@ import { SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateLinkPath } from "./calculateLinkPath";
 
 /**
- * Función encargada de renderizar un indicador de flecha dentro del lienzo  
- * @param svg Lienzo en el que se va a dibujar
- * @param indicatorId Identificador del indicador
- * @param indicatorClass Selector de clase del indicador
- * @param nodePosition Posición del nodo al que apunta el indicador
- * @param styleConfig Configuración de estilos para el indicador
- * @param groupPositioningTransform Transformación de posicionamiento del grupo 
- * @param dims Dimensiones del elemento
+ * Función encargada de renderizar un indicador de flecha dentro del lienzo.  
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param indicatorId Identificador del indicador.
+ * @param indicatorClass Selector de clase del indicador.
+ * @param nodePosition Posición del nodo al que apunta el indicador.
+ * @param styleConfig Configuración de estilos para el indicador.
+ * @param groupPositioningTransform Transformación de posicionamiento del grupo. 
+ * @param dims Dimensiones del elemento.
  */
 export function drawArrowIndicator(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -79,11 +79,11 @@ export function drawArrowIndicator(
 }
 
 /**
- * Función encargada de renderizar los nodos de una lista dentro del lienzo
- * @param svg Lienzo en el que se va a dibujar
- * @param listNodes Nodos a renderizar
- * @param positions Mapa de posiciones de cada uno de los nodos dentro del lienzo
- * @param dims Dimensiones del lienzo y sus elementos
+ * Función encargada de renderizar los nodos de una lista dentro del lienzo.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param listNodes Array con información de los nodos a renderizar.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param dims Dimensiones del lienzo y sus elementos.
  */
 export function drawListNodes(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -151,7 +151,7 @@ export function drawListNodes(
                     .attr("ry", 4)
                     .attr("fill", SVG_STYLE_VALUES.MEMORY_FILL_COLOR)
                     .attr("stroke", SVG_STYLE_VALUES.MEMORY_STROKE_COLOR)
-                    .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_SRTOKE_WIDTH);
+                    .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_STROKE_WIDTH);
 
                 // Dirección de memoria
                 gEnter
@@ -182,12 +182,12 @@ export function drawListNodes(
 }
 
 /**
- * Función encargada de renderizar los enlaces pertenecientes a los nodos de la lista
- * @param svg Lienzo en el que se va a dibujar
- * @param linksData Enlaces a renderizar
- * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param elementWidth Ancho del nodo
- * @param elementHeight Alto del nodo
+ * Función encargada de renderizar los enlaces pertenecientes a los nodos de una lista.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param linksData Array con información de los enlaces a renderizar.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param elementWidth Ancho del nodo.
+ * @param elementHeight Alto del nodo.
  */
 export function drawListLinks(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -222,20 +222,26 @@ export function drawListLinks(
 }
 
 /**
- * Función encargada de resaltar un nodo especifico 
- * @param svg Lienzo en el que se va a dibujar
- * @param nodeId Id del nodo a resaltar
- * @param highlightColor Color de resaltado para el nodo
- * @param resetQueryValues Función para restablecer los valores de la query del usuario
- * @param setIsAnimating Función para establecer el estado de animación
+ * Función encargada de resaltar un nodo especifico. 
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodeId Id del nodo a resaltar.
+ * @param rectValues Valores de estilo para el contenedor del nodo.
+ * @param textValues Valores de estilo para el texto del nodo.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export function animateHighlightNode(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodeId: string,
-    highlightColor: string,
+    rectValues: { highlightColor: string, rectStrokeColor: string, rectStrokeWidth: number },
+    textValues: { textFillColor: string, textFontSize: string, textFontWeight: string },
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
+    // Estilos para contenedor y texto del nodo
+    const { highlightColor, rectStrokeColor, rectStrokeWidth } = rectValues;
+    const { textFillColor, textFontSize, textFontWeight } = textValues;
+
     // Grupo del lienzo correspondiente al nodo a resaltar 
     const nodeGroup = svg.select<SVGGElement>(`#${nodeId}`);
 
@@ -251,8 +257,8 @@ export function animateHighlightNode(
         .transition()
         .delay(800)
         .duration(300)
-        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+        .attr("stroke", rectStrokeColor)
+        .attr("stroke-width", rectStrokeWidth);
 
     // Animación de sobresalto del valor del nodo
     text.transition()
@@ -263,9 +269,9 @@ export function animateHighlightNode(
         .transition()
         .delay(800)
         .duration(300)
-        .attr("fill", "white")
-        .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-        .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT);
+        .attr("fill", textFillColor)
+        .style("font-size", textFontSize)
+        .style("font-weight", textFontWeight);
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();

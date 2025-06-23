@@ -214,7 +214,14 @@ export function useQueueRender(
         const headNodeId = query.toGetFront;
 
         // Animación de resaltado para nodo cabeza de la cola
-        animateHighlightNode(svg, headNodeId, "#00e676", resetQueryValues, setIsAnimating);
+        animateHighlightNode(
+            svg,
+            headNodeId,
+            { highlightColor: "#00e676", rectStrokeColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR, rectStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH },
+            { textFillColor: "white", textFontSize: SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE, textFontWeight: SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT },
+            resetQueryValues,
+            setIsAnimating
+        );
     }, [query.toGetFront, queueNodes, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la limpieza de lienzo

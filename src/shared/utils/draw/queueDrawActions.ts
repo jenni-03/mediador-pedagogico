@@ -76,7 +76,7 @@ export function drawQueueNodes(
                     .attr("ry", 4)
                     .attr("fill", SVG_STYLE_VALUES.MEMORY_FILL_COLOR)
                     .attr("stroke", SVG_STYLE_VALUES.MEMORY_STROKE_COLOR)
-                    .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_SRTOKE_WIDTH);
+                    .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_STROKE_WIDTH);
 
                 // Dirección de memoria
                 gEnter

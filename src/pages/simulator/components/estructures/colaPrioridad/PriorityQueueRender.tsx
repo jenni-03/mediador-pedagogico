@@ -1,5 +1,8 @@
 import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { BaseQueryOperations } from "../../../../../types";
+import {
+    BaseQueryOperations,
+    PriorityQueueNodeData,
+} from "../../../../../types";
 import { usePriorityQueueRender } from "../../../hooks/estructures/colaPrioridad/usePriorityQueueRender";
 
 export function PriorityQueueRender({
@@ -7,13 +10,7 @@ export function PriorityQueueRender({
     query,
     resetQueryValues,
 }: {
-    queue: {
-        id: string;
-        value: number;
-        next: string | null;
-        memoryAddress: string;
-        priority: number;
-    }[];
+    queue: PriorityQueueNodeData[];
     query: BaseQueryOperations<"cola_de_prioridad">;
     resetQueryValues: () => void;
 }) {

@@ -170,10 +170,9 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     clean: () => void;
   } :
   T extends "cola de prioridad" ? {
-    enqueue: (element: number) => void;
+    enqueue: (element: number, priority: number) => void;
     dequeue: () => void;
     getFront: () => void;
-    getRear: () => void;
     clean: () => void;
   } :
   T extends "pila" ? {
@@ -220,11 +219,7 @@ export type QueueNodeData = {
   memoryAddress: string;
 };
 
-export type PriorityQueueNodeData = {
-  id: string;
-  value: number;
-  next: string | null;
-  memoryAddress: string;
+export type PriorityQueueNodeData = QueueNodeData & {
   priority: number;
 };
 

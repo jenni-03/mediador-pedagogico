@@ -167,18 +167,20 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
     const keyword = parts[0]?.toLowerCase();
     switch (keyword) {
       case "enqueue":
-        if (parts.length !== 3) {
-          return { valid: false, message: "Debe proporcionar dos números como argumentos." };
+        {
+          if (parts.length !== 3) {
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a encolar y su prioridad como argumentos." : "Debe proporcionar únicamente dos argumentos (valor, prioridad)." };
+          }
+          const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+          if (!insertPattern.test(parts[1])) {
+            return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
+          }
+          const priorityPattern = /^(10|[1-9])$/;
+          if (!priorityPattern.test(parts[2])) {
+            return { valid: false, message: "La prioridad debe ser un número entre el 1 y el 10." };
+          }
+          return true;
         }
-        const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
-        if (!insertPattern.test(parts[1])) {
-          return { valid: false, message: "El valor a insertar debe ser un número entero de hasta 4 dígitos." };
-        }
-        const priorityPattern = /^(10|[1-9])$/;
-        if (!priorityPattern.test(parts[2])) {
-          return { valid: false, message: "La prioridad debe ser un número entero desde el 1 hasta el 10." };
-        }
-        return true;
 
       case "dequeue":
       case "getfront":
@@ -186,7 +188,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
         if (parts.length !== 1) {
           return {
             valid: false,
-            message: "El método debe ser vacío, no espera ningún argumento.",
+            message: "El método no espera ningún argumento.",
           };
         }
         return true;
@@ -215,7 +217,7 @@ export const commandRules: Record<string, (parts: string[]) => boolean | { valid
       case "insertat":
         {
           if (parts.length !== 3) {
-            return { valid: false, message: "Debe proporcionar únicamente 2 números como argumentos (valor, posición)." };
+            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a encolar y su posición como argumentos." : "Debe proporcionar únicamente 2 números como argumentos (valor, posición)." };
           }
           const positionPattern = /^\d+$/; // Número entero para la posición
           const valuePattern = /^\d{1,4}$/; // Número entero de hasta 4 dígitos para el valor

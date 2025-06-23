@@ -187,7 +187,8 @@ export function useStackRender(
         animateHighlightNode(
             svg,
             topNodeId,
-            "#00e676",
+            { highlightColor: "#00e676", rectStrokeColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR, rectStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH },
+            { textFillColor: "white", textFontSize: SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE, textFontWeight: SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT },
             resetQueryValues,
             setIsAnimating
         );

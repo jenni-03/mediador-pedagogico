@@ -1,18 +1,18 @@
 import { useEffect, useRef } from "react";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { Simulator } from "./components/templates/Simulator";
-import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { priorityQueueAddressGenerator } from "../../shared/utils/memoryAllocator";
 import { ColaDePrioridad } from "../../shared/utils/structures/ColaPrioridad";
 import { usePriorityQueue } from "./hooks/estructures/colaPrioridad/usePriorityQueue";
 import { PriorityQueueRender } from "./components/estructures/colaPrioridad/PriorityQueueRender";
 
 export function PriorityQueueSimulator() {
     // Instanciación de la estructura Cola
-    const structure = useRef(new ColaDePrioridad).current;
+    const structure = useRef(new ColaDePrioridad()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {
-        dynamicAddressGenerator.reset();
+        priorityQueueAddressGenerator.reset();
     }, []);
 
     // Llamada al hook usePriorityQueue para manejar la lógica de la cola de prioridad

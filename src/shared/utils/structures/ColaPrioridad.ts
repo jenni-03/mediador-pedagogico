@@ -25,10 +25,10 @@ export class ColaDePrioridad {
     }
 
     /**
-     * Método que inserta un nodo en la posición correspondiente según su prioridad.
+     * Método que inserta un elemento en la posición correspondiente según su prioridad.
      * @param valor Elemento a encolar.
      * @param prioridad Prioridad del nodo (menor número = mayor prioridad).
-     * @returns Nodo insertado.
+     * @returns Elemento insertado.
      */
     public encolar(valor: number, prioridad: number): NodoPrioridad {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
@@ -59,16 +59,22 @@ export class ColaDePrioridad {
     }
 
     /**
-     * Método que elimina el nodo con mayor prioridad (inicio).
-     * @returns Valor del nodo eliminado.
+     * Método que elimina el elemento con mayor prioridad (inicio).
+     * @returns elemento decolado.
      */
-    public decolar(): number | null {
+    public decolar(): NodoPrioridad {
         if (this.esVacia()) throw new Error("No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0).");
 
-        const valor = this.inicio!.getValor();
-        this.inicio = this.inicio!.getSiguiente();
+        const nodoAEliminar = this.inicio!;
+
+        if (this.inicio?.getSiguiente()) {
+            this.inicio = this.inicio.getSiguiente();
+        } else {
+            this.inicio = null;
+        }
+
         this.tamanio--;
-        return valor;
+        return nodoAEliminar;
     }
 
     /**
@@ -80,7 +86,7 @@ export class ColaDePrioridad {
     }
 
     /**
-     * Método que obtiene el nodo inicial de la cola.
+     * Método que obtiene el elemento inicial de la cola.
      * @returns NodoPrioridad o null si la cola está vacía.
      */
     public getInicio(): NodoPrioridad | null {
@@ -132,8 +138,8 @@ export class ColaDePrioridad {
      * Método que clona la cola actual.
      * @returns Nueva cola clonada.
      */
-    public clonar(): ColaDePrioridad {
-        const clon = new ColaDePrioridad();
+    public clonar() {
+        const clon = new (this.constructor as new () => this)();
 
         if (this.esVacia()) {
             return clon;
