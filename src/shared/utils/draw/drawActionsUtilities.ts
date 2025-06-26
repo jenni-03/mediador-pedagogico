@@ -120,6 +120,7 @@ export function drawListNodes(
 
                 // Contenedor del nodo
                 gEnter.append("rect")
+                    .attr("class", "node-container")
                     .attr("width", elementWidth)
                     .attr("height", elementHeight)
                     .attr("rx", 6)
@@ -130,6 +131,7 @@ export function drawListNodes(
 
                 // Valor del nodo
                 gEnter.append("text")
+                    .attr("class", "node-value")
                     .attr("x", elementWidth / 2)
                     .attr("y", elementHeight / 2)
                     .attr("dy", "0.35em")
@@ -174,6 +176,12 @@ export function drawListNodes(
                     const y = (height - elementHeight) / 2;
                     positions.set(d.id, { x, y });
                 });
+
+                // Actualizar colores del contenedor en caso de haber cambiado
+                update.select(".node-container")
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
 
                 return update;
             },

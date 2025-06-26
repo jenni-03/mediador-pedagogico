@@ -233,9 +233,6 @@ export async function animateInsertLast(
             newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
         }
 
-        // Grupo del lienzo correspondiente al nodo anterior al nuevo último nodo
-        const prevLastNodeGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
-
         // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
         if (!showDoubleLinks) {
             for (const node of existingNodesData) {
@@ -294,17 +291,6 @@ export async function animateInsertLast(
                 .transition()
                 .duration(1000)
                 .style("opacity", 1)
-                .end();
-        }
-
-        // Restablecimiento del estilo del nodo anterior al nuevo último nodo
-        if (!showDoubleLinks) {
-            await prevLastNodeGroup
-                .select("rect")
-                .transition()
-                .duration(500)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
                 .end();
         }
 
@@ -369,9 +355,6 @@ export async function animateInsertAtPosition(
 
     // Grupo del lienzo correspondiente al nuevo elemento
     const newNodeGroup = svg.select<SVGGElement>(`g#${newNode}`);
-
-    // Grupo del lienzo correspondiente al nodo anterior al nodo a insertar
-    const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
 
     // Posición de animación final para inserción del nuevo nodo
     const finalNewNodePos = positions.get(newNode)!;
@@ -658,15 +641,6 @@ export async function animateInsertAtPosition(
     // Resolución de las promesas de animación para movimiento de los elementos del nuevo nodo a su posición final
     await Promise.all(newNodeFinalMovementPromises);
 
-    // Restablecimiento del estilo del nodo anterior al nuevo nodo
-    await prevNodeGroup
-        .select("rect")
-        .transition()
-        .duration(500)
-        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-        .end();
-
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
 
@@ -877,9 +851,6 @@ export async function animateRemoveLast(
         // Información de la lista
         const { remainingNodesData, showDoubleLinks, showTailIndicator } = listData;
 
-        // Grupo del lienzo correspondiente al nuevo último nodo
-        const newLastNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
-
         // Grupo del lienzo correspondiente al enlace siguiente entre el nuevo último nodo y el nodo a eliminar
         const newLastNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${newLastNode}-${prevLastNode}-next`);
 
@@ -972,17 +943,6 @@ export async function animateRemoveLast(
             .style("opacity", 0)
             .end();
 
-        // Restablecimiento del estilo del nuevo último nodo
-        if (!showDoubleLinks) {
-            await newLastNodeGroup
-                .select("rect")
-                .transition()
-                .duration(500)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
-
         // Eliminación de los elementos del DOM asociados al nodo eliminado
         nodeToRemoveGroup.remove();
         newLastNodeNextLinkGroup.remove();
@@ -1041,9 +1001,6 @@ export async function animateRemoveAtPosition(
 
     // Grupo del lienzo correspondiente al nodo a eliminar
     const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeToRemove}`);
-
-    // Grupo del lienzo correspondiente al nodo anterior al nodo a eliminar
-    const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
 
     // Grupo del lienzo correspondiente al enlace siguiente formado entre el nodo anterior y el nodo siguiente al nodo a eliminar
     const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${nextNode}-next`);
@@ -1308,17 +1265,6 @@ export async function animateRemoveAtPosition(
     // Resolución de las promesas para animación de desplazamiento de nodos y enlaces restantes
     await Promise.all(shiftPromises);
 
-    // Restablecimiento del estilo del nodo anterior al nuevo nodo
-    if (!showDoubleLinks) {
-        await prevNodeGroup
-            .select("rect")
-            .transition()
-            .duration(500)
-            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-            .end();
-    }
-
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
 
@@ -1386,48 +1332,6 @@ export async function animateSearchElement(
             .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
             .end();
     }
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
-}
-
-/**
- * Función encargada de eliminar todos los nodos y enlaces del lienzo.
- * 
- * @param svg - Selección D3 del elemento SVG que se va a limpiar
- * @param nodePositions - Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues - Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating - Función para establecer el estado de animación.
- */
-export async function animateClearList(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodePositions: Map<string, { x: number, y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-) {
-    // Animación de salida de los enlaces
-    await svg.selectAll("g.link")
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .end();
-
-    // Animacición de salida de los nodos
-    await svg.selectAll("g.node")
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .end();
-
-    // Eliminación de los nodos y enlaces del DOM
-    svg.selectAll("g.node").remove();
-    svg.selectAll("g.link").remove();
-
-    // Liempiza del mapa de posiciones
-    nodePositions.clear();
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();

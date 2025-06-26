@@ -4,8 +4,8 @@ import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { LIST_RENDER_CONFIGS, SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
-import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateRemoveFirst, animateRemoveLast, animateRemoveAtPosition, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
+import { animateClearList, drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateRemoveFirst, animateRemoveLast, animateRemoveAtPosition, animateSearchElement } from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
     listNodes: ListNodeData[],
