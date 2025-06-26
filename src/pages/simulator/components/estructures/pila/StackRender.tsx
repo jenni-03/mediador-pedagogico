@@ -1,4 +1,4 @@
-import { BaseQueryOperations } from "../../../../../types";
+import { BaseQueryOperations, StackNodeData } from "../../../../../types";
 import { useStackRender } from "../../../hooks/estructures/pila/useStackRender";
 
 export function StackRender({
@@ -6,12 +6,7 @@ export function StackRender({
     query,
     resetQueryValues,
 }: {
-    stack: {
-        id: string;
-        value: number;
-        next: string | null;
-        memoryAddress: string;
-    }[];
+    stack: StackNodeData[];
     query: BaseQueryOperations<"pila">;
     resetQueryValues: () => void;
 }) {

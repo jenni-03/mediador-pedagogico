@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BaseQueryOperations, IndicatorPositioningConfig, StackNodeData } from "../../../../../types";
+import { BaseQueryOperations, StackNodeData } from "../../../../../types";
 import { SVG_STACK_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
@@ -75,15 +75,9 @@ export function useStackRender(
             nodesHeight
         });
 
-        // Transición de aparición del indicador
-        const indicatorPositioningTransform: IndicatorPositioningConfig = {
-            calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth + 30}, ${pos.y - d.elementHeight / 2})`
-        };
-
         // Creación de indicador para elemento tope
         const headId = stackNodes.length > 0 ? stackNodes[0].id : null;
         const headPos = headId ? nodePositions.get(headId)! : null;
-        const arrowHeadPathData = "M0,0 L10,9.5 L10,4 L20,4 L20,-4 L10,-4 L10,-9.5 Z";
 
         // Configuración de estilos y de posicionamiento para el indicador de tope
         const headStyleConfig = {
@@ -92,7 +86,7 @@ export function useStackRender(
             arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
             fontSize: "18px",
             fontWeight: "bold",
-            arrowPathData: arrowHeadPathData,
+            arrowPathData: "M0,0 L10,9.5 L10,4 L20,4 L20,-4 L10,-4 L10,-9.5 Z",
             textRelativeX: headPos ? (elementWidth / 2) - 10 : undefined,
             textRelativeY: headPos ? elementHeight + 10 : -30,
             arrowTransform: `translate(-20, ${elementHeight + 5})`
@@ -105,7 +99,7 @@ export function useStackRender(
             "tope-indicator-group",
             headPos,
             headStyleConfig,
-            indicatorPositioningTransform,
+            { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth + 30}, ${pos.y - d.elementHeight / 2})` },
             { elementWidth, elementHeight }
         );
     }, [stackNodes, prevNodes]);
@@ -131,7 +125,7 @@ export function useStackRender(
         animatePushNode(
             svg,
             nodeIdEnqueued,
-            stackNodes.slice(1),
+            prevNodes,
             nodePositions,
             resetQueryValues,
             setIsAnimating
@@ -167,7 +161,7 @@ export function useStackRender(
         );
     }, [query.toPopNode, stackNodes, prevNodes, resetQueryValues, setIsAnimating]);
 
-    // Operación de obtención de elemento tope
+    // Operación de obtención del elemento tope
     useEffect(() => {
         if (
             !svgRef.current ||
@@ -202,7 +196,7 @@ export function useStackRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
 
-        // Animación de limpieza de la pila
+        // Animación de limpieza del lienzo
         animateClearStack(svg, nodePositions, resetQueryValues, setIsAnimating);
     }, [query.toClear, stackNodes, resetQueryValues, setIsAnimating]);
 

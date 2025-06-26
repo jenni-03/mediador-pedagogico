@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BaseQueryOperations, LinkData, PriorityQueueNodeData } from "../../../../../types";
 import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { drawPriorityQueueNodes, animateDequeueNode, animateEnqueueBetweenNodes, animateClearQueue, animateEnqueueFirstNode, animateEnqueueLastNode, getPriorityColor } from "../../../../../shared/utils/draw/priorityQueueDrawActions";
+import { drawPriorityQueueNodes, animateDequeueNode, animateEnqueueBetweenNodes, animateEnqueueFirstNode, animateEnqueueLastNode, getPriorityColor } from "../../../../../shared/utils/draw/priorityQueueDrawActions";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { animateHighlightNode, drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { animateClearList, animateHighlightNode, drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
 
 export function usePriorityQueueRender(
     queueNodes: PriorityQueueNodeData[],
@@ -243,8 +243,8 @@ export function usePriorityQueueRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
 
-        // Animación de limpieza de la cola
-        animateClearQueue(svg, nodePositions, resetQueryValues, setIsAnimating);
+        // Animación de limpieza del lienzo
+        animateClearList(svg, nodePositions, resetQueryValues, setIsAnimating);
     }, [query.toClear, queueNodes, resetQueryValues, setIsAnimating]);
 
     return { svgRef };

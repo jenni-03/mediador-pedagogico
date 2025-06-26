@@ -3,10 +3,10 @@ import * as d3 from "d3";
 import { SVG_QUEUE_VALUES, SVG_STACK_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 
 /**
- * Función encargada de renderizar los nodos de la pila
- * @param svg Lienzo en el que se va a dibujar
- * @param pushNodes Nodos a renderizar
- * @param positions Mapa de posiciones de cada uno de los nodos dentro del lienzo
+ * Función encargada de renderizar los nodos de la pila.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param pushNodes Array con información de los nodos a renderizar.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param dims Dimensiones de los elementos dentro del lienzo
  */
 export function drawStackNodes(
@@ -126,13 +126,13 @@ export function drawStackNodes(
 }
 
 /**
- * Función encargada de animar la entrada de un nuevo nodo en la pila 
- * @param svg Lienzo en el que se va a dibujar
- * @param nodeStacked ID del nodo apilado
- * @param remainingNodesData Información de los nodos dentro de la pila
- * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función para restablecer los valores de la query del usuario
- * @param setIsAnimating Función para establecer el estado de animación
+ * Función encargada de animar la entrada de un nuevo nodo en la pila.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodeStacked ID del nodo apilado.
+ * @param remainingNodesData Array con información de los nodos previo a la apilación.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animatePushNode(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -160,7 +160,7 @@ export async function animatePushNode(
         .style("opacity", 0)
         .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
 
-    // Animación de aparición del nuevo nodo
+    // Aparición del nuevo nodo
     await newNodeGroup
         .transition()
         .duration(1000)
@@ -169,23 +169,23 @@ export async function animatePushNode(
         .end();
 
     // En caso de haber mas nodos dentro de la pila
-    if (remainingNodesData.length >= 1) {
+    if (remainingNodesData.length > 0) {
         // Grupo del lienzo correspondiente al indicador del elemento tope
         const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-        // Animación de salida del indicador tope
+        // Salida del indicador de tope
         await topeIndicatorGroup
             .transition()
             .duration(1000)
             .style("opacity", 0)
             .end();
 
-        // Selección de nodos restantes (re-vinculación de datos)
+        // Selección de nodos existentes (re-vinculación de datos)
         const remainingNodes = svg
             .selectAll<SVGGElement, StackNodeData>("g.node")
             .data(remainingNodesData, (d) => d.id);
 
-        // Animación de desplazamiento para nodos restantes
+        // Desplazamiento de nodos existentes a su posición final
         await remainingNodes
             .transition()
             .duration(1500)
@@ -196,7 +196,7 @@ export async function animatePushNode(
             })
             .end();
 
-        // Animación de entrada del indicador tope
+        // Entrada del indicador tope
         await topeIndicatorGroup
             .transition()
             .duration(1000)
@@ -205,7 +205,7 @@ export async function animatePushNode(
             .end();
     }
 
-    // Animación de movimiento del nuevo nodo a su posición final
+    // Movimiento del nuevo nodo a su posición final
     await newNodeGroup
         .transition()
         .duration(1500)
@@ -221,13 +221,13 @@ export async function animatePushNode(
 }
 
 /**
- * Función encargada de animar la salida de un nodo de la pila 
- * @param svg Lienzo en el que se va a dibujar
- * @param nodeIdPop Id del nodo desapilado 
- * @param remainingNodesData Información de los nodos restantes de la pila
- * @param positions Mapa de posiciones de cada nodo dentro del lienzo
- * @param resetQueryValues Función para restablecer los valores de la query del usuario
- * @param setIsAnimating Función para establecer el estado de animación
+ * Función encargada de animar la salida de un nodo de la pila.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodeIdPop Id del nodo desapilado.
+ * @param remainingNodesData Array con información de los nodos restantes de la pila.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animatePopNode(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
@@ -243,7 +243,7 @@ export async function animatePopNode(
     // Movimiento del nodo a desapilar
     const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
 
-    // Animación de salida del nodo
+    // Salida del nodo a eliminar
     await nodeToRemoveGroup
         .transition()
         .ease(d3.easeBackInOut)
@@ -268,7 +268,7 @@ export async function animatePopNode(
         // Grupo del lienzo correspondiente al indicador del elemento tope
         const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-        // Animación de salida del indicador de tope
+        // Salida del indicador de tope
         await topeIndicatorGroup
             .transition()
             .duration(1000)
@@ -280,7 +280,7 @@ export async function animatePopNode(
             .selectAll<SVGGElement, StackNodeData>("g.node")
             .data(remainingNodesData, (d) => d.id);
 
-        // Animación de desplazamiento para nodos restantes
+        // Desplazamiento de nodos restantes a su posición final
         await remainingNodes
             .transition()
             .duration(1500)
@@ -291,11 +291,10 @@ export async function animatePopNode(
             })
             .end();
 
-        // Animación de entrada del indicador de tope
+        // Entrada del indicador de tope
         await topeIndicatorGroup
             .transition()
             .duration(1000)
-            .ease(d3.easeBounce)
             .style("opacity", 1)
             .end();
     }
@@ -308,11 +307,11 @@ export async function animatePopNode(
 }
 
 /**
- * Función encargada de eliminar los elementos de la pila
- * @param svg Lienzo que se va a limpiar
- * @param nodePositions Mapa de posiciones de los nodos dentro del lienzo
- * @param resetQueryValues Función que restablece los valores de la query del usuario
- * @param setIsAnimating Función que establece el estado de animación
+ * Función encargada de eliminar todos los elementos dentro del lienzo.
+ * @param svg Selección D3 del elemento SVG a limpiar.
+ * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateClearStack(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
