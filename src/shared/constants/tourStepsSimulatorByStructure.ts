@@ -109,10 +109,6 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
         },
         {
-            id: "console",
-            type: "action",
-        },
-        {
             id: "inputConsola",
             text: "create(7);",
             type: "write",
@@ -152,10 +148,6 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             description:
                 "En la consola puedes realizar todas las operaciones de una pila, tales como, apilar (push), desapilar (pop), y consultar el tope de la pila (getTop).",
             type: "element",
-        },
-        {
-            id: "console",
-            type: "action",
         },
         {
             id: "inputConsola",
@@ -199,10 +191,6 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
         },
         {
-            id: "console",
-            type: "action",
-        },
-        {
             id: "inputConsola",
             text: "enqueue(10);",
             type: "write",
@@ -236,10 +224,6 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             description:
                 "En la consola puedes realizar todas las operaciones de una cola de prioridad, tales como, encolar por prioridad (enqueue), decolar (dequeue), y consultar la cabeza de la cola (getFront).",
             type: "element",
-        },
-        {
-            id: "console",
-            type: "action",
         },
         {
             id: "inputConsola",
@@ -277,10 +261,6 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
         },
         {
-            id: "console",
-            type: "action",
-        },
-        {
             id: "inputConsola",
             text: "insertLast(30);",
             type: "write",
@@ -314,10 +294,6 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             description:
                 "En la consola puedes realizar todas las operaciones de una lista doble, tales como, inserción y eliminación de elementos desde diferentes posiciones, y consultar si un elemento se encuentra en la lista.",
             type: "element",
-        },
-        {
-            id: "console",
-            type: "action",
         },
         {
             id: "inputConsola",
@@ -395,6 +371,12 @@ export const getTourSteps = (structureType: string): TourStep[] => [
         type: "element",
         description: `La consola es el medio principal de interacción con la estructura, en ella podrás escribir los comandos
                 para manipular la estructura y recibir retroalimentación sobre su ejecución como advertencias o errores.`,
+    },
+    {
+        id: "console",
+        type: "element",
+        description: `Si ya has escrito varios comandos, siempre puedes navegar por el historial presionando las flechas arriba y abajo, o
+                usar el comando "clear" para limpiar la consola.`
     },
     ...(tourStepsCommands[structureType] ?? []),
     {

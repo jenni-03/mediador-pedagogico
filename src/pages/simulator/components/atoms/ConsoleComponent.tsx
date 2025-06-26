@@ -45,52 +45,6 @@ export function ConsoleComponent({
     // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos
     const structuresRequiringCreate = ["secuencia"];
 
-    // Manejo de Enter manual para el input, en el caso del tutorial
-    useEffect(() => {
-        const inputEl = inputRef.current;
-        if (!inputEl) return;
-
-        const handleManualEnter = (e: KeyboardEvent) => {
-            if (e.key === "Enter" && inputEl.value.trim() !== "") {
-                if (e.isTrusted) {
-                    // Ignoramos los eventos del teclado físico
-                    return;
-                }
-                e.preventDefault();
-                const parsed = parseCommand(
-                    inputEl.value.trim(),
-                    structureType
-                );
-
-                if (Array.isArray(parsed)) {
-                    onCommand(parsed, true);
-                    setHistory([
-                        ...history,
-                        `$ ${inputEl.value.trim()}`,
-                        "Comando válido, procesando...",
-                    ]);
-                    //Guardamos el comando en el historial
-                    setCommandHistory([
-                        ...commandHistory,
-                        inputEl.value.trim(),
-                    ]);
-                } else {
-                    // parsed es { error: string }
-                    setHistory([
-                        ...history,
-                        `$ ${input}`,
-                        `Error: ${parsed.error}`,
-                    ]);
-                }
-
-                inputEl.value = "";
-            }
-        };
-
-        inputEl.addEventListener("keydown", handleManualEnter);
-        return () => inputEl.removeEventListener("keydown", handleManualEnter);
-    }, []);
-
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (isAnimating) return;
         if (e.key === "Enter" && input.trim() !== "") {
