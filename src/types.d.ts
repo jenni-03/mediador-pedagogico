@@ -20,7 +20,7 @@ export type ListRenderConfig = {
   showHeadIndicator: boolean;
   showTailIndicator: boolean;
   showDoubleLinks: boolean;
-  showCircularLinks: booelan;
+  showCircularLinks: boolean;
 }
 
 export type CardListProps = {
@@ -226,7 +226,7 @@ export type PriorityQueueNodeData = QueueNodeData & {
 export type LinkData = {
   sourceId: string;
   targetId: string;
-  type: "next" | "prev";
+  type: "next" | "prev" | "next-circular" | "prev-circular";
 };
 
 export type StackNodeData = {

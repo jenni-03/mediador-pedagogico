@@ -168,13 +168,14 @@ export function ConsoleComponent({
                             if (command == "create") {
                                 setIsCreated(true); // Marcar como creada
                             }
+
                             onCommand(parsed, true);
+
                             setHistory([
                                 ...history,
                                 `$ ${input}`,
                                 "Comando válido, procesando...",
                             ]);
-                            console.log(commandValidation);
                             //Guardamos el comando en el historial
                             setCommandHistory([
                                 ...commandHistory,

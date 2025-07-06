@@ -16,6 +16,7 @@ export const STRUCTURE_NAME = {
     SIMPLE_LINKED_LIST: 'lista_simplemente_enlazada',
     DOUBLE_LINKED_LIST: 'lista_doblemente_enlazada',
     HASHTABLE: 'tabla_hash',
+    SIMPLE_CIRCULAR_LIST: 'lista_circular_simple',
 } as const
 
 export const SVG_STYLE_VALUES = {

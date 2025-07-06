@@ -1,11 +1,32 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, LinkData, ListNodeData } from "../../../../../types";
+import {
+    BaseQueryOperations,
+    LinkData,
+    ListNodeData,
+} from "../../../../../types";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { LIST_RENDER_CONFIGS, SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import {
+    LIST_RENDER_CONFIGS,
+    SVG_LINKED_LIST_VALUES,
+    SVG_STYLE_VALUES,
+} from "../../../../../shared/constants/consts";
 import * as d3 from "d3";
-import { drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateRemoveFirst, animateRemoveLast, animateRemoveAtPosition, animateSearchElement, animateClearList } from "../../../../../shared/utils/draw/LinkedListDrawActions";
+import {
+    drawArrowIndicator,
+    drawListLinks,
+    drawListNodes,
+} from "../../../../../shared/utils/draw/drawActionsUtilities";
+import {
+    animateInsertAtPosition,
+    animateInsertFirst,
+    animateInsertLast,
+    animateRemoveFirst,
+    animateRemoveLast,
+    animateRemoveAtPosition,
+    animateSearchElement,
+    animateClearList,
+} from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
     listNodes: ListNodeData[],
@@ -17,7 +38,9 @@ export function useLinkedListRender(
     const svgRef = useRef<SVGSVGElement>(null);
 
     // Mapa para guardar posiciones {x, y} de los nodos dentro del SVG
-    const nodePositions = useRef(new Map<string, { x: number, y: number }>()).current;
+    const nodePositions = useRef(
+        new Map<string, { x: number; y: number }>()
+    ).current;
 
     // Estado previo de la lista
     const prevNodes = usePrevious(listNodes);
@@ -28,27 +51,166 @@ export function useLinkedListRender(
     // Configuración de animación predefinida para la lista
     const config = LIST_RENDER_CONFIGS[listType];
 
-    // Memo para calcular los enlaces entre nodos
     const linksData = useMemo<LinkData[]>(() => {
         const links: LinkData[] = [];
-        listNodes.forEach(n => {
+
+        // Verificar si es una lista circular
+        const isCircular = listType === "circular" && listNodes.length > 0;
+        const firstNodeId = isCircular ? listNodes[0].id : null;
+
+        listNodes.forEach((n) => {
             if (n.next) {
-                links.push({
-                    sourceId: n.id,
-                    targetId: n.next,
-                    type: "next"
-                })
+                // Si es una lista circular y el next apunta al primer nodo, crear enlace circular
+                if (isCircular && n.next === firstNodeId) {
+                    links.push({
+                        sourceId: n.id,
+                        targetId: n.next,
+                        type: "next-circular",
+                    });
+                } else {
+                    // Enlace normal
+                    links.push({
+                        sourceId: n.id,
+                        targetId: n.next,
+                        type: "next",
+                    });
+                }
             }
+
             if (n.prev) {
-                links.push({
-                    sourceId: n.id,
-                    targetId: n.prev,
-                    type: "prev"
-                })
+                // Si es una lista circular doble y el prev apunta al último nodo, crear enlace circular
+                if (isCircular && listNodes.length > 0 && n.prev === listNodes[listNodes.length - 1].id) {
+                    links.push({
+                        sourceId: n.id,
+                        targetId: n.prev,
+                        type: "prev-circular", // Por si necesitas enlaces circulares bidireccionales
+                    });
+                } else {
+                    // Enlace normal
+                    links.push({
+                        sourceId: n.id,
+                        targetId: n.prev,
+                        type: "prev",
+                    });
+                }
             }
         });
+
         return links;
-    }, [listNodes]);
+    }, [listNodes, listType]);
+
+    // const linksData = useMemo<LinkData[]>(() => {
+    //     const links: LinkData[] = [];
+    //     const isCircular = listType === "circular" && listNodes.length > 0;
+    
+    //     const firstNodeId = listNodes[0]?.id;
+    //     const lastNodeId = listNodes[listNodes.length - 1]?.id;
+    
+    //     const seenLinks = new Set<string>(); // Para evitar duplicados
+    
+    //     listNodes.forEach((n, i) => {
+    //         // Enlace next
+    //         if (n.next) {
+    //             const isCircularLink =
+    //                 isCircular && n.id === lastNodeId && n.next === firstNodeId;
+    
+    //             const type = isCircularLink ? "next-circular" : "next";
+    //             const linkId = `link-${n.id}-${n.next}-${type}`;
+    
+    //             if (!seenLinks.has(linkId)) {
+    //                 links.push({
+    //                     sourceId: n.id,
+    //                     targetId: n.next,
+    //                     type,
+    //                 });
+    //                 seenLinks.add(linkId);
+    //             }
+    //         }
+    
+    //         // Enlace prev (por si usas listas dobles)
+    //         if (n.prev) {
+    //             const type = "prev";
+    //             const linkId = `link-${n.id}-${n.prev}-${type}`;
+    
+    //             if (!seenLinks.has(linkId)) {
+    //                 links.push({
+    //                     sourceId: n.id,
+    //                     targetId: n.prev,
+    //                     type,
+    //                 });
+    //                 seenLinks.add(linkId);
+    //             }
+    //         }
+    //     });
+    
+    //     return links;
+    // }, [listNodes, listType]);
+    
+    
+
+    // const linksData = useMemo<LinkData[]>(() => {
+    //     const links: LinkData[] = [];
+
+    //     // Verificar si es una lista circular
+    //     const isCircular = listType === "circular" && listNodes.length > 0;
+    //     const firstNodeId = isCircular ? listNodes[0].id : null;
+    //     const lastNodeId = isCircular
+    //         ? listNodes[listNodes.length - 1].id
+    //         : null;
+
+    //     listNodes.forEach((node, index) => {
+    //         if (node.next) {
+    //             // Determinar si este enlace es circular
+    //             const isLastNodePointingToFirst =
+    //                 isCircular &&
+    //                 node.id === lastNodeId &&
+    //                 node.next === firstNodeId;
+
+    //             if (isLastNodePointingToFirst) {
+    //                 // Enlace circular del último nodo al primer nodo
+    //                 links.push({
+    //                     sourceId: node.id,
+    //                     targetId: node.next,
+    //                     type: "next-circular",
+    //                 });
+    //             } else {
+    //                 // Enlace normal
+    //                 links.push({
+    //                     sourceId: node.id,
+    //                     targetId: node.next,
+    //                     type: "next",
+    //                 });
+    //             }
+    //         }
+
+    //         if (node.prev) {
+    //             // Para listas doblemente circulares
+    //             const isFirstNodePointingToLast =
+    //                 isCircular &&
+    //                 node.id === firstNodeId &&
+    //                 node.prev === lastNodeId;
+
+    //             if (isFirstNodePointingToLast) {
+    //                 // Enlace circular del primer nodo al último nodo (para listas doblemente circulares)
+    //                 links.push({
+    //                     sourceId: node.id,
+    //                     targetId: node.prev,
+    //                     type: "prev-circular",
+    //                 });
+    //             } else {
+    //                 // Enlace normal
+    //                 links.push({
+    //                     sourceId: node.id,
+    //                     targetId: node.prev,
+    //                     type: "prev",
+    //                 });
+    //             }
+    //         }
+    //     });
+
+    //     console.log("Links generados:", links);
+    //     return links;
+    // }, [listNodes, listType]);
 
     console.log("Tipo de lista: ", listType);
     console.log("Configuración");
@@ -70,7 +232,10 @@ export function useLinkedListRender(
         if (!listNodes || !svgRef.current) return;
 
         // Margenes para el svg
-        const margin = { left: SVG_LINKED_LIST_VALUES.MARGIN_LEFT, right: SVG_LINKED_LIST_VALUES.MARGIN_RIGHT };
+        const margin = {
+            left: SVG_LINKED_LIST_VALUES.MARGIN_LEFT,
+            right: SVG_LINKED_LIST_VALUES.MARGIN_RIGHT,
+        };
 
         // Dimensiones para cada nodo
         const elementWidth = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH;
@@ -81,26 +246,35 @@ export function useLinkedListRender(
         const nodeSpacing = elementWidth + spacing;
 
         // Cálculo del ancho del SVG en base al número de nodos presentes
-        const displayLength = Math.max(listNodes.length, prevNodes?.length ?? 0);
+        const displayLength = Math.max(
+            listNodes.length,
+            prevNodes?.length ?? 0
+        );
         console.log("displayLength", displayLength);
-        const width = margin.left + displayLength * nodeSpacing - (listNodes.length > 0 ? spacing : 0) + margin.right;
+        const width =
+            margin.left +
+            displayLength * nodeSpacing -
+            (listNodes.length > 0 ? spacing : 0) +
+            margin.right;
         console.log("width", width);
 
         // Alto del SVG
         const height = SVG_LINKED_LIST_VALUES.HEIGHT;
 
         // Configuración del contenedor SVG
-        const svg = d3.select(svgRef.current)
+        const svg = d3
+            .select(svgRef.current)
             .attr("height", height)
             .attr("width", width);
 
         // Renderizado de los nodos pertenecientes a la lista
-        drawListNodes(
-            svg,
-            listNodes,
-            nodePositions,
-            { margin, elementWidth, elementHeight, nodeSpacing, height }
-        );
+        drawListNodes(svg, listNodes, nodePositions, {
+            margin,
+            elementWidth,
+            elementHeight,
+            nodeSpacing,
+            height,
+        });
 
         // Renderizado de los enlaces entre nodos
         drawListLinks(
@@ -123,10 +297,11 @@ export function useLinkedListRender(
                 arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                 fontSize: "14px",
                 fontWeight: "bold",
-                arrowPathData: "M0,0 L-9.5,-10 L-4,-10 L-4,-20 L4,-20 L4,-10 L9.5,-10 Z",
+                arrowPathData:
+                    "M0,0 L-9.5,-10 L-4,-10 L-4,-20 L4,-20 L4,-10 L9.5,-10 Z",
                 textRelativeY: -30,
-                arrowTransform: `translate(0, -5)`
-            }
+                arrowTransform: `translate(0, -5)`,
+            };
 
             // Renderizado del indicador de cabeza
             drawArrowIndicator(
@@ -135,14 +310,20 @@ export function useLinkedListRender(
                 "head-indicator-group",
                 headPos,
                 headStyleConfig,
-                { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
+                {
+                    calculateTransform: (pos, d) =>
+                        `translate(${pos.x + d.elementWidth / 2}, ${pos.y})`,
+                },
                 { elementWidth, elementHeight }
             );
         }
 
         // Creación de indicador para elemento cabeza
         if (config.showTailIndicator) {
-            const tailId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+            const tailId =
+                listNodes.length > 0
+                    ? listNodes[listNodes.length - 1].id
+                    : null;
             const tailPos = tailId ? nodePositions.get(tailId)! : null;
 
             // Configuración de estilos y de posicionamiento para el indicador del elemento cola
@@ -152,10 +333,11 @@ export function useLinkedListRender(
                 arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                 fontSize: "14px",
                 fontWeight: "bold",
-                arrowPathData: "M0,0 L-9.5,10 L-4,10 L-4,20 L4,20 L4,10 L9.5,10 Z",
+                arrowPathData:
+                    "M0,0 L-9.5,10 L-4,10 L-4,20 L4,20 L4,10 L9.5,10 Z",
                 textRelativeY: elementHeight + 70,
-                arrowTransform: `translate(0, ${elementHeight + 35})`
-            }
+                arrowTransform: `translate(0, ${elementHeight + 35})`,
+            };
 
             // Renderizado del indicador de cola
             drawArrowIndicator(
@@ -164,7 +346,10 @@ export function useLinkedListRender(
                 "tail-indicator-group",
                 tailPos,
                 tailStyleConfig,
-                { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
+                {
+                    calculateTransform: (pos, d) =>
+                        `translate(${pos.x + d.elementWidth / 2}, ${pos.y})`,
+                },
                 { elementWidth, elementHeight }
             );
         }
@@ -173,31 +358,107 @@ export function useLinkedListRender(
     // Efecto para manejar la inserción de un nuevo nodo
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!listNodes || !svgRef.current || (!query.toAddFirst && !query.toAddLast && query.toAddAt.length !== 2) || !prevNodes) return;
+        if (
+            !listNodes ||
+            !svgRef.current ||
+            (!query.toAddFirst &&
+                !query.toAddLast &&
+                query.toAddAt.length !== 2) ||
+            !prevNodes
+        )
+            return;
 
         // Si la inserción es en la cabeza de la lista
         if (query.toAddFirst) {
             // Id del nuevo nodo cabeza
-            const newHeadNode = query.toAddFirst;
+            const newHeadNode = query.toAddFirst; //deberia ser el 2
 
             // Obtenemos el Id del nodo que era la cabeza de la lista antes de la inserción
-            const prevHeadNode = listNodes.length > 1 ? listNodes[1].id : null;
+            const prevHeadNode = listNodes.length > 1 ? listNodes[1].id : null; //deberia ser el 1
 
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
 
-            // Filtramos los enlaces que requieren posicionamiento producto de la inserción 
-            const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode || link.targetId !== newHeadNode);
+            // Filtramos los enlaces que requieren posicionamiento producto de la inserción
+            let existingLinksData = linksData.filter(
+                (link) =>
+                    link.sourceId !== newHeadNode ||
+                    link.targetId !== newHeadNode
+            );
+
+            // Si es una lista circular, necesitamos filtrar también el enlace circular anterior
+            if (
+                config.showCircularLinks &&
+                prevNodes.length > 0 &&
+                prevHeadNode
+            ) {
+                console.log("Eliminando enlace circular previo");
+                const lastNode = prevNodes[prevNodes.length - 1];
+                // Excluir el enlace circular anterior (del último nodo al anterior primer nodo)
+                existingLinksData = existingLinksData.filter(
+                    (link) =>
+                        !(
+                            link.sourceId === lastNode.id &&
+                            link.targetId === prevHeadNode &&
+                            link.type === "next-circular"
+                        )
+                );
+            }
+            // if (config.showCircularLinks && prevNodes.length > 0) {
+            //     const lastNode = prevNodes[prevNodes.length - 1];
+            
+            //     existingLinksData = existingLinksData.filter((link) => {
+            //         // Eliminar enlace circular antiguo del último nodo
+            //         const isOldCircular =
+            //             link.sourceId === lastNode.id &&
+            //             (link.targetId === lastNode.id || link.targetId === prevHeadNode) &&
+            //             link.type === "next-circular";
+            
+            //         return !isOldCircular;
+            //     });
+            // }
+            
+
+            // CRÍTICO: Filtrar correctamente los enlaces existentes
+            // let existingLinksData = linksData.filter((link) => {
+            //     // Excluir todos los enlaces que involucren al nuevo nodo
+            //     if (
+            //         link.sourceId === newHeadNode ||
+            //         link.targetId === newHeadNode
+            //     ) {
+            //         return false;
+            //     }
+            //     return true;
+            // });
+
+            // // Si es una lista circular, filtrar también el enlace circular anterior
+            // if (
+            //     config.showCircularLinks &&
+            //     prevNodes.length > 0 &&
+            //     prevHeadNode
+            // ) {
+            //     const lastNode = prevNodes[prevNodes.length - 1];
+
+            //     // Excluir el enlace circular anterior (del último nodo al anterior primer nodo)
+            //     existingLinksData = existingLinksData.filter((link) => {
+            //         const isOldCircularLink =
+            //             link.sourceId === lastNode.id &&
+            //             link.targetId === prevHeadNode &&
+            //             link.type === "next-circular";
+            //         return !isOldCircularLink;
+            //     });
+            // }
 
             // Animación de inserción del nodo como nuevo primer elemento de la lista
             animateInsertFirst(
                 svg,
-                { newHeadNode, prevHeadNode, },
+                { newHeadNode, prevHeadNode },
                 {
                     existingNodesData: prevNodes,
                     existingLinksData,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
+                    showCircularLinks: config.showCircularLinks,
                 },
                 nodePositions,
                 resetQueryValues,
@@ -208,7 +469,10 @@ export function useLinkedListRender(
             const newLastNode = query.toAddLast;
 
             // Obtenemos el nodo final anterior a la inserción
-            const prevLastNode = prevNodes.length > 0 ? prevNodes[prevNodes.length - 1].id : null;
+            const prevLastNode =
+                prevNodes.length > 0
+                    ? prevNodes[prevNodes.length - 1].id
+                    : null;
 
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
@@ -220,7 +484,7 @@ export function useLinkedListRender(
                 {
                     existingNodesData: prevNodes,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
                 },
                 nodePositions,
                 resetQueryValues,
@@ -236,10 +500,13 @@ export function useLinkedListRender(
 
             if (insertionPosition === 0) {
                 // Obtenemos el nodo que era la cabeza antes de la inserción
-                const prevHeadNode = prevNodes.length > 0 ? prevNodes[0].id : null;
+                const prevHeadNode =
+                    prevNodes.length > 0 ? prevNodes[0].id : null;
 
                 // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
-                const existingLinksData = linksData.filter(link => link.sourceId !== newNode);
+                const existingLinksData = linksData.filter(
+                    (link) => link.sourceId !== newNode
+                );
 
                 // Animación de inserción del nodo como nuevo primer elemento de la lista
                 animateInsertFirst(
@@ -249,7 +516,8 @@ export function useLinkedListRender(
                         existingNodesData: prevNodes,
                         existingLinksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showCircularLinks: config.showCircularLinks,
                     },
                     nodePositions,
                     resetQueryValues,
@@ -257,7 +525,10 @@ export function useLinkedListRender(
                 );
             } else if (insertionPosition === prevNodes.length) {
                 // Obtenemos el nodo final anterior a la inserción
-                const prevLastNode = prevNodes.length > 0 ? prevNodes[prevNodes.length - 1].id : null;
+                const prevLastNode =
+                    prevNodes.length > 0
+                        ? prevNodes[prevNodes.length - 1].id
+                        : null;
 
                 // Animación de inserción del nodo como nuevo último elemento de la lista
                 animateInsertLast(
@@ -266,7 +537,7 @@ export function useLinkedListRender(
                     {
                         existingNodesData: prevNodes,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
                     },
                     nodePositions,
                     resetQueryValues,
@@ -280,7 +551,10 @@ export function useLinkedListRender(
                 const nextNode = listNodes[insertionPosition + 1].id;
 
                 // Filtramos los enlaces que no pertenecen al nuevo nodo
-                const existingLinksData = linksData.filter(link => link.sourceId !== newNode || link.targetId !== newNode);
+                const existingLinksData = linksData.filter(
+                    (link) =>
+                        link.sourceId !== newNode || link.targetId !== newNode
+                );
 
                 // Animación de inserción del nodo en una posición especifica
                 animateInsertAtPosition(
@@ -290,7 +564,7 @@ export function useLinkedListRender(
                         existingNodesData: listNodes,
                         existingLinksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
                     },
                     insertionPosition,
                     nodePositions,
@@ -299,12 +573,30 @@ export function useLinkedListRender(
                 );
             }
         }
-    }, [query.toAddFirst, query.toAddLast, query.toAddAt, listNodes, linksData, prevNodes, config, resetQueryValues, setIsAnimating]);
+    }, [
+        query.toAddFirst,
+        query.toAddLast,
+        query.toAddAt,
+        listNodes,
+        linksData,
+        prevNodes,
+        config,
+        resetQueryValues,
+        setIsAnimating,
+    ]);
 
     // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!listNodes || !svgRef.current || (!query.toDeleteFirst && !query.toDeleteLast && query.toDeleteAt.length !== 2) || !prevNodes) return;
+        if (
+            !listNodes ||
+            !svgRef.current ||
+            (!query.toDeleteFirst &&
+                !query.toDeleteLast &&
+                query.toDeleteAt.length !== 2) ||
+            !prevNodes
+        )
+            return;
 
         // Si la eliminación es en la cabeza de la lista
         if (query.toDeleteFirst) {
@@ -325,7 +617,7 @@ export function useLinkedListRender(
                     remainingNodesData: listNodes,
                     remainingLinksData: linksData,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
                 },
                 nodePositions,
                 resetQueryValues,
@@ -336,7 +628,10 @@ export function useLinkedListRender(
             const prevLastNode = query.toDeleteLast;
 
             // Obtenemos el Id del nuevo último nodo de la lista
-            const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+            const newLastNode =
+                listNodes.length > 0
+                    ? listNodes[listNodes.length - 1].id
+                    : null;
 
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
@@ -348,7 +643,7 @@ export function useLinkedListRender(
                 {
                     remainingNodesData: listNodes,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
                 },
                 nodePositions,
                 resetQueryValues,
@@ -364,7 +659,8 @@ export function useLinkedListRender(
 
             if (deletePosition === 0) {
                 // Obtenemos el Id del nodo cabeza actual de la lista
-                const newHeadNode = listNodes.length > 0 ? listNodes[0].id : null;
+                const newHeadNode =
+                    listNodes.length > 0 ? listNodes[0].id : null;
 
                 // Animación de eliminación de primer nodo de la lista
                 animateRemoveFirst(
@@ -374,7 +670,7 @@ export function useLinkedListRender(
                         remainingNodesData: listNodes,
                         remainingLinksData: linksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
                     },
                     nodePositions,
                     resetQueryValues,
@@ -382,7 +678,10 @@ export function useLinkedListRender(
                 );
             } else if (deletePosition === prevNodes.length - 1) {
                 // Obtenemos el Id del nuevo último nodo de la lista
-                const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+                const newLastNode =
+                    listNodes.length > 0
+                        ? listNodes[listNodes.length - 1].id
+                        : null;
 
                 // Animación de eliminación del último nodo de la lista
                 animateRemoveLast(
@@ -391,7 +690,7 @@ export function useLinkedListRender(
                     {
                         remainingNodesData: listNodes,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
                     },
                     nodePositions,
                     resetQueryValues,
@@ -406,7 +705,7 @@ export function useLinkedListRender(
 
                 // Obtenemos el nodo siguiente al nodo a eliminar
                 const nextNode = prevNodes[deletePosition + 1].id;
-                console.log("Siguiente Nodo", nextNode)
+                console.log("Siguiente Nodo", nextNode);
 
                 // Animación de eliminación del nodo en una posición especifica
                 animateRemoveAtPosition(
@@ -416,7 +715,7 @@ export function useLinkedListRender(
                         existingNodesData: prevNodes,
                         existingLinksData: linksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
                     },
                     deletePosition,
                     nodePositions,
@@ -425,12 +724,23 @@ export function useLinkedListRender(
                 );
             }
         }
-    }, [query.toDeleteFirst, query.toDeleteLast, query.toDeleteAt, listNodes, linksData, prevNodes, config, resetQueryValues, setIsAnimating]);
+    }, [
+        query.toDeleteFirst,
+        query.toDeleteLast,
+        query.toDeleteAt,
+        listNodes,
+        linksData,
+        prevNodes,
+        config,
+        resetQueryValues,
+        setIsAnimating,
+    ]);
 
     // Efecto para manejar la búsqueda de un nodo
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!listNodes || !svgRef.current || !query.toSearch || !prevNodes) return;
+        if (!listNodes || !svgRef.current || !query.toSearch || !prevNodes)
+            return;
 
         // Obtenemos el elemento de la lista a buscar
         const elementToSearch = query.toSearch;
@@ -446,8 +756,13 @@ export function useLinkedListRender(
             resetQueryValues,
             setIsAnimating
         );
-
-    }, [listNodes, prevNodes, query.toSearch, resetQueryValues, setIsAnimating]);
+    }, [
+        listNodes,
+        prevNodes,
+        query.toSearch,
+        resetQueryValues,
+        setIsAnimating,
+    ]);
 
     // Efecto para manejar la limpieza de lienzo
     useEffect(() => {

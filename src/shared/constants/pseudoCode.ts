@@ -591,6 +591,312 @@ export const operationsCode: Record<string, any> = {
             `}`
         ]
     },
+    lista_circular_simple: {
+        insertFirst: [
+            `/**
+ * Método que inserta un nodo al inicio de la lista.
+ * post: Se insertó un nuevo nodo al inicio de la lista.
+ * @param info es de tipo T y corresponde a la información a almacenar en la lista.
+ */`,
+            `public void insertarAlInicio(T info){`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    if (this.esVacia()) {`,
+            `        this.cabeza = nuevoNodo;`,
+            `        this.cola = nuevoNodo;`,
+            `    } else {`,
+            `        nuevoNodo.setSig(this.cabeza);`,
+            `        this.cabeza.setAnt(nuevoNodo);`,
+            `        this.cabeza = nuevoNodo;`,
+            `    }`,
+            `    this.tamanio++;`,
+            `}`
+        ],
+        insertLast: [
+            `/**
+ * Método que inserta un nodo al final de la lista.
+ * post: Se insertó un nuevo nodo al final de la lista.
+ * @param info es de tipo T y corresponde la información a almacenar en la lista. 
+ */`,
+            `public void insertarAlFinal(T info){`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    if (this.esVacia()) {`,
+            `        this.cabeza = nuevoNodo;`,
+            `        this.cola = nuevoNodo;`,
+            `    } else {`,
+            `        this.cola.setSig(nuevoNodo);`,
+            `        nuevoNodo.setAnt(this.cola);`,
+            `        this.cola = nuevoNodo;`,
+            `    }`,
+            `    this.tamanio++;`,
+            `}`
+        ],
+        insertAt: [
+            `/**
+ * Método que inserta un nodo en una posición especifica de la lista.
+ * post: Se insertó un nuevo nodo en la posición especificada.
+ * @param info es de tipo T y corresponde a la información a almacenar en la lista.
+ * @param pos es de tipo integer y corresponde a la posición de inserción.
+ */`,
+            `public void insertarEnPosicion(T info, int pos){`,
+            `    if (pos < 0 || pos > this.tamanio) {`,
+            `        System.err.println("Posición de inserción no válida!");`,
+            `        return;`,
+            `    }`,
+            `    if (pos == 0) {`,
+            `        this.insertarAlInicio(info);`,
+            `    }`,
+            `    if (pos == this.tamanio) {`,
+            `        this.insertarAlFinal(info);`,
+            `    }`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    NodoD<T>nodoAnt = this.getPos(pos - 1);`,
+            `    nuevoNodo.setSig(nodoAnt.getSig());`,
+            `    nuevoNodo.setAnt(nodoAnt);`,
+            `    nodoAnt.getSig().setAnt(nuevoNodo);`,
+            `    nodoAnt.setSig(nuevoNodo);`,
+            `    this.tamanio++;`,
+            `}`
+        ],
+        removeFirst: [
+            `/**
+ * Método que remueve el nodo inicial de la lista.
+ * post: Se eliminó el nodo inicial de la lista.
+ */`,
+            `public void removerAlInicio(){`,
+            `    if (this.esVacia()) {`,
+            `        System.err.println("Lista vacía!");`,
+            `        return;`,
+            `    }`,
+            `    this.cabeza = this.cabeza.getSig();`,
+            `    this.cabeza.setAnt(null);`,
+            `    this.tamanio--;`,
+            `}`
+        ],
+        removeLast: [
+            `/**
+ * Método que remueve el nodo final de la lista.
+ * post: Se eliminó el nodo final de la lista.
+ */`,
+            `public void removerAlFinal(){`,
+            `    if (this.esVacia()) {`,
+            `        System.err.println("Lista vacía!");`,
+            `        return;`,
+            `    }`,
+            `    this.cola = this.cola.getAnt();`,
+            `    this.cola.setSig(null);`,
+            `    this.tamanio--;`,
+            `}`
+        ],
+        removeAt: [
+            `/**
+ * Método que elimina un nodo dada su posición.
+ * post: Se eliminó el nodo en la posicion especificada.
+ * @param pos es de tipo integer y corresponde a la posición del nodo a eliminar.
+ */`,
+            `public void removerEnPosición(int pos){`,
+            `    if (this.esVacia()) {`,
+            `        System.err.println("Lista vacía!");`,
+            `        return;`,
+            `    }`,
+            `    if (pos < 0 || pos >= this.tamanio) {`,
+            `        System.err.println("Posición de eliminación no válida!");`,
+            `        return;`,
+            `    }`,
+            `    if (pos == 0) {`,
+            `        this.removerAlInicio();`,
+            `    }`,
+            `    if (pos == this.tamanio - 1) {`,
+            `        this.removerAlFinal();`,
+            `    }`,
+            `    NodoD<T>nodoEliminado = this.getPos(pos);`,
+            `    nodoEliminado.getAnt().setSig(nodoEliminado.getSig());`,
+            `    nodoEliminado.getSig().setAnt(nodoEliminado.getAnt());`,
+            `    this.tamanio--;`,
+            `}`
+        ],
+        search: [
+            `/**
+ * Método que busca el elemento especificado en la lista.
+ * post: Se retorno un booleano que indica si el elemento especificado fue encontrado en la lista.
+ * @param elem es de tipo T y corresponde al elemento a buscar.
+ * @return True o false si el elemento fue encontrado.
+ */`,
+            `public boolean search(T elem) {`,
+            `    NodoD<T> nodoActual = this.cabeza;`,
+            `    while(nodoActual) {`,
+            `        if (nodoActual.getValor().equals(elem)) {`,
+            `            return true;`,
+            `        }`,
+            `        nodoActual = nodoActual.getSig();`,
+            `    }`,
+            `    return false;`,
+            `}`,
+        ],
+        clean: [
+            `/**
+ * Método que elimina todos los nodos de la lista.
+ * post: Se eliminó todos los nodos en la lista.
+ */`,
+            `public void vaciar(){`,
+            `    this.cabeza = null;`,
+            `    this.cola = null;`,
+            `    this.tamanio = 0;`,
+            `}`
+        ]
+    },
+    lista_circular_doble: {
+        insertFirst: [
+            `/**
+ * Método que inserta un nodo al inicio de la lista.
+ * post: Se insertó un nuevo nodo al inicio de la lista.
+ * @param info es de tipo T y corresponde a la información a almacenar en la lista.
+ */`,
+            `public void insertarAlInicio(T info){`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    if (this.esVacia()) {`,
+            `        this.cabeza = nuevoNodo;`,
+            `        this.cola = nuevoNodo;`,
+            `    } else {`,
+            `        nuevoNodo.setSig(this.cabeza);`,
+            `        this.cabeza.setAnt(nuevoNodo);`,
+            `        this.cabeza = nuevoNodo;`,
+            `    }`,
+            `    this.tamanio++;`,
+            `}`
+        ],
+        insertLast: [
+            `/**
+ * Método que inserta un nodo al final de la lista.
+ * post: Se insertó un nuevo nodo al final de la lista.
+ * @param info es de tipo T y corresponde la información a almacenar en la lista. 
+ */`,
+            `public void insertarAlFinal(T info){`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    if (this.esVacia()) {`,
+            `        this.cabeza = nuevoNodo;`,
+            `        this.cola = nuevoNodo;`,
+            `    } else {`,
+            `        this.cola.setSig(nuevoNodo);`,
+            `        nuevoNodo.setAnt(this.cola);`,
+            `        this.cola = nuevoNodo;`,
+            `    }`,
+            `    this.tamanio++;`,
+            `}`
+        ],
+        insertAt: [
+            `/**
+ * Método que inserta un nodo en una posición especifica de la lista.
+ * post: Se insertó un nuevo nodo en la posición especificada.
+ * @param info es de tipo T y corresponde a la información a almacenar en la lista.
+ * @param pos es de tipo integer y corresponde a la posición de inserción.
+ */`,
+            `public void insertarEnPosicion(T info, int pos){`,
+            `    if (pos < 0 || pos > this.tamanio) {`,
+            `        System.err.println("Posición de inserción no válida!");`,
+            `        return;`,
+            `    }`,
+            `    if (pos == 0) {`,
+            `        this.insertarAlInicio(info);`,
+            `    }`,
+            `    if (pos == this.tamanio) {`,
+            `        this.insertarAlFinal(info);`,
+            `    }`,
+            `    NodoD<T>nuevoNodo = new NodoD(info);`,
+            `    NodoD<T>nodoAnt = this.getPos(pos - 1);`,
+            `    nuevoNodo.setSig(nodoAnt.getSig());`,
+            `    nuevoNodo.setAnt(nodoAnt);`,
+            `    nodoAnt.getSig().setAnt(nuevoNodo);`,
+            `    nodoAnt.setSig(nuevoNodo);`,
+            `    this.tamanio++;`,
+            `}`
+        ],
+        removeFirst: [
+            `/**
+ * Método que remueve el nodo inicial de la lista.
+ * post: Se eliminó el nodo inicial de la lista.
+ */`,
+            `public void removerAlInicio(){`,
+            `    if (this.esVacia()) {`,
+            `        System.err.println("Lista vacía!");`,
+            `        return;`,
+            `    }`,
+            `    this.cabeza = this.cabeza.getSig();`,
+            `    this.cabeza.setAnt(null);`,
+            `    this.tamanio--;`,
+            `}`
+        ],
+        removeLast: [
+            `/**
+ * Método que remueve el nodo final de la lista.
+ * post: Se eliminó el nodo final de la lista.
+ */`,
+            `public void removerAlFinal(){`,
+            `    if (this.esVacia()) {`,
+            `        System.err.println("Lista vacía!");`,
+            `        return;`,
+            `    }`,
+            `    this.cola = this.cola.getAnt();`,
+            `    this.cola.setSig(null);`,
+            `    this.tamanio--;`,
+            `}`
+        ],
+        removeAt: [
+            `/**
+ * Método que elimina un nodo dada su posición.
+ * post: Se eliminó el nodo en la posicion especificada.
+ * @param pos es de tipo integer y corresponde a la posición del nodo a eliminar.
+ */`,
+            `public void removerEnPosición(int pos){`,
+            `    if (this.esVacia()) {`,
+            `        System.err.println("Lista vacía!");`,
+            `        return;`,
+            `    }`,
+            `    if (pos < 0 || pos >= this.tamanio) {`,
+            `        System.err.println("Posición de eliminación no válida!");`,
+            `        return;`,
+            `    }`,
+            `    if (pos == 0) {`,
+            `        this.removerAlInicio();`,
+            `    }`,
+            `    if (pos == this.tamanio - 1) {`,
+            `        this.removerAlFinal();`,
+            `    }`,
+            `    NodoD<T>nodoEliminado = this.getPos(pos);`,
+            `    nodoEliminado.getAnt().setSig(nodoEliminado.getSig());`,
+            `    nodoEliminado.getSig().setAnt(nodoEliminado.getAnt());`,
+            `    this.tamanio--;`,
+            `}`
+        ],
+        search: [
+            `/**
+ * Método que busca el elemento especificado en la lista.
+ * post: Se retorno un booleano que indica si el elemento especificado fue encontrado en la lista.
+ * @param elem es de tipo T y corresponde al elemento a buscar.
+ * @return True o false si el elemento fue encontrado.
+ */`,
+            `public boolean search(T elem) {`,
+            `    NodoD<T> nodoActual = this.cabeza;`,
+            `    while(nodoActual) {`,
+            `        if (nodoActual.getValor().equals(elem)) {`,
+            `            return true;`,
+            `        }`,
+            `        nodoActual = nodoActual.getSig();`,
+            `    }`,
+            `    return false;`,
+            `}`,
+        ],
+        clean: [
+            `/**
+ * Método que elimina todos los nodos de la lista.
+ * post: Se eliminó todos los nodos en la lista.
+ */`,
+            `public void vaciar(){`,
+            `    this.cabeza = null;`,
+            `    this.cola = null;`,
+            `    this.tamanio = 0;`,
+            `}`
+        ]
+    },
     tabla_hash: {
         /* ───────────────── create(n) ───────────────── */
         create: [
