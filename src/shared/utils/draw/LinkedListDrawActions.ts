@@ -1,11 +1,11 @@
 import { LinkData, ListNodeData } from "../../../types";
 import {
-    SVG_LINKED_LIST_VALUES,
-    SVG_STYLE_VALUES,
+  SVG_LINKED_LIST_VALUES,
+  SVG_STYLE_VALUES,
 } from "../../constants/consts";
 import {
-    calculateCircularLinkPath,
-    calculateLinkPath,
+  calculateCircularLinkPath,
+  calculateLinkPath,
 } from "./calculateLinkPath";
 import * as d3 from "d3";
 
@@ -20,637 +20,287 @@ import * as d3 from "d3";
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateInsertFirst(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { newHeadNode: string; prevHeadNode: string | null },
-    listData: {
-        existingNodesData: ListNodeData[];
-        existingLinksData: LinkData[];
-        showDoubleLinks: boolean;
-        showTailIndicator: boolean;
-        showCircularLinks: boolean;
-    },
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesInvolved: { newHeadNode: string; prevHeadNode: string | null },
+  listData: {
+    existingNodesData: ListNodeData[];
+    existingLinksData: LinkData[];
+    showDoubleLinks: boolean;
+    showTailIndicator: boolean;
+    showCircularLinks: boolean;
+  },
+  positions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la inserción
-    const { newHeadNode, prevHeadNode } = nodesInvolved;
+  // Nodos implicados en la inserción
+  const { newHeadNode, prevHeadNode } = nodesInvolved;
 
-    // Grupo del lienzo correspondiente al nuevo nodo
-    const newNodeGroup = svg.select<SVGGElement>(`g#${newHeadNode}`);
+  // Grupo del lienzo correspondiente al nuevo nodo
+  const newNodeGroup = svg.select<SVGGElement>(`g#${newHeadNode}`);
 
-    // Estado inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
+  // Estado inicial del nuevo nodo
+  newNodeGroup.style("opacity", 0);
 
-    if (prevHeadNode) {
-        // Información de la lista
-        const {
-            existingNodesData,
-            existingLinksData,
-            showDoubleLinks,
-            showTailIndicator,
-            showCircularLinks,
-        } = listData;
+  if (prevHeadNode) {
+    // Información de la lista
+    const {
+      existingNodesData,
+      existingLinksData,
+      showDoubleLinks,
+      showTailIndicator,
+      showCircularLinks,
+    } = listData;
 
-        // Determinar el último nodo de la lista para el enlace circular
-        const lastNode = existingNodesData[existingNodesData.length - 1];
+    // Determinar el último nodo de la lista para el enlace circular
+    const lastNode = existingNodesData[existingNodesData.length - 1];
 
-        // Grupo del lienzo correspondiente al indicador del nodo cabeza
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+    // Grupo del lienzo correspondiente al indicador del nodo cabeza
+    const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-        // Posición de animación final para inserción del nuevo nodo
-        const finalNewNodePos = positions.get(newHeadNode)!;
+    // Posición de animación final para inserción del nuevo nodo
+    const finalNewNodePos = positions.get(newHeadNode)!;
 
-        // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
-        const newNodeNextLinkGroup = svg.select<SVGGElement>(
-            `g#link-${newHeadNode}-${prevHeadNode}-next`
-        );
+    // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
+    const newNodeNextLinkGroup = svg.select<SVGGElement>(
+      `g#link-${newHeadNode}-${prevHeadNode}-next`
+    );
 
-        // Estado visual inicial del enlace siguiente del nuevo nodo
-        newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+    // Estado visual inicial del enlace siguiente del nuevo nodo
+    newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
 
-        // Grupo del lienzo correspondiente al enlace previo del anterior primer nodo (solo para listas dobles)
-        const prevHeadNodePrevLinkGroup = showDoubleLinks
-            ? svg.select<SVGGElement>(
-                  `g#link-${prevHeadNode}-${newHeadNode}-prev`
-              )
-            : null;
+    // Grupo del lienzo correspondiente al enlace previo del anterior primer nodo (solo para listas dobles)
+    const prevHeadNodePrevLinkGroup = showDoubleLinks
+      ? svg.select<SVGGElement>(`g#link-${prevHeadNode}-${newHeadNode}-prev`)
+      : null;
 
-        // Estado visual inicial del enlace previo del anterior primer nodo
-        if (prevHeadNodePrevLinkGroup) {
-            prevHeadNodePrevLinkGroup
-                .select("path.node-link")
-                .style("opacity", 0);
-        }
-
-        // Manejo especial para listas circulares
-        let oldCircularLinkGroup = null;
-        let newCircularLinkGroup = null;
-
-        if (showCircularLinks && lastNode) {
-            // Enlace circular anterior (del último nodo al anterior primer nodo)
-            oldCircularLinkGroup = svg.select<SVGGElement>(
-                `g#link-${lastNode.id}-${prevHeadNode}-next-circular`
-            );
-
-            // Nuevo enlace circular (del último nodo al nuevo primer nodo)
-            newCircularLinkGroup = svg.select<SVGGElement>(
-                `g#link-${lastNode.id}-${newHeadNode}-next-circular`
-            );
-
-            // Ocultar el nuevo enlace circular inicialmente
-            if (newCircularLinkGroup.node()) {
-                newCircularLinkGroup
-                    .select("path.node-link")
-                    .style("opacity", 0);
-            }
-        }
-
-        // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
-        const shiftPromises: Promise<void>[] = [];
-
-        // Selección de nodos a desplazar (re-vinculación de datos)
-        const remainingNodes = svg
-            .selectAll<SVGGElement, ListNodeData>("g.node")
-            .data(existingNodesData, (d) => d.id);
-
-        // Promesa para desplazamiento de nodos existentes a su posición final
-        shiftPromises.push(
-            remainingNodes
-                .transition()
-                .duration(1500)
-                .ease(d3.easePolyInOut)
-                .attr("transform", (d) => {
-                    const finalPos = positions.get(d.id)!;
-                    return `translate(${finalPos.x}, ${finalPos.y})`;
-                })
-                .end()
-        );
-
-        // Selección de enlaces a desplazar (re-vinculación de datos)
-        const remainingLinks = svg
-            .selectAll<SVGGElement, LinkData>("g.link")
-            .data(
-                existingLinksData,
-                (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
-            );
-
-        // Promesa para desplazamiento de enlaces existentes a su posición final
-        shiftPromises.push(
-            remainingLinks
-                .select("path.node-link")
-                .transition()
-                .duration(1500)
-                .ease(d3.easePolyInOut)
-                .attr("d", (d) => {
-                    if (d.type === "next-circular") {
-                        console.log("DIBUJANDO FLECHA CIRCULAR en linked list draw actions " +d);
-                        return calculateCircularLinkPath(
-                            d,
-                            positions,
-                            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-                        );
-                    }
-                    return calculateLinkPath(
-                        d,
-                        positions,
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-                    );
-                })
-                .style("fill", "none")
-                .end()
-        );
-
-        // Posición de animación inicial del indicador de cabeza
-        const initialHeadIndicatorPos = positions.get(prevHeadNode)!;
-        shiftPromises.push(
-            headIndicatorGroup
-                .transition()
-                .duration(1500)
-                .ease(d3.easePolyInOut)
-                .attr("transform", () => {
-                    const finalX =
-                        initialHeadIndicatorPos.x +
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                    const finalY = initialHeadIndicatorPos.y;
-                    return `translate(${finalX}, ${finalY})`;
-                })
-                .end()
-        );
-
-        if (showTailIndicator) {
-            // Grupo del lienzo correspondiente al indicador del nodo cola
-            const tailIndicatorGroup =
-                svg.select<SVGGElement>("g#tail-indicator");
-
-            // Posición de animación final del indicador de cola
-            const finalTailIndicatorPos = positions.get(
-                existingNodesData[existingNodesData.length - 1].id
-            )!;
-            shiftPromises.push(
-                tailIndicatorGroup
-                    .transition()
-                    .duration(1500)
-                    .ease(d3.easePolyInOut)
-                    .attr("transform", () => {
-                        const finalX =
-                            finalTailIndicatorPos.x +
-                            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                        const finalY = finalTailIndicatorPos.y;
-                        return `translate(${finalX}, ${finalY})`;
-                    })
-                    .end()
-            );
-        }
-
-        // Animación especial para enlaces circulares durante el desplazamiento
-        if (
-            showCircularLinks &&
-            oldCircularLinkGroup &&
-            oldCircularLinkGroup.node()
-        ) {
-            // Desvanecer el enlace circular anterior
-            shiftPromises.push(
-                oldCircularLinkGroup
-                    .select("path.node-link")
-                    .transition()
-                    .duration(750)
-                    .style("opacity", 0)
-                    .end()
-            );
-        }
-
-        // Resolución de promesas para animación de desplazamiento
-        await Promise.all(shiftPromises);
-
-        // Posición de animación inicial para inserción del nuevo nodo
-        const initialYOffset = -60;
-        const initialNewNodePos = {
-            x: finalNewNodePos.x,
-            y: finalNewNodePos.y + initialYOffset,
-        };
-        newNodeGroup.attr(
-            "transform",
-            `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`
-        );
-
-        // Desplazamiento del nuevo nodo hacia su posición final
-        await newNodeGroup
-            .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .ease(d3.easePolyInOut)
-            .attr(
-                "transform",
-                `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
-            )
-            .end();
-
-        // Aparición del enlace siguiente del nuevo nodo que apunta al nodo cabeza anterior
-        await newNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-
-        // Aparición del enlace previo del nodo cabeza anterior que apunta al nuevo nodo (solo para listas dobles)
-        if (prevHeadNodePrevLinkGroup) {
-            await prevHeadNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
-                .end();
-        }
-
-        // Movimiento del indicador de cabeza hacia el nuevo nodo
-        await headIndicatorGroup
-            .transition()
-            .duration(1000)
-            .ease(d3.easeQuadInOut)
-            .attr("transform", () => {
-                const finalX =
-                    finalNewNodePos.x +
-                    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                const finalY = finalNewNodePos.y;
-                return `translate(${finalX}, ${finalY})`;
-            })
-            .end();
-
-        // Animación final para el nuevo enlace circular
-        if (
-            showCircularLinks &&
-            newCircularLinkGroup &&
-            newCircularLinkGroup.node()
-        ) {
-            await newCircularLinkGroup
-                .select("path.node-link")
-                .style("fill", "none")
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
-                .end();
-        }
-    } else {
-        // Animación de aparición simple del nuevo nodo
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
+    // Estado visual inicial del enlace previo del anterior primer nodo
+    if (prevHeadNodePrevLinkGroup) {
+      prevHeadNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
     }
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    // Manejo especial para listas circulares
+    let oldCircularLinkGroup = null;
+    let newCircularLinkGroup = null;
 
-    // Finalización de la animación
-    setIsAnimating(false);
+    if (showCircularLinks && lastNode) {
+      // Enlace circular anterior (del último nodo al anterior primer nodo)
+      oldCircularLinkGroup = svg.select<SVGGElement>(
+        `g#link-${lastNode.id}-${prevHeadNode}-next-circular`
+      );
+
+      // Nuevo enlace circular (del último nodo al nuevo primer nodo)
+      newCircularLinkGroup = svg.select<SVGGElement>(
+        `g#link-${lastNode.id}-${newHeadNode}-next-circular`
+      );
+
+      // Ocultar el nuevo enlace circular inicialmente
+      if (newCircularLinkGroup.node()) {
+        newCircularLinkGroup.select("path.node-link").style("opacity", 0);
+      }
+    }
+
+    // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
+    const shiftPromises: Promise<void>[] = [];
+
+    // Selección de nodos a desplazar (re-vinculación de datos)
+    const remainingNodes = svg
+      .selectAll<SVGGElement, ListNodeData>("g.node")
+      .data(existingNodesData, (d) => d.id);
+
+    // Promesa para desplazamiento de nodos existentes a su posición final
+    shiftPromises.push(
+      remainingNodes
+        .transition()
+        .duration(1500)
+        .ease(d3.easePolyInOut)
+        .attr("transform", (d) => {
+          const finalPos = positions.get(d.id)!;
+          return `translate(${finalPos.x}, ${finalPos.y})`;
+        })
+        .end()
+    );
+
+    // Selección de enlaces a desplazar (re-vinculación de datos)
+    const remainingLinks = svg
+      .selectAll<SVGGElement, LinkData>("g.link")
+      .data(
+        existingLinksData,
+        (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
+      );
+
+    console.log("Enlaces a animar:", remainingLinks.size());
+
+    // Promesa para desplazamiento de enlaces existentes a su posición final
+    shiftPromises.push(
+      remainingLinks
+        .select("path.node-link")
+        .transition()
+        .duration(1500)
+        .ease(d3.easePolyInOut)
+        .attr("d", (d) => {
+          if (d.type === "next-circular") {
+            console.log(
+              "DIBUJANDO FLECHA CIRCULAR en linked list draw actions " + d
+            );
+            return calculateCircularLinkPath(
+              d,
+              positions,
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+          }
+          return calculateLinkPath(
+            d,
+            positions,
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+          );
+        })
+        .style("fill", "none")
+        .end()
+    );
+
+    // Posición de animación inicial del indicador de cabeza
+    const initialHeadIndicatorPos = positions.get(prevHeadNode)!;
+    shiftPromises.push(
+      headIndicatorGroup
+        .transition()
+        .duration(1500)
+        .ease(d3.easePolyInOut)
+        .attr("transform", () => {
+          const finalX =
+            initialHeadIndicatorPos.x +
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+          const finalY = initialHeadIndicatorPos.y;
+          return `translate(${finalX}, ${finalY})`;
+        })
+        .end()
+    );
+
+    if (showTailIndicator) {
+      // Grupo del lienzo correspondiente al indicador del nodo cola
+      const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+      // Posición de animación final del indicador de cola
+      const finalTailIndicatorPos = positions.get(
+        existingNodesData[existingNodesData.length - 1].id
+      )!;
+      shiftPromises.push(
+        tailIndicatorGroup
+          .transition()
+          .duration(1500)
+          .ease(d3.easePolyInOut)
+          .attr("transform", () => {
+            const finalX =
+              finalTailIndicatorPos.x +
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = finalTailIndicatorPos.y;
+            return `translate(${finalX}, ${finalY})`;
+          })
+          .end()
+      );
+    }
+
+    // Animación especial para enlaces circulares durante el desplazamiento
+    if (
+      showCircularLinks &&
+      oldCircularLinkGroup &&
+      oldCircularLinkGroup.node()
+    ) {
+      // Desvanecer el enlace circular anterior
+      shiftPromises.push(
+        oldCircularLinkGroup
+          .select("path.node-link")
+          .transition()
+          .duration(750)
+          .style("opacity", 0)
+          .end()
+      );
+    }
+
+    // Resolución de promesas para animación de desplazamiento
+    await Promise.all(shiftPromises);
+
+    // Posición de animación inicial para inserción del nuevo nodo
+    const initialYOffset = -60;
+    const initialNewNodePos = {
+      x: finalNewNodePos.x,
+      y: finalNewNodePos.y + initialYOffset,
+    };
+    newNodeGroup.attr(
+      "transform",
+      `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`
+    );
+
+    // Desplazamiento del nuevo nodo hacia su posición final
+    await newNodeGroup
+      .transition()
+      .duration(1500)
+      .style("opacity", 1)
+      .ease(d3.easePolyInOut)
+      .attr(
+        "transform",
+        `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
+      )
+      .end();
+
+    // Aparición del enlace siguiente del nuevo nodo que apunta al nodo cabeza anterior
+    await newNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 1)
+      .end();
+
+    // Aparición del enlace previo del nodo cabeza anterior que apunta al nuevo nodo (solo para listas dobles)
+    if (prevHeadNodePrevLinkGroup) {
+      await prevHeadNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+    }
+
+    // Movimiento del indicador de cabeza hacia el nuevo nodo
+    await headIndicatorGroup
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuadInOut)
+      .attr("transform", () => {
+        const finalX =
+          finalNewNodePos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+        const finalY = finalNewNodePos.y;
+        return `translate(${finalX}, ${finalY})`;
+      })
+      .end();
+
+    // Animación final para el nuevo enlace circular
+    if (
+      showCircularLinks &&
+      newCircularLinkGroup &&
+      newCircularLinkGroup.node()
+    ) {
+      await newCircularLinkGroup
+        .select("path.node-link")
+        .style("fill", "none")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+    }
+  } else {
+    // Animación de aparición simple del nuevo nodo
+    await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
+  }
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
-
-// export async function animateInsertFirst(
-//     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-//     nodesInvolved: { newHeadNode: string; prevHeadNode: string | null },
-//     listData: {
-//         existingNodesData: ListNodeData[];
-//         existingLinksData: LinkData[];
-//         showDoubleLinks: boolean;
-//         showTailIndicator: boolean;
-//         showCircularLinks: boolean;
-//     },
-//     positions: Map<string, { x: number; y: number }>,
-//     resetQueryValues: () => void,
-//     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-// ) {
-//     // Nodos implicados en la inserción
-//     const { newHeadNode, prevHeadNode } = nodesInvolved;
-
-//     // Grupo del lienzo correspondiente al nuevo nodo
-//     const newNodeGroup = svg.select<SVGGElement>(`g#${newHeadNode}`);
-
-//     // Estado inicial del nuevo nodo
-//     newNodeGroup.style("opacity", 0);
-
-//     if (prevHeadNode) {
-//         // Información de la lista
-//         const {
-//             existingNodesData,
-//             existingLinksData,
-//             showDoubleLinks,
-//             showTailIndicator,
-//             showCircularLinks,
-//         } = listData;
-
-//         // Determinar el último nodo de la lista para el enlace circular
-//         const lastNode = existingNodesData[existingNodesData.length - 1];
-
-//         // Grupo del lienzo correspondiente al indicador del nodo cabeza
-//         const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-
-//         // Posición de animación final para inserción del nuevo nodo
-//         const finalNewNodePos = positions.get(newHeadNode)!;
-
-//         // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
-//         const newNodeNextLinkGroup = svg.select<SVGGElement>(
-//             `g#link-${newHeadNode}-${prevHeadNode}-next`
-//         );
-
-//         // Estado visual inicial del enlace siguiente del nuevo nodo
-//         newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
-
-//         // Grupo del lienzo correspondiente al enlace previo del anterior primer nodo (solo para listas dobles)
-//         const prevHeadNodePrevLinkGroup = showDoubleLinks
-//             ? svg.select<SVGGElement>(
-//                   `g#link-${prevHeadNode}-${newHeadNode}-prev`
-//               )
-//             : null;
-
-//         // Estado visual inicial del enlace previo del anterior primer nodo
-//         if (prevHeadNodePrevLinkGroup) {
-//             prevHeadNodePrevLinkGroup
-//                 .select("path.node-link")
-//                 .style("opacity", 0);
-//         }
-
-//         // Manejo especial para listas circulares
-//         let oldCircularLinkGroup = null;
-//         let newCircularLinkGroup = null;
-
-//         if (showCircularLinks && lastNode) {
-//             // Enlace circular anterior (del último nodo al anterior primer nodo)
-//             oldCircularLinkGroup = svg.select<SVGGElement>(
-//                 `g#link-${lastNode.id}-${prevHeadNode}-next-circular`
-//             );
-
-//             // Nuevo enlace circular (del último nodo al nuevo primer nodo)
-//             newCircularLinkGroup = svg.select<SVGGElement>(
-//                 `g#link-${lastNode.id}-${newHeadNode}-next-circular`
-//             );
-
-//             // Ocultar el nuevo enlace circular inicialmente
-//             if (newCircularLinkGroup.node()) {
-//                 newCircularLinkGroup
-//                     .select("path.node-link")
-//                     .style("opacity", 0);
-//             }
-//         }
-
-//         // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
-//         const shiftPromises: Promise<void>[] = [];
-
-//         // CRÍTICO: Seleccionar SOLO los nodos existentes (sin el nuevo)
-//         const remainingNodes = svg
-//             .selectAll<SVGGElement, ListNodeData>("g.node")
-//             .data(existingNodesData, (d) => d.id)
-//             .filter(function(d) {
-//                 // Filtrar solo nodos que no sean el nuevo nodo
-//                 return d.id !== newHeadNode;
-//             });
-
-//         // Promesa para desplazamiento de nodos existentes a su posición final
-//         shiftPromises.push(
-//             remainingNodes
-//                 .transition()
-//                 .duration(1500)
-//                 .ease(d3.easePolyInOut)
-//                 .attr("transform", (d) => {
-//                     const finalPos = positions.get(d.id)!;
-//                     return `translate(${finalPos.x}, ${finalPos.y})`;
-//                 })
-//                 .end()
-//         );
-
-//         // CRÍTICO: Seleccionar SOLO los enlaces existentes (filtrados correctamente)
-//         const remainingLinks = svg
-//             .selectAll<SVGGElement, LinkData>("g.link")
-//             .data(
-//                 existingLinksData,
-//                 (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
-//             )
-//             .filter(function(d) {
-//                 // Filtrar enlaces que no involucren al nuevo nodo como source o target
-//                 // excepto el enlace que va del nuevo nodo al previo head
-//                 if (d.sourceId === newHeadNode && d.targetId === prevHeadNode && d.type === "next") {
-//                     return false; // Este se animará por separado
-//                 }
-//                 if (d.targetId === newHeadNode && d.sourceId === prevHeadNode && d.type === "prev") {
-//                     return false; // Este se animará por separado
-//                 }
-//                 // Para enlaces circulares, filtrar el nuevo enlace circular
-//                 if (showCircularLinks && d.type === "next-circular" && d.targetId === newHeadNode) {
-//                     return false; // Este se animará por separado
-//                 }
-//                 return true;
-//             });
-
-//         console.log("DIBUJANDO FLECHA CIRCULAR en linked list draw actions");
-
-//         // Promesa para desplazamiento de enlaces existentes a su posición final
-//         shiftPromises.push(
-//             remainingLinks
-//                 .select("path.node-link")
-//                 .transition()
-//                 .duration(1500)
-//                 .ease(d3.easePolyInOut)
-//                 .attr("d", (d) => {
-//                     if (d.type === "next-circular") {
-//                         return calculateCircularLinkPath(
-//                             d,
-//                             positions,
-//                             SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-//                             SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-//                         );
-//                     }
-//                     return calculateLinkPath(
-//                         d,
-//                         positions,
-//                         SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-//                         SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-//                     );
-//                 })
-//                 .style("fill", "none")
-//                 .end()
-//         );
-
-//         // Posición de animación inicial del indicador de cabeza
-//         const initialHeadIndicatorPos = positions.get(prevHeadNode)!;
-//         shiftPromises.push(
-//             headIndicatorGroup
-//                 .transition()
-//                 .duration(1500)
-//                 .ease(d3.easePolyInOut)
-//                 .attr("transform", () => {
-//                     const finalX =
-//                         initialHeadIndicatorPos.x +
-//                         SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-//                     const finalY = initialHeadIndicatorPos.y;
-//                     return `translate(${finalX}, ${finalY})`;
-//                 })
-//                 .end()
-//         );
-
-//         if (showTailIndicator) {
-//             // Grupo del lienzo correspondiente al indicador del nodo cola
-//             const tailIndicatorGroup =
-//                 svg.select<SVGGElement>("g#tail-indicator");
-
-//             // Posición de animación final del indicador de cola
-//             const finalTailIndicatorPos = positions.get(
-//                 existingNodesData[existingNodesData.length - 1].id
-//             )!;
-//             shiftPromises.push(
-//                 tailIndicatorGroup
-//                     .transition()
-//                     .duration(1500)
-//                     .ease(d3.easePolyInOut)
-//                     .attr("transform", () => {
-//                         const finalX =
-//                             finalTailIndicatorPos.x +
-//                             SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-//                         const finalY = finalTailIndicatorPos.y;
-//                         return `translate(${finalX}, ${finalY})`;
-//                     })
-//                     .end()
-//             );
-//         }
-
-//         // Animación especial para enlaces circulares durante el desplazamiento
-//         if (
-//             showCircularLinks &&
-//             oldCircularLinkGroup &&
-//             oldCircularLinkGroup.node()
-//         ) {
-//             // Desvanecer el enlace circular anterior
-//             shiftPromises.push(
-//                 oldCircularLinkGroup
-//                     .select("path.node-link")
-//                     .transition()
-//                     .duration(750)
-//                     .style("opacity", 0)
-//                     .end()
-//             );
-//         }
-
-//         // Resolución de promesas para animación de desplazamiento
-//         await Promise.all(shiftPromises);
-
-//         // REMOVER el enlace circular antiguo del DOM después de desvanecerlo
-//         if (
-//             showCircularLinks &&
-//             oldCircularLinkGroup &&
-//             oldCircularLinkGroup.node()
-//         ) {
-//             oldCircularLinkGroup.remove();
-//         }
-
-//         // Posición de animación inicial para inserción del nuevo nodo
-//         const initialYOffset = -60;
-//         const initialNewNodePos = {
-//             x: finalNewNodePos.x,
-//             y: finalNewNodePos.y + initialYOffset,
-//         };
-//         newNodeGroup.attr(
-//             "transform",
-//             `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`
-//         );
-
-//         // Desplazamiento del nuevo nodo hacia su posición final
-//         await newNodeGroup
-//             .transition()
-//             .duration(1500)
-//             .style("opacity", 1)
-//             .ease(d3.easePolyInOut)
-//             .attr(
-//                 "transform",
-//                 `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
-//             )
-//             .end();
-
-//         // Aparición del enlace siguiente del nuevo nodo que apunta al nodo cabeza anterior
-//         await newNodeNextLinkGroup
-//             .select("path.node-link")
-//             .transition()
-//             .duration(1000)
-//             .style("opacity", 1)
-//             .end();
-
-//         // Aparición del enlace previo del nodo cabeza anterior que apunta al nuevo nodo (solo para listas dobles)
-//         if (prevHeadNodePrevLinkGroup) {
-//             await prevHeadNodePrevLinkGroup
-//                 .select("path.node-link")
-//                 .transition()
-//                 .duration(1000)
-//                 .style("opacity", 1)
-//                 .end();
-//         }
-
-//         // Movimiento del indicador de cabeza hacia el nuevo nodo
-//         await headIndicatorGroup
-//             .transition()
-//             .duration(1000)
-//             .ease(d3.easeQuadInOut)
-//             .attr("transform", () => {
-//                 const finalX =
-//                     finalNewNodePos.x +
-//                     SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-//                 const finalY = finalNewNodePos.y;
-//                 return `translate(${finalX}, ${finalY})`;
-//             })
-//             .end();
-
-//         // Animación final para el nuevo enlace circular
-//         if (
-//             showCircularLinks &&
-//             newCircularLinkGroup &&
-//             newCircularLinkGroup.node()
-//         ) {
-//             await newCircularLinkGroup
-//                 .select("path.node-link")
-//                 .style("fill", "none")
-//                 .transition()
-//                 .duration(1000)
-//                 .style("opacity", 1)
-//                 .end();
-//         }
-//     } else {
-//         // Animación de aparición simple del nuevo nodo (primer nodo de la lista)
-//         // Posición final del nuevo nodo
-//         const finalPos = positions.get(newHeadNode)!;
-        
-//         // Posición inicial (desde arriba)
-//         const initialYOffset = -60;
-//         const initialPos = {
-//             x: finalPos.x,
-//             y: finalPos.y + initialYOffset,
-//         };
-        
-//         // Establecer posición inicial
-//         newNodeGroup.attr(
-//             "transform",
-//             `translate(${initialPos.x}, ${initialPos.y})`
-//         );
-        
-//         // Animación de aparición y descenso
-//         await newNodeGroup
-//             .transition()
-//             .duration(1000)
-//             .style("opacity", 1)
-//             .ease(d3.easePolyInOut)
-//             .attr(
-//                 "transform",
-//                 `translate(${finalPos.x}, ${finalPos.y})`
-//             )
-//             .end();
-//     }
-
-//     // Restablecimiento de los valores de las queries del usuario
-//     resetQueryValues();
-
-//     // Finalización de la animación
-//     setIsAnimating(false);
-// }
 
 /**
  * Función encargada de animar la inserción de un nuevo nodo al final de la lista.
@@ -663,175 +313,202 @@ export async function animateInsertFirst(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateInsertLast(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { newLastNode: string; prevLastNode: string | null },
-    listData: {
-        existingNodesData: ListNodeData[];
-        showDoubleLinks: boolean;
-        showTailIndicator: boolean;
-    },
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesInvolved: { newLastNode: string; prevLastNode: string | null },
+  listData: {
+    existingNodesData: ListNodeData[];
+    showDoubleLinks: boolean;
+    showTailIndicator: boolean;
+    showCircularLinks?: boolean;
+  },
+  positions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la inserción
-    const { newLastNode, prevLastNode } = nodesInvolved;
+  // Nodos implicados en la inserción
+  const { newLastNode, prevLastNode } = nodesInvolved;
 
-    // Grupo del lienzo correspondiente al nuevo elemento
-    const newNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
+  // Grupo del lienzo correspondiente al nuevo elemento
+  const newNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
 
-    // Estado visual inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
+  // Estado visual inicial del nuevo nodo
+  newNodeGroup.style("opacity", 0);
 
-    if (prevLastNode) {
-        // Información de la lista
-        const { existingNodesData, showDoubleLinks, showTailIndicator } =
-            listData;
+  if (prevLastNode) {
+    // Información de la lista
+    const {
+      existingNodesData,
+      showDoubleLinks,
+      showTailIndicator,
+      showCircularLinks,
+    } = listData;
 
-        // Posición de animación final para inserción del nuevo nodo
-        const finalNewNodePos = positions.get(newLastNode)!;
+    // Posición de animación final para inserción del nuevo nodo
+    const finalNewNodePos = positions.get(newLastNode)!;
 
-        // Grupo del lienzo correspondiente al enlace del anterior último nodo que apunta al nuevo último nodo
-        const prevLastNodeNextLinkGroup = svg.select<SVGGElement>(
-            `g#link-${prevLastNode}-${newLastNode}-next`
-        );
+    // Grupo del lienzo correspondiente al enlace del anterior último nodo que apunta al nuevo último nodo
+    const prevLastNodeNextLinkGroup = svg.select<SVGGElement>(
+      `g#link-${prevLastNode}-${newLastNode}-next`
+    );
 
-        // Estado visual inicial del enlace que apunta al nuevo último nodo
-        prevLastNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+    // Estado visual inicial del enlace que apunta al nuevo último nodo
+    prevLastNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
 
-        // Grupo del lienzo correspondiente al enlace previo del nuevo último nodo (solo para listas dobles)
-        const newNodePrevLinkGroup = showDoubleLinks
-            ? svg.select<SVGGElement>(
-                  `g#link-${newLastNode}-${prevLastNode}-prev`
-              )
-            : null;
+    // Grupo del lienzo correspondiente al enlace previo del nuevo último nodo (solo para listas dobles)
+    const newNodePrevLinkGroup = showDoubleLinks
+      ? svg.select<SVGGElement>(`g#link-${newLastNode}-${prevLastNode}-prev`)
+      : null;
 
-        // Estado visual inicial del enlace previo del nuevo último nodo
-        if (newNodePrevLinkGroup) {
-            newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
-        }
-
-        // Grupo del lienzo correspondiente al nodo anterior al nuevo último nodo
-        const prevLastNodeGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
-
-        // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
-        if (!showDoubleLinks) {
-            for (const node of existingNodesData) {
-                // Selección del grupo del nodo actual
-                const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
-
-                // Selección del elemento a animar
-                const nodeElement = nodeGroup.select("rect");
-
-                // Resaltado del nodo actual
-                await nodeElement
-                    .transition()
-                    .duration(700)
-                    .attr("stroke", "#f87171")
-                    .attr("stroke-width", 3)
-                    .end();
-
-                // Restablecimiento del estilo original del nodo (excepto para el último nodo)
-                if (node.id !== prevLastNode) {
-                    await nodeElement
-                        .transition()
-                        .duration(700)
-                        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                        .attr(
-                            "stroke-width",
-                            SVG_STYLE_VALUES.RECT_STROKE_WIDTH
-                        )
-                        .end();
-                }
-            }
-        }
-
-        // Posición de animación inicial para inserción del nuevo nodo
-        const initialYOffset = -60;
-        const initialNewNodePos = {
-            x: finalNewNodePos.x,
-            y: finalNewNodePos.y + initialYOffset,
-        };
-        newNodeGroup.attr(
-            "transform",
-            `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`
-        );
-
-        // Desplazamiento del nuevo nodo hacia su posición final
-        await newNodeGroup
-            .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .ease(d3.easePolyInOut)
-            .attr(
-                "transform",
-                `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
-            )
-            .end();
-
-        // Aparición del enlace que apunta al nuevo último nodo
-        await prevLastNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-
-        // Aparición del enlace previo del nuevo último nodo (solo para listas dobles)
-        if (newNodePrevLinkGroup) {
-            await newNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
-                .end();
-        }
-
-        // Restablecimiento del estilo del nodo anterior al nuevo último nodo
-        if (!showDoubleLinks) {
-            await prevLastNodeGroup
-                .select("rect")
-                .transition()
-                .duration(500)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
-
-        if (showTailIndicator) {
-            // Grupo del lienzo correspondiente al indicador del nodo cola
-            const tailIndicatorGroup =
-                svg.select<SVGGElement>("g#tail-indicator");
-
-            // Desplazamiento del indicador de cola a la posición del nuevo último nodo
-            const finalTailIndicatorPos = positions.get(newLastNode)!;
-            await tailIndicatorGroup
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadInOut)
-                .attr("transform", () => {
-                    const finalX =
-                        finalTailIndicatorPos.x +
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                    const finalY = finalTailIndicatorPos.y;
-                    return `translate(${finalX}, ${finalY})`;
-                })
-                .end();
-        }
-    } else {
-        // Animación de aparición simple del nuevo nodo
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
+    // Estado visual inicial del enlace previo del nuevo último nodo
+    if (newNodePrevLinkGroup) {
+      newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
     }
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    // Para listas circulares: enlace del nuevo nodo hacia el primer nodo
+    let newNodeCircularLinkGroup = null;
+    let prevLastNodeCircularLinkGroup = null;
 
-    // Finalización de la animación
-    setIsAnimating(false);
+    if (showCircularLinks && existingNodesData.length > 0) {
+      const firstNodeId = existingNodesData[0].id;
+
+      // Grupo del enlace circular del nuevo nodo hacia el primer nodo
+      newNodeCircularLinkGroup = svg.select<SVGGElement>(
+        `g#link-${newLastNode}-${firstNodeId}-next-circular`
+      );
+
+      // Estado visual inicial del enlace circular
+      if (newNodeCircularLinkGroup.node()) {
+        newNodeCircularLinkGroup.select("path.node-link").style("opacity", 0);
+      }
+
+      // Si había un enlace circular previo (del anterior último nodo al primero), lo ocultamos
+      prevLastNodeCircularLinkGroup = svg.select<SVGGElement>(
+        `g#link-${prevLastNode}-${firstNodeId}-next-circular`
+      );
+
+      // Ocultar el enlace circular anterior con animación
+      if (prevLastNodeCircularLinkGroup.node()) {
+        await prevLastNodeCircularLinkGroup
+          .select("path.node-link")
+          .transition()
+          .duration(800)
+          .style("opacity", 0)
+          .end();
+      }
+    }
+
+    // Grupo del lienzo correspondiente al nodo anterior al nuevo último nodo
+    const prevLastNodeGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
+
+    // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
+    if (!showDoubleLinks) {
+      for (const node of existingNodesData) {
+        // Selección del grupo del nodo actual
+        const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+
+        // Selección del elemento a animar
+        const nodeElement = nodeGroup.select("rect");
+
+        // Resaltado del nodo actual
+        await nodeElement
+          .transition()
+          .duration(700)
+          .attr("stroke", "#f87171")
+          .attr("stroke-width", 3)
+          .end();
+
+        // Restablecimiento del estilo original del nodo (excepto para el último nodo)
+        if (node.id !== prevLastNode) {
+          await nodeElement
+            .transition()
+            .duration(700)
+            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+            .end();
+        }
+      }
+    }
+
+    // Posición de animación inicial para inserción del nuevo nodo
+    const initialYOffset = -60;
+    const initialNewNodePos = {
+      x: finalNewNodePos.x,
+      y: finalNewNodePos.y + initialYOffset,
+    };
+    newNodeGroup.attr(
+      "transform",
+      `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`
+    );
+
+    // Desplazamiento del nuevo nodo hacia su posición final
+    await newNodeGroup
+      .transition()
+      .duration(1500)
+      .style("opacity", 1)
+      .ease(d3.easePolyInOut)
+      .attr(
+        "transform",
+        `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
+      )
+      .end();
+
+    // Aparición del enlace que apunta al nuevo último nodo
+    await prevLastNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 1)
+      .end();
+
+    // Aparición del enlace previo del nuevo último nodo (solo para listas dobles)
+    if (newNodePrevLinkGroup) {
+      await newNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+    }
+
+    // Restablecimiento del estilo del nodo anterior al nuevo último nodo
+    if (!showDoubleLinks) {
+      await prevLastNodeGroup
+        .select("rect")
+        .transition()
+        .duration(500)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+        .end();
+    }
+
+    if (showTailIndicator) {
+      // Grupo del lienzo correspondiente al indicador del nodo cola
+      const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+      // Desplazamiento del indicador de cola a la posición del nuevo último nodo
+      const finalTailIndicatorPos = positions.get(newLastNode)!;
+      await tailIndicatorGroup
+        .transition()
+        .duration(1000)
+        .ease(d3.easeQuadInOut)
+        .attr("transform", () => {
+          const finalX =
+            finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+          const finalY = finalTailIndicatorPos.y;
+          return `translate(${finalX}, ${finalY})`;
+        })
+        .end();
+    }
+  } else {
+    // Animación de aparición simple del nuevo nodo
+    await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
+  }
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -846,434 +523,863 @@ export async function animateInsertLast(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateInsertAtPosition(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { newNode: string; prevNode: string; nextNode: string },
-    listData: {
-        existingNodesData: ListNodeData[];
-        existingLinksData: LinkData[];
-        showDoubleLinks: boolean;
-        showTailIndicator: boolean;
-    },
-    insertionPosition: number,
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesInvolved: { newNode: string; prevNode: string; nextNode: string },
+  listData: {
+    existingNodesData: ListNodeData[];
+    existingLinksData: LinkData[];
+    showDoubleLinks: boolean;
+    showTailIndicator: boolean;
+    showCircularLinks: boolean;
+  },
+  insertionPosition: number,
+  positions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la inserción
-    const { newNode, prevNode, nextNode } = nodesInvolved;
+  // Nodos implicados en la inserción
+  const { newNode, prevNode, nextNode } = nodesInvolved;
 
-    // Información de la lista
-    const {
-        existingNodesData,
-        existingLinksData,
-        showDoubleLinks,
-        showTailIndicator,
-    } = listData;
+  // Información de la lista
+  const {
+    existingNodesData,
+    existingLinksData,
+    showDoubleLinks,
+    showTailIndicator,
+    showCircularLinks,
+  } = listData;
 
-    // Grupo del lienzo correspondiente al nuevo elemento
-    const newNodeGroup = svg.select<SVGGElement>(`g#${newNode}`);
+  // Grupo del lienzo correspondiente al nuevo elemento
+  const newNodeGroup = svg.select<SVGGElement>(`g#${newNode}`);
 
-    // Grupo del lienzo correspondiente al nodo anterior al nodo a insertar
-    const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
+  // Grupo del lienzo correspondiente al nodo anterior al nodo a insertar
+  const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
 
-    // Posición de animación final para inserción del nuevo nodo
-    const finalNewNodePos = positions.get(newNode)!;
+  // Posición de animación final para inserción del nuevo nodo
+  const finalNewNodePos = positions.get(newNode)!;
 
-    // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nuevo nodo
-    const prevToNewNodeNextLinkGroup = svg.select<SVGGElement>(
-        `g#link-${prevNode}-${newNode}-next`
-    );
+  // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nuevo nodo
+  const prevToNewNodeNextLinkGroup = svg.select<SVGGElement>(
+    `g#link-${prevNode}-${newNode}-next`
+  );
 
-    // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
-    const newNodeNextLinkGroup = svg.select<SVGGElement>(
-        `g#link-${newNode}-${nextNode}-next`
-    );
+  // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
+  const newNodeNextLinkGroup = svg.select<SVGGElement>(
+    `g#link-${newNode}-${nextNode}-next`
+  );
 
-    // Estado visual inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
+  // Estado visual inicial del nuevo nodo
+  newNodeGroup.style("opacity", 0);
 
-    // Estado visual inicial del enlace que apunta al nuevo nodo
-    prevToNewNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+  // Estado visual inicial del enlace que apunta al nuevo nodo
+  prevToNewNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
 
-    // Estado visual inicial del enlace que apunta al siguiente del nuevo nodo
-    newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+  // Estado visual inicial del enlace que apunta al siguiente del nuevo nodo
+  newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
 
-    // Grupo del lienzo correspondiente al enlace anterior del nodo siguiente que apunta al nuevo nodo (solo para listas dobles)
-    const nextToNewNodePrevLinkGroup = showDoubleLinks
-        ? svg.select<SVGGElement>(`g#link-${nextNode}-${newNode}-prev`)
-        : null;
+  // Grupo del lienzo correspondiente al enlace anterior del nodo siguiente que apunta al nuevo nodo (solo para listas dobles)
+  const nextToNewNodePrevLinkGroup = showDoubleLinks
+    ? svg.select<SVGGElement>(`g#link-${nextNode}-${newNode}-prev`)
+    : null;
 
-    // Grupo del lienzo correspondiente al enlace previo del nuevo nodo (solo para listas dobles)
-    const newNodePrevLinkGroup = showDoubleLinks
-        ? svg.select<SVGGElement>(`g#link-${newNode}-${prevNode}-prev`)
-        : null;
+  // Grupo del lienzo correspondiente al enlace previo del nuevo nodo (solo para listas dobles)
+  const newNodePrevLinkGroup = showDoubleLinks
+    ? svg.select<SVGGElement>(`g#link-${newNode}-${prevNode}-prev`)
+    : null;
 
-    // Estado visual inicial de los enlaces previos referentes al nuevo nodo
-    if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
-        nextToNewNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
-        newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
-    }
+  // Estado visual inicial de los enlaces previos referentes al nuevo nodo
+  if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+    nextToNewNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
+    newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
+  }
 
-    // Nodos a recorrer para insertar el nodo
-    const nodesToTraverse = existingNodesData.slice(0, insertionPosition);
+  // Nodos a recorrer para insertar el nodo
+  const nodesToTraverse = existingNodesData.slice(0, insertionPosition);
 
-    for (const node of nodesToTraverse) {
-        // Selección del grupo del nodo actual
-        const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+  for (const node of nodesToTraverse) {
+    // Selección del grupo del nodo actual
+    const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
 
-        // Selección del eleento a animar
-        const nodeElement = nodeGroup.select("rect");
+    // Selección del eleento a animar
+    const nodeElement = nodeGroup.select("rect");
 
-        // Resaltado del nodo actual
-        await nodeElement
-            .transition()
-            .duration(700)
-            .attr("stroke", "#f87171")
-            .attr("stroke-width", 3)
-            .end();
+    // Resaltado del nodo actual
+    await nodeElement
+      .transition()
+      .duration(700)
+      .attr("stroke", "#f87171")
+      .attr("stroke-width", 3)
+      .end();
 
-        // Restablecimiento del estilo original del nodo (excepto para el último nodo)
-        if (node.id !== prevNode) {
-            await nodeElement
-                .transition()
-                .duration(700)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
-    }
-
-    // Nodos a desplazar para la inclusión del nuevo nodo
-    const nodesToMove = existingNodesData.slice(
-        insertionPosition,
-        existingNodesData.length
-    );
-
-    // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
-    const shiftPromises: Promise<void>[] = [];
-
-    // Desconexión del enlace siguiente presente entre el nodo anterior y siguiente al nuevo nodo
-    const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(
-        `g#link-${prevNode}-${nextNode}-next`
-    );
-
-    await prevToNextNodeNextLinkGroup
-        .select("path.node-link")
+    // Restablecimiento del estilo original del nodo (excepto para el último nodo)
+    if (node.id !== prevNode) {
+      await nodeElement
         .transition()
-        .duration(1000)
-        .style("opacity", 0)
-        .end();
-    prevToNextNodeNextLinkGroup.remove();
-
-    // Desconexión del enlace previo presente entre el nodo siguiente y anterior al nuevo nodo (solo para listas dobles)
-    if (showDoubleLinks) {
-        const nextToPrevNodePrevLinkGroup = svg.select<SVGGElement>(
-            `g#link-${nextNode}-${prevNode}-prev`
-        );
-
-        await nextToPrevNodePrevLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
-        nextToPrevNodePrevLinkGroup.remove();
-    }
-
-    // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
-    const remainingNodes = svg
-        .selectAll<SVGGElement, ListNodeData>("g.node")
-        .data(nodesToMove, (d) => d.id);
-
-    // Promesa para desplazamiento de nodos existentes a su posición final
-    shiftPromises.push(
-        remainingNodes
-            .transition()
-            .duration(1500)
-            .ease(d3.easeQuadInOut)
-            .attr("transform", (d) => {
-                const finalPos = positions.get(d.id)!;
-                return `translate(${finalPos.x}, ${finalPos.y})`;
-            })
-            .end()
-    );
-
-    // Selección de enlaces que requieren posicionamiento (re-vinculación de datos)
-    const remainingLinks = svg
-        .selectAll<SVGGElement, LinkData>("g.link")
-        .data(
-            existingLinksData,
-            (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
-        );
-
-    // Promesa para desplazamiento de enlaces existentes a su posición final
-    shiftPromises.push(
-        remainingLinks
-            .select("path.node-link")
-            .transition()
-            .duration(1500)
-            .ease(d3.easeQuadInOut)
-            .attr("d", (d) =>
-                calculateLinkPath(
-                    d,
-                    positions,
-                    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-                )
-            )
-            .end()
-    );
-
-    if (showTailIndicator) {
-        // Grupo del lienzo correspondiente al indicador del nodo cola
-        const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
-
-        // Posición de animación final del indicador de cola
-        const finalTailIndicatorPos = positions.get(
-            existingNodesData[existingNodesData.length - 1].id
-        )!;
-        shiftPromises.push(
-            tailIndicatorGroup
-                .transition()
-                .duration(1500)
-                .ease(d3.easeQuadInOut)
-                .attr("transform", () => {
-                    const finalX =
-                        finalTailIndicatorPos.x +
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                    const finalY = finalTailIndicatorPos.y;
-                    return `translate(${finalX}, ${finalY})`;
-                })
-                .end()
-        );
-    }
-
-    // Resolución de las promesas para animación de desplazamiento
-    await Promise.all(shiftPromises);
-
-    // Posición de animación inicial para inserción del nuevo nodo
-    const initialYOffset = -75;
-    const initialPos = {
-        x: finalNewNodePos.x,
-        y: finalNewNodePos.y + initialYOffset,
-    };
-
-    // Mapa temporal de posiciones para calular la forma inicial de los enlaces
-    const tempPositions: Map<
-        string,
-        {
-            x: number;
-            y: number;
-        }
-    > = new Map(positions);
-    tempPositions.set(newNode, initialPos);
-
-    // Forma inicial de los enlaces siguientes producto de la inserción
-    const initialNextPathToNewNode = calculateLinkPath(
-        { sourceId: prevNode, targetId: newNode, type: "next" },
-        tempPositions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-    );
-    const initialNextPathOfNewNode = calculateLinkPath(
-        { sourceId: newNode, targetId: nextNode, type: "next" },
-        tempPositions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-    );
-
-    prevToNewNodeNextLinkGroup
-        .select("path.node-link")
-        .attr("d", initialNextPathToNewNode);
-    newNodeNextLinkGroup
-        .select("path.node-link")
-        .attr("d", initialNextPathOfNewNode);
-
-    // Forma inicial de los enlaces previos producto de la inserción (solo para listas dobles)
-    if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
-        const initialPrevPathToNewNode = calculateLinkPath(
-            { sourceId: nextNode, targetId: newNode, type: "prev" },
-            tempPositions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-        const initialPrevPathOfNewNode = calculateLinkPath(
-            { sourceId: newNode, targetId: prevNode, type: "prev" },
-            tempPositions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-
-        nextToNewNodePrevLinkGroup
-            .select("path.node-link")
-            .attr("d", initialPrevPathToNewNode);
-        newNodePrevLinkGroup
-            .select("path.node-link")
-            .attr("d", initialPrevPathOfNewNode);
-    }
-
-    // Posicionamiento inicial del nuevo nodo
-    newNodeGroup.attr(
-        "transform",
-        `translate(${initialPos.x}, ${initialPos.y})`
-    );
-
-    // Array de promesas para animación de aparición de todos los elementos relacionados al nuevo nodo
-    const newNodeAppearancePromises: Promise<void>[] = [];
-
-    // Promesa para aparición del nuevo nodo
-    newNodeAppearancePromises.push(
-        newNodeGroup.transition().duration(1000).style("opacity", 1).end()
-    );
-
-    // Promesa para aparición del enlace siguiente del nuevo nodo
-    newNodeAppearancePromises.push(
-        newNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end()
-    );
-
-    // Promesa para conexión del nodo previo con el nuevo nodo
-    newNodeAppearancePromises.push(
-        prevToNewNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end()
-    );
-
-    // Promesas para aparición de enlaces previos (solo para listas dobles)
-    if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
-        newNodeAppearancePromises.push(
-            nextToNewNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
-                .end()
-        );
-
-        newNodeAppearancePromises.push(
-            newNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
-                .end()
-        );
-    }
-
-    // Resolución de las promesas de animación para aparición del nuevo nodo
-    await Promise.all(newNodeAppearancePromises);
-
-    // Forma final de los enlaces siguientes producto de la inserción
-    const finalNextPathToNewNode = calculateLinkPath(
-        { sourceId: prevNode, targetId: newNode, type: "next" },
-        positions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-    );
-    const finalNextPathOfNewNode = calculateLinkPath(
-        { sourceId: newNode, targetId: nextNode, type: "next" },
-        positions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-    );
-
-    // Array de promesas para animación de movimiento de los elementos del nuevo nodo a su posición final
-    const newNodeFinalMovementPromises: Promise<void>[] = [];
-
-    // Promesas para movimiento de los elementos del nuevo nodo a su posición final
-    newNodeFinalMovementPromises.push(
-        newNodeGroup
-            .transition()
-            .duration(1500)
-            .ease(d3.easeBounce)
-            .attr(
-                "transform",
-                `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
-            )
-            .end()
-    );
-
-    newNodeFinalMovementPromises.push(
-        prevToNewNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1500)
-            .ease(d3.easeBounce)
-            .attr("d", finalNextPathToNewNode)
-            .end()
-    );
-
-    newNodeFinalMovementPromises.push(
-        newNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1500)
-            .ease(d3.easeBounce)
-            .attr("d", finalNextPathOfNewNode)
-            .end()
-    );
-
-    // Movimiento de enlaces previos (solo para listas dobles)
-    if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
-        const finalPrevPathToNewNode = calculateLinkPath(
-            { sourceId: nextNode, targetId: newNode, type: "prev" },
-            positions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-        const finalPrevPathOfNewNode = calculateLinkPath(
-            { sourceId: newNode, targetId: prevNode, type: "prev" },
-            positions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-
-        newNodeFinalMovementPromises.push(
-            nextToNewNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1500)
-                .ease(d3.easeBounce)
-                .attr("d", finalPrevPathToNewNode)
-                .end()
-        );
-
-        newNodeFinalMovementPromises.push(
-            newNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1500)
-                .ease(d3.easeBounce)
-                .attr("d", finalPrevPathOfNewNode)
-                .end()
-        );
-    }
-
-    // Resolución de las promesas de animación para movimiento de los elementos del nuevo nodo a su posición final
-    await Promise.all(newNodeFinalMovementPromises);
-
-    // Restablecimiento del estilo del nodo anterior al nuevo nodo
-    await prevNodeGroup
-        .select("rect")
-        .transition()
-        .duration(500)
+        .duration(700)
         .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
         .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
         .end();
+    }
+  }
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+  // Nodos a desplazar para la inclusión del nuevo nodo
+  const nodesToMove = existingNodesData.slice(
+    insertionPosition,
+    existingNodesData.length
+  );
 
-    // Finalización de la animación
-    setIsAnimating(false);
+  // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
+  const shiftPromises: Promise<void>[] = [];
+
+  // Desconexión del enlace siguiente presente entre el nodo anterior y siguiente al nuevo nodo
+  const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(
+    `g#link-${prevNode}-${nextNode}-next}`
+  );
+
+  await prevToNextNodeNextLinkGroup
+    .select("path.node-link")
+    .transition()
+    .duration(1000)
+    .style("opacity", 0)
+    .end();
+  prevToNextNodeNextLinkGroup.remove();
+
+  // Desconexión del enlace previo presente entre el nodo siguiente y anterior al nuevo nodo (solo para listas dobles)
+  if (showDoubleLinks) {
+    const nextToPrevNodePrevLinkGroup = svg.select<SVGGElement>(
+      `g#link-${nextNode}-${prevNode}-prev`
+    );
+
+    await nextToPrevNodePrevLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
+    nextToPrevNodePrevLinkGroup.remove();
+  }
+
+  // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
+  const remainingNodes = svg
+    .selectAll<SVGGElement, ListNodeData>("g.node")
+    .data(nodesToMove, (d) => d.id);
+
+  // Promesa para desplazamiento de nodos existentes a su posición final
+  shiftPromises.push(
+    remainingNodes
+      .transition()
+      .duration(1500)
+      .ease(d3.easeQuadInOut)
+      .attr("transform", (d) => {
+        const finalPos = positions.get(d.id)!;
+        return `translate(${finalPos.x}, ${finalPos.y})`;
+      })
+      .end()
+  );
+
+  // Selección de enlaces que requieren posicionamiento (re-vinculación de datos)
+  const remainingLinks = svg
+    .selectAll<SVGGElement, LinkData>("g.link")
+    .data(
+      existingLinksData,
+      (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
+    );
+
+  // Promesa para desplazamiento de enlaces existentes a su posición final
+  shiftPromises.push(
+    remainingLinks
+      .select("path.node-link")
+      .transition()
+      .duration(1500)
+      .ease(d3.easeQuadInOut)
+      .attr("d", (d) =>
+        calculateLinkPath(
+          d,
+          positions,
+          SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+          SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+        )
+      )
+      .end()
+  );
+
+  if (showTailIndicator) {
+    // Grupo del lienzo correspondiente al indicador del nodo cola
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+    // Posición de animación final del indicador de cola
+    const finalTailIndicatorPos = positions.get(
+      existingNodesData[existingNodesData.length - 1].id
+    )!;
+    shiftPromises.push(
+      tailIndicatorGroup
+        .transition()
+        .duration(1500)
+        .ease(d3.easeQuadInOut)
+        .attr("transform", () => {
+          const finalX =
+            finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+          const finalY = finalTailIndicatorPos.y;
+          return `translate(${finalX}, ${finalY})`;
+        })
+        .end()
+    );
+  }
+
+  // Resolución de las promesas para animación de desplazamiento
+  await Promise.all(shiftPromises);
+
+  // Posición de animación inicial para inserción del nuevo nodo
+  const initialYOffset = -75;
+  const initialPos = {
+    x: finalNewNodePos.x,
+    y: finalNewNodePos.y + initialYOffset,
+  };
+
+  // Mapa temporal de posiciones para calular la forma inicial de los enlaces
+  const tempPositions: Map<
+    string,
+    {
+      x: number;
+      y: number;
+    }
+  > = new Map(positions);
+  tempPositions.set(newNode, initialPos);
+
+  // Forma inicial de los enlaces siguientes producto de la inserción
+  const initialNextPathToNewNode = calculateLinkPath(
+    { sourceId: prevNode, targetId: newNode, type: "next" },
+    tempPositions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
+  const initialNextPathOfNewNode = calculateLinkPath(
+    { sourceId: newNode, targetId: nextNode, type: "next" },
+    tempPositions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
+
+  prevToNewNodeNextLinkGroup
+    .select("path.node-link")
+    .attr("d", initialNextPathToNewNode);
+  newNodeNextLinkGroup
+    .select("path.node-link")
+    .attr("d", initialNextPathOfNewNode);
+
+  // Forma inicial de los enlaces previos producto de la inserción (solo para listas dobles)
+  if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+    const initialPrevPathToNewNode = calculateLinkPath(
+      { sourceId: nextNode, targetId: newNode, type: "prev" },
+      tempPositions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+    const initialPrevPathOfNewNode = calculateLinkPath(
+      { sourceId: newNode, targetId: prevNode, type: "prev" },
+      tempPositions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+
+    nextToNewNodePrevLinkGroup
+      .select("path.node-link")
+      .attr("d", initialPrevPathToNewNode);
+    newNodePrevLinkGroup
+      .select("path.node-link")
+      .attr("d", initialPrevPathOfNewNode);
+  }
+
+  // Posicionamiento inicial del nuevo nodo
+  newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
+
+  // Array de promesas para animación de aparición de todos los elementos relacionados al nuevo nodo
+  const newNodeAppearancePromises: Promise<void>[] = [];
+
+  // Promesa para aparición del nuevo nodo
+  newNodeAppearancePromises.push(
+    newNodeGroup.transition().duration(1000).style("opacity", 1).end()
+  );
+
+  // Promesa para aparición del enlace siguiente del nuevo nodo
+  newNodeAppearancePromises.push(
+    newNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 1)
+      .end()
+  );
+
+  // Promesa para conexión del nodo previo con el nuevo nodo
+  newNodeAppearancePromises.push(
+    prevToNewNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 1)
+      .end()
+  );
+
+  // Promesas para aparición de enlaces previos (solo para listas dobles)
+  if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+    newNodeAppearancePromises.push(
+      nextToNewNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end()
+    );
+
+    newNodeAppearancePromises.push(
+      newNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end()
+    );
+  }
+
+  // Resolución de las promesas de animación para aparición del nuevo nodo
+  await Promise.all(newNodeAppearancePromises);
+
+  // Forma final de los enlaces siguientes producto de la inserción
+  const finalNextPathToNewNode = calculateLinkPath(
+    { sourceId: prevNode, targetId: newNode, type: "next" },
+    positions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
+  const finalNextPathOfNewNode = calculateLinkPath(
+    { sourceId: newNode, targetId: nextNode, type: "next" },
+    positions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
+
+  // Array de promesas para animación de movimiento de los elementos del nuevo nodo a su posición final
+  const newNodeFinalMovementPromises: Promise<void>[] = [];
+
+  // Promesas para movimiento de los elementos del nuevo nodo a su posición final
+  newNodeFinalMovementPromises.push(
+    newNodeGroup
+      .transition()
+      .duration(1500)
+      .ease(d3.easeBounce)
+      .attr(
+        "transform",
+        `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
+      )
+      .end()
+  );
+
+  newNodeFinalMovementPromises.push(
+    prevToNewNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1500)
+      .ease(d3.easeBounce)
+      .attr("d", finalNextPathToNewNode)
+      .end()
+  );
+
+  newNodeFinalMovementPromises.push(
+    newNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1500)
+      .ease(d3.easeBounce)
+      .attr("d", finalNextPathOfNewNode)
+      .end()
+  );
+
+  // Movimiento de enlaces previos (solo para listas dobles)
+  if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+    const finalPrevPathToNewNode = calculateLinkPath(
+      { sourceId: nextNode, targetId: newNode, type: "prev" },
+      positions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+    const finalPrevPathOfNewNode = calculateLinkPath(
+      { sourceId: newNode, targetId: prevNode, type: "prev" },
+      positions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+
+    newNodeFinalMovementPromises.push(
+      nextToNewNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1500)
+        .ease(d3.easeBounce)
+        .attr("d", finalPrevPathToNewNode)
+        .end()
+    );
+
+    newNodeFinalMovementPromises.push(
+      newNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1500)
+        .ease(d3.easeBounce)
+        .attr("d", finalPrevPathOfNewNode)
+        .end()
+    );
+  }
+
+  // Resolución de las promesas de animación para movimiento de los elementos del nuevo nodo a su posición final
+  await Promise.all(newNodeFinalMovementPromises);
+
+  // Restablecimiento del estilo del nodo anterior al nuevo nodo
+  await prevNodeGroup
+    .select("rect")
+    .transition()
+    .duration(500)
+    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+    .end();
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
+
+// export async function animateInsertAtPosition(
+//   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+//   nodesInvolved: { newNode: string; prevNode: string; nextNode: string },
+//   listData: {
+//     existingNodesData: ListNodeData[];
+//     existingLinksData: LinkData[];
+//     showDoubleLinks: boolean;
+//     showTailIndicator: boolean;
+//     showCircularLinks: boolean;
+//   },
+//   insertionPosition: number,
+//   positions: Map<string, { x: number; y: number }>,
+//   resetQueryValues: () => void,
+//   setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+// ) {
+//   // Nodos implicados en la inserción
+//   const { newNode, prevNode, nextNode } = nodesInvolved;
+
+//   // Información de la lista
+//   const {
+//     existingNodesData,
+//     existingLinksData,
+//     showDoubleLinks,
+//     showTailIndicator,
+//     showCircularLinks,
+//   } = listData;
+
+//   // Grupo del lienzo correspondiente al nuevo elemento
+//   const newNodeGroup = svg.select<SVGGElement>(`g#${newNode}`);
+
+//   // Grupo del lienzo correspondiente al nodo anterior al nodo a insertar
+//   const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
+
+//   // Posición de animación final para inserción del nuevo nodo
+//   const finalNewNodePos = positions.get(newNode)!;
+
+//   // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nuevo nodo
+//   const prevToNewNodeNextLinkGroup = svg.select<SVGGElement>(
+//     `g#link-${prevNode}-${newNode}-next`
+//   );
+
+//   // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
+//   const newNodeNextLinkGroup = svg.select<SVGGElement>(
+//     `g#link-${newNode}-${nextNode}-next`
+//   );
+
+//   // Estado visual inicial del nuevo nodo
+//   newNodeGroup.style("opacity", 0);
+
+//   // Estado visual inicial del enlace que apunta al nuevo nodo
+//   prevToNewNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+
+//   // Estado visual inicial del enlace que apunta al siguiente del nuevo nodo
+//   newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+
+//   // Grupo del lienzo correspondiente al enlace anterior del nodo siguiente que apunta al nuevo nodo (solo para listas dobles)
+//   const nextToNewNodePrevLinkGroup = showDoubleLinks
+//     ? svg.select<SVGGElement>(`g#link-${nextNode}-${newNode}-prev`)
+//     : null;
+
+//   // Grupo del lienzo correspondiente al enlace previo del nuevo nodo (solo para listas dobles)
+//   const newNodePrevLinkGroup = showDoubleLinks
+//     ? svg.select<SVGGElement>(`g#link-${newNode}-${prevNode}-prev`)
+//     : null;
+
+//   // Estado visual inicial de los enlaces previos referentes al nuevo nodo
+//   if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+//     nextToNewNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
+//     newNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
+//   }
+
+//   // Nodos a recorrer para insertar el nodo
+//   const nodesToTraverse = existingNodesData.slice(0, insertionPosition);
+
+//   for (const node of nodesToTraverse) {
+//     // Selección del grupo del nodo actual
+//     const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+
+//     // Selección del eleento a animar
+//     const nodeElement = nodeGroup.select("rect");
+
+//     // Resaltado del nodo actual
+//     await nodeElement
+//       .transition()
+//       .duration(700)
+//       .attr("stroke", "#f87171")
+//       .attr("stroke-width", 3)
+//       .end();
+
+//     // Restablecimiento del estilo original del nodo (excepto para el último nodo)
+//     if (node.id !== prevNode) {
+//       await nodeElement
+//         .transition()
+//         .duration(700)
+//         .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+//         .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+//         .end();
+//     }
+//   }
+
+//   // Nodos a desplazar para la inclusión del nuevo nodo
+//   const nodesToMove = existingNodesData.slice(
+//     insertionPosition,
+//     existingNodesData.length
+//   );
+
+//   // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
+//   const shiftPromises: Promise<void>[] = [];
+
+//   // Desconexión del enlace siguiente presente entre el nodo anterior y siguiente al nuevo nodo
+//   const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(
+//     `g#link-${prevNode}-${nextNode}-${showCircularLinks ? "next-circular" : "next"}`
+//   );
+//   //     const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(
+//   //     `g#link-${prevNode}-${nextNode}-next}`
+//   //   );
+
+//   await prevToNextNodeNextLinkGroup
+//     .select("path.node-link")
+//     .transition()
+//     .duration(1000)
+//     .style("opacity", 0)
+//     .end();
+//   prevToNextNodeNextLinkGroup.remove();
+
+//   // Desconexión del enlace previo presente entre el nodo siguiente y anterior al nuevo nodo (solo para listas dobles)
+//   if (showDoubleLinks) {
+//     const nextToPrevNodePrevLinkGroup = svg.select<SVGGElement>(
+//       `g#link-${nextNode}-${prevNode}-prev`
+//     );
+
+//     await nextToPrevNodePrevLinkGroup
+//       .select("path.node-link")
+//       .transition()
+//       .duration(1000)
+//       .style("opacity", 0)
+//       .end();
+//     nextToPrevNodePrevLinkGroup.remove();
+//   }
+
+//   // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
+//   const remainingNodes = svg
+//     .selectAll<SVGGElement, ListNodeData>("g.node")
+//     .data(nodesToMove, (d) => d.id);
+
+//   // Promesa para desplazamiento de nodos existentes a su posición final
+//   shiftPromises.push(
+//     remainingNodes
+//       .transition()
+//       .duration(1500)
+//       .ease(d3.easeQuadInOut)
+//       .attr("transform", (d) => {
+//         const finalPos = positions.get(d.id)!;
+//         return `translate(${finalPos.x}, ${finalPos.y})`;
+//       })
+//       .end()
+//   );
+
+//   // Selección de enlaces que requieren posicionamiento (re-vinculación de datos)
+//   const remainingLinks = svg
+//     .selectAll<SVGGElement, LinkData>("g.link")
+//     .data(
+//       existingLinksData,
+//       (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
+//     );
+
+//   // Promesa para desplazamiento de enlaces existentes a su posición final
+//   shiftPromises.push(
+//     remainingLinks
+//       .select("path.node-link")
+//       .transition()
+//       .duration(1500)
+//       .ease(d3.easeQuadInOut)
+//       .attr("d", (d) =>
+//         calculateLinkPath(
+//           d,
+//           positions,
+//           SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//           SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//         )
+//       )
+//       .end()
+//   );
+
+//   if (showTailIndicator) {
+//     // Grupo del lienzo correspondiente al indicador del nodo cola
+//     const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+//     // Posición de animación final del indicador de cola
+//     const finalTailIndicatorPos = positions.get(
+//       existingNodesData[existingNodesData.length - 1].id
+//     )!;
+//     shiftPromises.push(
+//       tailIndicatorGroup
+//         .transition()
+//         .duration(1500)
+//         .ease(d3.easeQuadInOut)
+//         .attr("transform", () => {
+//           const finalX =
+//             finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+//           const finalY = finalTailIndicatorPos.y;
+//           return `translate(${finalX}, ${finalY})`;
+//         })
+//         .end()
+//     );
+//   }
+
+//   // Resolución de las promesas para animación de desplazamiento
+//   await Promise.all(shiftPromises);
+
+//   // Posición de animación inicial para inserción del nuevo nodo
+//   const initialYOffset = -75;
+//   const initialPos = {
+//     x: finalNewNodePos.x,
+//     y: finalNewNodePos.y + initialYOffset,
+//   };
+
+//   // Mapa temporal de posiciones para calular la forma inicial de los enlaces
+//   const tempPositions: Map<
+//     string,
+//     {
+//       x: number;
+//       y: number;
+//     }
+//   > = new Map(positions);
+//   tempPositions.set(newNode, initialPos);
+
+//   // Forma inicial de los enlaces siguientes producto de la inserción
+//   const initialNextPathToNewNode = calculateLinkPath(
+//     { sourceId: prevNode, targetId: newNode, type: showCircularLinks ? "next-circular" : "next" },
+//     tempPositions,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//   );
+//   const initialNextPathOfNewNode = calculateLinkPath(
+//     { sourceId: newNode, targetId: nextNode, type: showCircularLinks ? "next-circular" : "next" },
+//     tempPositions,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//   );
+
+//   prevToNewNodeNextLinkGroup
+//     .select("path.node-link")
+//     .attr("d", initialNextPathToNewNode);
+//   newNodeNextLinkGroup
+//     .select("path.node-link")
+//     .attr("d", initialNextPathOfNewNode);
+
+//   // Forma inicial de los enlaces previos producto de la inserción (solo para listas dobles)
+//   if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+//     const initialPrevPathToNewNode = calculateLinkPath(
+//       { sourceId: nextNode, targetId: newNode, type: "prev" },
+//       tempPositions,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//     );
+//     const initialPrevPathOfNewNode = calculateLinkPath(
+//       { sourceId: newNode, targetId: prevNode, type: "prev" },
+//       tempPositions,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//     );
+
+//     nextToNewNodePrevLinkGroup
+//       .select("path.node-link")
+//       .attr("d", initialPrevPathToNewNode);
+//     newNodePrevLinkGroup
+//       .select("path.node-link")
+//       .attr("d", initialPrevPathOfNewNode);
+//   }
+
+//   // Posicionamiento inicial del nuevo nodo
+//   newNodeGroup.attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
+
+//   // Array de promesas para animación de aparición de todos los elementos relacionados al nuevo nodo
+//   const newNodeAppearancePromises: Promise<void>[] = [];
+
+//   // Promesa para aparición del nuevo nodo
+//   newNodeAppearancePromises.push(
+//     newNodeGroup.transition().duration(1000).style("opacity", 1).end()
+//   );
+
+//   // Promesa para aparición del enlace siguiente del nuevo nodo
+//   newNodeAppearancePromises.push(
+//     newNodeNextLinkGroup
+//       .select("path.node-link")
+//       .transition()
+//       .duration(1000)
+//       .style("opacity", 1)
+//       .end()
+//   );
+
+//   // Promesa para conexión del nodo previo con el nuevo nodo
+//   newNodeAppearancePromises.push(
+//     prevToNewNodeNextLinkGroup
+//       .select("path.node-link")
+//       .transition()
+//       .duration(1000)
+//       .style("opacity", 1)
+//       .end()
+//   );
+
+//   // Promesas para aparición de enlaces previos (solo para listas dobles)
+//   if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+//     newNodeAppearancePromises.push(
+//       nextToNewNodePrevLinkGroup
+//         .select("path.node-link")
+//         .transition()
+//         .duration(1000)
+//         .style("opacity", 1)
+//         .end()
+//     );
+
+//     newNodeAppearancePromises.push(
+//       newNodePrevLinkGroup
+//         .select("path.node-link")
+//         .transition()
+//         .duration(1000)
+//         .style("opacity", 1)
+//         .end()
+//     );
+//   }
+
+//   // Resolución de las promesas de animación para aparición del nuevo nodo
+//   await Promise.all(newNodeAppearancePromises);
+
+//   // Forma final de los enlaces siguientes producto de la inserción
+//   const finalNextPathToNewNode = calculateLinkPath(
+//     { sourceId: prevNode, targetId: newNode, type: showCircularLinks ? "next-circular" : "next" },
+//     positions,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//   );
+//   const finalNextPathOfNewNode = calculateLinkPath(
+//     { sourceId: newNode, targetId: nextNode, type: showCircularLinks ? "next-circular" : "next" },
+//     positions,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//     SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//   );
+
+//   // Array de promesas para animación de movimiento de los elementos del nuevo nodo a su posición final
+//   const newNodeFinalMovementPromises: Promise<void>[] = [];
+
+//   // Promesas para movimiento de los elementos del nuevo nodo a su posición final
+//   newNodeFinalMovementPromises.push(
+//     newNodeGroup
+//       .transition()
+//       .duration(1500)
+//       .ease(d3.easeBounce)
+//       .attr(
+//         "transform",
+//         `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`
+//       )
+//       .end()
+//   );
+
+//   newNodeFinalMovementPromises.push(
+//     prevToNewNodeNextLinkGroup
+//       .select("path.node-link")
+//       .transition()
+//       .duration(1500)
+//       .ease(d3.easeBounce)
+//       .attr("d", finalNextPathToNewNode)
+//       .end()
+//   );
+
+//   newNodeFinalMovementPromises.push(
+//     newNodeNextLinkGroup
+//       .select("path.node-link")
+//       .transition()
+//       .duration(1500)
+//       .ease(d3.easeBounce)
+//       .attr("d", finalNextPathOfNewNode)
+//       .end()
+//   );
+
+//   // Movimiento de enlaces previos (solo para listas dobles)
+//   if (nextToNewNodePrevLinkGroup && newNodePrevLinkGroup) {
+//     const finalPrevPathToNewNode = calculateLinkPath(
+//       { sourceId: nextNode, targetId: newNode, type: "prev" },
+//       positions,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//     );
+//     const finalPrevPathOfNewNode = calculateLinkPath(
+//       { sourceId: newNode, targetId: prevNode, type: "prev" },
+//       positions,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+//       SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+//     );
+
+//     newNodeFinalMovementPromises.push(
+//       nextToNewNodePrevLinkGroup
+//         .select("path.node-link")
+//         .transition()
+//         .duration(1500)
+//         .ease(d3.easeBounce)
+//         .attr("d", finalPrevPathToNewNode)
+//         .end()
+//     );
+
+//     newNodeFinalMovementPromises.push(
+//       newNodePrevLinkGroup
+//         .select("path.node-link")
+//         .transition()
+//         .duration(1500)
+//         .ease(d3.easeBounce)
+//         .attr("d", finalPrevPathOfNewNode)
+//         .end()
+//     );
+//   }
+
+//   // Resolución de las promesas de animación para movimiento de los elementos del nuevo nodo a su posición final
+//   await Promise.all(newNodeFinalMovementPromises);
+
+//   // Restablecimiento del estilo del nodo anterior al nuevo nodo
+//   await prevNodeGroup
+//     .select("rect")
+//     .transition()
+//     .duration(500)
+//     .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+//     .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+//     .end();
+
+//   // Restablecimiento de los valores de las queries del usuario
+//   resetQueryValues();
+
+//   // Finalización de la animación
+//   setIsAnimating(false);
+// }
 
 /**
  * Función encargada de animar la eliminación del nodo al inicio de la lista.
@@ -1286,202 +1392,199 @@ export async function animateInsertAtPosition(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateRemoveFirst(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { prevHeadNode: string; newHeadNode: string | null },
-    listData: {
-        remainingNodesData: ListNodeData[];
-        remainingLinksData: LinkData[];
-        showDoubleLinks: boolean;
-        showTailIndicator: boolean;
-    },
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesInvolved: { prevHeadNode: string; newHeadNode: string | null },
+  listData: {
+    remainingNodesData: ListNodeData[];
+    remainingLinksData: LinkData[];
+    showDoubleLinks: boolean;
+    showTailIndicator: boolean;
+  },
+  positions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la eliminación
-    const { newHeadNode, prevHeadNode } = nodesInvolved;
+  // Nodos implicados en la eliminación
+  const { newHeadNode, prevHeadNode } = nodesInvolved;
 
-    // Grupo del lienzo correspondiente al nodo a eliminar
-    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevHeadNode}`);
+  // Grupo del lienzo correspondiente al nodo a eliminar
+  const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevHeadNode}`);
 
-    if (newHeadNode) {
-        // Información de la lista
-        const {
-            remainingNodesData,
-            remainingLinksData,
-            showDoubleLinks,
-            showTailIndicator,
-        } = listData;
+  if (newHeadNode) {
+    // Información de la lista
+    const {
+      remainingNodesData,
+      remainingLinksData,
+      showDoubleLinks,
+      showTailIndicator,
+    } = listData;
 
-        // Grupo del lienzo correspondiente al indicador del nodo cabeza
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+    // Grupo del lienzo correspondiente al indicador del nodo cabeza
+    const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-        // Grupo del lienzo correspondiente al enlace siguiente del nodo a eliminar que apunta al nuevo nodo cabeza
-        const nodeToRemoveNextLinkGroup = svg.select<SVGGElement>(
-            `g#link-${prevHeadNode}-${newHeadNode}-next`
-        );
+    // Grupo del lienzo correspondiente al enlace siguiente del nodo a eliminar que apunta al nuevo nodo cabeza
+    const nodeToRemoveNextLinkGroup = svg.select<SVGGElement>(
+      `g#link-${prevHeadNode}-${newHeadNode}-next`
+    );
 
-        // Grupo del lienzo correspondiente al enlace previo del nuevo nodo cabeza que apunta al nodo a eliminar (solo para listas dobles)
-        const newHeadNodePrevLinkGroup = showDoubleLinks
-            ? svg.select<SVGGElement>(
-                  `g#link-${newHeadNode}-${prevHeadNode}-prev`
-              )
-            : null;
+    // Grupo del lienzo correspondiente al enlace previo del nuevo nodo cabeza que apunta al nodo a eliminar (solo para listas dobles)
+    const newHeadNodePrevLinkGroup = showDoubleLinks
+      ? svg.select<SVGGElement>(`g#link-${newHeadNode}-${prevHeadNode}-prev`)
+      : null;
 
-        // Posición actual del nodo a eliminar
-        const nodeToRemoveCurrentPos = positions.get(prevHeadNode)!;
+    // Posición actual del nodo a eliminar
+    const nodeToRemoveCurrentPos = positions.get(prevHeadNode)!;
 
-        // Movimiento de salida del nodo a eliminar
-        const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
+    // Movimiento de salida del nodo a eliminar
+    const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
 
-        // Salida del enlace sig entre el nodo a eliminar y su siguiente
-        await nodeToRemoveNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
+    // Salida del enlace sig entre el nodo a eliminar y su siguiente
+    await nodeToRemoveNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
 
-        // Salida del enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
-        if (newHeadNodePrevLinkGroup) {
-            await newHeadNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .style("opacity", 0)
-                .end();
-        }
-
-        // Salida del nodo a eliminar
-        await nodeToRemoveGroup
-            .transition()
-            .duration(1500)
-            .ease(d3.easePolyInOut)
-            .attr("transform", () => {
-                const x = nodeToRemoveCurrentPos.x;
-                const y = nodeToRemoveCurrentPos.y + nodeMoveOffsetY;
-                return `translate(${x}, ${y})`;
-            })
-            .style("opacity", 0)
-            .end();
-
-        // Eliminación de los elementos del DOM asociados al nodo eliminado
-        nodeToRemoveGroup.remove();
-        nodeToRemoveNextLinkGroup.remove();
-        if (newHeadNodePrevLinkGroup) newHeadNodePrevLinkGroup.remove();
-
-        // Eliminación de la posición del nodo eliminado
-        positions.delete(prevHeadNode);
-
-        // Salida del indicador de cabeza
-        await headIndicatorGroup
-            .transition()
-            .duration(500)
-            .style("opacity", 0)
-            .end();
-
-        // Array de promesas para desplazamiento de nodos y enlaces restantes
-        const shiftPromises: Promise<void>[] = [];
-
-        // Selección de nodos restantes (re-vinculación de datos)
-        const remainingNodes = svg
-            .selectAll<SVGGElement, ListNodeData>("g.node")
-            .data(remainingNodesData, (d) => d.id);
-
-        // Promesa para desplazamiento de nodos restantes a su posición final
-        shiftPromises.push(
-            remainingNodes
-                .transition()
-                .duration(1500)
-                .ease(d3.easePolyInOut)
-                .attr("transform", (d) => {
-                    const finalPos = positions.get(d.id)!;
-                    return `translate(${finalPos.x}, ${finalPos.y})`;
-                })
-                .end()
-        );
-
-        // Selección de enlaces restantes (re-vinculación de datos)
-        const remainingLinks = svg
-            .selectAll<SVGGElement, LinkData>("g.link")
-            .data(
-                remainingLinksData,
-                (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
-            );
-
-        // Promesa para desplazamiento de enlaces restantes a su posición final
-        shiftPromises.push(
-            remainingLinks
-                .select("path.node-link")
-                .transition()
-                .duration(1500)
-                .ease(d3.easePolyInOut)
-                .attr("d", (d) =>
-                    calculateLinkPath(
-                        d,
-                        positions,
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-                    )
-                )
-                .end()
-        );
-
-        if (showTailIndicator) {
-            // Grupo del lienzo correspondiente al indicador del nodo cola
-            const tailIndicatorGroup =
-                svg.select<SVGGElement>("g#tail-indicator");
-
-            // Posición de animación final del indicador de cola
-            const finalTailIndicatorPos = positions.get(
-                remainingNodesData[remainingNodesData.length - 1].id
-            )!;
-            shiftPromises.push(
-                tailIndicatorGroup
-                    .transition()
-                    .duration(1500)
-                    .ease(d3.easePolyInOut)
-                    .attr("transform", () => {
-                        const finalX =
-                            finalTailIndicatorPos.x +
-                            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                        const finalY = finalTailIndicatorPos.y;
-                        return `translate(${finalX}, ${finalY})`;
-                    })
-                    .end()
-            );
-        }
-
-        // Resolución de las promesas para animación de desplazamiento de nodos y enlaces restantes
-        await Promise.all(shiftPromises);
-
-        // Entrada del indicador de cabeza
-        await headIndicatorGroup
-            .transition()
-            .duration(500)
-            .style("opacity", 1)
-            .end();
-    } else {
-        // Animación de salida simple del nodo
-        await nodeToRemoveGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .ease(d3.easePolyInOut)
-            .end();
-
-        // Eliminación de los elementos del DOM asociados al nodo eliminado
-        nodeToRemoveGroup.remove();
-
-        // Eliminación de la posición del nodo eliminado
-        positions.delete(prevHeadNode);
+    // Salida del enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
+    if (newHeadNodePrevLinkGroup) {
+      await newHeadNodePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .end();
     }
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    // Salida del nodo a eliminar
+    await nodeToRemoveGroup
+      .transition()
+      .duration(1500)
+      .ease(d3.easePolyInOut)
+      .attr("transform", () => {
+        const x = nodeToRemoveCurrentPos.x;
+        const y = nodeToRemoveCurrentPos.y + nodeMoveOffsetY;
+        return `translate(${x}, ${y})`;
+      })
+      .style("opacity", 0)
+      .end();
 
-    // Finalización de la animación
-    setIsAnimating(false);
+    // Eliminación de los elementos del DOM asociados al nodo eliminado
+    nodeToRemoveGroup.remove();
+    nodeToRemoveNextLinkGroup.remove();
+    if (newHeadNodePrevLinkGroup) newHeadNodePrevLinkGroup.remove();
+
+    // Eliminación de la posición del nodo eliminado
+    positions.delete(prevHeadNode);
+
+    // Salida del indicador de cabeza
+    await headIndicatorGroup
+      .transition()
+      .duration(500)
+      .style("opacity", 0)
+      .end();
+
+    // Array de promesas para desplazamiento de nodos y enlaces restantes
+    const shiftPromises: Promise<void>[] = [];
+
+    // Selección de nodos restantes (re-vinculación de datos)
+    const remainingNodes = svg
+      .selectAll<SVGGElement, ListNodeData>("g.node")
+      .data(remainingNodesData, (d) => d.id);
+
+    // Promesa para desplazamiento de nodos restantes a su posición final
+    shiftPromises.push(
+      remainingNodes
+        .transition()
+        .duration(1500)
+        .ease(d3.easePolyInOut)
+        .attr("transform", (d) => {
+          const finalPos = positions.get(d.id)!;
+          return `translate(${finalPos.x}, ${finalPos.y})`;
+        })
+        .end()
+    );
+
+    // Selección de enlaces restantes (re-vinculación de datos)
+    const remainingLinks = svg
+      .selectAll<SVGGElement, LinkData>("g.link")
+      .data(
+        remainingLinksData,
+        (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
+      );
+
+    // Promesa para desplazamiento de enlaces restantes a su posición final
+    shiftPromises.push(
+      remainingLinks
+        .select("path.node-link")
+        .transition()
+        .duration(1500)
+        .ease(d3.easePolyInOut)
+        .attr("d", (d) =>
+          calculateLinkPath(
+            d,
+            positions,
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+          )
+        )
+        .end()
+    );
+
+    if (showTailIndicator) {
+      // Grupo del lienzo correspondiente al indicador del nodo cola
+      const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+      // Posición de animación final del indicador de cola
+      const finalTailIndicatorPos = positions.get(
+        remainingNodesData[remainingNodesData.length - 1].id
+      )!;
+      shiftPromises.push(
+        tailIndicatorGroup
+          .transition()
+          .duration(1500)
+          .ease(d3.easePolyInOut)
+          .attr("transform", () => {
+            const finalX =
+              finalTailIndicatorPos.x +
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = finalTailIndicatorPos.y;
+            return `translate(${finalX}, ${finalY})`;
+          })
+          .end()
+      );
+    }
+
+    // Resolución de las promesas para animación de desplazamiento de nodos y enlaces restantes
+    await Promise.all(shiftPromises);
+
+    // Entrada del indicador de cabeza
+    await headIndicatorGroup
+      .transition()
+      .duration(500)
+      .style("opacity", 1)
+      .end();
+  } else {
+    // Animación de salida simple del nodo
+    await nodeToRemoveGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .ease(d3.easePolyInOut)
+      .end();
+
+    // Eliminación de los elementos del DOM asociados al nodo eliminado
+    nodeToRemoveGroup.remove();
+
+    // Eliminación de la posición del nodo eliminado
+    positions.delete(prevHeadNode);
+  }
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -1495,174 +1598,166 @@ export async function animateRemoveFirst(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateRemoveLast(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { prevLastNode: string; newLastNode: string | null },
-    listData: {
-        remainingNodesData: ListNodeData[];
-        showDoubleLinks: boolean;
-        showTailIndicator: boolean;
-    },
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesInvolved: { prevLastNode: string; newLastNode: string | null },
+  listData: {
+    remainingNodesData: ListNodeData[];
+    showDoubleLinks: boolean;
+    showTailIndicator: boolean;
+  },
+  positions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la eliminación
-    const { newLastNode, prevLastNode } = nodesInvolved;
+  // Nodos implicados en la eliminación
+  const { newLastNode, prevLastNode } = nodesInvolved;
 
-    // Grupo del lienzo correspondiente al nodo a eliminar
-    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
+  // Grupo del lienzo correspondiente al nodo a eliminar
+  const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
 
-    if (newLastNode) {
-        // Información de la lista
-        const { remainingNodesData, showDoubleLinks, showTailIndicator } =
-            listData;
+  if (newLastNode) {
+    // Información de la lista
+    const { remainingNodesData, showDoubleLinks, showTailIndicator } = listData;
 
-        // Grupo del lienzo correspondiente al nuevo último nodo
-        const newLastNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
+    // Grupo del lienzo correspondiente al nuevo último nodo
+    const newLastNodeGroup = svg.select<SVGGElement>(`g#${newLastNode}`);
 
-        // Grupo del lienzo correspondiente al enlace siguiente entre el nuevo último nodo y el nodo a eliminar
-        const newLastNodeNextLinkGroup = svg.select<SVGGElement>(
-            `g#link-${newLastNode}-${prevLastNode}-next`
-        );
+    // Grupo del lienzo correspondiente al enlace siguiente entre el nuevo último nodo y el nodo a eliminar
+    const newLastNodeNextLinkGroup = svg.select<SVGGElement>(
+      `g#link-${newLastNode}-${prevLastNode}-next`
+    );
 
-        // Grupo del lienzo correspondiente al enlace previo del nodo a eliminar (solo para listas dobles)
-        const nodeToRemovePrevLinkGroup = showDoubleLinks
-            ? svg.select<SVGGElement>(
-                  `g#link-${prevLastNode}-${newLastNode}-prev`
-              )
-            : null;
+    // Grupo del lienzo correspondiente al enlace previo del nodo a eliminar (solo para listas dobles)
+    const nodeToRemovePrevLinkGroup = showDoubleLinks
+      ? svg.select<SVGGElement>(`g#link-${prevLastNode}-${newLastNode}-prev`)
+      : null;
 
-        // Posición actual del nodo a eliminar
-        const nodeToRemoveCurrentPos = positions.get(prevLastNode)!;
+    // Posición actual del nodo a eliminar
+    const nodeToRemoveCurrentPos = positions.get(prevLastNode)!;
 
-        // Movimiento de salida del nodo a eliminar
-        const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
+    // Movimiento de salida del nodo a eliminar
+    const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
 
-        // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
-        if (!showDoubleLinks) {
-            for (const node of remainingNodesData) {
-                // Selección del grupo del nodo actual
-                const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+    // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
+    if (!showDoubleLinks) {
+      for (const node of remainingNodesData) {
+        // Selección del grupo del nodo actual
+        const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
 
-                // Selección del elemento a animar
-                const nodeElement = nodeGroup.select("rect");
+        // Selección del elemento a animar
+        const nodeElement = nodeGroup.select("rect");
 
-                // Resaltado del nodo actual
-                await nodeElement
-                    .transition()
-                    .duration(700)
-                    .attr("stroke", "#f87171")
-                    .attr("stroke-width", 3)
-                    .end();
+        // Resaltado del nodo actual
+        await nodeElement
+          .transition()
+          .duration(700)
+          .attr("stroke", "#f87171")
+          .attr("stroke-width", 3)
+          .end();
 
-                // Restablecimiento del estilo original del nodo (excepto para el nuevo último nodo)
-                if (node.id !== newLastNode) {
-                    await nodeElement
-                        .transition()
-                        .duration(700)
-                        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                        .attr(
-                            "stroke-width",
-                            SVG_STYLE_VALUES.RECT_STROKE_WIDTH
-                        )
-                        .end();
-                }
-            }
-        }
-
-        if (showTailIndicator) {
-            // Grupo del lienzo correspondiente al indicador del nodo cola
-            const tailIndicatorGroup =
-                svg.select<SVGGElement>("g#tail-indicator");
-
-            // Desplazamiento del indicador de cola a la posición del nuevo último nodo
-            const finalTailIndicatorPos = positions.get(newLastNode)!;
-            await tailIndicatorGroup
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadInOut)
-                .attr("transform", () => {
-                    const finalX =
-                        finalTailIndicatorPos.x +
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                    const finalY = finalTailIndicatorPos.y;
-                    return `translate(${finalX}, ${finalY})`;
-                })
-                .end();
-        }
-
-        // Salida del enlace siguiente entre el nuevo último nodo y el nodo a eliminar
-        await newLastNodeNextLinkGroup
-            .select("path.node-link")
+        // Restablecimiento del estilo original del nodo (excepto para el nuevo último nodo)
+        if (node.id !== newLastNode) {
+          await nodeElement
             .transition()
-            .duration(1000)
-            .ease(d3.easePolyInOut)
-            .style("opacity", 0)
+            .duration(700)
+            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
             .end();
-
-        // Salida del enlace previo del nodo a eliminar (solo para listas dobles)
-        if (nodeToRemovePrevLinkGroup) {
-            await nodeToRemovePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .ease(d3.easePolyInOut)
-                .style("opacity", 0)
-                .end();
         }
-
-        // Salida del nodo a eliminar
-        await nodeToRemoveGroup
-            .transition()
-            .duration(1500)
-            .ease(d3.easePolyInOut)
-            .attr("transform", () => {
-                const x = nodeToRemoveCurrentPos.x;
-                const y = nodeToRemoveCurrentPos.y + nodeMoveOffsetY;
-                return `translate(${x}, ${y})`;
-            })
-            .style("opacity", 0)
-            .end();
-
-        // Restablecimiento del estilo del nuevo último nodo
-        if (!showDoubleLinks) {
-            await newLastNodeGroup
-                .select("rect")
-                .transition()
-                .duration(500)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
-
-        // Eliminación de los elementos del DOM asociados al nodo eliminado
-        nodeToRemoveGroup.remove();
-        newLastNodeNextLinkGroup.remove();
-        if (nodeToRemovePrevLinkGroup) nodeToRemovePrevLinkGroup.remove();
-
-        // Eliminación de la posición del nodo eliminado
-        positions.delete(prevLastNode);
-    } else {
-        // Animación de salida simple del nodo
-        await nodeToRemoveGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .ease(d3.easePolyInOut)
-            .end();
-
-        // Eliminación de los elementos del DOM asociados al nodo eliminado
-        nodeToRemoveGroup.remove();
-
-        // Eliminación de la posición del nodo eliminado
-        positions.delete(prevLastNode);
+      }
     }
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    if (showTailIndicator) {
+      // Grupo del lienzo correspondiente al indicador del nodo cola
+      const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Finalización de la animación
-    setIsAnimating(false);
+      // Desplazamiento del indicador de cola a la posición del nuevo último nodo
+      const finalTailIndicatorPos = positions.get(newLastNode)!;
+      await tailIndicatorGroup
+        .transition()
+        .duration(1000)
+        .ease(d3.easeQuadInOut)
+        .attr("transform", () => {
+          const finalX =
+            finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+          const finalY = finalTailIndicatorPos.y;
+          return `translate(${finalX}, ${finalY})`;
+        })
+        .end();
+    }
+
+    // Salida del enlace siguiente entre el nuevo último nodo y el nodo a eliminar
+    await newLastNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .ease(d3.easePolyInOut)
+      .style("opacity", 0)
+      .end();
+
+    // Salida del enlace previo del nodo a eliminar (solo para listas dobles)
+    if (nodeToRemovePrevLinkGroup) {
+      await nodeToRemovePrevLinkGroup
+        .select("path.node-link")
+        .transition()
+        .duration(1000)
+        .ease(d3.easePolyInOut)
+        .style("opacity", 0)
+        .end();
+    }
+
+    // Salida del nodo a eliminar
+    await nodeToRemoveGroup
+      .transition()
+      .duration(1500)
+      .ease(d3.easePolyInOut)
+      .attr("transform", () => {
+        const x = nodeToRemoveCurrentPos.x;
+        const y = nodeToRemoveCurrentPos.y + nodeMoveOffsetY;
+        return `translate(${x}, ${y})`;
+      })
+      .style("opacity", 0)
+      .end();
+
+    // Restablecimiento del estilo del nuevo último nodo
+    if (!showDoubleLinks) {
+      await newLastNodeGroup
+        .select("rect")
+        .transition()
+        .duration(500)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+        .end();
+    }
+
+    // Eliminación de los elementos del DOM asociados al nodo eliminado
+    nodeToRemoveGroup.remove();
+    newLastNodeNextLinkGroup.remove();
+    if (nodeToRemovePrevLinkGroup) nodeToRemovePrevLinkGroup.remove();
+
+    // Eliminación de la posición del nodo eliminado
+    positions.delete(prevLastNode);
+  } else {
+    // Animación de salida simple del nodo
+    await nodeToRemoveGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .ease(d3.easePolyInOut)
+      .end();
+
+    // Eliminación de los elementos del DOM asociados al nodo eliminado
+    nodeToRemoveGroup.remove();
+
+    // Eliminación de la posición del nodo eliminado
+    positions.delete(prevLastNode);
+  }
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -1677,406 +1772,398 @@ export async function animateRemoveLast(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateRemoveAtPosition(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { nodeToRemove: string; prevNode: string; nextNode: string },
-    listData: {
-        existingNodesData: ListNodeData[];
-        existingLinksData: LinkData[];
-        showDoubleLinks: boolean;
-        showTailIndicator: boolean;
-    },
-    deletePosition: number,
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesInvolved: { nodeToRemove: string; prevNode: string; nextNode: string },
+  listData: {
+    existingNodesData: ListNodeData[];
+    existingLinksData: LinkData[];
+    showDoubleLinks: boolean;
+    showTailIndicator: boolean;
+  },
+  deletePosition: number,
+  positions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la eliminación
-    const { nodeToRemove, prevNode, nextNode } = nodesInvolved;
+  // Nodos implicados en la eliminación
+  const { nodeToRemove, prevNode, nextNode } = nodesInvolved;
 
-    // Información de la lista
-    const {
-        existingNodesData,
-        existingLinksData,
-        showDoubleLinks,
-        showTailIndicator,
-    } = listData;
+  // Información de la lista
+  const {
+    existingNodesData,
+    existingLinksData,
+    showDoubleLinks,
+    showTailIndicator,
+  } = listData;
 
-    // Grupo del lienzo correspondiente al nodo a eliminar
-    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeToRemove}`);
+  // Grupo del lienzo correspondiente al nodo a eliminar
+  const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeToRemove}`);
 
-    // Grupo del lienzo correspondiente al nodo anterior al nodo a eliminar
-    const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
+  // Grupo del lienzo correspondiente al nodo anterior al nodo a eliminar
+  const prevNodeGroup = svg.select<SVGGElement>(`g#${prevNode}`);
 
-    // Grupo del lienzo correspondiente al enlace siguiente formado entre el nodo anterior y el nodo siguiente al nodo a eliminar
-    const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(
-        `g#link-${prevNode}-${nextNode}-next`
-    );
+  // Grupo del lienzo correspondiente al enlace siguiente formado entre el nodo anterior y el nodo siguiente al nodo a eliminar
+  const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(
+    `g#link-${prevNode}-${nextNode}-next`
+  );
 
-    // Estado visual inicial del enlace siguiente entre el nodo previo y el nodo siguiente al nodo a eliminar
-    prevToNextNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+  // Estado visual inicial del enlace siguiente entre el nodo previo y el nodo siguiente al nodo a eliminar
+  prevToNextNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
 
-    // Grupo del lienzo correspondiente al enlace previo formado entre el nodo siguiente y el nodo anterior al nodo a eliminar (solo para listas dobles)
-    const nextToPrevNodePrevLinkGroup = showDoubleLinks
-        ? svg.select<SVGGElement>(`g#link-${nextNode}-${prevNode}-prev`)
-        : null;
+  // Grupo del lienzo correspondiente al enlace previo formado entre el nodo siguiente y el nodo anterior al nodo a eliminar (solo para listas dobles)
+  const nextToPrevNodePrevLinkGroup = showDoubleLinks
+    ? svg.select<SVGGElement>(`g#link-${nextNode}-${prevNode}-prev`)
+    : null;
 
-    // Estado visual inicial del enlace previo entre el nodo siguiente y anterior del nodo a eliminar
-    if (nextToPrevNodePrevLinkGroup)
-        nextToPrevNodePrevLinkGroup
-            .select("path.node-link")
-            .style("opacity", 0);
+  // Estado visual inicial del enlace previo entre el nodo siguiente y anterior del nodo a eliminar
+  if (nextToPrevNodePrevLinkGroup)
+    nextToPrevNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
 
-    // Nodos a recorrer para eliminar el nodo, depende si la lista es simple o doble
-    const nodesToTraverse = existingNodesData.slice(
-        0,
-        !showDoubleLinks ? deletePosition : deletePosition + 1
-    );
+  // Nodos a recorrer para eliminar el nodo, depende si la lista es simple o doble
+  const nodesToTraverse = existingNodesData.slice(
+    0,
+    !showDoubleLinks ? deletePosition : deletePosition + 1
+  );
 
-    // Definimos el nodo a seleccionar para iniciar la animación de eliminación, depende si la lista es simple o doble
-    const nodeToHighlight = showDoubleLinks ? nodeToRemove : prevNode;
+  // Definimos el nodo a seleccionar para iniciar la animación de eliminación, depende si la lista es simple o doble
+  const nodeToHighlight = showDoubleLinks ? nodeToRemove : prevNode;
 
-    for (const node of nodesToTraverse) {
-        // Selección del grupo correspondiente al nodo actual
-        const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+  for (const node of nodesToTraverse) {
+    // Selección del grupo correspondiente al nodo actual
+    const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
 
-        // Selección del elemento a animar
-        const nodeElement = nodeGroup.select("rect");
+    // Selección del elemento a animar
+    const nodeElement = nodeGroup.select("rect");
 
-        // Resaltado del nodo actual
-        await nodeElement
-            .transition()
-            .duration(700)
-            .attr("stroke", "#f87171")
-            .attr("stroke-width", 3)
-            .end();
+    // Resaltado del nodo actual
+    await nodeElement
+      .transition()
+      .duration(700)
+      .attr("stroke", "#f87171")
+      .attr("stroke-width", 3)
+      .end();
 
-        // Restablecimiento del estilo original del nodo (excepto para el último nodo)
-        if (node.id !== nodeToHighlight) {
-            await nodeElement
-                .transition()
-                .duration(700)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
+    // Restablecimiento del estilo original del nodo (excepto para el último nodo)
+    if (node.id !== nodeToHighlight) {
+      await nodeElement
+        .transition()
+        .duration(700)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+        .end();
     }
+  }
 
-    // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nodo a eliminar
-    const prevToRemovalNodeNextLinkGroup = svg.select<SVGGElement>(
-        `g#link-${prevNode}-${nodeToRemove}-next`
-    );
+  // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nodo a eliminar
+  const prevToRemovalNodeNextLinkGroup = svg.select<SVGGElement>(
+    `g#link-${prevNode}-${nodeToRemove}-next`
+  );
 
-    // Grupo del lienzo correspondiente al enlace siguiente del nodo a eliminar
-    const removalNodeNextLinkGroup = svg.select<SVGGElement>(
-        `g#link-${nodeToRemove}-${nextNode}-next`
-    );
+  // Grupo del lienzo correspondiente al enlace siguiente del nodo a eliminar
+  const removalNodeNextLinkGroup = svg.select<SVGGElement>(
+    `g#link-${nodeToRemove}-${nextNode}-next`
+  );
 
-    // Grupo del lienzo correspondiente al enlace previo del nodo siguiente que apunta al nodo eliminado (solo para listas dobles)
-    const nextToRemovalNodePrevLinkGroup = showDoubleLinks
-        ? svg.select<SVGGElement>(`g#link-${nextNode}-${nodeToRemove}-prev`)
-        : null;
+  // Grupo del lienzo correspondiente al enlace previo del nodo siguiente que apunta al nodo eliminado (solo para listas dobles)
+  const nextToRemovalNodePrevLinkGroup = showDoubleLinks
+    ? svg.select<SVGGElement>(`g#link-${nextNode}-${nodeToRemove}-prev`)
+    : null;
 
-    // Grupo del lienzo correspondiente al enlace previo del nodo eliminado (solo para listas dobles)
-    const removalNodePrevLinkGroup = showDoubleLinks
-        ? svg.select<SVGGElement>(`g#link-${nodeToRemove}-${prevNode}-prev`)
-        : null;
+  // Grupo del lienzo correspondiente al enlace previo del nodo eliminado (solo para listas dobles)
+  const removalNodePrevLinkGroup = showDoubleLinks
+    ? svg.select<SVGGElement>(`g#link-${nodeToRemove}-${prevNode}-prev`)
+    : null;
 
-    // Posición de animación inicial del nodo a eliminar
-    const initialRemovalNodePos = positions.get(nodeToRemove)!;
+  // Posición de animación inicial del nodo a eliminar
+  const initialRemovalNodePos = positions.get(nodeToRemove)!;
 
-    // Posición de animación final del nodo a eliminar
-    const initialYOffset = -75;
-    const finalPos = {
-        x: initialRemovalNodePos.x,
-        y: initialRemovalNodePos.y + initialYOffset,
-    };
+  // Posición de animación final del nodo a eliminar
+  const initialYOffset = -75;
+  const finalPos = {
+    x: initialRemovalNodePos.x,
+    y: initialRemovalNodePos.y + initialYOffset,
+  };
 
-    // Posición inicial en x del nodo siguiente al nodo a eliminar
-    const nextNodeInitialXPos =
-        SVG_LINKED_LIST_VALUES.MARGIN_LEFT +
-        (deletePosition + 1) *
-            (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH +
-                SVG_LINKED_LIST_VALUES.SPACING);
+  // Posición inicial en x del nodo siguiente al nodo a eliminar
+  const nextNodeInitialXPos =
+    SVG_LINKED_LIST_VALUES.MARGIN_LEFT +
+    (deletePosition + 1) *
+      (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING);
 
-    // Mapa temporal de posiciones para calular la forma final de los enlaces asociados al nodo a eliminar
-    const tempPositions: Map<
-        string,
-        {
-            x: number;
-            y: number;
-        }
-    > = new Map(positions);
-    tempPositions.set(nodeToRemove, finalPos);
-    tempPositions.set(nextNode, {
-        x: nextNodeInitialXPos,
-        y: initialRemovalNodePos.y,
-    });
-
-    // Forma final de los enlaces siguientes asociados al nodo a eliminar
-    const finalNextPathToRemovalNode = calculateLinkPath(
-        { sourceId: prevNode, targetId: nodeToRemove, type: "next" },
-        tempPositions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-    );
-    const finalNextPathOfRemovalNode = calculateLinkPath(
-        { sourceId: nodeToRemove, targetId: nextNode, type: "next" },
-        tempPositions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-    );
-
-    // Array de promesas para animaciones de desplazamiento del nodo a eliminar y sus enlaces
-    const removalNodeShiftPromises: Promise<void>[] = [];
-
-    // Promesas para desplazamiento de elementos básicos asociados al nodo a eliminar
-    removalNodeShiftPromises.push(
-        nodeToRemoveGroup
-            .transition()
-            .duration(1000)
-            .ease(d3.easeQuadInOut)
-            .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-            .end()
-    );
-
-    removalNodeShiftPromises.push(
-        prevToRemovalNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .ease(d3.easeQuadInOut)
-            .attr("d", finalNextPathToRemovalNode)
-            .end()
-    );
-
-    removalNodeShiftPromises.push(
-        removalNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .ease(d3.easeQuadInOut)
-            .attr("d", finalNextPathOfRemovalNode)
-            .end()
-    );
-
-    // Promesas para desplazamiento de enlaces previos asociados al nodo a eliminar (solo para listas dobles)
-    if (removalNodePrevLinkGroup && nextToRemovalNodePrevLinkGroup) {
-        const finalPrevPathToRemovalNode = calculateLinkPath(
-            { sourceId: nextNode, targetId: nodeToRemove, type: "prev" },
-            tempPositions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-        const finalPrevPathOfRemovalNode = calculateLinkPath(
-            { sourceId: nodeToRemove, targetId: prevNode, type: "prev" },
-            tempPositions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-
-        removalNodeShiftPromises.push(
-            nextToRemovalNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadInOut)
-                .attr("d", finalPrevPathToRemovalNode)
-                .end()
-        );
-
-        removalNodeShiftPromises.push(
-            removalNodePrevLinkGroup
-                .select("path.node-link")
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadInOut)
-                .attr("d", finalPrevPathOfRemovalNode)
-                .end()
-        );
+  // Mapa temporal de posiciones para calular la forma final de los enlaces asociados al nodo a eliminar
+  const tempPositions: Map<
+    string,
+    {
+      x: number;
+      y: number;
     }
+  > = new Map(positions);
+  tempPositions.set(nodeToRemove, finalPos);
+  tempPositions.set(nextNode, {
+    x: nextNodeInitialXPos,
+    y: initialRemovalNodePos.y,
+  });
 
-    // Resolución de las promesas para animación de movimiento de elementos asociados al nodo a eliminar
-    await Promise.all(removalNodeShiftPromises);
+  // Forma final de los enlaces siguientes asociados al nodo a eliminar
+  const finalNextPathToRemovalNode = calculateLinkPath(
+    { sourceId: prevNode, targetId: nodeToRemove, type: "next" },
+    tempPositions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
+  const finalNextPathOfRemovalNode = calculateLinkPath(
+    { sourceId: nodeToRemove, targetId: nextNode, type: "next" },
+    tempPositions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
 
-    // Desconexión entre el nodo previo y el nodo a eliminar
-    await prevToRemovalNodeNextLinkGroup
+  // Array de promesas para animaciones de desplazamiento del nodo a eliminar y sus enlaces
+  const removalNodeShiftPromises: Promise<void>[] = [];
+
+  // Promesas para desplazamiento de elementos básicos asociados al nodo a eliminar
+  removalNodeShiftPromises.push(
+    nodeToRemoveGroup
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuadInOut)
+      .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+      .end()
+  );
+
+  removalNodeShiftPromises.push(
+    prevToRemovalNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuadInOut)
+      .attr("d", finalNextPathToRemovalNode)
+      .end()
+  );
+
+  removalNodeShiftPromises.push(
+    removalNodeNextLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuadInOut)
+      .attr("d", finalNextPathOfRemovalNode)
+      .end()
+  );
+
+  // Promesas para desplazamiento de enlaces previos asociados al nodo a eliminar (solo para listas dobles)
+  if (removalNodePrevLinkGroup && nextToRemovalNodePrevLinkGroup) {
+    const finalPrevPathToRemovalNode = calculateLinkPath(
+      { sourceId: nextNode, targetId: nodeToRemove, type: "prev" },
+      tempPositions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+    const finalPrevPathOfRemovalNode = calculateLinkPath(
+      { sourceId: nodeToRemove, targetId: prevNode, type: "prev" },
+      tempPositions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+
+    removalNodeShiftPromises.push(
+      nextToRemovalNodePrevLinkGroup
         .select("path.node-link")
         .transition()
         .duration(1000)
-        .style("opacity", 0)
-        .end();
-    prevToRemovalNodeNextLinkGroup.remove();
-
-    // Forma inicial del enlace siguiente formado entre el nodo anterior y el nodo siguiente al nodo eliminado
-    const initialNextPathToNextNode = calculateLinkPath(
-        { sourceId: prevNode, targetId: nextNode, type: "next" },
-        tempPositions,
-        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-        SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+        .ease(d3.easeQuadInOut)
+        .attr("d", finalPrevPathToRemovalNode)
+        .end()
     );
-    await prevToNextNodeNextLinkGroup
+
+    removalNodeShiftPromises.push(
+      removalNodePrevLinkGroup
         .select("path.node-link")
         .transition()
         .duration(1000)
-        .style("opacity", 1)
-        .attr("d", initialNextPathToNextNode)
-        .end();
+        .ease(d3.easeQuadInOut)
+        .attr("d", finalPrevPathOfRemovalNode)
+        .end()
+    );
+  }
 
-    // Desconexión entre el nodo siguiente y el nodo a eliminar (solo para listas dobles)
-    if (nextToRemovalNodePrevLinkGroup) {
-        await nextToRemovalNodePrevLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
-        nextToRemovalNodePrevLinkGroup.remove();
-    }
+  // Resolución de las promesas para animación de movimiento de elementos asociados al nodo a eliminar
+  await Promise.all(removalNodeShiftPromises);
 
-    // Forma inicial del enlace previo formado entre el nodo siguiente y el nodo anterior al nodo eliminado (solo para listas dobles)
-    if (nextToPrevNodePrevLinkGroup) {
-        const initialPrevPathToPrevNode = calculateLinkPath(
-            { sourceId: nextNode, targetId: prevNode, type: "prev" },
-            tempPositions,
-            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-        );
-        await nextToPrevNodePrevLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .attr("d", initialPrevPathToPrevNode)
-            .end();
-    }
+  // Desconexión entre el nodo previo y el nodo a eliminar
+  await prevToRemovalNodeNextLinkGroup
+    .select("path.node-link")
+    .transition()
+    .duration(1000)
+    .style("opacity", 0)
+    .end();
+  prevToRemovalNodeNextLinkGroup.remove();
 
-    // Desconexión y salida del nodo a eliminar
-    await removalNodeNextLinkGroup
-        .select("path.node-link")
-        .transition()
-        .duration(500)
-        .style("opacity", 0)
-        .end();
+  // Forma inicial del enlace siguiente formado entre el nodo anterior y el nodo siguiente al nodo eliminado
+  const initialNextPathToNextNode = calculateLinkPath(
+    { sourceId: prevNode, targetId: nextNode, type: "next" },
+    tempPositions,
+    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+  );
+  await prevToNextNodeNextLinkGroup
+    .select("path.node-link")
+    .transition()
+    .duration(1000)
+    .style("opacity", 1)
+    .attr("d", initialNextPathToNextNode)
+    .end();
 
-    if (removalNodePrevLinkGroup) {
-        await removalNodePrevLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(500)
-            .style("opacity", 0)
-            .end();
-    }
+  // Desconexión entre el nodo siguiente y el nodo a eliminar (solo para listas dobles)
+  if (nextToRemovalNodePrevLinkGroup) {
+    await nextToRemovalNodePrevLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
+    nextToRemovalNodePrevLinkGroup.remove();
+  }
 
-    await nodeToRemoveGroup
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .end();
+  // Forma inicial del enlace previo formado entre el nodo siguiente y el nodo anterior al nodo eliminado (solo para listas dobles)
+  if (nextToPrevNodePrevLinkGroup) {
+    const initialPrevPathToPrevNode = calculateLinkPath(
+      { sourceId: nextNode, targetId: prevNode, type: "prev" },
+      tempPositions,
+      SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+      SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+    );
+    await nextToPrevNodePrevLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(1000)
+      .style("opacity", 1)
+      .attr("d", initialPrevPathToPrevNode)
+      .end();
+  }
 
-    // Eliminación de los elementos asociados al nodo eliminado en el DOM
-    removalNodeNextLinkGroup.remove();
-    if (removalNodePrevLinkGroup) removalNodePrevLinkGroup.remove();
-    nodeToRemoveGroup.remove();
+  // Desconexión y salida del nodo a eliminar
+  await removalNodeNextLinkGroup
+    .select("path.node-link")
+    .transition()
+    .duration(500)
+    .style("opacity", 0)
+    .end();
 
-    // Eliminación de la posición del nodo eliminado
-    positions.delete(nodeToRemove);
+  if (removalNodePrevLinkGroup) {
+    await removalNodePrevLinkGroup
+      .select("path.node-link")
+      .transition()
+      .duration(500)
+      .style("opacity", 0)
+      .end();
+  }
 
-    // Nodos por acomodar luego de eliminar el nodo
-    const nodesToMove = existingNodesData.slice(
-        deletePosition,
-        existingNodesData.length
+  await nodeToRemoveGroup.transition().duration(800).style("opacity", 0).end();
+
+  // Eliminación de los elementos asociados al nodo eliminado en el DOM
+  removalNodeNextLinkGroup.remove();
+  if (removalNodePrevLinkGroup) removalNodePrevLinkGroup.remove();
+  nodeToRemoveGroup.remove();
+
+  // Eliminación de la posición del nodo eliminado
+  positions.delete(nodeToRemove);
+
+  // Nodos por acomodar luego de eliminar el nodo
+  const nodesToMove = existingNodesData.slice(
+    deletePosition,
+    existingNodesData.length
+  );
+
+  // Array de promesas para acomodar nodos y enlaces restantes
+  const shiftPromises: Promise<void>[] = [];
+
+  // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
+  const remainingNodes = svg
+    .selectAll<SVGGElement, ListNodeData>("g.node")
+    .data(nodesToMove, (d) => d.id);
+
+  // Promesa para desplazamiento de nodos restantes a su posición final
+  shiftPromises.push(
+    remainingNodes
+      .transition()
+      .duration(1500)
+      .ease(d3.easeQuadInOut)
+      .attr("transform", (d) => {
+        const finalPos = positions.get(d.id)!;
+        return `translate(${finalPos.x}, ${finalPos.y})`;
+      })
+      .end()
+  );
+
+  // Selección de enlaces restantes (re-vinculación de datos)
+  const remainingLinks = svg
+    .selectAll<SVGGElement, LinkData>("g.link")
+    .data(
+      existingLinksData,
+      (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
     );
 
-    // Array de promesas para acomodar nodos y enlaces restantes
-    const shiftPromises: Promise<void>[] = [];
+  // Promesa para desplazamiento de enlaces restantes a su posición final
+  shiftPromises.push(
+    remainingLinks
+      .select("path.node-link")
+      .transition()
+      .duration(1500)
+      .ease(d3.easeQuadInOut)
+      .attr("d", (d) =>
+        calculateLinkPath(
+          d,
+          positions,
+          SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+          SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+        )
+      )
+      .end()
+  );
 
-    // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
-    const remainingNodes = svg
-        .selectAll<SVGGElement, ListNodeData>("g.node")
-        .data(nodesToMove, (d) => d.id);
+  if (showTailIndicator) {
+    // Grupo del lienzo correspondiente al indicador del nodo cola
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Promesa para desplazamiento de nodos restantes a su posición final
+    // Posición de animación final del indicador de cola
+    const finalTailIndicatorPos = positions.get(
+      existingNodesData[existingNodesData.length - 1].id
+    )!;
     shiftPromises.push(
-        remainingNodes
-            .transition()
-            .duration(1500)
-            .ease(d3.easeQuadInOut)
-            .attr("transform", (d) => {
-                const finalPos = positions.get(d.id)!;
-                return `translate(${finalPos.x}, ${finalPos.y})`;
-            })
-            .end()
+      tailIndicatorGroup
+        .transition()
+        .duration(1500)
+        .ease(d3.easeQuadInOut)
+        .attr("transform", () => {
+          const finalX =
+            finalTailIndicatorPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+          const finalY = finalTailIndicatorPos.y;
+          return `translate(${finalX}, ${finalY})`;
+        })
+        .end()
     );
+  }
 
-    // Selección de enlaces restantes (re-vinculación de datos)
-    const remainingLinks = svg
-        .selectAll<SVGGElement, LinkData>("g.link")
-        .data(
-            existingLinksData,
-            (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
-        );
+  // Resolución de las promesas para animación de desplazamiento de nodos y enlaces restantes
+  await Promise.all(shiftPromises);
 
-    // Promesa para desplazamiento de enlaces restantes a su posición final
-    shiftPromises.push(
-        remainingLinks
-            .select("path.node-link")
-            .transition()
-            .duration(1500)
-            .ease(d3.easeQuadInOut)
-            .attr("d", (d) =>
-                calculateLinkPath(
-                    d,
-                    positions,
-                    SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                    SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-                )
-            )
-            .end()
-    );
+  // Restablecimiento del estilo del nodo anterior al nuevo nodo
+  if (!showDoubleLinks) {
+    await prevNodeGroup
+      .select("rect")
+      .transition()
+      .duration(500)
+      .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+      .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+      .end();
+  }
 
-    if (showTailIndicator) {
-        // Grupo del lienzo correspondiente al indicador del nodo cola
-        const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
 
-        // Posición de animación final del indicador de cola
-        const finalTailIndicatorPos = positions.get(
-            existingNodesData[existingNodesData.length - 1].id
-        )!;
-        shiftPromises.push(
-            tailIndicatorGroup
-                .transition()
-                .duration(1500)
-                .ease(d3.easeQuadInOut)
-                .attr("transform", () => {
-                    const finalX =
-                        finalTailIndicatorPos.x +
-                        SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
-                    const finalY = finalTailIndicatorPos.y;
-                    return `translate(${finalX}, ${finalY})`;
-                })
-                .end()
-        );
-    }
-
-    // Resolución de las promesas para animación de desplazamiento de nodos y enlaces restantes
-    await Promise.all(shiftPromises);
-
-    // Restablecimiento del estilo del nodo anterior al nuevo nodo
-    if (!showDoubleLinks) {
-        await prevNodeGroup
-            .select("rect")
-            .transition()
-            .duration(500)
-            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-            .end();
-    }
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -2089,62 +2176,62 @@ export async function animateRemoveAtPosition(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateSearchElement(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    elementToSearch: number,
-    existingNodesData: ListNodeData[],
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  elementToSearch: number,
+  existingNodesData: ListNodeData[],
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Recorremos los nodos en busca de elemento especificado
-    for (const node of existingNodesData) {
-        // Selección del grupo del nodo actual
-        const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
+  // Recorremos los nodos en busca de elemento especificado
+  for (const node of existingNodesData) {
+    // Selección del grupo del nodo actual
+    const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
 
-        // Selección del elemento a animar
-        const nodeElement = nodeGroup.select("rect");
+    // Selección del elemento a animar
+    const nodeElement = nodeGroup.select("rect");
 
-        if (node.value === elementToSearch) {
-            // Resaltado más fuerte del nodo
-            await nodeElement
-                .transition()
-                .duration(800)
-                .attr("stroke", "#f87171")
-                .attr("stroke-width", 4)
-                .end();
+    if (node.value === elementToSearch) {
+      // Resaltado más fuerte del nodo
+      await nodeElement
+        .transition()
+        .duration(800)
+        .attr("stroke", "#f87171")
+        .attr("stroke-width", 4)
+        .end();
 
-            // Restablecimiento mas prolongado del estilo original del nodo
-            await nodeElement
-                .transition()
-                .duration(2000)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
+      // Restablecimiento mas prolongado del estilo original del nodo
+      await nodeElement
+        .transition()
+        .duration(2000)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+        .end();
 
-            break;
-        }
-
-        // Resaltado suave del nodo actual
-        await nodeElement
-            .transition()
-            .duration(800)
-            .attr("stroke", "#f87171")
-            .attr("stroke-width", 2)
-            .end();
-
-        // Restablecimiento del estilo original del nodo
-        await nodeElement
-            .transition()
-            .duration(700)
-            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-            .end();
+      break;
     }
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    // Resaltado suave del nodo actual
+    await nodeElement
+      .transition()
+      .duration(800)
+      .attr("stroke", "#f87171")
+      .attr("stroke-width", 2)
+      .end();
 
-    // Finalización de la animación
-    setIsAnimating(false);
+    // Restablecimiento del estilo original del nodo
+    await nodeElement
+      .transition()
+      .duration(700)
+      .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+      .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+      .end();
+  }
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -2156,37 +2243,37 @@ export async function animateSearchElement(
  * @param setIsAnimating - Función para establecer el estado de animación.
  */
 export async function animateClearList(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodePositions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodePositions: Map<string, { x: number; y: number }>,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Animación de salida de los enlaces
-    await svg
-        .selectAll("g.link")
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .end();
+  // Animación de salida de los enlaces
+  await svg
+    .selectAll("g.link")
+    .transition()
+    .duration(800)
+    .style("opacity", 0)
+    .end();
 
-    // Animacición de salida de los nodos
-    await svg
-        .selectAll("g.node")
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .end();
+  // Animacición de salida de los nodos
+  await svg
+    .selectAll("g.node")
+    .transition()
+    .duration(800)
+    .style("opacity", 0)
+    .end();
 
-    // Eliminación de los nodos y enlaces del DOM
-    svg.selectAll("g.node").remove();
-    svg.selectAll("g.link").remove();
+  // Eliminación de los nodos y enlaces del DOM
+  svg.selectAll("g.node").remove();
+  svg.selectAll("g.link").remove();
 
-    // Liempiza del mapa de posiciones
-    nodePositions.clear();
+  // Liempiza del mapa de posiciones
+  nodePositions.clear();
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
 
-    // Finalización de la animación
-    setIsAnimating(false);
+  // Finalización de la animación
+  setIsAnimating(false);
 }
