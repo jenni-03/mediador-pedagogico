@@ -3,11 +3,14 @@ import { NodoD } from "./nodes/NodoD";
 import { NodoS } from "./nodes/NodoS";
 
 export function linkedListToArray(startNode: NodoS | NodoD | null) {
-    const resultArray = [];
-    let currentNode = startNode;
+    const resultArray: ListNodeData[] = [];
+    if (!startNode) return resultArray;
 
-    while (currentNode !== null) {
-        const nextNode = currentNode.getSiguiente();
+    let currentNode: NodoS | NodoD | null = startNode;
+    const firstNode = startNode;
+
+    do {
+        const nextNode: NodoS | NodoD | null = currentNode.getSiguiente();
 
         const nodeData: ListNodeData = {
             id: currentNode.getId(),
@@ -24,6 +27,7 @@ export function linkedListToArray(startNode: NodoS | NodoD | null) {
         resultArray.push(nodeData);
         currentNode = nextNode;
     }
+    while (currentNode && currentNode !== firstNode);
 
     return resultArray;
 }

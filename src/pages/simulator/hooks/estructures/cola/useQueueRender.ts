@@ -39,11 +39,6 @@ export function useQueueRender(
         return links;
     }, [queueNodes]);
 
-    console.log("nodos de la cola: ", queueNodes);
-    console.log("nodos previos de la cola: ", prevNodes);
-    console.log("enlaces de la cola: ", linksData);
-    console.log(query);
-
     // Renderizado base de la cola
     useEffect(() => {
         // Verificamos que el array de nodos no sea nulo y que la referencia al SVG se haya establecido
