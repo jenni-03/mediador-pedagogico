@@ -31,24 +31,35 @@ export function useLinkedListRender(
     // Memo para calcular los enlaces entre nodos
     const linksData = useMemo<LinkData[]>(() => {
         const links: LinkData[] = [];
-        listNodes.forEach(n => {
+
+        listNodes.forEach((n, i, arr) => {
             if (n.next) {
+                const isCircularNext =
+                    i === arr.length - 1 &&
+                    config.showCircularLinks &&
+                    n.next === arr[0].id;
+
                 links.push({
                     sourceId: n.id,
                     targetId: n.next,
-                    type: "next"
-                })
+                    type: isCircularNext ? "circular-next" : "next"
+                });
             }
             if (n.prev) {
+                const isCircularPrev =
+                    i === 0 &&
+                    config.showCircularLinks &&
+                    n.prev === arr[arr.length - 1].id;
+
                 links.push({
                     sourceId: n.id,
                     targetId: n.prev,
-                    type: "prev"
-                })
+                    type: isCircularPrev ? "circular-prev" : "prev"
+                });
             }
         });
         return links;
-    }, [listNodes]);
+    }, [listNodes, config.showCircularLinks]);
 
     console.log("Tipo de lista: ", listType);
     console.log("Configuración");
