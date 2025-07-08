@@ -6,7 +6,7 @@ import { Simulator } from "./components/templates/Simulator";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { LinkedListRender } from "./components/estructures/listas/LinkedListRender";
 
-export function DoubleLinkedListSimulator() {
+export function DoublyLinkedListSimulator() {
     // Instanciación de la Lista Doble
     const structure = useRef(new ListaDoble()).current;
 
@@ -34,7 +34,7 @@ export function DoubleLinkedListSimulator() {
     return (
         <Simulator
             structureName={STRUCTURE_NAME.LINKED_LIST}
-            structureType={STRUCTURE_NAME.DOUBLE_LINKED_LIST}
+            structureType={STRUCTURE_NAME.DOUBLY_LINKED_LIST}
             structure={list}
             actions={{
                 insertFirst: addElementFirst,

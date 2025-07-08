@@ -14,7 +14,8 @@ export const STRUCTURE_NAME = {
     STACK: 'pila',
     LINKED_LIST: 'lista_enlazada',
     SIMPLE_LINKED_LIST: 'lista_simplemente_enlazada',
-    DOUBLE_LINKED_LIST: 'lista_doblemente_enlazada',
+    DOUBLY_LINKED_LIST: 'lista_doblemente_enlazada',
+    CIRCULAR_DOUBLY_LINKED_LIST: 'lista_circular_doblemente_enlazada',
     HASHTABLE: 'tabla_hash',
 } as const
 

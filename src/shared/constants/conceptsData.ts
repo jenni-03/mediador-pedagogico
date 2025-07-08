@@ -119,7 +119,7 @@ export const conceptosData: Record<string, any> = {
       analisis: "El acceso es O(n), pero las inserciones y eliminaciones pueden ser O(1) con referencias adecuadas.",
     },
     tipo: "Estructura Lineal",
-    nombre: "Lista Circular Doble Enlazada"
+    nombre: "Lista Circular Doblemente Enlazada"
   },
   6: {
     definicion: {
@@ -227,7 +227,7 @@ export const conceptosData: Record<string, any> = {
     tipo: "Árbol Binario",
     nombre: "Árbol Binario"
   },
-  
+
   11: {
     definicion: {
       descripcion: "Un árbol binario de búsqueda (BST) es un árbol binario donde para cada nodo, todos los elementos en su subárbol izquierdo son menores y todos los elementos en su subárbol derecho son mayores.",

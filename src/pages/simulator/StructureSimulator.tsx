@@ -6,7 +6,8 @@ import { StackSimulator } from "./StackSimulator";
 import { HashTableSimulator } from "./HashTableSimulator";
 import { PriorityQueueSimulator } from "./PriorityQueueSimulator";
 import { SimpleLinkedListSimulator } from "./SimpleLinkedListSimulator";
-import { DoubleLinkedListSimulator } from "./DoubleLinkedListSimulator";
+import { DoublyLinkedListSimulator } from "./DoublyLinkedListSimulator";
+import { CircularDoublyLinkedListSimulator } from "./CircularDoublyLinkedListSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -16,7 +17,8 @@ const componentMap: Record<string, React.FC> = {
     Pila: StackSimulator,
     "Cola de Prioridad": PriorityQueueSimulator,
     "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
-    "Lista Doblemente Enlazada": DoubleLinkedListSimulator,
+    "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
+    "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
 };
 
 export function StructureSimulator() {
