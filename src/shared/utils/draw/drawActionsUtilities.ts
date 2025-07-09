@@ -1,6 +1,6 @@
 import { IndicatorPositioningConfig, LinkData, ListNodeData } from "../../../types";
 import { SVG_STYLE_VALUES } from "../../constants/consts";
-import { calculateLinkPath } from "./calculateLinkPath";
+import { calculateCircularLinkPath, calculateLinkPath } from "./calculateLinkPath";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.  
@@ -219,8 +219,9 @@ export function drawListLinks(
                     .attr("class", d => `node-link ${d.type}`)
                     .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
                     .attr("stroke-width", 1.5)
+                    .attr("fill", "none")
                     .attr("marker-end", "url(#arrowhead)")
-                    .attr("d", d => calculateLinkPath(d, positions, elementWidth, elementHeight));
+                    .attr("d", d => d.type === "next" || d.type === "prev" ? calculateLinkPath(d, positions, elementWidth, elementHeight) : calculateCircularLinkPath(d, positions, elementWidth, elementHeight));
 
                 return gLink;
             },

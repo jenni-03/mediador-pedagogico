@@ -226,7 +226,7 @@ export type PriorityQueueNodeData = QueueNodeData & {
 export type LinkData = {
   sourceId: string;
   targetId: string;
-  type: "next" | "prev";
+  type: "next" | "prev" | "circular-next" | "circular-prev";
 };
 
 export type StackNodeData = {

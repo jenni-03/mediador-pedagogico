@@ -42,3 +42,49 @@ export const calculateLinkPath = (
 
     return `M${x1},${y1} L${x2},${y2}`;
 }
+
+export const calculateCircularLinkPath = (
+    link: LinkData,
+    positions: Map<string, { x: number, y: number }>,
+    elementWidth: number,
+    elementHeight: number
+) => {
+    const sourcePos = positions.get(link.sourceId);
+    const targetPos = positions.get(link.targetId);
+    if (!sourcePos || !targetPos) return "M0,0";
+
+    const offset = 3; // Margen desde el borde
+    const nodeCenterY = elementHeight / 2; // Eje vertical del nodo
+    const isNext = link.type === 'circular-next';
+    const direction = isNext ? 1 : -1; // Curva hacia abajo o hacia arriba
+
+    // Punto de salida:
+    // - next: Borde derecho del source
+    // - prev: Borde izquierdo del source
+    const x1 = isNext
+        ? sourcePos.x + elementWidth + offset
+        : targetPos.x - offset;
+    const y1 = sourcePos.y + nodeCenterY;
+
+    // Punto de entrada:
+    // - next: borde izquierdo del target
+    // - prev: borde derecho del target
+    const x2 = isNext
+        ? targetPos.x - offset
+        : targetPos.x + elementWidth + offset;
+    const y2 = targetPos.y + nodeCenterY;
+
+    // Parámetros dinámicos basados en la distancia horizontal
+    const dx = x2 - x1;
+    const cpOffsetX = Math.abs(dx) * 0.5;
+    const curveDepth = Math.abs(dx) * 0.5 + 55;
+    const midY = Math.max(y1, y2) + direction * curveDepth;
+
+    // Puntos de control para el Bézier cúbico
+    const cp1x = x1 + (isNext ? cpOffsetX : -cpOffsetX);
+    const cp2x = x2 - (isNext ? cpOffsetX : -cpOffsetX);
+    const cp1y = midY;
+    const cp2y = midY;
+
+    return `M${x1},${y1} C${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
+}
