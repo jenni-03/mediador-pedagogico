@@ -61,7 +61,12 @@ export const parseCommand = (
     };
   }
 
-  // 6. Validar errores como coma final, doble coma o argumentos vacíos explícitos
+  // 6. Si no hay argumentos (argsString está vacío), retornar solo el comando
+  if (argsString.trim() === "") {
+    return [command];
+  }
+
+  // 7. Validar errores como coma final, doble coma o argumentos vacíos explícitos
   const rawArgs = argsString.split(",").map((arg) => arg.trim());
 
   const hasInvalidArgs = rawArgs.some((arg) => arg === "");
@@ -69,11 +74,6 @@ export const parseCommand = (
     return {
       error: `Los argumentos están mal formateados. Evite usar comas dobles, comas al principio o al final.`,
     };
-  }
-
-  // 7. Si no hay argumentos (argsString está vacío), retornar solo el comando
-  if (argsString.trim() === "") {
-    return [command];
   }
 
   return [command, ...rawArgs];
