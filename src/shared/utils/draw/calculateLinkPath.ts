@@ -11,6 +11,8 @@ export const calculateLinkPath = (
     const targetPos = positions.get(link.targetId);
     if (!sourcePos || !targetPos) return "M0,0";
 
+    console.log("DIBUJANDO ENLACE PLANO");
+
     // Inicializamos las  coordendas
     let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 
@@ -43,48 +45,60 @@ export const calculateLinkPath = (
     return `M${x1},${y1} L${x2},${y2}`;
 }
 
-export const calculateCircularLinkPath = (
+export function calculateCircularLPath(
     link: LinkData,
-    positions: Map<string, { x: number, y: number }>,
+    positions: Map<string, { x: number; y: number }>,
     elementWidth: number,
-    elementHeight: number
-) => {
-    const sourcePos = positions.get(link.sourceId);
-    const targetPos = positions.get(link.targetId);
-    if (!sourcePos || !targetPos) return "M0,0";
+    elementHeight: number,
+): string {
+    const src = positions.get(link.sourceId);
+    const tgt = positions.get(link.targetId);
+    if (!src || !tgt) return "M0,0";
 
-    const offset = 3; // Margen desde el borde
-    const nodeCenterY = elementHeight / 2; // Eje vertical del nodo
-    const isNext = link.type === 'circular-next';
-    const direction = isNext ? 1 : -1; // Curva hacia abajo o hacia arriba
+    const isNext = link.type === "circular-next";
+    const halfH = elementHeight / 2;
 
-    // Punto de salida:
-    // - next: Borde derecho del source
-    // - prev: Borde izquierdo del source
-    const x1 = isNext
-        ? sourcePos.x + elementWidth + offset
-        : targetPos.x - offset;
-    const y1 = sourcePos.y + nodeCenterY;
+    // Puntos de salida/entrada
+    const offset = 5;
 
-    // Punto de entrada:
-    // - next: borde izquierdo del target
-    // - prev: borde derecho del target
-    const x2 = isNext
-        ? targetPos.x - offset
-        : targetPos.x + elementWidth + offset;
-    const y2 = targetPos.y + nodeCenterY;
+    // Coordenadas en y (separadas por offset)
+    const startY = src.y + halfH + (isNext ? offset : -offset);
+    const endY = tgt.y + halfH + (isNext ? offset : -offset);
 
-    // Parámetros dinámicos basados en la distancia horizontal
-    const dx = x2 - x1;
-    const cpOffsetX = Math.abs(dx) * 0.5;
-    const curveDepth = Math.abs(dx) * 0.5 + 55;
-    const midY = Math.max(y1, y2) + direction * curveDepth;
+    // Coordenadas en x
+    const startX = isNext
+        ? src.x + elementWidth    // sale por la derecha
+        : src.x;                  // sale por la izquierda
+    const endX = isNext
+        ? tgt.x                   // entra por la izquierda
+        : tgt.x + elementWidth;   // entra por la derecha
 
-    // Puntos de control para el Bézier cúbico
-    const cp1x = x1 + (isNext ? cpOffsetX : -cpOffsetX);
-    const cp2x = x2 - (isNext ? cpOffsetX : -cpOffsetX);
-    const cp1y = midY;
-    const cp2y = midY;
+    // Separación horizontal y vertical
+    const lateralOff = 20;
+    const marginY = 55;
 
-    return `M${x1},${y1} C${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
+    // Coordenadas para desplazamientos intermedios
+    const xA = startX + (isNext ? lateralOff : -lateralOff);
+    const xB = endX + (isNext ? -lateralOff : lateralOff);
+
+    // Elegimos el y “intermedio” según next o prev
+    const topY = Math.min(src.y, tgt.y) - marginY;
+    const bottomY = Math.max(src.y, tgt.y) + elementHeight + marginY;
+    const midY = isNext ? bottomY : topY;
+
+    // Construcción del path:
+    //  M: punto de salida
+    //  L1: desplazamiento horizontal
+    //  L2: subida / bajada al margen superior del nodo origen
+    //  L3: cruzar hasta la x de destino
+    //  L4: subida / bajada al centro del nodo destino
+    //  L5: desplazamiento horizontal final
+    return [
+        `M${startX},${startY}`,
+        `L${xA},${startY}`,
+        `L${xA},${midY}`,
+        `L${xB},${midY}`,
+        `L${xB},${endY}`,
+        `L${endX},${endY}`
+    ].join(" ");
 }
