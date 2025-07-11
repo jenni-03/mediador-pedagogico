@@ -45,9 +45,9 @@ export function DataStructureInfo({
                   title={item.key}
                   description={item.description}
                 >
-                  <div className="flex items-center justify-between bg-gradient-to-br from-[#2B2B2F] to-[#1F1F22] hover:from-[#35353A] hover:to-[#2A2A2E] transition-all p-4 rounded-2xl shadow-md border border-[#3A3A3A] cursor-pointer">
+                  <div className="flex items-center justify-between bg-gradient-to-br from-[#2B2B2F] to-[#1F1F22] hover:from-[#35353A] hover:to-[#2A2A2E] transition-all p-3 rounded-2xl shadow-md border border-[#3A3A3A] cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">
+                      <div className="text-xl">
                         {item.key === "Tamaño"
                           ? "📏"
                           : item.key === "Capacidad"
@@ -63,9 +63,9 @@ export function DataStructureInfo({
                         </h3>
                       </div>
                     </div>
-                    <span className=" ml-4 text-[#D72638] text-sm font-semibold">
+                    {/* <span className=" ml-4 text-[#D72638] text-sm font-semibold">
                       Ver más
-                    </span>
+                    </span> */}
                   </div>
                 </InfoModal>
               );
