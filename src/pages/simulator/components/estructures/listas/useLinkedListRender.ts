@@ -194,21 +194,35 @@ export function useLinkedListRender(
             // Obtenemos el Id del nodo que era la cabeza de la lista antes de la inserción
             const prevHeadNode = listNodes.length > 1 ? listNodes[1].id : null;
 
+            // Obtenemos el Id del último nodo de la lista (solo para uso de listas circulares) 
+            const lastNode = listNodes[listNodes.length - 1].id;
+
+            // Indicadores para mostrar enlaces circulares
+            const showPrevCircularLink = config.showCircularLinks && listNodes[0].prev !== null;
+            const showNextCircularLink = config.showCircularLinks && listNodes[listNodes.length - 1].next !== null;
+
             // Selección del elemento SVG a partir de su referencia
             const svg = d3.select(svgRef.current);
 
             // Filtramos los enlaces que requieren posicionamiento producto de la inserción 
-            const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode || link.targetId !== newHeadNode);
+            const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode && link.targetId !== newHeadNode);
+
+            if (config.showCircularLinks) {
+                existingLinksData.push({ sourceId: lastNode, targetId: prevHeadNode ?? newHeadNode, type: "circular-next" });
+                if (config.showDoubleLinks) existingLinksData.push({ sourceId: prevHeadNode ?? newHeadNode, targetId: lastNode, type: "circular-prev" });
+            }
 
             // Animación de inserción del nodo como nuevo primer elemento de la lista
             animateInsertFirst(
                 svg,
-                { newHeadNode, prevHeadNode, },
+                { newHeadNode, prevHeadNode, lastNode },
                 {
                     existingNodesData: prevNodes,
                     existingLinksData,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
+                    showPrevCircularLink,
+                    showNextCircularLink
                 },
                 nodePositions,
                 resetQueryValues,
@@ -249,18 +263,32 @@ export function useLinkedListRender(
                 // Obtenemos el nodo que era la cabeza antes de la inserción
                 const prevHeadNode = prevNodes.length > 0 ? prevNodes[0].id : null;
 
+                // Obtenemos el Id del último nodo de la lista (solo para uso de listas circulares) 
+                const lastNode = listNodes[listNodes.length - 1].id;
+
+                // Indicadores para mostrar enlaces circulares
+                const showPrevCircularLink = config.showCircularLinks && listNodes[0].prev !== null;
+                const showNextCircularLink = config.showCircularLinks && listNodes[listNodes.length - 1].next !== null;
+
                 // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
                 const existingLinksData = linksData.filter(link => link.sourceId !== newNode);
+
+                if (config.showCircularLinks) {
+                    existingLinksData.push({ sourceId: lastNode, targetId: prevHeadNode ?? newNode, type: "circular-next" });
+                    if (config.showDoubleLinks) existingLinksData.push({ sourceId: prevHeadNode ?? newNode, targetId: lastNode, type: "circular-prev" });
+                }
 
                 // Animación de inserción del nodo como nuevo primer elemento de la lista
                 animateInsertFirst(
                     svg,
-                    { newHeadNode: newNode, prevHeadNode },
+                    { newHeadNode: newNode, prevHeadNode, lastNode },
                     {
                         existingNodesData: prevNodes,
                         existingLinksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showPrevCircularLink,
+                        showNextCircularLink
                     },
                     nodePositions,
                     resetQueryValues,

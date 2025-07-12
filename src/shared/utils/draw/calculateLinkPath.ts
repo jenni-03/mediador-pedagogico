@@ -11,8 +11,6 @@ export const calculateLinkPath = (
     const targetPos = positions.get(link.targetId);
     if (!sourcePos || !targetPos) return "M0,0";
 
-    console.log("DIBUJANDO ENLACE PLANO");
-
     // Inicializamos las  coordendas
     let x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 
@@ -59,19 +57,20 @@ export function calculateCircularLPath(
     const halfH = elementHeight / 2;
 
     // Puntos de salida/entrada
-    const offset = 5;
+    const offset = 3;
+    const verticalOffset = 5
 
     // Coordenadas en y (separadas por offset)
-    const startY = src.y + halfH + (isNext ? offset : -offset);
-    const endY = tgt.y + halfH + (isNext ? offset : -offset);
+    const startY = src.y + halfH + (isNext ? -verticalOffset : verticalOffset);
+    const endY = tgt.y + halfH + (isNext ? -verticalOffset : verticalOffset);
 
     // Coordenadas en x
     const startX = isNext
-        ? src.x + elementWidth    // sale por la derecha
-        : src.x;                  // sale por la izquierda
+        ? src.x + elementWidth + offset // sale por la derecha
+        : src.x - offset                // sale por la izquierda
     const endX = isNext
-        ? tgt.x                   // entra por la izquierda
-        : tgt.x + elementWidth;   // entra por la derecha
+        ? tgt.x - offset               // entra por la izquierda
+        : tgt.x + elementWidth + offset // entra por la derecha
 
     // Separación horizontal y vertical
     const lateralOff = 20;
@@ -84,7 +83,7 @@ export function calculateCircularLPath(
     // Elegimos el y “intermedio” según next o prev
     const topY = Math.min(src.y, tgt.y) - marginY;
     const bottomY = Math.max(src.y, tgt.y) + elementHeight + marginY;
-    const midY = isNext ? bottomY : topY;
+    const midY = isNext ? topY : bottomY;
 
     // Construcción del path:
     //  M: punto de salida

@@ -221,12 +221,7 @@ export function drawListLinks(
                     .attr("stroke-width", 1.5)
                     .attr("fill", "none")
                     .attr("marker-end", "url(#arrowhead)")
-                    .attr("d", d => {
-                        // console.log("Renderizando enlace: ", d.type);
-                        const finalData = d.type === "next" || d.type === "prev" ? calculateLinkPath(d, positions, elementWidth, elementHeight) : calculateCircularLPath(d, positions, elementWidth, elementHeight);
-                        console.log("Forma de enlace recibida: ", finalData);
-                        return finalData;
-                    });
+                    .attr("d", d => d.type === "next" || d.type === "prev" ? calculateLinkPath(d, positions, elementWidth, elementHeight) : calculateCircularLPath(d, positions, elementWidth, elementHeight));
 
                 return gLink;
             },

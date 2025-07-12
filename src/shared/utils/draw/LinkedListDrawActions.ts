@@ -1,28 +1,34 @@
 import { LinkData, ListNodeData } from "../../../types";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
-import { calculateLinkPath } from "./calculateLinkPath";
+import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 import * as d3 from "d3";
 
 /**
  * Función encargada de animar la inserción de un nuevo nodo al inicio de la lista.
- * 
- * @param svg - Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved - Objeto con información de los nodos involucrados en la inserción.
- * @param listData - Objeto con información de los nodos y enlaces de la lista.
- * @param positions - Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues - Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating - Función para establecer el estado de animación.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción.
+ * @param listData Objeto con información de los nodos y enlaces de la lista.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateInsertFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { newHeadNode: string, prevHeadNode: string | null },
-    listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[], showDoubleLinks: boolean, showTailIndicator: boolean },
+    nodesInvolved: { newHeadNode: string, prevHeadNode: string | null, lastNode: string },
+    listData: {
+        existingNodesData: ListNodeData[],
+        existingLinksData: LinkData[],
+        showDoubleLinks: boolean,
+        showTailIndicator: boolean,
+        showPrevCircularLink: boolean,
+        showNextCircularLink: boolean
+    },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     // Nodos implicados en la inserción
-    const { newHeadNode, prevHeadNode } = nodesInvolved;
+    const { newHeadNode, prevHeadNode, lastNode } = nodesInvolved;
 
     // Grupo del lienzo correspondiente al nuevo nodo
     const newNodeGroup = svg.select<SVGGElement>(`g#${newHeadNode}`);
@@ -32,7 +38,7 @@ export async function animateInsertFirst(
 
     if (prevHeadNode) {
         // Información de la lista
-        const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator } = listData;
+        const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator, showNextCircularLink, showPrevCircularLink } = listData;
 
         // Grupo del lienzo correspondiente al indicador del nodo cabeza
         const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
@@ -52,6 +58,17 @@ export async function animateInsertFirst(
         // Estado visual inicial del enlace previo del anterior primer nodo
         if (prevHeadNodePrevLinkGroup) {
             prevHeadNodePrevLinkGroup.select("path.node-link").style("opacity", 0);
+        }
+
+        // Selección y establecimiento de estado visual inicial de enlaces circulares (solo para listas circulares)
+        const nextCircularLinkGroup = showNextCircularLink ? svg.select<SVGGElement>(`g#link-${lastNode}-${newHeadNode}-circular-next`) : null;
+        if (nextCircularLinkGroup) {
+            nextCircularLinkGroup.select("path.node-link").style("opacity", 0);
+        }
+
+        const prevCircularLinkGroup = showPrevCircularLink ? svg.select<SVGGElement>(`g#link-${newHeadNode}-${lastNode}-circular-prev`) : null;
+        if (prevCircularLinkGroup) {
+            prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
         }
 
         // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
@@ -84,7 +101,7 @@ export async function animateInsertFirst(
                 .transition()
                 .duration(1500)
                 .ease(d3.easePolyInOut)
-                .attr("d", d => calculateLinkPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT))
+                .attr("d", d => d.type === "next" || d.type === "prev" ? calculateLinkPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT) : calculateCircularLPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT))
                 .end()
         );
 
@@ -148,9 +165,45 @@ export async function animateInsertFirst(
             .style("opacity", 1)
             .end();
 
+        if (prevCircularLinkGroup) {
+            // Aparición del nuevo enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
+            await prevCircularLinkGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+
+            // Desvanecimiento del enlace circular previo presente entre el nodo cabeza anterior y el ultimo nodo
+            await svg.select<SVGGElement>(`g#link-${prevHeadNode}-${lastNode}-circular-prev`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+        }
+
         // Aparición del enlace previo del nodo cabeza anterior que apunta al nuevo nodo (solo para listas dobles)
         if (prevHeadNodePrevLinkGroup) {
             await prevHeadNodePrevLinkGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        }
+
+        if (nextCircularLinkGroup) {
+            // Desvanecimiento del enlace circular siguiente presente entre el ultimo nodo y el nodo cabeza anterior
+            await svg.select<SVGGElement>(`g#link-${lastNode}-${prevHeadNode}-circular-next`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
+            // Aparición del nuevo enlace circular siguiente entre el ultimo nodo y el nuevo nodo cabeza
+            await nextCircularLinkGroup
                 .select("path.node-link")
                 .transition()
                 .duration(1000)
