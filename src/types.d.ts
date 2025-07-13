@@ -21,6 +21,8 @@ export type ListRenderConfig = {
   showTailIndicator: boolean;
   showDoubleLinks: boolean;
   showCircularLinks: boolean;
+  showNextCircularLink?: boolean;
+  showPrevCircularLink?: boolean;
 }
 
 export type CardListProps = {

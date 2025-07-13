@@ -345,6 +345,9 @@ export function useLinkedListRender(
         // Verificaciones necesarias para realizar la animación
         if (!listNodes || !svgRef.current || (!query.toDeleteFirst && !query.toDeleteLast && query.toDeleteAt.length !== 2) || !prevNodes) return;
 
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
         // Si la eliminación es en la cabeza de la lista
         if (query.toDeleteFirst) {
             // Id del nodo cabeza anterior (nodo eliminado)
@@ -353,18 +356,20 @@ export function useLinkedListRender(
             // Obtenemos el Id del nodo cabeza actual de la lista
             const newHeadNode = listNodes.length > 0 ? listNodes[0].id : null;
 
-            // Selección del elemento SVG a partir de su referencia
-            const svg = d3.select(svgRef.current);
+            // Obtenemos el Id del último nodo de la lista (solo para uso de listas circulares) 
+            const lastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
             // Animación de eliminación del primer nodo de la lista
             animateRemoveFirst(
                 svg,
-                { prevHeadNode, newHeadNode },
+                { prevHeadNode, newHeadNode, lastNode },
                 {
                     remainingNodesData: listNodes,
                     remainingLinksData: linksData,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
+                    showNextCircularLink: config.showNextCircularLink ?? false,
+                    showPrevCircularLink: config.showPrevCircularLink ?? false
                 },
                 nodePositions,
                 resetQueryValues,

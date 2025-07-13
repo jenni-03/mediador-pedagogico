@@ -110,12 +110,15 @@ export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
         showHeadIndicator: true,
         showTailIndicator: false,
         showDoubleLinks: false,
-        showCircularLinks: true
+        showCircularLinks: true,
+        showNextCircularLink: true,
     },
     double_circular: {
         showHeadIndicator: true,
         showTailIndicator: false,
         showDoubleLinks: true,
-        showCircularLinks: true
+        showCircularLinks: true,
+        showNextCircularLink: true,
+        showPrevCircularLink: true
     }
 };
