@@ -382,17 +382,19 @@ export function useLinkedListRender(
             // Obtenemos el Id del nuevo último nodo de la lista
             const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
-            // Selección del elemento SVG a partir de su referencia
-            const svg = d3.select(svgRef.current);
+            // Obtenemos el Id del nodo cabeza actual de la lista (solo para uso de listas circulares)
+            const headNode = listNodes.length > 0 ? listNodes[0].id : null;
 
             // Animación de eliminación del último nodo de la lista
             animateRemoveLast(
                 svg,
-                { prevLastNode, newLastNode },
+                { prevLastNode, newLastNode, headNode },
                 {
                     remainingNodesData: listNodes,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
+                    showNextCircularLink: config.showNextCircularLink ?? false,
+                    showPrevCircularLink: config.showPrevCircularLink ?? false
                 },
                 nodePositions,
                 resetQueryValues,
@@ -403,22 +405,24 @@ export function useLinkedListRender(
 
             if (!nodeToRemove || deletePosition === undefined) return;
 
-            // Selección del elemento SVG a partir de su referencia
-            const svg = d3.select(svgRef.current);
-
             if (deletePosition === 0) {
                 // Obtenemos el Id del nodo cabeza actual de la lista
                 const newHeadNode = listNodes.length > 0 ? listNodes[0].id : null;
 
+                // Obtenemos el Id del último nodo de la lista (solo para uso de listas circulares) 
+                const lastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+
                 // Animación de eliminación de primer nodo de la lista
                 animateRemoveFirst(
                     svg,
-                    { prevHeadNode: nodeToRemove, newHeadNode },
+                    { prevHeadNode: nodeToRemove, newHeadNode, lastNode },
                     {
                         remainingNodesData: listNodes,
                         remainingLinksData: linksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showNextCircularLink: config.showNextCircularLink ?? false,
+                        showPrevCircularLink: config.showPrevCircularLink ?? false
                     },
                     nodePositions,
                     resetQueryValues,
@@ -428,29 +432,30 @@ export function useLinkedListRender(
                 // Obtenemos el Id del nuevo último nodo de la lista
                 const newLastNode = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
+                // Obtenemos el Id del nodo cabeza actual de la lista (solo para uso de listas circulares)
+                const headNode = listNodes.length > 0 ? listNodes[0].id : null;
+
                 // Animación de eliminación del último nodo de la lista
                 animateRemoveLast(
                     svg,
-                    { prevLastNode: nodeToRemove, newLastNode },
+                    { prevLastNode: nodeToRemove, newLastNode, headNode },
                     {
                         remainingNodesData: listNodes,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showNextCircularLink: config.showNextCircularLink ?? false,
+                        showPrevCircularLink: config.showPrevCircularLink ?? false
                     },
                     nodePositions,
                     resetQueryValues,
                     setIsAnimating
                 );
             } else {
-                console.log("Eliminando por posicion");
-
                 // Obtenemos el nodo anterior al nodo a eliminar
                 const prevNode = prevNodes[deletePosition - 1].id;
-                console.log("Nodo previo", prevNode);
 
                 // Obtenemos el nodo siguiente al nodo a eliminar
                 const nextNode = prevNodes[deletePosition + 1].id;
-                console.log("Siguiente Nodo", nextNode)
 
                 // Animación de eliminación del nodo en una posición especifica
                 animateRemoveAtPosition(

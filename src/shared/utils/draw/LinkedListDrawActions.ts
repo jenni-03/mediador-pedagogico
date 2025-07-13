@@ -779,21 +779,27 @@ export async function animateRemoveFirst(
             tempPositions.set(lastNode, { x: lastNodeInitialXPos, y: nodeToRemoveCurrentPos.y });
         }
 
-        // Salida del enlace sig entre el nodo a eliminar y su siguiente
-        await nodeToRemoveNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
-
-        // Salida del enlace circular previo presente entre el nodo a eliminar y el ultimo nodo
-        if (showPrevCircularLink) {
-            await svg.select<SVGGElement>(`g#link-${prevHeadNode}-${lastNode}-circular-prev`)
+        // Salida del enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
+        if (newHeadNodePrevLinkGroup) {
+            await newHeadNodePrevLinkGroup
+                .select("path.node-link")
                 .transition()
                 .duration(1000)
                 .style("opacity", 0)
-                .remove()
+                .end();
+        }
+
+        if (prevCircularLinkGroup && tempPositions) {
+            // Forma inicial del enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
+            const initialPrevCircularPath = calculateCircularLPath({ sourceId: newHeadNode, targetId: lastNode, type: 'circular-prev' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+
+            // Establecimiento del enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
+            await prevCircularLinkGroup
+                .select("path.node-link")
+                .attr("d", initialPrevCircularPath)
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
                 .end();
         }
 
@@ -819,27 +825,21 @@ export async function animateRemoveFirst(
                 .end();
         }
 
-        // Salida del enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
-        if (newHeadNodePrevLinkGroup) {
-            await newHeadNodePrevLinkGroup
-                .select("path.node-link")
+        // Salida del enlace siguiente entre el nodo a eliminar y el nuevo nodo cabeza
+        await nodeToRemoveNextLinkGroup
+            .select("path.node-link")
+            .transition()
+            .duration(1000)
+            .style("opacity", 0)
+            .end();
+
+        // Salida del enlace circular previo presente entre el nodo a eliminar y el ultimo nodo
+        if (showPrevCircularLink) {
+            await svg.select<SVGGElement>(`g#link-${prevHeadNode}-${lastNode}-circular-prev`)
                 .transition()
                 .duration(1000)
                 .style("opacity", 0)
-                .end();
-        }
-
-        if (prevCircularLinkGroup && tempPositions) {
-            // Forma inicial del enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
-            const initialPrevCircularPath = calculateCircularLPath({ sourceId: newHeadNode, targetId: lastNode, type: 'circular-prev' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
-
-            // Establecimiento del enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
-            await prevCircularLinkGroup
-                .select("path.node-link")
-                .attr("d", initialPrevCircularPath)
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
+                .remove()
                 .end();
         }
 
@@ -980,29 +980,37 @@ export async function animateRemoveFirst(
 
 /**
  * Función encargada de animar la eliminación del nodo al final de la lista.
- * 
- * @param svg - Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved - Objeto con información de los nodos involucrados en la eliminación. 
- * @param listData - Objeto con información relacionada a los nodos de la lista.
- * @param positions - Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues - Función para restablecer los valores de la query del usuario. 
- * @param setIsAnimating - Función para establecer el estado de animación.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la eliminación. 
+ * @param listData Objeto con información relacionada a los nodos de la lista.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateRemoveLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { prevLastNode: string, newLastNode: string | null },
-    listData: { remainingNodesData: ListNodeData[], showDoubleLinks: boolean, showTailIndicator: boolean },
+    nodesInvolved: { prevLastNode: string, newLastNode: string | null, headNode: string | null },
+    listData: {
+        remainingNodesData: ListNodeData[],
+        showDoubleLinks: boolean,
+        showTailIndicator: boolean,
+        showNextCircularLink: boolean;
+        showPrevCircularLink: boolean;
+    },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
     // Nodos implicados en la eliminación
-    const { newLastNode, prevLastNode } = nodesInvolved;
+    const { newLastNode, prevLastNode, headNode } = nodesInvolved;
 
     // Grupo del lienzo correspondiente al nodo a eliminar
     const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${prevLastNode}`);
 
-    if (newLastNode) {
+    // Indicadores para visualización de enlaces circulares
+    const { showNextCircularLink, showPrevCircularLink } = listData;
+
+    if (newLastNode && headNode) {
         // Información de la lista
         const { remainingNodesData, showDoubleLinks, showTailIndicator } = listData;
 
@@ -1012,11 +1020,16 @@ export async function animateRemoveLast(
         // Grupo del lienzo correspondiente al enlace previo del nodo a eliminar (solo para listas dobles)
         const nodeToRemovePrevLinkGroup = showDoubleLinks ? svg.select<SVGGElement>(`g#link-${prevLastNode}-${newLastNode}-prev`) : null;
 
-        // Posición actual del nodo a eliminar
-        const nodeToRemoveCurrentPos = positions.get(prevLastNode)!;
+        // Selección y establecimiento de estado visual inicial de enlaces circulares (solo para listas circulares)
+        const nextCircularLinkGroup = showNextCircularLink ? svg.select<SVGGElement>(`g#link-${newLastNode}-${headNode}-circular-next`) : null;
+        if (nextCircularLinkGroup) {
+            nextCircularLinkGroup.select("path.node-link").style("opacity", 0);
+        }
 
-        // Movimiento de salida del nodo a eliminar 
-        const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
+        const prevCircularLinkGroup = showPrevCircularLink ? svg.select<SVGGElement>(`g#link-${headNode}-${newLastNode}-circular-prev`) : null;
+        if (prevCircularLinkGroup) {
+            prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
+        }
 
         // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
         if (!showDoubleLinks) {
@@ -1065,14 +1078,47 @@ export async function animateRemoveLast(
                 .end();
         }
 
+        // Posición actual del nodo a eliminar
+        const nodeToRemoveCurrentPos = positions.get(prevLastNode)!;
+
+        // Movimiento de salida del nodo a eliminar 
+        const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
+
         // Salida del enlace siguiente entre el nuevo último nodo y el nodo a eliminar
         await newLastNodeNextLinkGroup
             .select("path.node-link")
             .transition()
             .duration(1000)
-            .ease(d3.easePolyInOut)
             .style("opacity", 0)
             .end();
+
+        // Establecimiento del enlace circular siguiente entre el nuevo ultimo nodo y el nodo cabeza
+        if (nextCircularLinkGroup) {
+            await nextCircularLinkGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        }
+
+        if (prevCircularLinkGroup) {
+            // Salida del enlace circular previo presente entre el nodo cabeza y el nodo a eliminar
+            await svg.select<SVGGElement>(`g#link-${headNode}-${prevLastNode}-circular-prev`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
+            // Establecimiento del enlace circular previo entre el nodo cabeza y el nuevo ultimo nodo
+            await prevCircularLinkGroup
+                .select("path.node-link")
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        }
 
         // Salida del enlace previo del nodo a eliminar (solo para listas dobles)
         if (nodeToRemovePrevLinkGroup) {
@@ -1082,6 +1128,16 @@ export async function animateRemoveLast(
                 .duration(1000)
                 .ease(d3.easePolyInOut)
                 .style("opacity", 0)
+                .end();
+        }
+
+        // Salida del enlace circular siguiente presente entre el nodo a eliminar y el nodo cabeza
+        if (showNextCircularLink) {
+            await svg.select<SVGGElement>(`g#link-${prevLastNode}-${headNode}-circular-next`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
                 .end();
         }
 
@@ -1106,6 +1162,24 @@ export async function animateRemoveLast(
         // Eliminación de la posición del nodo eliminado
         positions.delete(prevLastNode);
     } else {
+        // Salida del enlace circular siguiente presente entre el ultimo nodo y el nodo a eliminar
+        if (showNextCircularLink) {
+            svg.select<SVGGElement>(`g#link-${prevLastNode}-${prevLastNode}-circular-next`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove();
+        }
+
+        // Salida del enlace circular previo presente entre el nodo a eliminar y el ultimo nodo
+        if (showPrevCircularLink) {
+            svg.select<SVGGElement>(`g#link-${prevLastNode}-${prevLastNode}-circular-prev`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove();
+        }
+
         // Animación de salida simple del nodo
         await nodeToRemoveGroup
             .transition()
