@@ -123,10 +123,6 @@ export async function animateEnqueueNode(
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    console.log("Nodo a encolar: ", enqueuedNode);
-    console.log("Nodo previo: ", prevNode);
-    console.log("Posiciones: ", positions);
-
     // Grupo del lienzo correspondiente al nuevo elemento
     const newNodeGroup = svg.select<SVGGElement>(`g#${enqueuedNode}`);
 

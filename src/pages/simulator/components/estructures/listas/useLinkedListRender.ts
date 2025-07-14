@@ -186,6 +186,9 @@ export function useLinkedListRender(
         // Verificaciones necesarias para realizar la animación
         if (!listNodes || !svgRef.current || (!query.toAddFirst && !query.toAddLast && query.toAddAt.length !== 2) || !prevNodes) return;
 
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
         // Si la inserción es en la cabeza de la lista
         if (query.toAddFirst) {
             // Id del nuevo nodo cabeza
@@ -196,13 +199,6 @@ export function useLinkedListRender(
 
             // Obtenemos el Id del último nodo de la lista (solo para uso de listas circulares) 
             const lastNode = listNodes[listNodes.length - 1].id;
-
-            // Indicadores para mostrar enlaces circulares
-            const showPrevCircularLink = config.showCircularLinks && listNodes[0].prev !== null;
-            const showNextCircularLink = config.showCircularLinks && listNodes[listNodes.length - 1].next !== null;
-
-            // Selección del elemento SVG a partir de su referencia
-            const svg = d3.select(svgRef.current);
 
             // Filtramos los enlaces que requieren posicionamiento producto de la inserción 
             const existingLinksData = linksData.filter(link => link.sourceId !== newHeadNode && link.targetId !== newHeadNode);
@@ -221,8 +217,8 @@ export function useLinkedListRender(
                     existingLinksData,
                     showDoubleLinks: config.showDoubleLinks,
                     showTailIndicator: config.showTailIndicator,
-                    showPrevCircularLink,
-                    showNextCircularLink
+                    showNextCircularLink: config.showNextCircularLink ?? false,
+                    showPrevCircularLink: config.showPrevCircularLink ?? false
                 },
                 nodePositions,
                 resetQueryValues,
@@ -235,17 +231,19 @@ export function useLinkedListRender(
             // Obtenemos el nodo final anterior a la inserción
             const prevLastNode = prevNodes.length > 0 ? prevNodes[prevNodes.length - 1].id : null;
 
-            // Selección del elemento SVG a partir de su referencia
-            const svg = d3.select(svgRef.current);
+            // Obtenemos el Id del nodo cabeza de la lista (solo para uso de listas circulares) 
+            const headNode = listNodes[0].id;
 
             // Animación de inserción del nodo como nuevo último elemento de la lista
             animateInsertLast(
                 svg,
-                { newLastNode, prevLastNode },
+                { newLastNode, prevLastNode, headNode },
                 {
                     existingNodesData: prevNodes,
                     showDoubleLinks: config.showDoubleLinks,
-                    showTailIndicator: config.showTailIndicator
+                    showTailIndicator: config.showTailIndicator,
+                    showNextCircularLink: config.showNextCircularLink ?? false,
+                    showPrevCircularLink: config.showPrevCircularLink ?? false
                 },
                 nodePositions,
                 resetQueryValues,
@@ -256,19 +254,12 @@ export function useLinkedListRender(
 
             if (!newNode || insertionPosition === undefined) return;
 
-            // Selección del elemento SVG a partir de su referencia
-            const svg = d3.select(svgRef.current);
-
             if (insertionPosition === 0) {
                 // Obtenemos el nodo que era la cabeza antes de la inserción
                 const prevHeadNode = prevNodes.length > 0 ? prevNodes[0].id : null;
 
                 // Obtenemos el Id del último nodo de la lista (solo para uso de listas circulares) 
                 const lastNode = listNodes[listNodes.length - 1].id;
-
-                // Indicadores para mostrar enlaces circulares
-                const showPrevCircularLink = config.showCircularLinks && listNodes[0].prev !== null;
-                const showNextCircularLink = config.showCircularLinks && listNodes[listNodes.length - 1].next !== null;
 
                 // Filtramos los enlaces que no pertenecen al nuevo nodo cabeza
                 const existingLinksData = linksData.filter(link => link.sourceId !== newNode);
@@ -287,8 +278,8 @@ export function useLinkedListRender(
                         existingLinksData,
                         showDoubleLinks: config.showDoubleLinks,
                         showTailIndicator: config.showTailIndicator,
-                        showPrevCircularLink,
-                        showNextCircularLink
+                        showNextCircularLink: config.showNextCircularLink ?? false,
+                        showPrevCircularLink: config.showPrevCircularLink ?? false
                     },
                     nodePositions,
                     resetQueryValues,
@@ -298,14 +289,19 @@ export function useLinkedListRender(
                 // Obtenemos el nodo final anterior a la inserción
                 const prevLastNode = prevNodes.length > 0 ? prevNodes[prevNodes.length - 1].id : null;
 
+                // Obtenemos el Id del nodo cabeza de la lista (solo para uso de listas circulares) 
+                const headNode = listNodes[0].id;
+
                 // Animación de inserción del nodo como nuevo último elemento de la lista
                 animateInsertLast(
                     svg,
-                    { newLastNode: newNode, prevLastNode },
+                    { newLastNode: newNode, prevLastNode, headNode },
                     {
                         existingNodesData: prevNodes,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showNextCircularLink: config.showNextCircularLink ?? false,
+                        showPrevCircularLink: config.showPrevCircularLink ?? false
                     },
                     nodePositions,
                     resetQueryValues,

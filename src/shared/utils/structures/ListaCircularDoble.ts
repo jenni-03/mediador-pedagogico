@@ -75,13 +75,13 @@ export class ListaCircularDoble implements LinkedListInterface {
         } else {
             const ultimoNodo = this.cabeza!.getAnterior()!;
 
-            // Conectar el nuevo nodo
-            nuevoNodo.setSiguiente(this.cabeza);
-            nuevoNodo.setAnterior(ultimoNodo);
-
             // Actualizar los punteros
             ultimoNodo.setSiguiente(nuevoNodo);
             this.cabeza!.setAnterior(nuevoNodo);
+
+            // Conectar el nuevo nodo
+            nuevoNodo.setSiguiente(this.cabeza);
+            nuevoNodo.setAnterior(ultimoNodo);
         }
 
         this.tamanio++;
