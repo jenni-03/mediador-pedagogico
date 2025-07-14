@@ -436,19 +436,24 @@ export async function animateInsertLast(
 
 /**
  * Función encargada de animar la inserción de un nuevo nodo en una posición especifica.
- *  
- * @param svg - Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved - Objeto con información de los nodos involucrados en la inserción.
- * @param listData -  Objeto con información de los nodos y enlaces de la lista.
- * @param insertionPosition - Posición en la que el nuevo nodo será insertado.
- * @param positions - Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues - Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating - Función para establecer el estado de animación.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción.
+ * @param listData Objeto con información de los nodos y enlaces de la lista.
+ * @param insertionPosition Posición en la que el nuevo nodo será insertado.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateInsertAtPosition(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { newNode: string, prevNode: string, nextNode: string },
-    listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[], showDoubleLinks: boolean, showTailIndicator: boolean },
+    listData: {
+        existingNodesData: ListNodeData[],
+        existingLinksData: LinkData[],
+        showDoubleLinks: boolean,
+        showTailIndicator: boolean,
+        showCircularLinks: boolean
+    },
     insertionPosition: number,
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
@@ -458,13 +463,10 @@ export async function animateInsertAtPosition(
     const { newNode, prevNode, nextNode } = nodesInvolved;
 
     // Información de la lista
-    const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator } = listData;
+    const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator, showCircularLinks } = listData;
 
     // Grupo del lienzo correspondiente al nuevo elemento
     const newNodeGroup = svg.select<SVGGElement>(`g#${newNode}`);
-
-    // Posición de animación final para inserción del nuevo nodo
-    const finalNewNodePos = positions.get(newNode)!;
 
     // Grupo del lienzo correspondiente al enlace siguiente del nodo previo que apunta al nuevo nodo
     const prevToNewNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${newNode}-next`);
@@ -577,7 +579,7 @@ export async function animateInsertAtPosition(
             .transition()
             .duration(1500)
             .ease(d3.easeQuadInOut)
-            .attr("d", d => calculateLinkPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT))
+            .attr("d", d => d.type === "next" || d.type === "prev" ? calculateLinkPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT) : calculateCircularLPath(d, positions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT))
             .end()
     );
 
@@ -604,8 +606,11 @@ export async function animateInsertAtPosition(
     // Resolución de las promesas para animación de desplazamiento
     await Promise.all(shiftPromises);
 
+    // Posición de animación final para inserción del nuevo nodo
+    const finalNewNodePos = positions.get(newNode)!;
+
     // Posición de animación inicial para inserción del nuevo nodo
-    const initialYOffset = -75;
+    const initialYOffset = showCircularLinks ? -100 : -75;
     const initialPos = { x: finalNewNodePos.x, y: finalNewNodePos.y + initialYOffset };
 
     // Mapa temporal de posiciones para calular la forma inicial de los enlaces

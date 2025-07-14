@@ -325,7 +325,8 @@ export function useLinkedListRender(
                         existingNodesData: listNodes,
                         existingLinksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showCircularLinks: config.showCircularLinks
                     },
                     insertionPosition,
                     nodePositions,

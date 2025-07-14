@@ -90,7 +90,7 @@ export const SVG_LINKED_LIST_VALUES = {
     ELEMENT_WIDTH: 80,
     ELEMENT_HEIGHT: 40,
     SPACING: 55,
-    HEIGHT: 230,
+    HEIGHT: 240,
 } as const
 
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
