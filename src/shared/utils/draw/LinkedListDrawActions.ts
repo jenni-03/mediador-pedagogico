@@ -157,7 +157,7 @@ export async function animateInsertFirst(
             .attr("transform", `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`)
             .end();
 
-        // Aparición del enlace siguiente del nuevo nodo que apunta al nodo cabeza anterior
+        // Establecimiento del enlace siguiente del nuevo nodo que apunta al nodo cabeza anterior
         await newNodeNextLinkGroup
             .select("path.node-link")
             .transition()
@@ -166,7 +166,7 @@ export async function animateInsertFirst(
             .end();
 
         if (prevCircularLinkGroup) {
-            // Aparición del nuevo enlace circular previo presente entre el nuevo nodo cabeza y el último nodo (solo para listas circulares)
+            // Establecimiento del nuevo enlace circular previo presente entre el nuevo nodo cabeza y el último nodo (solo para listas circulares)
             await prevCircularLinkGroup
                 .select("path.node-link")
                 .transition()
@@ -183,7 +183,7 @@ export async function animateInsertFirst(
                 .end();
         }
 
-        // Aparición del enlace previo del nodo cabeza anterior que apunta al nuevo nodo (solo para listas dobles)
+        // Establecimiento del enlace previo del nodo cabeza anterior que apunta al nuevo nodo (solo para listas dobles)
         if (prevHeadNodePrevLinkGroup) {
             await prevHeadNodePrevLinkGroup
                 .select("path.node-link")
@@ -194,7 +194,7 @@ export async function animateInsertFirst(
         }
 
         if (nextCircularLinkGroup) {
-            // Desconexión del enlace circular siguiente presente entre el ultimo nodo y el nodo cabeza anterior (solo para listas circulares)
+            // Desconexión del enlace circular siguiente presente entre el último nodo y el nodo cabeza anterior (solo para listas circulares)
             await svg.select<SVGGElement>(`g#link-${lastNode}-${prevHeadNode}-circular-next`)
                 .transition()
                 .duration(1000)
@@ -202,7 +202,7 @@ export async function animateInsertFirst(
                 .remove()
                 .end();
 
-            // Aparición del nuevo enlace circular siguiente presente entre el ultimo nodo y el nuevo nodo cabeza
+            // Establecimiento del nuevo enlace circular siguiente presente entre el último nodo y el nuevo nodo cabeza
             await nextCircularLinkGroup
                 .select("path.node-link")
                 .transition()
@@ -271,7 +271,7 @@ export async function animateInsertLast(
     newNodeGroup.style("opacity", 0);
 
     if (prevLastNode) {
-        // Información de la lista
+        // Información de la lista a renderizar
         const { existingNodesData, showDoubleLinks, showTailIndicator, showNextCircularLink, showPrevCircularLink } = listData;
 
         // Grupo del lienzo correspondiente al enlace del anterior último nodo que apunta al nuevo último nodo
@@ -355,7 +355,7 @@ export async function animateInsertLast(
                 .end();
         }
 
-        // Aparición del enlace siguiente del último nodo previo que apunta al nuevo último nodo
+        // Establecimiento del enlace siguiente del último nodo previo que apunta al nuevo último nodo
         await prevLastNodeNextLinkGroup
             .select("path.node-link")
             .transition()
@@ -372,7 +372,7 @@ export async function animateInsertLast(
                 .remove()
                 .end();
 
-            // Aparición del nuevo enlace circular previo presente entre el nodo cabeza y el nuevo último nodo (solo para listas circulares)
+            // Establecimiento del nuevo enlace circular previo presente entre el nodo cabeza y el nuevo último nodo (solo para listas circulares)
             await prevCircularLinkGroup
                 .select("path.node-link")
                 .transition()
@@ -381,7 +381,7 @@ export async function animateInsertLast(
                 .end();
         }
 
-        // Aparición del nuevo enlace circular siguiente presente entre el nuevo último nodo y nodo cabeza (solo para listas circulares)
+        // Establecimiento del nuevo enlace circular siguiente presente entre el nuevo último nodo y nodo cabeza (solo para listas circulares)
         if (nextCircularLinkGroup) {
             await nextCircularLinkGroup
                 .select("path.node-link")
@@ -391,7 +391,7 @@ export async function animateInsertLast(
                 .end();
         }
 
-        // Aparición del enlace previo del nuevo último nodo (solo para listas dobles)
+        // Establecimiento del enlace previo del nuevo último nodo (solo para listas dobles)
         if (newNodePrevLinkGroup) {
             await newNodePrevLinkGroup
                 .select("path.node-link")
@@ -462,7 +462,7 @@ export async function animateInsertAtPosition(
     // Nodos implicados en la inserción
     const { newNode, prevNode, nextNode } = nodesInvolved;
 
-    // Información de la lista
+    // Información de la lista a renderizar
     const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator, showCircularLinks } = listData;
 
     // Grupo del lienzo correspondiente al nuevo elemento
@@ -794,7 +794,7 @@ export async function animateRemoveFirst(
     const { showNextCircularLink, showPrevCircularLink } = listData;
 
     if (newHeadNode && lastNode) {
-        // Información de la lista
+        // Información de la lista a renderizar
         const { remainingNodesData, remainingLinksData, showDoubleLinks, showTailIndicator } = listData;
 
         // Grupo del lienzo correspondiente al indicador del nodo cabeza
@@ -832,14 +832,54 @@ export async function animateRemoveFirst(
             // Posición inicial en x del nuevo nodo cabeza
             const newHeadNodeInitialXPos = SVG_LINKED_LIST_VALUES.MARGIN_LEFT + 1 * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING);
 
-            // Posición inicial en x del ultimo nodo
+            // Posición inicial en x del último nodo
             const lastNodeInitialXPos = SVG_LINKED_LIST_VALUES.MARGIN_LEFT + (remainingNodesData.length) * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING);
 
             tempPositions.set(newHeadNode, { x: newHeadNodeInitialXPos, y: nodeToRemoveCurrentPos.y });
             tempPositions.set(lastNode, { x: lastNodeInitialXPos, y: nodeToRemoveCurrentPos.y });
         }
 
-        // Salida del enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
+        // Desconexión del enlace siguiente entre el nodo a eliminar y el nuevo nodo cabeza
+        await nodeToRemoveNextLinkGroup
+            .select("path.node-link")
+            .transition()
+            .duration(1000)
+            .style("opacity", 0)
+            .end();
+
+        // Desconexión del enlace circular previo presente entre el nodo a eliminar y el último nodo
+        if (showPrevCircularLink) {
+            await svg.select<SVGGElement>(`g#link-${prevHeadNode}-${lastNode}-circular-prev`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+        }
+
+        if (nextCircularLinkGroup && tempPositions) {
+            // Desconexión del enlace circular siguiente presente entre el último nodo y el nodo a eliminar
+            await svg.select<SVGGElement>(`g#link-${lastNode}-${prevHeadNode}-circular-next`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
+            // Forma inicial del enlace circular siguiente entre el último nodo y el nuevo nodo cabeza
+            const initialNextCircularPath = calculateCircularLPath({ sourceId: lastNode, targetId: newHeadNode, type: 'circular-next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
+
+            // Establecimiento del nuevo enlace circular siguiente entre el último nodo y el nuevo nodo cabeza
+            await nextCircularLinkGroup
+                .select("path.node-link")
+                .attr("d", initialNextCircularPath)
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        }
+
+        // Desconexión del enlace previo entre el nuevo nodo cabeza y el nodo a eliminar
         if (newHeadNodePrevLinkGroup) {
             await newHeadNodePrevLinkGroup
                 .select("path.node-link")
@@ -850,56 +890,16 @@ export async function animateRemoveFirst(
         }
 
         if (prevCircularLinkGroup && tempPositions) {
-            // Forma inicial del enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
+            // Forma inicial del enlace circular previo entre el nuevo nodo cabeza y el último nodo
             const initialPrevCircularPath = calculateCircularLPath({ sourceId: newHeadNode, targetId: lastNode, type: 'circular-prev' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
 
-            // Establecimiento del enlace circular previo entre el nuevo nodo cabeza y el ultimo nodo
+            // Establecimiento del nuevo enlace circular previo entre el nuevo nodo cabeza y el último nodo
             await prevCircularLinkGroup
                 .select("path.node-link")
                 .attr("d", initialPrevCircularPath)
                 .transition()
                 .duration(1000)
                 .style("opacity", 1)
-                .end();
-        }
-
-        if (nextCircularLinkGroup && tempPositions) {
-            // Salida del enlace circular siguiente presente entre el ultimo nodo y el nodo a eliminar
-            await svg.select<SVGGElement>(`g#link-${lastNode}-${prevHeadNode}-circular-next`)
-                .transition()
-                .duration(1000)
-                .style("opacity", 0)
-                .remove()
-                .end();
-
-            // Forma inicial del enlace circular siguiente entre el ultimo nodo y el nuevo nodo cabeza
-            const initialNextCircularPath = calculateCircularLPath({ sourceId: lastNode, targetId: newHeadNode, type: 'circular-next' }, tempPositions, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT);
-
-            // Establecimiento del enlace circular siguiente entre el ultimo nodo y el nuevo nodo cabeza
-            await nextCircularLinkGroup
-                .select("path.node-link")
-                .attr("d", initialNextCircularPath)
-                .transition()
-                .duration(1000)
-                .style("opacity", 1)
-                .end();
-        }
-
-        // Salida del enlace siguiente entre el nodo a eliminar y el nuevo nodo cabeza
-        await nodeToRemoveNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
-
-        // Salida del enlace circular previo presente entre el nodo a eliminar y el ultimo nodo
-        if (showPrevCircularLink) {
-            await svg.select<SVGGElement>(`g#link-${prevHeadNode}-${lastNode}-circular-prev`)
-                .transition()
-                .duration(1000)
-                .style("opacity", 0)
-                .remove()
                 .end();
         }
 
@@ -998,7 +998,7 @@ export async function animateRemoveFirst(
             .style("opacity", 1)
             .end();
     } else {
-        // Salida del enlace circular siguiente presente entre el ultimo nodo y el nodo a eliminar
+        // Desconexión del enlace circular siguiente presente entre el último nodo y el nodo a eliminar
         if (showNextCircularLink) {
             svg.select<SVGGElement>(`g#link-${prevHeadNode}-${prevHeadNode}-circular-next`)
                 .transition()
@@ -1007,7 +1007,7 @@ export async function animateRemoveFirst(
                 .remove();
         }
 
-        // Salida del enlace circular previo presente entre el nodo a eliminar y el ultimo nodo
+        // Desconexión del enlace circular previo presente entre el nodo a eliminar y el último nodo
         if (showPrevCircularLink) {
             svg.select<SVGGElement>(`g#link-${prevHeadNode}-${prevHeadNode}-circular-prev`)
                 .transition()
@@ -1144,7 +1144,7 @@ export async function animateRemoveLast(
         // Movimiento de salida del nodo a eliminar 
         const nodeMoveOffsetY = SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8;
 
-        // Salida del enlace siguiente entre el nuevo último nodo y el nodo a eliminar
+        // Desconexión del enlace siguiente entre el nuevo último nodo y el nodo a eliminar
         await newLastNodeNextLinkGroup
             .select("path.node-link")
             .transition()
@@ -1152,7 +1152,7 @@ export async function animateRemoveLast(
             .style("opacity", 0)
             .end();
 
-        // Establecimiento del enlace circular siguiente entre el nuevo ultimo nodo y el nodo cabeza
+        // Establecimiento del enlace circular siguiente presente entre el nuevo último nodo y el nodo cabeza
         if (nextCircularLinkGroup) {
             await nextCircularLinkGroup
                 .select("path.node-link")
@@ -1163,7 +1163,7 @@ export async function animateRemoveLast(
         }
 
         if (prevCircularLinkGroup) {
-            // Salida del enlace circular previo presente entre el nodo cabeza y el nodo a eliminar
+            // Desconexión del enlace circular previo presente entre el nodo cabeza y el nodo a eliminar
             await svg.select<SVGGElement>(`g#link-${headNode}-${prevLastNode}-circular-prev`)
                 .transition()
                 .duration(1000)
@@ -1171,7 +1171,7 @@ export async function animateRemoveLast(
                 .remove()
                 .end();
 
-            // Establecimiento del enlace circular previo entre el nodo cabeza y el nuevo ultimo nodo
+            // Establecimiento del enlace circular previo entre el nodo cabeza y el nuevo último nodo
             await prevCircularLinkGroup
                 .select("path.node-link")
                 .transition()
@@ -1180,7 +1180,7 @@ export async function animateRemoveLast(
                 .end();
         }
 
-        // Salida del enlace previo del nodo a eliminar (solo para listas dobles)
+        // Desconexión del enlace previo del nodo a eliminar (solo para listas dobles)
         if (nodeToRemovePrevLinkGroup) {
             await nodeToRemovePrevLinkGroup
                 .select("path.node-link")
@@ -1191,7 +1191,7 @@ export async function animateRemoveLast(
                 .end();
         }
 
-        // Salida del enlace circular siguiente presente entre el nodo a eliminar y el nodo cabeza
+        // Desconexión del enlace circular siguiente presente entre el nodo a eliminar y el nodo cabeza
         if (showNextCircularLink) {
             await svg.select<SVGGElement>(`g#link-${prevLastNode}-${headNode}-circular-next`)
                 .transition()
@@ -1222,7 +1222,7 @@ export async function animateRemoveLast(
         // Eliminación de la posición del nodo eliminado
         positions.delete(prevLastNode);
     } else {
-        // Salida del enlace circular siguiente presente entre el ultimo nodo y el nodo a eliminar
+        // Desconexión del enlace circular siguiente presente entre el último nodo y el nodo a eliminar
         if (showNextCircularLink) {
             svg.select<SVGGElement>(`g#link-${prevLastNode}-${prevLastNode}-circular-next`)
                 .transition()
@@ -1231,7 +1231,7 @@ export async function animateRemoveLast(
                 .remove();
         }
 
-        // Salida del enlace circular previo presente entre el nodo a eliminar y el ultimo nodo
+        // Desconexión del enlace circular previo presente entre el nodo a eliminar y el último nodo
         if (showPrevCircularLink) {
             svg.select<SVGGElement>(`g#link-${prevLastNode}-${prevLastNode}-circular-prev`)
                 .transition()
@@ -1275,7 +1275,13 @@ export async function animateRemoveLast(
 export async function animateRemoveAtPosition(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { nodeToRemove: string, prevNode: string, nextNode: string },
-    listData: { existingNodesData: ListNodeData[], existingLinksData: LinkData[], showDoubleLinks: boolean, showTailIndicator: boolean },
+    listData: {
+        existingNodesData: ListNodeData[],
+        existingLinksData: LinkData[],
+        showDoubleLinks: boolean,
+        showTailIndicator: boolean,
+        showCircularLinks: boolean
+    },
     deletePosition: number,
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
@@ -1284,8 +1290,8 @@ export async function animateRemoveAtPosition(
     // Nodos implicados en la eliminación
     const { nodeToRemove, prevNode, nextNode } = nodesInvolved;
 
-    // Información de la lista
-    const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator } = listData;
+    // Información de la lista a renderizar
+    const { existingNodesData, existingLinksData, showDoubleLinks, showTailIndicator, showCircularLinks } = listData;
 
     // Grupo del lienzo correspondiente al nodo a eliminar
     const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeToRemove}`);
@@ -1350,7 +1356,7 @@ export async function animateRemoveAtPosition(
     const initialRemovalNodePos = positions.get(nodeToRemove)!;
 
     // Posición de animación final del nodo a eliminar
-    const initialYOffset = -75;
+    const initialYOffset = showCircularLinks ? -100 : -75;;
     const finalPos = { x: initialRemovalNodePos.x, y: initialRemovalNodePos.y + initialYOffset };
 
     // Posición inicial en x del nodo siguiente al nodo a eliminar
@@ -1562,12 +1568,11 @@ export async function animateRemoveAtPosition(
 
 /**
  * Función encargada de animar la búsqueda de un elemento en la lista.
- * 
- * @param svg - Selección D3 del elemento SVG donde se va a dibujar.
- * @param elementToSearch - Elemento a buscar en la lista. 
- * @param existingNodesData - Array de nodos pertenecientes a la lista.
- * @param resetQueryValues - Función para restablecer los valores de la query del usuario. 
- * @param setIsAnimating - Función para establecer el estado de animación.
+ * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param elementToSearch Elemento a buscar en la lista. 
+ * @param existingNodesData Array de nodos pertenecientes a la lista.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateSearchElement(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,

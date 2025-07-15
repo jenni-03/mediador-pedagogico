@@ -93,9 +93,7 @@ export function useLinkedListRender(
 
         // Cálculo del ancho del SVG en base al número de nodos presentes
         const displayLength = Math.max(listNodes.length, prevNodes?.length ?? 0);
-        console.log("displayLength", displayLength);
         const width = margin.left + displayLength * nodeSpacing - (listNodes.length > 0 ? spacing : 0) + margin.right;
-        console.log("width", width);
 
         // Alto del SVG
         const height = SVG_LINKED_LIST_VALUES.HEIGHT;
@@ -462,7 +460,8 @@ export function useLinkedListRender(
                         existingNodesData: prevNodes,
                         existingLinksData: linksData,
                         showDoubleLinks: config.showDoubleLinks,
-                        showTailIndicator: config.showTailIndicator
+                        showTailIndicator: config.showTailIndicator,
+                        showCircularLinks: config.showCircularLinks
                     },
                     deletePosition,
                     nodePositions,

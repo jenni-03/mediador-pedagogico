@@ -139,8 +139,13 @@ export class ListaCircularDoble implements LinkedListInterface {
             const newHead = this.cabeza!.getSiguiente()!;
             const tail = this.cabeza!.getAnterior()!;
 
-            newHead.setAnterior(tail);
+            // Desconectar el nodo de la lista
+            nodoEliminado.setSiguiente(null);
+            nodoEliminado.setAnterior(null);
+
+            // Reorganizar los punteros
             tail.setSiguiente(newHead);
+            newHead.setAnterior(tail);
 
             this.cabeza = newHead;
         }
@@ -162,8 +167,14 @@ export class ListaCircularDoble implements LinkedListInterface {
             this.cabeza = null;
         } else {
             const nuevoUltimo = ultimo.getAnterior()!;
+
+            // Reorganizar los punteros
             nuevoUltimo.setSiguiente(this.cabeza);
             this.cabeza!.setAnterior(nuevoUltimo);
+
+            // Desconectar el nodo de la lista
+            ultimo.setSiguiente(null);
+            ultimo.setAnterior(null);
         }
 
         this.tamanio--;
