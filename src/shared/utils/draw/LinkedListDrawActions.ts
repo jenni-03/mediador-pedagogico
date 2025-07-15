@@ -1180,6 +1180,16 @@ export async function animateRemoveLast(
                 .end();
         }
 
+        // Desconexión del enlace circular siguiente presente entre el nodo a eliminar y el nodo cabeza
+        if (showNextCircularLink) {
+            await svg.select<SVGGElement>(`g#link-${prevLastNode}-${headNode}-circular-next`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+        }
+
         // Desconexión del enlace previo del nodo a eliminar (solo para listas dobles)
         if (nodeToRemovePrevLinkGroup) {
             await nodeToRemovePrevLinkGroup
@@ -1188,16 +1198,6 @@ export async function animateRemoveLast(
                 .duration(1000)
                 .ease(d3.easePolyInOut)
                 .style("opacity", 0)
-                .end();
-        }
-
-        // Desconexión del enlace circular siguiente presente entre el nodo a eliminar y el nodo cabeza
-        if (showNextCircularLink) {
-            await svg.select<SVGGElement>(`g#link-${prevLastNode}-${headNode}-circular-next`)
-                .transition()
-                .duration(1000)
-                .style("opacity", 0)
-                .remove()
                 .end();
         }
 

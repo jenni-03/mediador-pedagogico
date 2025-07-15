@@ -98,6 +98,24 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         Esta estructura de doble enlace permite que la lista sea recorrida de manera eficiente en ambas direcciones: Desde la cabeza hasta la cola y visceversa.`,
         },
     ],
+    lista_circular_doblemente_enlazada: [
+        {
+            type: "info",
+            description: `Pensemos en un carrusel. Cada caballito está conectado con el que tiene justo delante y con el que tiene detrás. 
+                        Desde cualquier caballito, puedes ver fácilmente cuál es el siguiente y cuál fue el anterior.`,
+        },
+        {
+            type: "info",
+            description: `La característica principal es que el carrusel no tiene un principio ni un fin definidos; Es un ciclo continuo. Si sigues avanzando de un caballito al siguiente, 
+                        eventualmente darás una vuelta completa y regresarás al punto de partida. De la misma manera, si decides moverte hacia atrás. No existe un "último" caballito que te obligue a detenerte.`
+        },
+        {
+            type: "info",
+            description: `Formalmente, una lista circular doblemente enlazada, es una variación de la lista doble que crea un bucle cerrado. Al igual que en una lista doblemente enlazada,
+                        cada nodo contiene un valor, un puntero al siguiente nodo y otro puntero que apunta al nodo anterior en la secuencia. La diferencia fundamental radica en los extremos de la lista.
+                        El puntero next del último nodo apunta de vuelta al primer nodo y el puntero prev del primer nodo apunta de vuelta al último nodo.`,
+        },
+    ],
 };
 
 export const tourStepsCommands: Record<string, TourStep[]> = {
@@ -321,6 +339,41 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
             description:
                 "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 50, correspondiente al único elemento en esta.",
+        },
+    ],
+    lista_circular_doblemente_enlazada: [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una lista circular doble, tales como, inserción y eliminación de elementos desde diferentes posiciones, y consultar si un elemento se encuentra en la lista.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            text: "insertFirst(80);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para insertar un elemento al inicio de la lista, en este caso, el número 80.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la lista con su elemento recién insertado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 80, correspondiente al único elemento en esta.",
         },
     ],
 };
