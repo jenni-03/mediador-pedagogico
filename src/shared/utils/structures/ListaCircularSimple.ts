@@ -5,203 +5,222 @@ import { NodoS } from "../nodes/NodoS";
  * Clase que representa el funcionamiento de una lista circular simple.
  */
 export class ListaCircularSimple implements LinkedListInterface {
-    private cabeza: NodoS | null;
-    private tamanio: number;
-    private readonly MAX_TAMANIO = 15;
+  private cabeza: NodoS | null;
+  private tamanio: number;
+  private readonly MAX_TAMANIO = 15;
 
-    constructor() {
-        this.cabeza = null;
-        this.tamanio = 0;
+  // Tamaño simulado de cada nodo en bytes.
+  private tamanioNodo: number;
+
+  constructor(tamanioNodo: number = 16) {
+    this.cabeza = null;
+    this.tamanio = 0;
+    this.tamanioNodo = tamanioNodo;
+  }
+
+  insertarAlInicio(valor: number): NodoS {
+    if (this.tamanio >= this.MAX_TAMANIO)
+      throw new Error(
+        `No fue posible insertar al inicio: tamaño máximo alcanzado.`
+      );
+
+    const nuevoNodo = new NodoS(valor);
+
+    if (this.esVacia()) {
+      this.cabeza = nuevoNodo;
+      nuevoNodo.setSiguiente(nuevoNodo);
+    } else {
+      const ultimo = this.getUltimoNodo();
+      nuevoNodo.setSiguiente(this.cabeza);
+      this.cabeza = nuevoNodo;
+      ultimo!.setSiguiente(this.cabeza);
     }
 
-    insertarAlInicio(valor: number): NodoS {
-        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar al inicio: tamaño máximo alcanzado.`);
+    this.tamanio++;
+    return nuevoNodo;
+  }
 
-        const nuevoNodo = new NodoS(valor);
+  insertarAlFinal(valor: number): NodoS {
+    if (this.tamanio >= this.MAX_TAMANIO)
+      throw new Error(
+        `No fue posible insertar al final: tamaño máximo alcanzado.`
+      );
 
-        if (this.esVacia()) {
-            this.cabeza = nuevoNodo;
-            nuevoNodo.setSiguiente(nuevoNodo);
-        } else {
-            const ultimo = this.getUltimoNodo();
-            nuevoNodo.setSiguiente(this.cabeza);
-            this.cabeza = nuevoNodo;
-            ultimo!.setSiguiente(this.cabeza);
-        }
+    const nuevoNodo = new NodoS(valor);
 
-        this.tamanio++;
-        return nuevoNodo;
+    if (this.esVacia()) {
+      this.cabeza = nuevoNodo;
+      nuevoNodo.setSiguiente(nuevoNodo);
+    } else {
+      const ultimo = this.getUltimoNodo();
+      ultimo!.setSiguiente(nuevoNodo);
+      nuevoNodo.setSiguiente(this.cabeza);
     }
 
-    insertarAlFinal(valor: number): NodoS {
-        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar al final: tamaño máximo alcanzado.`);
+    this.tamanio++;
+    return nuevoNodo;
+  }
 
-        const nuevoNodo = new NodoS(valor);
+  insertarEnPosicion(valor: number, posicion: number): NodoS {
+    if (posicion < 0 || posicion > this.tamanio)
+      throw new Error(`Posición ${posicion} fuera de rango.`);
 
-        if (this.esVacia()) {
-            this.cabeza = nuevoNodo;
-            nuevoNodo.setSiguiente(nuevoNodo);
-        } else {
-            const ultimo = this.getUltimoNodo();
-            ultimo!.setSiguiente(nuevoNodo);
-            nuevoNodo.setSiguiente(this.cabeza);
-        }
+    if (this.tamanio >= this.MAX_TAMANIO)
+      throw new Error(`Tamaño máximo alcanzado.`);
 
-        this.tamanio++;
-        return nuevoNodo;
+    if (posicion === 0) return this.insertarAlInicio(valor);
+    if (posicion === this.tamanio) return this.insertarAlFinal(valor);
+
+    const nuevoNodo = new NodoS(valor);
+    const nodoAnt = this.getPos(posicion - 1)!;
+
+    nuevoNodo.setSiguiente(nodoAnt.getSiguiente());
+    nodoAnt.setSiguiente(nuevoNodo);
+
+    this.tamanio++;
+    return nuevoNodo;
+  }
+
+  eliminarAlInicio(): NodoS {
+    if (this.esVacia()) throw new Error("Lista vacía.");
+
+    const nodoEliminado = this.cabeza!;
+
+    if (this.tamanio === 1) {
+      this.cabeza = null;
+    } else {
+      const ultimo = this.getUltimoNodo();
+      this.cabeza = this.cabeza!.getSiguiente();
+      ultimo!.setSiguiente(this.cabeza);
     }
 
-    insertarEnPosicion(valor: number, posicion: number): NodoS {
-        if (posicion < 0 || posicion > this.tamanio) throw new Error(`Posición ${posicion} fuera de rango.`);
+    this.tamanio--;
+    return nodoEliminado;
+  }
 
-        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`Tamaño máximo alcanzado.`);
+  eliminarAlFinal(): NodoS {
+    if (this.esVacia()) throw new Error("Lista vacía.");
 
-        if (posicion === 0) return this.insertarAlInicio(valor);
-        if (posicion === this.tamanio) return this.insertarAlFinal(valor);
+    let nodoEliminado: NodoS;
 
-        const nuevoNodo = new NodoS(valor);
-        const nodoAnt = this.getPos(posicion - 1)!;
-
-        nuevoNodo.setSiguiente(nodoAnt.getSiguiente());
-        nodoAnt.setSiguiente(nuevoNodo);
-
-        this.tamanio++;
-        return nuevoNodo;
+    if (this.tamanio === 1) {
+      nodoEliminado = this.cabeza!;
+      this.cabeza = null;
+    } else {
+      const penultimo = this.getPos(this.tamanio - 2)!;
+      nodoEliminado = penultimo.getSiguiente()!;
+      penultimo.setSiguiente(this.cabeza);
     }
 
-    eliminarAlInicio(): NodoS {
-        if (this.esVacia()) throw new Error("Lista vacía.");
+    this.tamanio--;
+    return nodoEliminado;
+  }
 
-        const nodoEliminado = this.cabeza!;
+  eliminarEnPosicion(posicion: number): NodoS {
+    if (this.esVacia()) throw new Error("Lista vacía.");
+    if (posicion < 0 || posicion >= this.tamanio)
+      throw new Error(`Posición ${posicion} fuera de rango.`);
 
-        if (this.tamanio === 1) {
-            this.cabeza = null;
-        } else {
-            const ultimo = this.getUltimoNodo();
-            this.cabeza = this.cabeza!.getSiguiente();
-            ultimo!.setSiguiente(this.cabeza);
-        }
+    if (posicion === 0) return this.eliminarAlInicio();
+    if (posicion === this.tamanio - 1) return this.eliminarAlFinal();
 
-        this.tamanio--;
-        return nodoEliminado;
+    const nodoAnt = this.getPos(posicion - 1)!;
+    const nodoEliminado = nodoAnt.getSiguiente()!;
+    nodoAnt.setSiguiente(nodoEliminado.getSiguiente());
+
+    this.tamanio--;
+    return nodoEliminado;
+  }
+
+  buscar(valor: number): boolean {
+    if (this.esVacia()) return false;
+
+    let nodoActual = this.cabeza;
+    let i = 0;
+
+    while (i < this.tamanio) {
+      if (nodoActual!.getValor() === valor) return true;
+      nodoActual = nodoActual!.getSiguiente();
+      i++;
     }
 
-    eliminarAlFinal(): NodoS {
-        if (this.esVacia()) throw new Error("Lista vacía.");
+    return false;
+  }
 
-        let nodoEliminado: NodoS;
+  vaciar(): void {
+    this.cabeza = null;
+    this.tamanio = 0;
+  }
 
-        if (this.tamanio === 1) {
-            nodoEliminado = this.cabeza!;
-            this.cabeza = null;
-        } else {
-            const penultimo = this.getPos(this.tamanio - 2)!;
-            nodoEliminado = penultimo.getSiguiente()!;
-            penultimo.setSiguiente(this.cabeza);
-        }
+  esVacia(): boolean {
+    return this.cabeza === null;
+  }
 
-        this.tamanio--;
-        return nodoEliminado;
+  getTamanio(): number {
+    return this.tamanio;
+  }
+
+  public getArrayDeNodos(): ListNodeData[] {
+    const resultArray: ListNodeData[] = [];
+    let currentNode = this.cabeza;
+
+    for (let i = 0; i < this.tamanio && currentNode !== null; i++) {
+      const nextNode = currentNode.getSiguiente();
+
+      const nodeData: ListNodeData = {
+        id: currentNode.getId(),
+        value: currentNode.getValor(),
+        next: nextNode ? nextNode.getId() : null,
+        memoryAddress: currentNode.getDireccionMemoria(),
+      };
+
+      resultArray.push(nodeData);
+      currentNode = nextNode;
     }
 
-    eliminarEnPosicion(posicion: number): NodoS {
-        if (this.esVacia()) throw new Error("Lista vacía.");
-        if (posicion < 0 || posicion >= this.tamanio) throw new Error(`Posición ${posicion} fuera de rango.`);
+    return resultArray;
+  }
 
-        if (posicion === 0) return this.eliminarAlInicio();
-        if (posicion === this.tamanio - 1) return this.eliminarAlFinal();
+  public clonar() {
+    const nuevaLista = new (this.constructor as new () => this)();
 
-        const nodoAnt = this.getPos(posicion - 1)!;
-        const nodoEliminado = nodoAnt.getSiguiente()!;
-        nodoAnt.setSiguiente(nodoEliminado.getSiguiente());
+    if (this.esVacia()) return nuevaLista;
 
-        this.tamanio--;
-        return nodoEliminado;
+    let nodoActual = this.cabeza;
+    let i = 0;
+
+    while (i < this.tamanio && nodoActual) {
+      nuevaLista.insertarAlFinal(nodoActual.getValor());
+      nodoActual = nodoActual.getSiguiente();
+      i++;
     }
 
-    buscar(valor: number): boolean {
-        if (this.esVacia()) return false;
+    return nuevaLista;
+  }
 
-        let nodoActual = this.cabeza;
-        let i = 0;
+  private getPos(pos: number): NodoS | null {
+    if (this.esVacia() || pos < 0 || pos >= this.tamanio) return null;
 
-        while (i < this.tamanio) {
-            if (nodoActual!.getValor() === valor) return true;
-            nodoActual = nodoActual!.getSiguiente();
-            i++;
-        }
+    let nodoActual = this.cabeza;
+    let i = 0;
 
-        return false;
+    while (i < pos) {
+      nodoActual = nodoActual!.getSiguiente();
+      i++;
     }
 
-    vaciar(): void {
-        this.cabeza = null;
-        this.tamanio = 0;
-    }
+    return nodoActual;
+  }
 
-    esVacia(): boolean {
-        return this.cabeza === null;
-    }
+  private getUltimoNodo(): NodoS | null {
+    return this.getPos(this.tamanio - 1);
+  }
 
-    getTamanio(): number {
-        return this.tamanio;
-    }
-
-    public getArrayDeNodos(): ListNodeData[] {
-        const resultArray: ListNodeData[] = [];
-        let currentNode = this.cabeza;
-    
-        for (let i = 0; i < this.tamanio && currentNode !== null; i++) {
-            const nextNode = currentNode.getSiguiente();
-    
-            const nodeData: ListNodeData = {
-                id: currentNode.getId(),
-                value: currentNode.getValor(),
-                next: nextNode ? nextNode.getId() : null,
-                memoryAddress: currentNode.getDireccionMemoria()
-            };
-    
-            resultArray.push(nodeData);
-            currentNode = nextNode;
-        }
-    
-        return resultArray;
-    }
-
-    public clonar() {
-        const nuevaLista = new (this.constructor as new () => this)();
-
-        if (this.esVacia()) return nuevaLista;
-
-        let nodoActual = this.cabeza;
-        let i = 0;
-
-        while (i < this.tamanio && nodoActual) {
-            nuevaLista.insertarAlFinal(
-                nodoActual.getValor()
-            );
-            nodoActual = nodoActual.getSiguiente();
-            i++;
-        }
-
-        return nuevaLista;
-    }
-
-    private getPos(pos: number): NodoS | null {
-        if (this.esVacia() || pos < 0 || pos >= this.tamanio) return null;
-
-        let nodoActual = this.cabeza;
-        let i = 0;
-
-        while (i < pos) {
-            nodoActual = nodoActual!.getSiguiente();
-            i++;
-        }
-
-        return nodoActual;
-    }
-
-    private getUltimoNodo(): NodoS | null {
-        return this.getPos(this.tamanio - 1);
-    }
+  /**
+   * Método que retorna el tamaño en bytes de los nodos almacenados.
+   * @returns Tamaño en bytes de los nodos.
+   */
+  getTamanioNodo() {
+    return this.tamanioNodo;
+  }
 }

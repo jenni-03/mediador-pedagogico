@@ -84,7 +84,7 @@ export function DataStructureInfo({
               }
               direccionBase={1000}
               tamanioNodo={
-                structure === "tabla_hash" ? 4 : structurePrueba.tamanioNodo
+                structure === "tabla_hash" ? 4 : structurePrueba.getTamanioNodo()
               }
               direcciones={
                 structure === "secuencia"

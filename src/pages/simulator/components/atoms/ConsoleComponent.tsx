@@ -55,6 +55,7 @@ export function ConsoleComponent({
       setInput("");
       return;
     }
+    console.log(isFromTutorial);
 
     const parsed = parseCommand(commandValue.trim(), structureType);
 
