@@ -299,8 +299,8 @@ export async function animateInsertLast(
             prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
         }
 
-        // Si no es una lista doblemente enlazada, se recorre la lista hasta el último nodo
-        if (!showDoubleLinks) {
+        // Si no es una lista circular doble enlazada o no posee un nodo cola, se recorre la lista hasta el último nodo
+        if (!showPrevCircularLink && !showTailIndicator) {
             for (const node of existingNodesData) {
                 // Selección del grupo del nodo actual
                 const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);

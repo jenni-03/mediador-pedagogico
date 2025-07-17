@@ -8,6 +8,7 @@ import { PriorityQueueSimulator } from "./PriorityQueueSimulator";
 import { SimpleLinkedListSimulator } from "./SimpleLinkedListSimulator";
 import { DoublyLinkedListSimulator } from "./DoublyLinkedListSimulator";
 import { CircularDoublyLinkedListSimulator } from "./CircularDoublyLinkedListSimulator";
+import { CircularSimpleLinkedListSimulator } from "./CircularSimpleLinkedListSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -19,6 +20,7 @@ const componentMap: Record<string, React.FC> = {
     "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
     "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
     "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
+    "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
 };
 
 export function StructureSimulator() {

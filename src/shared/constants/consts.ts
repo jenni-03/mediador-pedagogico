@@ -16,6 +16,7 @@ export const STRUCTURE_NAME = {
     SIMPLE_LINKED_LIST: 'lista_simplemente_enlazada',
     DOUBLY_LINKED_LIST: 'lista_doblemente_enlazada',
     CIRCULAR_DOUBLY_LINKED_LIST: 'lista_circular_doblemente_enlazada',
+    CIRCULAR_SIMPLE_LINKED_LIST: 'lista_circular_simplemente_enlazada',
     HASHTABLE: 'tabla_hash',
 } as const
 
@@ -108,7 +109,7 @@ export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
     },
     circular: {
         showHeadIndicator: true,
-        showTailIndicator: false,
+        showTailIndicator: true,
         showDoubleLinks: false,
         showCircularLinks: true,
         showNextCircularLink: true,

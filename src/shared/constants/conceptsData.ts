@@ -98,7 +98,7 @@ export const conceptosData: Record<string, any> = {
       analisis: "El acceso es O(n), pero las inserciones y eliminaciones pueden ser O(1) con referencias adecuadas.",
     },
     tipo: "Estructura Lineal",
-    nombre: "Lista Circular Simple"
+    nombre: "Lista Circular Simplemente Enlazada"
   },
   5: {
     definicion: {
