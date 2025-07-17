@@ -7,7 +7,7 @@ import { useRef } from "react";
 
 export function SequenceSimulator() {
     // Instanciación de la estructura Secuencia
-    const structure = useRef(new Secuencia(0)).current;
+    const structure = useRef(new Secuencia<number>(0)).current;
 
     // Llamada al hook useSequence para manejar la lógica de la secuencia
     const { sequence, query, error, operations } = useSequence(structure);

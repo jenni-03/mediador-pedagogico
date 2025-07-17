@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
 import { BaseQueryOperations } from "../../../../../types";
 
-export function useSequence(structure: Secuencia) {
+export function useSequence(structure: Secuencia<number>) {
     // Estado para manejar la secuencia
     const [sequence, setSequence] = useState(structure);
 
@@ -21,7 +21,7 @@ export function useSequence(structure: Secuencia) {
 
     // Operación de creación de una secuencia con elementos vacíos
     const createSequence = (n: number) => {
-        const newSecuencia = new Secuencia(n);
+        const newSecuencia = new Secuencia<number>(n);
         setSequence(newSecuencia);
         setQuery((prev) => ({
             ...prev,

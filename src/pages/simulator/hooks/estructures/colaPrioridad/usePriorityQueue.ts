@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
 import { ColaDePrioridad } from "../../../../../shared/utils/structures/ColaPrioridad";
 
-export function usePriorityQueue(structure: ColaDePrioridad) {
+export function usePriorityQueue(structure: ColaDePrioridad<number>) {
     // Estado para manejar la cola de prioridad
     const [queue, setQueue] = useState(structure);
 

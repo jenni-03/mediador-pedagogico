@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Cola } from "../../../../../shared/utils/structures/Cola";
 import { BaseQueryOperations } from "../../../../../types";
 
-export function useQueue(structure: Cola) {
+export function useQueue(structure: Cola<number>) {
     // Estado para manejar la cola
     const [queue, setQueue] = useState(structure);
 
