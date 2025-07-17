@@ -45,7 +45,6 @@ export function Simulator<T extends string>({
   const consoleRef = useRef<HTMLDivElement>(null);
 
   const handleCommand = (command: string[], isValid: boolean) => {
-    console.log("Pasó");
     if (!isValid) {
       if (consoleRef.current) {
         requestAnimationFrame(() => {
@@ -74,8 +73,6 @@ export function Simulator<T extends string>({
 
     // Actualiza el código de ejecución dependiendo del comando
     setExecutionCode(operations_code[action as keyof typeof operations_code]);
-
-    console.log("Pasó " + action);
 
     // Informa los casos en los que se debe de mostrar la asignación de memoria
     if (

@@ -3,7 +3,7 @@ import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityArbolBinario() {
   return (
-    <div className="py-6 px-3 sm:px-10 max-w-3xl mx-auto text-white bg-[#101012] min-h-screen">
+    <div className="text-white py-8 px-5 sm:px-10 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="h-7 w-2 rounded bg-red-600"></div>

@@ -5,7 +5,7 @@ import img4 from "../../../../../assets/images/definicion_arbol_4.png";
 
 export function DefinitionArbolBinario() {
   return (
-    <div className="bg-[#101012] text-white min-h-screen py-8 px-3 sm:px-10 max-w-5xl mx-auto">
+    <div className="text-white py-8 px-3 sm:px-10 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="h-7 w-2 rounded bg-red-600"></div>
