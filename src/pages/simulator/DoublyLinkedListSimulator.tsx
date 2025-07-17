@@ -8,7 +8,7 @@ import { LinkedListRender } from "./components/estructures/listas/LinkedListRend
 
 export function DoublyLinkedListSimulator() {
     // Instanciación de la Lista Doble
-    const structure = useRef(new ListaDoble()).current;
+    const structure = useRef(new ListaDoble<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {

@@ -16,7 +16,7 @@ export async function animateInsertFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { newHeadNode: string, prevHeadNode: string | null, lastNode: string },
     listData: {
-        existingNodesData: ListNodeData[],
+        existingNodesData: ListNodeData<number>[],
         existingLinksData: LinkData[],
         showDoubleLinks: boolean,
         showTailIndicator: boolean,
@@ -75,7 +75,7 @@ export async function animateInsertFirst(
         const shiftPromises: Promise<void>[] = [];
 
         // Selección de nodos a desplazar (re-vinculación de datos)
-        const remainingNodes = svg.selectAll<SVGGElement, ListNodeData>("g.node")
+        const remainingNodes = svg.selectAll<SVGGElement, ListNodeData<number>>("g.node")
             .data(existingNodesData, d => d.id);
 
         // Promesa para desplazamiento de nodos existentes a su posición final
@@ -251,7 +251,7 @@ export async function animateInsertLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { newLastNode: string, prevLastNode: string | null, headNode: string },
     listData: {
-        existingNodesData: ListNodeData[],
+        existingNodesData: ListNodeData<number>[],
         showDoubleLinks: boolean,
         showTailIndicator: boolean,
         showNextCircularLink: boolean,
@@ -448,7 +448,7 @@ export async function animateInsertAtPosition(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { newNode: string, prevNode: string, nextNode: string },
     listData: {
-        existingNodesData: ListNodeData[],
+        existingNodesData: ListNodeData<number>[],
         existingLinksData: LinkData[],
         showDoubleLinks: boolean,
         showTailIndicator: boolean,
@@ -553,7 +553,7 @@ export async function animateInsertAtPosition(
     }
 
     // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
-    const remainingNodes = svg.selectAll<SVGGElement, ListNodeData>("g.node")
+    const remainingNodes = svg.selectAll<SVGGElement, ListNodeData<number>>("g.node")
         .data(nodesToMove, d => d.id);
 
     // Promesa para desplazamiento de nodos existentes a su posición final
@@ -773,7 +773,7 @@ export async function animateRemoveFirst(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { prevHeadNode: string, newHeadNode: string | null, lastNode: string | null },
     listData: {
-        remainingNodesData: ListNodeData[],
+        remainingNodesData: ListNodeData<number>[],
         remainingLinksData: LinkData[],
         showDoubleLinks: boolean,
         showTailIndicator: boolean,
@@ -938,7 +938,7 @@ export async function animateRemoveFirst(
         const shiftPromises: Promise<void>[] = [];
 
         // Selección de nodos restantes (re-vinculación de datos)
-        const remainingNodes = svg.selectAll<SVGGElement, ListNodeData>("g.node")
+        const remainingNodes = svg.selectAll<SVGGElement, ListNodeData<number>>("g.node")
             .data(remainingNodesData, d => d.id);
 
         // Promesa para desplazamiento de nodos restantes a su posición final
@@ -1051,7 +1051,7 @@ export async function animateRemoveLast(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { prevLastNode: string, newLastNode: string | null, headNode: string | null },
     listData: {
-        remainingNodesData: ListNodeData[],
+        remainingNodesData: ListNodeData<number>[],
         showDoubleLinks: boolean,
         showTailIndicator: boolean,
         showNextCircularLink: boolean;
@@ -1276,7 +1276,7 @@ export async function animateRemoveAtPosition(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     nodesInvolved: { nodeToRemove: string, prevNode: string, nextNode: string },
     listData: {
-        existingNodesData: ListNodeData[],
+        existingNodesData: ListNodeData<number>[],
         existingLinksData: LinkData[],
         showDoubleLinks: boolean,
         showTailIndicator: boolean,
@@ -1506,7 +1506,7 @@ export async function animateRemoveAtPosition(
     const shiftPromises: Promise<void>[] = [];
 
     // Selección de nodos que requieren posicionamiento (re-vinculación de datos)
-    const remainingNodes = svg.selectAll<SVGGElement, ListNodeData>("g.node")
+    const remainingNodes = svg.selectAll<SVGGElement, ListNodeData<number>>("g.node")
         .data(nodesToMove, d => d.id);
 
     // Promesa para desplazamiento de nodos restantes a su posición final
@@ -1577,7 +1577,7 @@ export async function animateRemoveAtPosition(
 export async function animateSearchElement(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     elementToSearch: number,
-    existingNodesData: ListNodeData[],
+    existingNodesData: ListNodeData<number>[],
     resetQueryValues: () => void,
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {

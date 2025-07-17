@@ -11,7 +11,7 @@ export function LinkedListRender({
     resetQueryValues,
     listType,
 }: {
-    linkedList: ListNodeData[];
+    linkedList: ListNodeData<number>[];
     query: BaseQueryOperations<"lista_enlazada">;
     resetQueryValues: () => void;
     listType: keyof typeof LIST_RENDER_CONFIGS;

@@ -8,7 +8,7 @@ import { ListaCircularDoble } from "../../shared/utils/structures/ListaCircularD
 
 export function CircularDoublyLinkedListSimulator() {
     // Instanciación de la Lista Doble
-    const structure = useRef(new ListaCircularDoble()).current;
+    const structure = useRef(new ListaCircularDoble<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {

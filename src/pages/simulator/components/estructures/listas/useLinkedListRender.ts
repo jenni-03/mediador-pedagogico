@@ -8,7 +8,7 @@ import { animateClearList, drawArrowIndicator, drawListLinks, drawListNodes } fr
 import { animateInsertAtPosition, animateInsertFirst, animateInsertLast, animateRemoveFirst, animateRemoveLast, animateRemoveAtPosition, animateSearchElement } from "../../../../../shared/utils/draw/LinkedListDrawActions";
 
 export function useLinkedListRender(
-    listNodes: ListNodeData[],
+    listNodes: ListNodeData<number>[],
     query: BaseQueryOperations<"lista_enlazada">,
     resetQueryValues: () => void,
     listType: keyof typeof LIST_RENDER_CONFIGS

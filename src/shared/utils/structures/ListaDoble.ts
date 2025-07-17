@@ -1,17 +1,17 @@
-import { LinkedListInterface } from "../../../types";
+import { EqualityFn, LinkedListInterface } from "../../../types";
 import { linkedListToArray } from "../listUtils";
 import { NodoD } from "../nodes/NodoD";
 
 /**
  * Clase que representa el funcionamiento de una lista doble.
  */
-export class ListaDoble implements LinkedListInterface {
+export class ListaDoble<T> implements LinkedListInterface<T> {
 
     // Nodo cabeza de la lista.
-    private cabeza: NodoD | null;
+    private cabeza: NodoD<T> | null;
 
     // Nodo cola de la lista.
-    private cola: NodoD | null;
+    private cola: NodoD<T> | null;
 
     // Tamaño de la lista.
     private tamanio: number;
@@ -22,7 +22,9 @@ export class ListaDoble implements LinkedListInterface {
     /**
      * Constructor de la clase ListaDoble.
      */
-    constructor() {
+    constructor(
+        private equals: EqualityFn<T> = (a, b) => a === b
+    ) {
         this.cabeza = null;
         this.cola = null;
         this.tamanio = 0;
@@ -33,7 +35,7 @@ export class ListaDoble implements LinkedListInterface {
      * @param valor Elemento a insertar.
      * @returns Nodo inicial insertado.
      */
-    insertarAlInicio(valor: number): NodoD {
+    public insertarAlInicio(valor: T): NodoD<T> {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoD(valor);
@@ -43,7 +45,7 @@ export class ListaDoble implements LinkedListInterface {
             this.cola = nuevoNodo;
         } else {
             nuevoNodo.setSiguiente(this.cabeza);
-            this.cabeza?.setAnterior(nuevoNodo);
+            this.cabeza!.setAnterior(nuevoNodo);
             this.cabeza = nuevoNodo;
         }
 
@@ -56,7 +58,7 @@ export class ListaDoble implements LinkedListInterface {
      * @param valor Elemento a insertar.
      * @returns Nodo final insertado.
      */
-    insertarAlFinal(valor: number): NodoD {
+    public insertarAlFinal(valor: T): NodoD<T> {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoD(valor);
@@ -65,7 +67,7 @@ export class ListaDoble implements LinkedListInterface {
             this.cabeza = nuevoNodo;
             this.cola = nuevoNodo;
         } else {
-            this.cola?.setSiguiente(nuevoNodo);
+            this.cola!.setSiguiente(nuevoNodo);
             nuevoNodo.setAnterior(this.cola);
             this.cola = nuevoNodo;
         }
@@ -80,7 +82,7 @@ export class ListaDoble implements LinkedListInterface {
      * @param posicion Posición en la que se desea insertar el elemento.
      * @return Nodo insertado en la posición especificada.
      */
-    insertarEnPosicion(valor: number, posicion: number): NodoD {
+    public insertarEnPosicion(valor: T, posicion: number): NodoD<T> {
         if (posicion < 0 || posicion > this.tamanio) {
             throw new Error(`No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Doble.`);
         }
@@ -103,7 +105,7 @@ export class ListaDoble implements LinkedListInterface {
         nuevoNodo.setAnterior(nodoAnt);
 
         // Reorganizar los punteros
-        nodoAnt.getSiguiente()?.setAnterior(nuevoNodo);
+        nodoAnt.getSiguiente()!.setAnterior(nuevoNodo);
         nodoAnt.setSiguiente(nuevoNodo);
 
         this.tamanio++;
@@ -115,11 +117,11 @@ export class ListaDoble implements LinkedListInterface {
      * Método que elimina el primer nodo de la lista doble.
      * @returns Nodo inicial eliminado. 
      */
-    eliminarAlInicio(): NodoD {
+    public eliminarAlInicio(): NodoD<T> {
         if (this.esVacia()) throw new Error("No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).");
 
-        const nodoEliminado = this.cabeza;
-        this.cabeza = this.cabeza?.getSiguiente() || null;
+        const nodoEliminado = this.cabeza!;
+        this.cabeza = this.cabeza!.getSiguiente();
 
         if (this.cabeza) {
             this.cabeza.setAnterior(null);
@@ -128,18 +130,18 @@ export class ListaDoble implements LinkedListInterface {
         }
 
         this.tamanio--;
-        return nodoEliminado!;
+        return nodoEliminado;
     }
 
     /**
      * Método que elimina el último nodo de la lista doble.
      * @returns Nodo final eliminado.
      */
-    eliminarAlFinal(): NodoD {
+    public eliminarAlFinal(): NodoD<T> {
         if (this.esVacia()) throw new Error("No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0).");
 
-        const nodoEliminado = this.cola;
-        this.cola = nodoEliminado?.getAnterior() || null;
+        const nodoEliminado = this.cola!;
+        this.cola = nodoEliminado.getAnterior();
 
         if (this.cola) {
             this.cola.setSiguiente(null);
@@ -148,7 +150,7 @@ export class ListaDoble implements LinkedListInterface {
         }
 
         this.tamanio--;
-        return nodoEliminado!;
+        return nodoEliminado;
     }
 
     /**
@@ -156,7 +158,7 @@ export class ListaDoble implements LinkedListInterface {
      * @param posicion Posición del nodo a eliminar.
      * @returns Nodo eliminado.
      */
-    eliminarEnPosicion(posicion: number): NodoD {
+    public eliminarEnPosicion(posicion: number): NodoD<T> {
         if (this.esVacia()) throw new Error("No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).");
 
         if (posicion < 0 || posicion >= this.tamanio) {
@@ -173,8 +175,8 @@ export class ListaDoble implements LinkedListInterface {
 
         const nodoEliminado = this.getPos(posicion)!;
 
-        nodoEliminado.getAnterior()?.setSiguiente(nodoEliminado.getSiguiente());
-        nodoEliminado.getSiguiente()?.setAnterior(nodoEliminado.getAnterior());
+        nodoEliminado.getAnterior()!.setSiguiente(nodoEliminado.getSiguiente());
+        nodoEliminado.getSiguiente()!.setAnterior(nodoEliminado.getAnterior());
 
         this.tamanio--;
         return nodoEliminado;
@@ -185,11 +187,11 @@ export class ListaDoble implements LinkedListInterface {
      * @param valor Valor a buscar.
      * @returns True si se encuentra el nodo, false en caso contrario.
      */
-    buscar(valor: number): boolean {
+    public buscar(valor: T): boolean {
         let nodoActual = this.cabeza;
 
         while (nodoActual) {
-            if (nodoActual.getValor() === valor) {
+            if (this.equals(nodoActual.getValor(), valor)) {
                 return true;
             }
             nodoActual = nodoActual.getSiguiente();
@@ -202,7 +204,7 @@ export class ListaDoble implements LinkedListInterface {
      * Método que verifica si la lista doble está vacía.
      * @returns True si se encuentra vacía, false en caso contrario.
      */
-    esVacia(): boolean {
+    public esVacia(): boolean {
         return this.cabeza === null;
     }
 
@@ -227,7 +229,7 @@ export class ListaDoble implements LinkedListInterface {
         }
 
         let nodoActual = this.cabeza;
-        let ultimoNodoClonado: NodoD | null = null;
+        let ultimoNodoClonado: NodoD<T> | null = null;
 
         while (nodoActual !== null) {
             const nuevoNodo = new NodoD(
@@ -267,7 +269,7 @@ export class ListaDoble implements LinkedListInterface {
      * Método que obtiene el tamaño de la lista doble.
      * @returns Número de elementos dentro de la lista.
      */
-    getTamanio(): number {
+    public getTamanio(): number {
         return this.tamanio;
     }
 

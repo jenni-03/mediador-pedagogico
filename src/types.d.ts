@@ -1,14 +1,14 @@
 import { TYPE_FILTER } from "./shared/constants/consts";
 import { NodoS } from "./shared/utils/nodes/NodoS";
 
-export interface LinkedListInterface {
-  insertarAlInicio(valor: number): NodoS | NodoD;
-  insertarAlFinal(valor: number): NodoS | NodoD;
-  insertarEnPosicion(valor: number, posicion: number): NodoS | NodoD;
-  eliminarAlInicio(): NodoS | NodoD;
-  eliminarAlFinal(): NodoS | NodoD;
-  eliminarEnPosicion(posicion: number): NodoS | NodoD;
-  buscar(valor: number): boolean;
+export interface LinkedListInterface<T> {
+  insertarAlInicio(valor: T): NodoS<T> | NodoD<T>;
+  insertarAlFinal(valor: T): NodoS<T> | NodoD<T>;
+  insertarEnPosicion(valor: T, posicion: number): NodoS<T> | NodoD<T>;
+  eliminarAlInicio(): NodoS<T> | NodoD<T>;
+  eliminarAlFinal(): NodoS<T> | NodoD<T>;
+  eliminarEnPosicion(posicion: number): NodoS<T> | NodoD<T>;
+  buscar(valor: T): boolean;
   esVacia(): boolean;
   vaciar(): void;
   clonar(): this;
@@ -206,9 +206,9 @@ export type CodeAnalysisProps = {
   complexity: string;
 };
 
-export type ListNodeData = {
+export type ListNodeData<T> = {
   id: string;
-  value: number;
+  value: T;
   next: string | null;
   prev?: string | null;
   memoryAddress: string;
@@ -244,3 +244,5 @@ export type IndicatorPositioningConfig = {
     dims: { elementWidth: number; elementHeight: number }
   ) => string;
 };
+
+export type EqualityFn<T> = (a: T, b: T) => boolean;

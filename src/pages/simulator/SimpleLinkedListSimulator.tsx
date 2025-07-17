@@ -8,7 +8,7 @@ import { LinkedListRender } from "./components/estructures/listas/LinkedListRend
 
 export function SimpleLinkedListSimulator() {
     // Instanciación de la Lista Simple
-    const structure = useRef(new ListaSimple()).current;
+    const structure = useRef(new ListaSimple<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {
