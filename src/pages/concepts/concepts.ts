@@ -4,7 +4,8 @@ export { OperationColaPrioridad } from "./components/structures/cola_de_priorida
 export { OperationListaSimple } from "./components/structures/lista_simple/OperationListaSimple";
 export { OperationArbolBinario } from "./components/structures/arbol_binario/OperationArbolBinario";
 export { OperationPila } from "./components/structures/pila/OperationPila";
-export { OperationTablaHash} from "./components/structures/tabla_hash/OperationTablaHash";
+export { OperationTablaHash } from "./components/structures/tabla_hash/OperationTablaHash";
+export { OperationListaDoble } from "./components/structures/lista_doble/OperationListaDoble";
 
 export { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
 export { ComplexityCola } from "./components/structures/cola/ComplexityCola";
@@ -13,7 +14,7 @@ export { ComplexityListaSimple } from "./components/structures/lista_simple/Comp
 export { ComplexityArbolBinario } from "./components/structures/arbol_binario/ComplexityArbolBinario";
 export { ComplexityPila } from "./components/structures/pila/ComplexityPila";
 export { ComplexityTablaHash } from "./components/structures/tabla_hash/ComplexityTablaHash";
-
+export { ComplexityListaDoble } from "./components/structures/lista_doble/ComplexityListaDoble";
 
 export { DefinitionSecuencia } from "./components/structures/secuencia/DefinitionSecuencia";
 export { DefinitionCola } from "./components/structures/cola/DefinitionCola";
@@ -22,3 +23,4 @@ export { DefinitionListaSimple } from "./components/structures/lista_simple/Defi
 export { DefinitionArbolBinario } from "./components/structures/arbol_binario/DefinitionArbolBinario";
 export { DefinitionPila } from "./components/structures/pila/DefinitionPila";
 export { DefinitionTablaHash } from "./components/structures/tabla_hash/DefinitionTablaHash";
+export { DefinitionListaDoble } from "./components/structures/lista_doble/DefinitionListaDoble";
