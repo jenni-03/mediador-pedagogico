@@ -146,10 +146,10 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
             this.cabeza = null;
             this.cola = null;
         } else {
-            const nodoAnt = this.getPos(this.tamanio - 2)!;
             nodoEliminado = this.cola!;
+            const nodoAnt = this.getPos(this.tamanio - 2)!;
             nodoAnt.setSiguiente(this.cabeza);
-            this.cola = nodoEliminado;
+            this.cola = nodoAnt;
         }
 
         this.tamanio--;

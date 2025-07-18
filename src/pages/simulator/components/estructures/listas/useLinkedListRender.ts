@@ -61,20 +61,6 @@ export function useLinkedListRender(
         return links;
     }, [listNodes, config.showCircularLinks]);
 
-    console.log("Tipo de lista: ", listType);
-    console.log("Configuración");
-    console.log(config);
-    console.log("Nodos de la lista");
-    console.log(listNodes);
-    console.log("Data de los enlaces de la lista");
-    console.log(linksData);
-    console.log("Query actual");
-    console.log(query);
-    console.log("Nodos previos de la lista");
-    console.log(prevNodes);
-    console.log("Posiciones de los nodos");
-    console.log(nodePositions);
-
     // Renderizado base de la lista enlazada
     useEffect(() => {
         // Verificamos que el array de nodos no sea nulo y que la referencia al SVG se haya establecido

@@ -116,6 +116,24 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         El puntero next del último nodo apunta de vuelta al primer nodo y el puntero prev del primer nodo apunta de vuelta al último nodo.`,
         },
     ],
+    lista_circular_simplemente_enlazada: [
+        {
+            type: "info",
+            description: `Imagina que te encuentras en un restaurante con una cinta transportadora de sushi. Los platos de sushi van pasando frente a ti en una sola dirección. 
+                        Cada plato sigue al anterior en un desfile.`,
+        },
+        {
+            type: "info",
+            description: `La cinta forma un bucle cerrado; después de que el último plato pasa por la cocina, vuelve a aparecer al principio del recorrido. 
+                        No hay un final definitivo, la procesión de platos es continua. Sin embargo, solo puedes ver lo que viene; no puedes saber qué plato acaba de pasar sin dar toda la vuelta.`
+        },
+        {
+            type: "info",
+            description: `Formalmente, una lista circular simplemente enlazada, es una variación de la lista simple que crea un bucle unidireccional. Al igual que en una lista simple enlazada,
+                        cada nodo contiene un valor y un puntero al siguiente nodo. La característica "circular" proviene de cómo se maneja el final de la lista. En lugar de que el puntero siguiente del último nodo
+                        apunte a null, este apunta de regreso al primer nodo.`,
+        },
+    ],
 };
 
 export const tourStepsCommands: Record<string, TourStep[]> = {
@@ -374,6 +392,41 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
             type: "element",
             description:
                 "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 80, correspondiente al único elemento en esta.",
+        },
+    ],
+    lista_circular_simplemente_enlazada: [
+        {
+            id: "console",
+            description:
+                "En la consola puedes realizar todas las operaciones de una lista circular simple, tales como, inserción y eliminación de elementos desde diferentes posiciones, y consultar si un elemento se encuentra en la lista.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            text: "insertLast(5);",
+            type: "write",
+        },
+        {
+            id: "console",
+            description:
+                "Este comando sirve para insertar un elemento al final de la lista, en este caso, el número 5.",
+            type: "element",
+        },
+        {
+            id: "inputConsola",
+            type: "enter",
+        },
+        {
+            id: "main-canvas",
+            type: "element",
+            description:
+                "Esta es la lista con su elemento recién insertado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+        },
+        {
+            id: "info-cards",
+            type: "element",
+            description:
+                "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 5, correspondiente al único elemento en esta.",
         },
     ],
 };
