@@ -6,19 +6,19 @@ import { priorityQueueAddressGenerator } from "../memoryAllocator";
 /**
  * Clase que representa un Nodo de Prioridad.
  */
-export class NodoPrioridad {
+export class NodoPrioridad<T> {
 
     // ID único del nodo.
     private id: string;
 
     // Información almacenada en el nodo.
-    private valor: number;
+    private valor: T;
 
     // Prioridad del nodo
     private prioridad: number;
 
     // Información del nodo siguiente.
-    private siguiente: NodoPrioridad | null;
+    private siguiente: NodoPrioridad<T> | null;
 
     // Dirección de memoria del nodo.
     private direccionMemoria: string;
@@ -30,7 +30,7 @@ export class NodoPrioridad {
      * @param id Identificador único del nodo (opcional).
      * @param direccionMemoria Dirección de memoria del nodo (opcional).
      */
-    constructor(valor: number, prioridad: number, id?: string, direccionMemoria?: string) {
+    constructor(valor: T, prioridad: number, id?: string, direccionMemoria?: string) {
         this.valor = valor;
         this.id = id ?? `node-${uuidv4()}`;
         this.prioridad = prioridad;
@@ -42,7 +42,7 @@ export class NodoPrioridad {
      * Método que obtiene la información almacenada en el nodo.
      * @returns Valor almacenado en el nodo.
      */
-    public getValor(): number {
+    public getValor(): T {
         return this.valor;
     }
 
@@ -50,7 +50,7 @@ export class NodoPrioridad {
      * Método que obtiene la referencia al nodo siguiente.
      * @returns Nodo siguiente o null según corresponda.
      */
-    public getSiguiente(): NodoPrioridad | null {
+    public getSiguiente(): NodoPrioridad<T> | null {
         return this.siguiente;
     }
 
@@ -82,7 +82,7 @@ export class NodoPrioridad {
      * Método que establece el valor del nodo.
      * @param valor Valor a establecer.
      */
-    public setValor(valor: number): void {
+    public setValor(valor: T): void {
         this.valor = valor;
     }
 
@@ -90,7 +90,7 @@ export class NodoPrioridad {
      * Método que establece la referencia al nodo siguiente.
      * @param nodo Nodo a establecer como siguiente.
      */
-    public setSiguiente(nodo: NodoPrioridad | null): void {
+    public setSiguiente(nodo: NodoPrioridad<T> | null): void {
         this.siguiente = nodo;
     }
 

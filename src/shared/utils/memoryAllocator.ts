@@ -82,6 +82,9 @@ export const dynamicAddressGenerator = new AddressGenerator(1000, 16, 4, 6);
 // Instancia de AddressGenerator para nodos dobles
 export const doubleNodeAddressGenerator = new AddressGenerator(1000, 24, 4, 6);
 
+// Instancia de AddressGenerator para nodos binarios
+export const binaryNodeAddressGenerator = new AddressGenerator(1000, 24, 4, 6);
+
 // Instancia de AddressGenerator para cola de prioridad
 export const priorityQueueAddressGenerator = new AddressGenerator(1000, 20, 4, 6);
 
