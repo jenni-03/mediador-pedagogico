@@ -246,3 +246,10 @@ export type IndicatorPositioningConfig = {
 };
 
 export type EqualityFn<T> = (a: T, b: T) => boolean;
+
+export type HierarchyNodeData<T> = {
+  id: string;
+  value: T,
+  memoryAddress: string;
+  children?: HierarchyNodeData<T>[];
+}
