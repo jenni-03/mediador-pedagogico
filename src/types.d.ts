@@ -157,9 +157,9 @@ export type BaseQueryOperations<T extends string> =
     toInsertRight: string | null;
     toDelete: [string, string | null] | [];
     toSearch: number | null;
-    toGetPreorder: string[] | [];
-    toGetInorder: string[] | [];
-    toGetPostorder: string[] | [];
+    toGetPreOrder: string[] | [];
+    toGetInOrder: string[] | [];
+    toGetPostOrder: string[] | [];
     toGetLevelOrder: string[] | [];
     toClear: boolean;
   }
@@ -204,7 +204,18 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     search: (element: number) => void;
     clean: () => void;
   } :
-  Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+  T extends "arbol_binario" ? {
+    insertLeft: (parent: number, value: number) => void;
+    insertRight: (parent: number, value: number) => void;
+    delete: (nodeId: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;

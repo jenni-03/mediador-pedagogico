@@ -3,7 +3,7 @@ import {
     SVG_STYLE_VALUES,
 } from "../../../../../shared/constants/consts";
 import { BaseQueryOperations, ListNodeData } from "../../../../../types";
-import { useLinkedListRender } from "./useLinkedListRender";
+import { useLinkedListRender } from "../../../hooks/estructures/listas/useLinkedListRender";
 
 export function LinkedListRender({
     linkedList,

@@ -15,9 +15,9 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
         toInsertRight: null,
         toDelete: [],
         toSearch: null,
-        toGetPreorder: [],
-        toGetInorder: [],
-        toGetPostorder: [],
+        toGetPreOrder: [],
+        toGetInOrder: [],
+        toGetPostOrder: [],
         toGetLevelOrder: [],
         toClear: false
     });
@@ -120,7 +120,7 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
     };
 
     // Operación para obtener el recorrido en preorden
-    const getPreorder = () => {
+    const getPreOrder = () => {
         // Obtener el recorrido en preorden del árbol
         const preorder = tree.preOrden();
 
@@ -132,7 +132,7 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
     }
 
     // Operación para obtener el recorrido en inorden
-    const getInorder = () => {
+    const getInOrder = () => {
         // Obtener el recorrido en inorden del árbol
         const inorder = tree.inOrden();
 
@@ -144,7 +144,7 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
     }
 
     // Operación para obtener el recorrido en postorden
-    const getPostorder = () => {
+    const getPostOrder = () => {
         // Obtener el recorrido en postorden del árbol
         const postorder = tree.postOrden();
 
@@ -192,9 +192,9 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
             toInsertRight: null,
             toDelete: [],
             toSearch: null,
-            toGetPreorder: [],
-            toGetInorder: [],
-            toGetPostorder: [],
+            toGetPreOrder: [],
+            toGetInOrder: [],
+            toGetPostOrder: [],
             toGetLevelOrder: [],
             toClear: false
         })
@@ -209,9 +209,9 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
             insertRightChild,
             deleteNode,
             searchNode,
-            getPreorder,
-            getInorder,
-            getPostorder,
+            getPreOrder,
+            getInOrder,
+            getPostOrder,
             getLevelOrder,
             clearTree,
             resetQueryValues
