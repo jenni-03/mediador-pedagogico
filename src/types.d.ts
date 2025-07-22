@@ -152,6 +152,17 @@ export type BaseQueryOperations<T extends string> =
     toSearch: number | null;
     toClear: boolean;
   }
+  : T extends "arbol_binario" ? {
+    toInsertLeft: string | null;
+    toInsertRight: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreorder: string[] | [];
+    toGetInorder: string[] | [];
+    toGetPostorder: string[] | [];
+    toGetLevelOrder: string[] | [];
+    toClear: boolean;
+  }
   : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
