@@ -23,7 +23,7 @@ export type ListRenderConfig = {
   showCircularLinks: boolean;
   showNextCircularLink?: boolean;
   showPrevCircularLink?: boolean;
-}
+};
 
 export type CardListProps = {
   data: CardData[];
@@ -271,7 +271,7 @@ export type EqualityFn<T> = (a: T, b: T) => boolean;
 
 export type HierarchyNodeData<T> = {
   id: string;
-  value: T,
+  value: T;
   memoryAddress: string;
   children?: HierarchyNodeData<T>[];
 }

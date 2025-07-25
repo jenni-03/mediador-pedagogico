@@ -1,7 +1,7 @@
-import { complexityListaSimple } from "../../../../../shared/constants/complexityStructures/complexityListaSimple";
+import { complexityListaDoble } from "../../../../../shared/constants/complexityStructures/complexityListaDoble";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
-export function ComplexityListaSimple() {
+export function ComplexityListaDoble() {
   return (
     <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen">
       <div className="flex items-center gap-3 mb-2">
@@ -11,7 +11,7 @@ export function ComplexityListaSimple() {
         </h1>
       </div>
       <span className="text-base text-red-400 ml-3 font-medium block mb-2">
-        Lista Simple
+        Lista Doblemente Enlazada
       </span>
       <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
@@ -50,7 +50,7 @@ export function ComplexityListaSimple() {
       </section>
 
       <section className="space-y-8">
-        {complexityListaSimple.map((method, index) => (
+        {complexityListaDoble.map((method, index) => (
           <div key={index} className="border-b border-gray-700 pb-4">
             <h3 className="text-xl font-semibold text-red-400 mb-3">
               {method.title}
@@ -68,14 +68,10 @@ export function ComplexityListaSimple() {
         <h3 className="text-xl font-bold text-white mb-3">Conclusión</h3>
         <p className="text-sm text-gray-300 leading-6">
           En el análisis anterior se pudo observar que la estructura{" "}
-          <strong>Lista Simple</strong> opta en el mejor de los casos a ser{" "}
-          <span className="text-green-400">constante</span> y en el peor de los
-          casos a ser <span className="text-yellow-400">lineal</span>. Teniendo
-          en cuenta que su comportamiento lineal depende de{" "}
-          <code className="bg-gray-800 px-1 rounded">this.cant</code>, este
-          mismo puede considerarse como{" "}
-          <code className="bg-gray-800 px-1 rounded">n</code> para evaluar el
-          coste operacional de cada algoritmo.
+          <strong>Lista Doble</strong> comparte similitudes en T(n) con la lista
+          simple, variando unicamente en metodos tales con{" "}
+          <span className="text-red-400">insertar elementos</span>
+          , ordenarlo desde la cabeza donde se debe validar nodos.
         </p>
       </section>
     </div>

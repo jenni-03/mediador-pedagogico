@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
-import { ComplexityArbolBinario, ComplexityCola, ComplexityColaPrioridad, ComplexityListaSimple, ComplexityPila, ComplexitySecuencia, ComplexityTablaHash } from "./concepts";
+import { ComplexityArbolBinario, ComplexityCola, ComplexityColaPrioridad, ComplexityListaSimple, ComplexityPila, ComplexitySecuencia, ComplexityTablaHash, ComplexityListaDoble } from "./concepts";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -11,6 +11,7 @@ const componentMap: Record<string, React.FC> = {
     "Árbol Binario" : ComplexityArbolBinario,
     "Pila": ComplexityPila,
     "tabla_hash": ComplexityTablaHash,
+    "Lista Doblemente Enlazada": ComplexityListaDoble, 
 };
 
 export function Complexity() {

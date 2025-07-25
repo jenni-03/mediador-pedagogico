@@ -46,68 +46,65 @@ export function DataStructureInfo({
                                               ? structurePrueba.getAltura()
                                               : "N/A";
 
-                            return (
-                                <InfoModal
-                                    key={index}
-                                    title={item.key}
-                                    description={item.description}
-                                >
-                                    <div className="flex items-center justify-between bg-gradient-to-br from-[#2B2B2F] to-[#1F1F22] hover:from-[#35353A] hover:to-[#2A2A2E] transition-all p-4 rounded-2xl shadow-md border border-[#3A3A3A] cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-2xl">
-                                                {item.key === "Tamaño"
-                                                    ? "📏"
-                                                    : item.key === "Capacidad"
-                                                      ? "📦"
-                                                      : "📘"}
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-[#A0A0A0] uppercase tracking-widest">
-                                                    {item.key}
-                                                </p>
-                                                <h3 className="text-lg font-bold text-[#E0E0E0]">
-                                                    {value}
-                                                </h3>
-                                            </div>
-                                        </div>
-                                        <span className=" ml-4 text-[#D72638] text-sm font-semibold">
-                                            Ver más
-                                        </span>
-                                    </div>
-                                </InfoModal>
-                            );
-                        }
-                    )}
-                </div>
+              return (
+                <InfoModal
+                  key={index}
+                  title={item.key}
+                  description={item.description}
+                >
+                  <div className="flex items-center justify-between bg-gradient-to-br from-[#2B2B2F] to-[#1F1F22] hover:from-[#35353A] hover:to-[#2A2A2E] transition-all p-3 rounded-2xl shadow-md border border-[#3A3A3A] cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="text-xl">
+                        {item.key === "Tamaño"
+                          ? "📏"
+                          : item.key === "Capacidad"
+                            ? "📦"
+                            : "📘"}
+                      </div>
+                      <div>
+                        <p className="text-xs text-[#A0A0A0] uppercase tracking-widest">
+                          {item.key}
+                        </p>
+                        <h3 className="text-lg font-bold text-[#E0E0E0]">
+                          {value}
+                        </h3>
+                      </div>
+                    </div>
+                    {/* <span className=" ml-4 text-[#D72638] text-sm font-semibold">
+                      Ver más
+                    </span> */}
+                  </div>
+                </InfoModal>
+              );
+            }
+          )}
+        </div>
 
-                {/* Visualización de memoria */}
-                <div className="flex-[2]" data-tour="memory-visualization">
-                    {memoryAddress && (
-                        <MemoryAllocationVisualizer
-                            n={
-                                structure === "secuencia" ||
-                                structure === "tabla_hash"
-                                    ? structurePrueba.vector.length
-                                    : structurePrueba.getTamanio()
-                            }
-                            direccionBase={1000}
-                            tamanioNodo={
-                                structure === "tabla_hash"
-                                    ? 4
-                                    : structurePrueba.tamanioNodo
-                            }
-                            direcciones={
-                                structure === "secuencia"
-                                    ? structurePrueba.vectorMemoria
-                                    : structure === "tabla_hash"
-                                      ? structurePrueba.getDireccionesBuckets()
-                                      : structurePrueba.getArrayDeNodos()
-                            }
-                            structure={structure}
-                        />
-                    )}
-                </div>
-            </div>
+        {/* Visualización de memoria */}
+        <div className="flex-[2]" data-tour="memory-visualization">
+          {memoryAddress && (
+            <MemoryAllocationVisualizer
+              n={
+                structure === "secuencia" || structure === "tabla_hash"
+                  ? structurePrueba.vector.length
+                  : structurePrueba.getTamanio()
+              }
+              direccionBase={1000}
+              tamanioNodo={
+                structure === "tabla_hash" ? 4 : structurePrueba.getTamanioNodo()
+              }
+              direcciones={
+                structure === "secuencia"
+                  ? structurePrueba.vectorMemoria
+                  : structure === "tabla_hash"
+                    ? structurePrueba.getDireccionesBuckets()
+                    : structurePrueba.getArrayDeNodos()
+              }
+              structure={structure}
+            />
+          )}
+        </div>
+      </div>
 
             {/* Contenido visual (estructura de datos) */}
             <div
