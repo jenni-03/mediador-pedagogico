@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
-import { DefinitionArbolBinario, DefinitionCola, DefinitionColaPrioridad, DefinitionListaDoble, DefinitionListaSimple, DefinitionPila, DefinitionSecuencia, DefinitionTablaHash } from "./concepts";
+import { DefinitionArbolBinario, DefinitionCola, DefinitionColaPrioridad, DefinitionListaCDoble, DefinitionListaCSimple, DefinitionListaDoble, DefinitionListaSimple, DefinitionPila, DefinitionSecuencia, DefinitionTablaHash } from "./concepts";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -12,6 +12,8 @@ const componentMap: Record<string, React.FC> = {
     "Pila": DefinitionPila,
     "tabla_hash" : DefinitionTablaHash,
     "Lista Doblemente Enlazada": DefinitionListaDoble, 
+    "Lista Circular Simplemente Enlazada": DefinitionListaCSimple,
+    "Lista Circular Doblemente Enlazada": DefinitionListaCDoble
 };
 
 export function Definition() {

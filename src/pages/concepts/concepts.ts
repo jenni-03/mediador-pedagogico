@@ -6,6 +6,8 @@ export { OperationArbolBinario } from "./components/structures/arbol_binario/Ope
 export { OperationPila } from "./components/structures/pila/OperationPila";
 export { OperationTablaHash } from "./components/structures/tabla_hash/OperationTablaHash";
 export { OperationListaDoble } from "./components/structures/lista_doble/OperationListaDoble";
+export { OperationListaCSimple } from "./components/structures/lista_circular_simple/OperationListaCSimple";
+export { OperationListaCDoble } from "./components/structures/lista_circular_doble/OperationListaCDoble";
 
 export { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
 export { ComplexityCola } from "./components/structures/cola/ComplexityCola";
@@ -15,6 +17,8 @@ export { ComplexityArbolBinario } from "./components/structures/arbol_binario/Co
 export { ComplexityPila } from "./components/structures/pila/ComplexityPila";
 export { ComplexityTablaHash } from "./components/structures/tabla_hash/ComplexityTablaHash";
 export { ComplexityListaDoble } from "./components/structures/lista_doble/ComplexityListaDoble";
+export { ComplexityListaCSimple } from "./components/structures/lista_circular_simple/ComplexityListaCSimple";
+export { ComplexityListaCDoble } from "./components/structures/lista_circular_doble/ComplexityListaCDoble";
 
 export { DefinitionSecuencia } from "./components/structures/secuencia/DefinitionSecuencia";
 export { DefinitionCola } from "./components/structures/cola/DefinitionCola";
@@ -24,3 +28,5 @@ export { DefinitionArbolBinario } from "./components/structures/arbol_binario/De
 export { DefinitionPila } from "./components/structures/pila/DefinitionPila";
 export { DefinitionTablaHash } from "./components/structures/tabla_hash/DefinitionTablaHash";
 export { DefinitionListaDoble } from "./components/structures/lista_doble/DefinitionListaDoble";
+export { DefinitionListaCSimple } from "./components/structures/lista_circular_simple/DefinitionListaCSimple";
+export { DefinitionListaCDoble } from "./components/structures/lista_circular_doble/DefinitionListaCDoble";
