@@ -275,3 +275,9 @@ export type HierarchyNodeData<T> = {
   memoryAddress: string;
   children?: HierarchyNodeData<T>[];
 }
+
+export type TreeLinkData = {
+  sourceId: string;
+  targetId: string;
+  type: "left" | "right";
+};

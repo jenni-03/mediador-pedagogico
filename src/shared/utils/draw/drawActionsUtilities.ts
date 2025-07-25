@@ -1,6 +1,7 @@
-import { IndicatorPositioningConfig, LinkData, ListNodeData } from "../../../types";
-import { SVG_STYLE_VALUES } from "../../constants/consts";
+import { HierarchyNodeData, IndicatorPositioningConfig, LinkData, ListNodeData, TreeLinkData } from "../../../types";
+import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
+import { HierarchyNode } from "d3";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.  
@@ -78,6 +79,101 @@ export function drawArrowIndicator(
         );
 }
 
+export function drawTreeNodes(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nodes: HierarchyNode<HierarchyNodeData<number>>[],
+    positions: Map<string, { x: number, y: number }>,
+) {
+    // Data join para la creación de los nodos
+    g.selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.node")
+        .data(nodes, d => d.data.id)
+        .join(
+            enter => {
+                // Creación del grupo para cada nodo entrante
+                const gEnter = enter
+                    .append("g")
+                    .attr("class", "node")
+                    .attr("id", (d) => d.data.id)
+                    .attr("transform", (d) => {
+                        const x = d.x!;
+                        const y = d.y!;
+                        positions.set(d.data.id, { x, y });
+                        return `translate(${x}, ${y})`;
+                    });
+
+                // Contenedor del nodo
+                gEnter.append("circle")
+                    .attr("class", "node-container")
+                    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+
+                // Valor del nodo
+                gEnter.append("text")
+                    .attr("class", "node-value")
+                    .attr("dy", "-0.3em")
+                    .attr("text-anchor", "middle")
+                    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+                    .style("font-weight", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_WEIGHT)
+                    .style("font-size", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_SIZE)
+                    .text(d => d.data.value);
+
+                return gEnter;
+            },
+            update => {
+                // Guarda la posición actualizada para cada nodo presente en el DOM
+                update.each((d) => {
+                    positions.set(d.data.id, { x: d.x!, y: d.y! });
+                })
+
+                // Actualizar colores del contenedor en caso de haber cambiado
+                update.select(".node-container")
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+
+                return update;
+            },
+            exit => exit
+        );
+}
+
+export function drawTreeLinks(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    linksData: TreeLinkData[],
+    positions: Map<string, { x: number, y: number }>,
+) {
+    // Data join para la creación de los enlaces entre nodos
+    g.selectAll<SVGGElement, LinkData>("g.link")
+        .data(linksData, d => `link-${d.sourceId}-${d.targetId}`)
+        .join(
+            enter => {
+                // Creación del grupo para cada nuevo enlace
+                const gLink = enter.append("g")
+                    .attr("class", "link")
+                    .attr("id", (d) => `link-${d.sourceId}-${d.targetId}`);
+
+                // Path del enlace
+                gLink.append("path")
+                    .attr("class", `tree-link`)
+                    .attr("fill", "none")
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", 1.5)
+                    .attr("d", d => {
+                        const s = positions.get(d.sourceId)!;
+                        const t = positions.get(d.targetId)!;
+                        const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
+                        return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
+                    });
+
+                return gLink;
+            },
+            update => update,
+            exit => exit
+        )
+}
+
 /**
  * Función encargada de renderizar los nodos de una lista dentro del lienzo.
  * @param svg Selección D3 del elemento SVG donde se va a dibujar.
@@ -87,7 +183,7 @@ export function drawArrowIndicator(
  */
 export function drawListNodes(
     svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    listNodes: ListNodeData[],
+    listNodes: ListNodeData<number>[],
     positions: Map<string, { x: number, y: number }>,
     dims: {
         margin: { left: number; right: number };
@@ -101,7 +197,7 @@ export function drawListNodes(
     const { margin, elementWidth, elementHeight, nodeSpacing, height } = dims;
 
     // Data join para la creación de los nodos
-    svg.selectAll<SVGGElement, ListNodeData>("g.node")
+    svg.selectAll<SVGGElement, ListNodeData<number>>("g.node")
         .data(listNodes, d => d.id)
         .join(
             enter => {
@@ -185,7 +281,7 @@ export function drawListNodes(
 
                 return update;
             },
-            exit => exit
+            exit => exit.remove()
         );
 }
 

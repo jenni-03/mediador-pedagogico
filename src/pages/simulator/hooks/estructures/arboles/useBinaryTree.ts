@@ -127,7 +127,7 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
         // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
-            toGetPreorder: preorder.map(node => node.getId())
+            toGetPreOrder: preorder.map(node => node.getId())
         }));
     }
 
@@ -139,7 +139,7 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
         // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
-            toGetInorder: inorder.map(node => node.getId())
+            toGetInOrder: inorder.map(node => node.getId())
         }));
     }
 
@@ -151,7 +151,7 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
         // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
-            toGetPostorder: postorder.map(node => node.getId())
+            toGetPostOrder: postorder.map(node => node.getId())
         }));
     }
 

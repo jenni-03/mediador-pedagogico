@@ -195,6 +195,7 @@ export class ArbolBinario<T> {
      */
     public vaciar(): void {
         this.setRaiz(null);
+        this.tamanio = 0;
     }
 
     /**

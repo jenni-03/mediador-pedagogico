@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { binaryNodeAddressGenerator } from "../../shared/utils/memoryAllocator";
 import { Simulator } from "./components/templates/Simulator";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
@@ -32,6 +32,9 @@ export function BinaryTreeSimulator() {
         resetQueryValues,
     } = operations;
 
+    // Conversión del árbol a una estructura jerárquica para su renderizado
+    const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
+
     return (
         <Simulator
             structureName={STRUCTURE_NAME.BINARY_TREE}
@@ -51,7 +54,7 @@ export function BinaryTreeSimulator() {
             error={error}
         >
             <BinaryTreeRender
-                tree={tree.convertirEstructuraJerarquica()}
+                tree={hData}
                 query={query}
                 resetQueryValues={resetQueryValues}
             />
