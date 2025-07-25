@@ -54,7 +54,15 @@ export const infoStructures: Record<string, any> = {
       },
     ],
   },
-  lista_circular_simple: {
+  lista_circular_simplemente_enlazada: {
+    info: [
+      {
+        key: "Tamaño",
+        description: "Cantidad actual de elementos almacenados en la lista.",
+      },
+    ],
+  },
+  lista_circular_doblemente_enlazada: {
     info: [
       {
         key: "Tamaño",
