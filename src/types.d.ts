@@ -23,7 +23,7 @@ export type ListRenderConfig = {
   showCircularLinks: boolean;
   showNextCircularLink?: boolean;
   showPrevCircularLink?: boolean;
-}
+};
 
 export type CardListProps = {
   data: CardData[];
@@ -108,114 +108,124 @@ export interface CardData {
   toPracticar: string;
 }
 
-export type BaseQueryOperations<T extends string> =
-  T extends "secuencia" ? {
-    create: number | null;
-    toAdd: number | null;
-    toDelete: number | null;
-    toGet: number | null;
-    toSearch: number | null;
-    toUpdate: [number, number] | [];
-  }
-  : T extends "cola" ? {
-    toEnqueuedNode: string | null;
-    toDequeuedNode: string | null;
-    toGetFront: string | null;
-    toClear: boolean;
-  }
-  : T extends "tabla_hash" ? {
-    create: (cap: number) => void;
-    set: (key: number, value: number) => void;
-    get: (key: number) => void;
-    delete: (key: number) => void;
-    clean: () => void;
-  }
-  : T extends "cola_de_prioridad" ? {
-    toEnqueuedNode: string | null;
-    toDequeuedNode: string | null;
-    toGetFront: string | null;
-    toClear: boolean;
-  }
-  : T extends "pila" ? {
-    toPushNode: string | null;
-    toPopNode: string | null;
-    toGetTop: string | null;
-    toClear: boolean;
-  }
-  : T extends "lista_enlazada" ? {
-    toAddFirst: string | null;
-    toAddLast: string | null;
-    toAddAt: [string, number] | [];
-    toDeleteFirst: string | null;
-    toDeleteLast: string | null;
-    toDeleteAt: [string, number] | [];
-    toSearch: number | null;
-    toClear: boolean;
-  }
-  : T extends "arbol_binario" ? {
-    toInsertLeft: string | null;
-    toInsertRight: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
-    toGetPreOrder: string[] | [];
-    toGetInOrder: string[] | [];
-    toGetPostOrder: string[] | [];
-    toGetLevelOrder: string[] | [];
-    toClear: boolean;
-  }
-  : never; // Fallback para otros casos
+export type BaseQueryOperations<T extends string> = T extends "secuencia"
+  ? {
+      create: number | null;
+      toAdd: number | null;
+      toDelete: number | null;
+      toGet: number | null;
+      toSearch: number | null;
+      toUpdate: [number, number] | [];
+    }
+  : T extends "cola"
+    ? {
+        toEnqueuedNode: string | null;
+        toDequeuedNode: string | null;
+        toGetFront: string | null;
+        toClear: boolean;
+      }
+    : T extends "tabla_hash"
+      ? {
+          create: (cap: number) => void;
+          set: (key: number, value: number) => void;
+          get: (key: number) => void;
+          delete: (key: number) => void;
+          clean: () => void;
+        }
+      : T extends "cola_de_prioridad"
+        ? {
+            toEnqueuedNode: string | null;
+            toDequeuedNode: string | null;
+            toGetFront: string | null;
+            toClear: boolean;
+          }
+        : T extends "pila"
+          ? {
+              toPushNode: string | null;
+              toPopNode: string | null;
+              toGetTop: string | null;
+              toClear: boolean;
+            }
+          : T extends "lista_enlazada"
+            ? {
+                toAddFirst: string | null;
+                toAddLast: string | null;
+                toAddAt: [string, number] | [];
+                toDeleteFirst: string | null;
+                toDeleteLast: string | null;
+                toDeleteAt: [string, number] | [];
+                toSearch: number | null;
+                toClear: boolean;
+              }
+            : T extends "arbol_binario"
+              ? {
+                  toInsertLeft: string | null;
+                  toInsertRight: string | null;
+                  toDelete: [string, string | null] | [];
+                  toSearch: number | null;
+                  toGetPreOrder: string[] | [];
+                  toGetInOrder: string[] | [];
+                  toGetPostOrder: string[] | [];
+                  toGetLevelOrder: string[] | [];
+                  toClear: boolean;
+                }
+              : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
-    create: (n: number) => void;
-    insertLast: (element: number) => void;
-    delete: (element: number) => void;
-    get: (pos: number) => void;
-    search: (element: number) => void;
-    clean: () => void;
-    set: (pos: number, element: number) => void;
-  }
+      create: (n: number) => void;
+      insertLast: (element: number) => void;
+      delete: (element: number) => void;
+      get: (pos: number) => void;
+      search: (element: number) => void;
+      clean: () => void;
+      set: (pos: number, element: number) => void;
+    }
   : T extends "cola"
-  ? {
-    enqueue: (element: number) => void;
-    dequeue: () => void;
-    getFront: () => void;
-    clean: () => void;
-  } :
-  T extends "cola de prioridad" ? {
-    enqueue: (element: number, priority: number) => void;
-    dequeue: () => void;
-    getFront: () => void;
-    clean: () => void;
-  } :
-  T extends "pila" ? {
-    push: (element: number) => void;
-    pop: () => void;
-    getTop: () => void;
-    clean: () => void;
-  } :
-  T extends "lista_enlazada" ? {
-    insertFirst: (element: number) => void;
-    insertLast: (element: number) => void;
-    insertAt: (element: number, pos: number) => void;
-    removeFirst: () => void;
-    removeLast: () => void;
-    removeAt: (pos: number) => void;
-    search: (element: number) => void;
-    clean: () => void;
-  } :
-  T extends "arbol_binario" ? {
-    insertLeft: (parent: number, value: number) => void;
-    insertRight: (parent: number, value: number) => void;
-    delete: (nodeId: number) => void;
-    search: (value: number) => void;
-    getPreOrder: () => void;
-    getInOrder: () => void;
-    getPostOrder: () => void;
-    getLevelOrder: () => void;
-    clean: () => void;
-  }
-  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+    ? {
+        enqueue: (element: number) => void;
+        dequeue: () => void;
+        getFront: () => void;
+        clean: () => void;
+      }
+    : T extends "cola de prioridad"
+      ? {
+          enqueue: (element: number, priority: number) => void;
+          dequeue: () => void;
+          getFront: () => void;
+          clean: () => void;
+        }
+      : T extends "pila"
+        ? {
+            push: (element: number) => void;
+            pop: () => void;
+            getTop: () => void;
+            clean: () => void;
+          }
+        : T extends "lista_enlazada"
+          ? {
+              insertFirst: (element: number) => void;
+              insertLast: (element: number) => void;
+              insertAt: (element: number, pos: number) => void;
+              removeFirst: () => void;
+              removeLast: () => void;
+              removeAt: (pos: number) => void;
+              search: (element: number) => void;
+              clean: () => void;
+            }
+          : T extends "arbol_binario"
+            ? {
+                insertLeft: (parent: number, value: number) => void;
+                insertRight: (parent: number, value: number) => void;
+                delete: (nodeId: number) => void;
+                search: (value: number) => void;
+                getPreOrder: () => void;
+                getInOrder: () => void;
+                getPostOrder: () => void;
+                getLevelOrder: () => void;
+                clean: () => void;
+              }
+            : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
@@ -271,7 +281,7 @@ export type EqualityFn<T> = (a: T, b: T) => boolean;
 
 export type HierarchyNodeData<T> = {
   id: string;
-  value: T,
+  value: T;
   memoryAddress: string;
   children?: HierarchyNodeData<T>[];
-}
+};
