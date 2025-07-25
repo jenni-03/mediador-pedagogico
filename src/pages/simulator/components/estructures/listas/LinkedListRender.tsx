@@ -3,7 +3,7 @@ import {
     SVG_STYLE_VALUES,
 } from "../../../../../shared/constants/consts";
 import { BaseQueryOperations, ListNodeData } from "../../../../../types";
-import { useLinkedListRender } from "./useLinkedListRender";
+import { useLinkedListRender } from "../../../hooks/estructures/listas/useLinkedListRender";
 
 export function LinkedListRender({
     linkedList,
@@ -11,7 +11,7 @@ export function LinkedListRender({
     resetQueryValues,
     listType,
 }: {
-    linkedList: ListNodeData[];
+    linkedList: ListNodeData<number>[];
     query: BaseQueryOperations<"lista_enlazada">;
     resetQueryValues: () => void;
     listType: keyof typeof LIST_RENDER_CONFIGS;

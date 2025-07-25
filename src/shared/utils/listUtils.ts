@@ -2,14 +2,17 @@ import { ListNodeData } from "../../types";
 import { NodoD } from "./nodes/NodoD";
 import { NodoS } from "./nodes/NodoS";
 
-export function linkedListToArray(startNode: NodoS | NodoD | null) {
-    const resultArray = [];
-    let currentNode = startNode;
+export function linkedListToArray<T>(startNode: NodoS<T> | NodoD<T> | null) {
+    const resultArray: ListNodeData<T>[] = [];
+    if (!startNode) return resultArray;
 
-    while (currentNode !== null) {
-        const nextNode = currentNode.getSiguiente();
+    let currentNode: NodoS<T> | NodoD<T> | null = startNode;
+    const firstNode = startNode;
 
-        const nodeData: ListNodeData = {
+    do {
+        const nextNode: NodoS<T> | NodoD<T> | null = currentNode.getSiguiente();
+
+        const nodeData: ListNodeData<T> = {
             id: currentNode.getId(),
             value: currentNode.getValor(),
             next: nextNode ? nextNode.getId() : null,
@@ -24,6 +27,7 @@ export function linkedListToArray(startNode: NodoS | NodoD | null) {
         resultArray.push(nodeData);
         currentNode = nextNode;
     }
+    while (currentNode && currentNode !== firstNode);
 
     return resultArray;
 }

@@ -43,39 +43,61 @@ export const calculateLinkPath = (
     return `M${x1},${y1} L${x2},${y2}`;
 }
 
-export const calculateCircularLinkPath = (
+export function calculateCircularLPath(
     link: LinkData,
-    positions: Map<string, { x: number, y: number }>,
+    positions: Map<string, { x: number; y: number }>,
     elementWidth: number,
-    elementHeight: number
-): string => {
-    const sourcePos = positions.get(link.sourceId);
-    const targetPos = positions.get(link.targetId);
-    if (!sourcePos || !targetPos) return "M0,0";
+    elementHeight: number,
+): string {
+    const src = positions.get(link.sourceId);
+    const tgt = positions.get(link.targetId);
+    if (!src || !tgt) return "M0,0";
 
-    const offset = 5; // Pequeño margen desde los bordes del elemento
-    const nodeCenterY = elementHeight / 2;
+    const isNext = link.type === "circular-next";
+    const halfH = elementHeight / 2;
 
-    console.log("DIBUJANDO FLECHA CIRCULAR en calculateCircularLinkPath", sourcePos);
+    // Puntos de salida/entrada
+    const offset = 3;
+    const verticalOffset = 5
 
-    // Punto de salida (borde derecho del último nodo)
-    const x1 = sourcePos.x + elementWidth + offset;
-    const y1 = sourcePos.y + nodeCenterY;
+    // Coordenadas en y (separadas por offset)
+    const startY = src.y + halfH + (isNext ? -verticalOffset : verticalOffset);
+    const endY = tgt.y + halfH + (isNext ? -verticalOffset : verticalOffset);
 
-    // Punto de entrada (borde izquierdo del primer nodo)
-    const x2 = targetPos.x - offset;
-    const y2 = targetPos.y + nodeCenterY;
+    // Coordenadas en x
+    const startX = isNext
+        ? src.x + elementWidth + offset // sale por la derecha
+        : src.x - offset                // sale por la izquierda
+    const endX = isNext
+        ? tgt.x - offset               // entra por la izquierda
+        : tgt.x + elementWidth + offset // entra por la derecha
 
-    // Calcular la curvatura hacia abajo
-    const curveDepth = 80; // Profundidad de la curva
-    const midY = Math.max(sourcePos.y, targetPos.y) + elementHeight + curveDepth;
-    
-    // Puntos de control para una curva suave
-    const cp1x = x1 + 60; // Control point 1 - hacia la derecha desde el origen
-    const cp1y = midY;     // A la misma altura que la curva inferior
-    
-    const cp2x = x2 - 60;  // Control point 2 - hacia la izquierda desde el destino
-    const cp2y = midY;     // A la misma altura que la curva inferior
+    // Separación horizontal y vertical
+    const lateralOff = 20;
+    const marginY = 55;
 
-    return `M${x1},${y1} C${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
-};
+    // Coordenadas para desplazamientos intermedios
+    const xA = startX + (isNext ? lateralOff : -lateralOff);
+    const xB = endX + (isNext ? -lateralOff : lateralOff);
+
+    // Elegimos el y “intermedio” según next o prev
+    const topY = Math.min(src.y, tgt.y) - marginY;
+    const bottomY = Math.max(src.y, tgt.y) + elementHeight + marginY;
+    const midY = isNext ? topY : bottomY;
+
+    // Construcción del path:
+    //  M: punto de salida
+    //  L1: desplazamiento horizontal
+    //  L2: subida / bajada al margen superior del nodo origen
+    //  L3: cruzar hasta la x de destino
+    //  L4: subida / bajada al centro del nodo destino
+    //  L5: desplazamiento horizontal final
+    return [
+        `M${startX},${startY}`,
+        `L${xA},${startY}`,
+        `L${xA},${midY}`,
+        `L${xB},${midY}`,
+        `L${xB},${endY}`,
+        `L${endX},${endY}`
+    ].join(" ");
+}

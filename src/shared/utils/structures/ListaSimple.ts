@@ -1,15 +1,16 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { LinkedListInterface } from "../../../types";
+import { EqualityFn, LinkedListInterface } from "../../../types";
 import { linkedListToArray } from "../listUtils";
 import { NodoS } from "../nodes/NodoS";
 
 /**
  * Clase que representa el funcionamiento de una lista simple.
  */
-export class ListaSimple implements LinkedListInterface {
-  // Nodo cabecera de la lista.
-  private cabeza: NodoS | null;
+export class ListaSimple<T> implements LinkedListInterface<T> {
+
+    // Nodo cabecera de la lista.
+    private cabeza: NodoS<T> | null;
 
   // Tamaño de la lista.
   private tamanio: number;
@@ -20,25 +21,23 @@ export class ListaSimple implements LinkedListInterface {
   // Tamaño simulado de cada nodo en bytes.
   private tamanioNodo: number;
 
-  /**
-   * Constructor de la clase ListaSimple.
-   */
-  constructor(tamanioNodo: number = 16) {
-    this.cabeza = null;
-    this.tamanio = 0;
-    this.tamanioNodo = tamanioNodo;
-  }
+    /**
+     * Constructor de la clase ListaSimple.
+     */
+    constructor(
+        private equals: EqualityFn<T> = (a, b) => a === b
+    ) {
+        this.cabeza = null;
+        this.tamanio = 0;
+    }
 
-  /**
-   * Método que inserta un nuevo elemento al inicio de la lista simple.
-   * @param valor Elemento a insertar.
-   * @returns Nodo inicial insertado.
-   */
-  insertarAlInicio(valor: number): NodoS {
-    if (this.tamanio >= this.MAX_TAMANIO)
-      throw new Error(
-        `No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`
-      );
+    /**
+     * Método que inserta un nuevo elemento al inicio de la lista simple.
+     * @param valor Elemento a insertar.
+     * @returns Nodo inicial insertado.
+     */
+    public insertarAlInicio(valor: T): NodoS<T> {
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
     const nuevoNodo = new NodoS(valor);
 
@@ -53,16 +52,13 @@ export class ListaSimple implements LinkedListInterface {
     return nuevoNodo;
   }
 
-  /**
-   * Método que inserta un nuevo elemento al final de la lista simple.
-   * @param valor Elemento a insertar.
-   * @returns Nodo final insertado.
-   */
-  insertarAlFinal(valor: number): NodoS {
-    if (this.tamanio >= this.MAX_TAMANIO)
-      throw new Error(
-        `No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`
-      );
+    /**
+     * Método que inserta un nuevo elemento al final de la lista simple.
+     * @param valor Elemento a insertar.
+     * @returns Nodo final insertado.
+     */
+    public insertarAlFinal(valor: T): NodoS<T> {
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
     const nuevoNodo = new NodoS(valor);
 
@@ -77,18 +73,16 @@ export class ListaSimple implements LinkedListInterface {
     return nuevoNodo;
   }
 
-  /**
-   * Método que inserta un nuevo elemento en una posición especifica de la lista simple.
-   * @param valor Elemento a insertar.
-   * @param posicion Posición en la que se desea insertar el elemento.
-   * @return Nodo insertado en la posición especificada.
-   */
-  insertarEnPosicion(valor: number, posicion: number): NodoS {
-    if (posicion < 0 || posicion > this.tamanio) {
-      throw new Error(
-        `No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`
-      );
-    }
+    /**
+     * Método que inserta un nuevo elemento en una posición especifica de la lista simple.
+     * @param valor Elemento a insertar.
+     * @param posicion Posición en la que se desea insertar el elemento.
+     * @return Nodo insertado en la posición especificada.
+     */
+    public insertarEnPosicion(valor: T, posicion: number): NodoS<T> {
+        if (posicion < 0 || posicion > this.tamanio) {
+            throw new Error(`No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`);
+        }
 
     if (this.tamanio >= this.MAX_TAMANIO)
       throw new Error(
@@ -113,60 +107,51 @@ export class ListaSimple implements LinkedListInterface {
     return nuevoNodo;
   }
 
-  /**
-   * Método que elimina el primer nodo de la lista simple.
-   * @returns Nodo inicial eliminado.
-   */
-  eliminarAlInicio(): NodoS {
-    if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0)."
-      );
+    /**
+     * Método que elimina el primer nodo de la lista simple.
+     * @returns Nodo inicial eliminado.
+     */
+    public eliminarAlInicio(): NodoS<T> {
+        if (this.esVacia()) throw new Error("No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).");
 
-    const nodoEliminado = this.cabeza;
-    if (this.cabeza) {
-      this.cabeza = this.cabeza.getSiguiente();
+        const nodoEliminado = this.cabeza!;
+        if (this.cabeza) {
+            this.cabeza = this.cabeza.getSiguiente();
+        }
+
+        this.tamanio--;
+        return nodoEliminado;
     }
 
-    this.tamanio--;
-    return nodoEliminado!;
-  }
+    /**
+     * Método que elimina el último nodo de la lista simple.
+     * @returns Nodo final eliminado.
+     */
+    public eliminarAlFinal(): NodoS<T> {
+        if (this.esVacia()) throw new Error("No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0).");
 
-  /**
-   * Método que elimina el último nodo de la lista simple.
-   * @returns Nodo final eliminado.
-   */
-  eliminarAlFinal(): NodoS {
-    if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0)."
-      );
+        let nodoEliminado: NodoS<T>;
 
-    let nodoEliminado: NodoS;
-
-    if (this.tamanio === 1) {
-      nodoEliminado = this.cabeza!;
-      this.cabeza = null;
-    } else {
-      const nodoAnt = this.getPos(this.tamanio - 2);
-      nodoEliminado = nodoAnt!.getSiguiente()!;
-      nodoAnt?.setSiguiente(null);
-    }
+        if (this.tamanio === 1) {
+            nodoEliminado = this.cabeza!;
+            this.cabeza = null;
+        } else {
+            const nodoAnt = this.getPos(this.tamanio - 2)!;
+            nodoEliminado = nodoAnt.getSiguiente()!;
+            nodoAnt.setSiguiente(null);
+        }
 
     this.tamanio--;
     return nodoEliminado;
   }
 
-  /**
-   * Método que elimina un nodo en una posición especifica de la lista simple.
-   * @param posicion Posición del nodo a eliminar.
-   * @returns Nodo eliminado.
-   */
-  eliminarEnPosicion(posicion: number): NodoS {
-    if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0)."
-      );
+    /**
+     * Método que elimina un nodo en una posición especifica de la lista simple.
+     * @param posicion Posición del nodo a eliminar.
+     * @returns Nodo eliminado.
+     */
+    public eliminarEnPosicion(posicion: number): NodoS<T> {
+        if (this.esVacia()) throw new Error("No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).");
 
     if (posicion < 0 || posicion >= this.tamanio) {
       throw new Error(
@@ -191,20 +176,20 @@ export class ListaSimple implements LinkedListInterface {
     return nodoEliminado;
   }
 
-  /**
-   * Método que busca un nodo en la lista simple.
-   * @param valor Valor a buscar.
-   * @returns True si se encuentra el nodo, false en caso contrario.
-   */
-  buscar(valor: number): boolean {
-    let nodoActual = this.cabeza;
+    /**
+     * Método que busca un nodo en la lista simple.
+     * @param valor Valor a buscar.
+     * @returns True si se encuentra el nodo, false en caso contrario.
+     */
+    public buscar(valor: T): boolean {
+        let nodoActual = this.cabeza;
 
-    while (nodoActual) {
-      if (nodoActual.getValor() === valor) {
-        return true;
-      }
-      nodoActual = nodoActual.getSiguiente();
-    }
+        while (nodoActual) {
+            if (this.equals(nodoActual.getValor(), valor)) {
+                return true;
+            }
+            nodoActual = nodoActual.getSiguiente();
+        }
 
     return false;
   }
@@ -217,21 +202,21 @@ export class ListaSimple implements LinkedListInterface {
     this.tamanio = 0;
   }
 
-  /**
-   * Método que verifica si la lista simple está vacía.
-   * @returns True si se encuentra vacía, false en caso contrario.
-   */
-  esVacia(): boolean {
-    return this.cabeza === null;
-  }
+    /**
+     * Método que verifica si la lista simple está vacía.
+     * @returns True si se encuentra vacía, false en caso contrario.
+     */
+    public esVacia(): boolean {
+        return this.cabeza === null;
+    }
 
-  /**
-   * Método que obtiene el tamaño de la lista simple.
-   * @returns Número de elementos dentro de la lista.
-   */
-  getTamanio(): number {
-    return this.tamanio;
-  }
+    /**
+     * Método que obtiene el tamaño de la lista simple.
+     * @returns Número de elementos dentro de la lista.
+     */
+    public getTamanio(): number {
+        return this.tamanio;
+    }
 
   /**
    * Método que transforma la lista simple en un array de nodos.
@@ -252,8 +237,8 @@ export class ListaSimple implements LinkedListInterface {
       return nuevaLista;
     }
 
-    let nodoActual = this.cabeza;
-    let ultimoNodoClonado: NodoS | null = null;
+        let nodoActual = this.cabeza;
+        let ultimoNodoClonado: NodoS<T> | null = null;
 
     while (nodoActual !== null) {
       const nuevoNodo = new NodoS(

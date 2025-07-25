@@ -1,14 +1,14 @@
 import { TYPE_FILTER } from "./shared/constants/consts";
 import { NodoS } from "./shared/utils/nodes/NodoS";
 
-export interface LinkedListInterface {
-  insertarAlInicio(valor: number): NodoS | NodoD;
-  insertarAlFinal(valor: number): NodoS | NodoD;
-  insertarEnPosicion(valor: number, posicion: number): NodoS | NodoD;
-  eliminarAlInicio(): NodoS | NodoD;
-  eliminarAlFinal(): NodoS | NodoD;
-  eliminarEnPosicion(posicion: number): NodoS | NodoD;
-  buscar(valor: number): boolean;
+export interface LinkedListInterface<T> {
+  insertarAlInicio(valor: T): NodoS<T> | NodoD<T>;
+  insertarAlFinal(valor: T): NodoS<T> | NodoD<T>;
+  insertarEnPosicion(valor: T, posicion: number): NodoS<T> | NodoD<T>;
+  eliminarAlInicio(): NodoS<T> | NodoD<T>;
+  eliminarAlFinal(): NodoS<T> | NodoD<T>;
+  eliminarEnPosicion(posicion: number): NodoS<T> | NodoD<T>;
+  buscar(valor: T): boolean;
   esVacia(): boolean;
   vaciar(): void;
   clonar(): this;
@@ -21,6 +21,8 @@ export type ListRenderConfig = {
   showTailIndicator: boolean;
   showDoubleLinks: boolean;
   showCircularLinks: boolean;
+  showNextCircularLink?: boolean;
+  showPrevCircularLink?: boolean;
 }
 
 export type CardListProps = {
@@ -150,6 +152,17 @@ export type BaseQueryOperations<T extends string> =
     toSearch: number | null;
     toClear: boolean;
   }
+  : T extends "arbol_binario" ? {
+    toInsertLeft: string | null;
+    toInsertRight: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreOrder: string[] | [];
+    toGetInOrder: string[] | [];
+    toGetPostOrder: string[] | [];
+    toGetLevelOrder: string[] | [];
+    toClear: boolean;
+  }
   : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
@@ -191,7 +204,18 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     search: (element: number) => void;
     clean: () => void;
   } :
-  Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+  T extends "arbol_binario" ? {
+    insertLeft: (parent: number, value: number) => void;
+    insertRight: (parent: number, value: number) => void;
+    delete: (nodeId: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
@@ -204,9 +228,9 @@ export type CodeAnalysisProps = {
   complexity: string;
 };
 
-export type ListNodeData = {
+export type ListNodeData<T> = {
   id: string;
-  value: number;
+  value: T;
   next: string | null;
   prev?: string | null;
   memoryAddress: string;
@@ -226,7 +250,7 @@ export type PriorityQueueNodeData = QueueNodeData & {
 export type LinkData = {
   sourceId: string;
   targetId: string;
-  type: "next" | "prev" | "next-circular" | "prev-circular";
+  type: "next" | "prev" | "circular-next" | "circular-prev";
 };
 
 export type StackNodeData = {
@@ -242,3 +266,12 @@ export type IndicatorPositioningConfig = {
     dims: { elementWidth: number; elementHeight: number }
   ) => string;
 };
+
+export type EqualityFn<T> = (a: T, b: T) => boolean;
+
+export type HierarchyNodeData<T> = {
+  id: string;
+  value: T,
+  memoryAddress: string;
+  children?: HierarchyNodeData<T>[];
+}

@@ -2,53 +2,57 @@
 
 import { EqualityFn, LinkedListInterface } from "../../../types";
 import { linkedListToArray } from "../listUtils";
-import { NodoS } from "../nodes/NodoS";
+import { NodoD } from "../nodes/NodoD";
 
 /**
- * Clase que representa el funcionamiento de una lista circular simple.
+ * Clase que representa el funcionamiento de una lista circular doble.
  */
-export class ListaCircularSimple<T> implements LinkedListInterface<T> {
+export class ListaCircularDoble<T> implements LinkedListInterface<T> {
 
     // Nodo cabecera de la lista.
-    private cabeza: NodoS<T> | null;
-
-    // Nodo cola de la lista.
-    private cola: NodoS<T> | null;
+    private cabeza: NodoD<T> | null;
 
     // Tamaño de la lista.
     private tamanio: number;
 
-    // Tamaño máximo permitido para la lista circular simple.
+    // Tamaño máximo permitido para la lista circular doble.
     private readonly MAX_TAMANIO = 15;
 
     /**
-     * Constructor de la clase ListaCircularSimple.
+     * Constructor de la clase ListaCircularDoble.
      */
     constructor(
         private equals: EqualityFn<T> = (a, b) => a === b
     ) {
         this.cabeza = null;
-        this.cola = null;
         this.tamanio = 0;
     }
 
     /**
-     * Método que inserta un nuevo elemento al inicio de la lista circular simple.
+     * Método que inserta un nuevo elemento al inicio de la lista circular doble.
      * @param valor Elemento a insertar.
      * @returns Nodo inicial insertado.
      */
-    public insertarAlInicio(valor: T): NodoS<T> {
+    public insertarAlInicio(valor: T): NodoD<T> {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
-        const nuevoNodo = new NodoS(valor);
+        const nuevoNodo = new NodoD(valor);
 
         if (this.esVacia()) {
             this.cabeza = nuevoNodo;
-            this.cola = nuevoNodo;
             nuevoNodo.setSiguiente(nuevoNodo);
+            nuevoNodo.setAnterior(nuevoNodo);
         } else {
+            const ultimoNodo = this.cabeza!.getAnterior()!;
+
+            // Conectar el nuevo nodo
             nuevoNodo.setSiguiente(this.cabeza);
-            this.cola!.setSiguiente(nuevoNodo);
+            nuevoNodo.setAnterior(ultimoNodo);
+
+            // Actualizar los punteros
+            this.cabeza!.setAnterior(nuevoNodo);
+            ultimoNodo.setSiguiente(nuevoNodo);
+
             this.cabeza = nuevoNodo;
         }
 
@@ -57,23 +61,29 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que inserta un nuevo elemento al final de la lista circular simple.
+     * Método que inserta un nuevo elemento al final de la lista circular doble.
      * @param valor Elemento a insertar.
      * @returns Nodo final insertado.
      */
-    public insertarAlFinal(valor: T): NodoS<T> {
+    public insertarAlFinal(valor: T): NodoD<T> {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
-        const nuevoNodo = new NodoS(valor);
+        const nuevoNodo = new NodoD(valor);
 
         if (this.esVacia()) {
             this.cabeza = nuevoNodo;
-            this.cola = nuevoNodo;
             nuevoNodo.setSiguiente(nuevoNodo);
+            nuevoNodo.setAnterior(nuevoNodo);
         } else {
-            this.cola!.setSiguiente(nuevoNodo);
+            const ultimoNodo = this.cabeza!.getAnterior()!;
+
+            // Actualizar los punteros
+            ultimoNodo.setSiguiente(nuevoNodo);
+            this.cabeza!.setAnterior(nuevoNodo);
+
+            // Conectar el nuevo nodo
             nuevoNodo.setSiguiente(this.cabeza);
-            this.cola = nuevoNodo;
+            nuevoNodo.setAnterior(ultimoNodo);
         }
 
         this.tamanio++;
@@ -81,12 +91,12 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que inserta un nuevo elemento en una posición especifica de la lista circular simple.
+     * Método que inserta un nuevo elemento en una posición especifica de la lista circular doble.
      * @param valor Elemento a insertar.
      * @param posicion Posición en la que se desea insertar el elemento.
      * @return Nodo insertado en la posición especificada.
      */
-    public insertarEnPosicion(valor: T, posicion: number): NodoS<T> {
+    public insertarEnPosicion(valor: T, posicion: number): NodoD<T> {
         if (posicion < 0 || posicion > this.tamanio) {
             throw new Error(`No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`);
         }
@@ -101,10 +111,15 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
             return this.insertarAlFinal(valor);
         }
 
-        const nuevoNodo = new NodoS(valor);
+        const nuevoNodo = new NodoD(valor);
         const nodoAnt = this.getPos(posicion - 1)!;
 
+        // Conectar el nuevo nodo a la lista
         nuevoNodo.setSiguiente(nodoAnt.getSiguiente());
+        nuevoNodo.setAnterior(nodoAnt);
+
+        // Reorganizar los punteros
+        nodoAnt.getSiguiente()!.setAnterior(nuevoNodo);
         nodoAnt.setSiguiente(nuevoNodo);
 
         this.tamanio++;
@@ -112,20 +127,29 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que elimina el primer nodo de la lista circular simple.
+     * Método que elimina el primer nodo de la lista circular doble.
      * @returns Nodo inicial eliminado.
      */
-    public eliminarAlInicio(): NodoS<T> {
+    public eliminarAlInicio(): NodoD<T> {
         if (this.esVacia()) throw new Error("No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).");
 
         const nodoEliminado = this.cabeza!;
 
-        if (this.cabeza === this.cola) {
+        if (this.cabeza!.getSiguiente() === this.cabeza) {
             this.cabeza = null;
-            this.cola = null;
         } else {
-            this.cabeza = this.cabeza!.getSiguiente();
-            this.cola!.setSiguiente(this.cabeza);
+            const newHead = this.cabeza!.getSiguiente()!;
+            const tail = this.cabeza!.getAnterior()!;
+
+            // Desconectar el nodo de la lista
+            nodoEliminado.setSiguiente(null);
+            nodoEliminado.setAnterior(null);
+
+            // Reorganizar los punteros
+            tail.setSiguiente(newHead);
+            newHead.setAnterior(tail);
+
+            this.cabeza = newHead;
         }
 
         this.tamanio--;
@@ -133,35 +157,38 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que elimina el último nodo de la lista circular simple.
+     * Método que elimina el último nodo de la lista circular doble.
      * @returns Nodo final eliminado.
      */
-    public eliminarAlFinal(): NodoS<T> {
+    public eliminarAlFinal(): NodoD<T> {
         if (this.esVacia()) throw new Error("No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0).");
 
-        let nodoEliminado: NodoS<T>;
+        const ultimo = this.cabeza!.getAnterior()!;
 
-        if (this.cabeza === this.cola) {
-            nodoEliminado = this.cabeza!;
+        if (this.cabeza === ultimo) {
             this.cabeza = null;
-            this.cola = null;
         } else {
-            nodoEliminado = this.cola!;
-            const nodoAnt = this.getPos(this.tamanio - 2)!;
-            nodoAnt.setSiguiente(this.cabeza);
-            this.cola = nodoAnt;
+            const nuevoUltimo = ultimo.getAnterior()!;
+
+            // Reorganizar los punteros
+            nuevoUltimo.setSiguiente(this.cabeza);
+            this.cabeza!.setAnterior(nuevoUltimo);
+
+            // Desconectar el nodo de la lista
+            ultimo.setSiguiente(null);
+            ultimo.setAnterior(null);
         }
 
         this.tamanio--;
-        return nodoEliminado;
+        return ultimo;
     }
 
     /**
-     * Método que elimina un nodo en una posición especifica de la lista circular simple.
+     * Método que elimina un nodo en una posición especifica de la lista circular doble.
      * @param posicion Posición del nodo a eliminar.
      * @returns Nodo eliminado.
      */
-    public eliminarEnPosicion(posicion: number): NodoS<T> {
+    public eliminarEnPosicion(posicion: number): NodoD<T> {
         if (this.esVacia()) throw new Error("No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).");
 
         if (posicion < 0 || posicion >= this.tamanio) {
@@ -176,17 +203,17 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
             return this.eliminarAlFinal();
         }
 
-        const nodoAnt = this.getPos(posicion - 1)!;
-        const nodoEliminado = nodoAnt.getSiguiente()!;
+        const nodoEliminado = this.getPos(posicion)!;
 
-        nodoAnt.setSiguiente(nodoEliminado.getSiguiente());
+        nodoEliminado.getAnterior()!.setSiguiente(nodoEliminado.getSiguiente());
+        nodoEliminado.getSiguiente()!.setAnterior(nodoEliminado.getAnterior());
 
         this.tamanio--;
         return nodoEliminado;
     }
 
     /**
-     * Método que busca un nodo en la lista circular simple.
+     * Método que busca un nodo en la lista circular doble.
      * @param valor Valor a buscar.
      * @returns True si se encuentra el nodo, false en caso contrario.
      */
@@ -205,16 +232,15 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que vacia la lista circular simple.
+     * Método que vacia la lista circular doble.
      */
     public vaciar(): void {
         this.cabeza = null;
-        this.cola = null;
         this.tamanio = 0;
     }
 
     /**
-     * Método que verifica si la lista circular simple está vacía.
+     * Método que verifica si la lista circular doble está vacía.
      * @returns True si se encuentra vacía, false en caso contrario.
      */
     public esVacia(): boolean {
@@ -222,7 +248,7 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que obtiene el tamaño de la lista circular simple.
+     * Método que obtiene el tamaño de la lista circular doble.
      * @returns Número de elementos dentro de la lista.
      */
     public getTamanio(): number {
@@ -230,7 +256,7 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
     /**
-     * Método que transforma la lista circular simple en un array de nodos.
+     * Método que transforma la lista circular doble en un array de nodos.
      * @returns Array de nodos con la información de la lista.
      */
     public getArrayDeNodos() {
@@ -249,10 +275,10 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
         }
 
         let nodoActual = this.cabeza!;
-        let ultimoNodoClonado: NodoS<T> | null = null;
+        let ultimoNodoClonado: NodoD<T> | null = null;
 
         do {
-            const nuevoNodo = new NodoS(
+            const nuevoNodo = new NodoD(
                 nodoActual.getValor(),
                 nodoActual.getId(),
                 nodoActual.getDireccionMemoria()
@@ -260,12 +286,11 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
 
             if (nuevaLista.cabeza === null) {
                 nuevaLista.cabeza = nuevoNodo;
-                nuevaLista.cola = nuevoNodo;
             } else {
                 if (ultimoNodoClonado) {
                     ultimoNodoClonado.setSiguiente(nuevoNodo);
+                    nuevoNodo.setAnterior(ultimoNodoClonado);
                 }
-                nuevaLista.cola = nuevoNodo;
             }
 
             ultimoNodoClonado = nuevoNodo;
@@ -277,6 +302,9 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
         if (nuevaLista.cabeza && ultimoNodoClonado) {
             // último -> primero
             ultimoNodoClonado.setSiguiente(nuevaLista.cabeza);
+
+            // primero -> último
+            nuevaLista.cabeza.setAnterior(ultimoNodoClonado);
         }
 
         nuevaLista.tamanio = this.tamanio;
@@ -301,3 +329,4 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
     }
 
 }
+

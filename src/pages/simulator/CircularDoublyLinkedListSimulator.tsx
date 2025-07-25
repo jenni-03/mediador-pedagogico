@@ -1,18 +1,18 @@
 import { useEffect, useRef } from "react";
-import { ListaSimple } from "../../shared/utils/structures/ListaSimple";
-import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { doubleNodeAddressGenerator } from "../../shared/utils/memoryAllocator";
 import { useLinkedList } from "./hooks/estructures/listas/useLinkedList";
 import { Simulator } from "./components/templates/Simulator";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { LinkedListRender } from "./components/estructures/listas/LinkedListRender";
+import { ListaCircularDoble } from "../../shared/utils/structures/ListaCircularDoble";
 
-export function SimpleLinkedListSimulator() {
-    // Instanciación de la Lista Simple
-    const structure = useRef(new ListaSimple<number>()).current;
+export function CircularDoublyLinkedListSimulator() {
+    // Instanciación de la Lista Doble
+    const structure = useRef(new ListaCircularDoble<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {
-        dynamicAddressGenerator.reset();
+        doubleNodeAddressGenerator.reset();
     }, []);
 
     // Llamada al hook useLinkedList para gestionar el estado de la lista
@@ -34,7 +34,7 @@ export function SimpleLinkedListSimulator() {
     return (
         <Simulator
             structureName={STRUCTURE_NAME.LINKED_LIST}
-            structureType={STRUCTURE_NAME.SIMPLE_LINKED_LIST}
+            structureType={STRUCTURE_NAME.CIRCULAR_DOUBLY_LINKED_LIST}
             structure={list}
             actions={{
                 insertFirst: addElementFirst,
@@ -53,7 +53,7 @@ export function SimpleLinkedListSimulator() {
                 linkedList={list.getArrayDeNodos()}
                 query={query}
                 resetQueryValues={resetQueryValues}
-                listType={"simple"}
+                listType={"double_circular"}
             />
         </Simulator>
     );

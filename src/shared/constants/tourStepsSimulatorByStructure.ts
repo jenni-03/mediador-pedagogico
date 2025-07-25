@@ -96,8 +96,44 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
       description: `Formalmente, una lista doblemente enlazada, al igual que su contraparte simple, es una estructura de datos dinámica y lineal compuesta por una secuencia nodos.
                         Cada nodo contiene un valor, un puntero al siguiente nodo y otro puntero que apunta al nodo anterior en la secuencia.
                         Esta estructura de doble enlace permite que la lista sea recorrida de manera eficiente en ambas direcciones: Desde la cabeza hasta la cola y visceversa.`,
-    },
-  ],
+        },
+    ],
+    lista_circular_doblemente_enlazada: [
+        {
+            type: "info",
+            description: `Pensemos en un carrusel. Cada caballito está conectado con el que tiene justo delante y con el que tiene detrás. 
+                        Desde cualquier caballito, puedes ver fácilmente cuál es el siguiente y cuál fue el anterior.`,
+        },
+        {
+            type: "info",
+            description: `La característica principal es que el carrusel no tiene un principio ni un fin definidos; Es un ciclo continuo. Si sigues avanzando de un caballito al siguiente, 
+                        eventualmente darás una vuelta completa y regresarás al punto de partida. De la misma manera, si decides moverte hacia atrás. No existe un "último" caballito que te obligue a detenerte.`
+        },
+        {
+            type: "info",
+            description: `Formalmente, una lista circular doblemente enlazada, es una variación de la lista doble que crea un bucle cerrado. Al igual que en una lista doblemente enlazada,
+                        cada nodo contiene un valor, un puntero al siguiente nodo y otro puntero que apunta al nodo anterior en la secuencia. La diferencia fundamental radica en los extremos de la lista.
+                        El puntero next del último nodo apunta de vuelta al primer nodo y el puntero prev del primer nodo apunta de vuelta al último nodo.`,
+        },
+    ],
+    lista_circular_simplemente_enlazada: [
+        {
+            type: "info",
+            description: `Imagina que te encuentras en un restaurante con una cinta transportadora de sushi. Los platos de sushi van pasando frente a ti en una sola dirección. 
+                        Cada plato sigue al anterior en un desfile.`,
+        },
+        {
+            type: "info",
+            description: `La cinta forma un bucle cerrado; después de que el último plato pasa por la cocina, vuelve a aparecer al principio del recorrido. 
+                        No hay un final definitivo, la procesión de platos es continua. Sin embargo, solo puedes ver lo que viene; no puedes saber qué plato acaba de pasar sin dar toda la vuelta.`
+        },
+        {
+            type: "info",
+            description: `Formalmente, una lista circular simplemente enlazada, es una variación de la lista simple que crea un bucle unidireccional. Al igual que en una lista simple enlazada,
+                        cada nodo contiene un valor y un puntero al siguiente nodo. La característica "circular" proviene de cómo se maneja el final de la lista. En lugar de que el puntero siguiente del último nodo
+                        apunte a null, este apunta de regreso al primer nodo.`,
+        },
+    ],
 };
 
 export const tourStepsCommands: Record<string, TourStep[]> = {
@@ -395,12 +431,18 @@ export const getTourSteps = (structureType: string): TourStep[] => [
     type: "element",
     description: `La consola es el medio principal de interacción con la estructura, en ella podrás escribir los comandos
                 para manipular la estructura y recibir retroalimentación sobre su ejecución como advertencias o errores.`,
-  },
-  ...(tourStepsCommands[structureType] ?? []),
-  {
-    id: "execution-code",
-    type: "element",
-    description: `En esta sección se mostrará el fragmento de código que corresponde a cada operación realizada.
+    },
+    {
+        id: "console",
+        type: "element",
+        description: `Si ya has escrito varios comandos, siempre puedes navegar por el historial presionando las flechas arriba y abajo, o
+                usar el comando "clear" para limpiar la consola.`
+    },
+    ...(tourStepsCommands[structureType] ?? []),
+    {
+        id: "execution-code",
+        type: "element",
+        description: `En esta sección se mostrará el fragmento de código que corresponde a cada operación realizada.
                 Esto te ayudará a comprender cómo se traduce cada acción en código real.`,
   },
   {

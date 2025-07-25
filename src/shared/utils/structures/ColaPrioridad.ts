@@ -5,10 +5,10 @@ import { NodoPrioridad } from "../nodes/NodoPrioridad";
 /**
  * Clase que representa una Cola de Prioridad.
  */
-export class ColaDePrioridad {
+export class ColaDePrioridad<T> {
 
     // Nodo inicial de la cola.
-    private inicio: NodoPrioridad | null;
+    private inicio: NodoPrioridad<T> | null;
 
     // Tamaño de la cola.
     private tamanio: number;
@@ -30,7 +30,7 @@ export class ColaDePrioridad {
      * @param prioridad Prioridad del nodo (menor número = mayor prioridad).
      * @returns Elemento insertado.
      */
-    public encolar(valor: number, prioridad: number): NodoPrioridad {
+    public encolar(valor: T, prioridad: number): NodoPrioridad<T> {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoPrioridad(valor, prioridad);
@@ -62,7 +62,7 @@ export class ColaDePrioridad {
      * Método que elimina el elemento con mayor prioridad (inicio).
      * @returns elemento decolado.
      */
-    public decolar(): NodoPrioridad {
+    public decolar(): NodoPrioridad<T> {
         if (this.esVacia()) throw new Error("No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0).");
 
         const nodoAEliminar = this.inicio!;
@@ -89,7 +89,7 @@ export class ColaDePrioridad {
      * Método que obtiene el elemento inicial de la cola.
      * @returns NodoPrioridad o null si la cola está vacía.
      */
-    public getInicio(): NodoPrioridad | null {
+    public getInicio(): NodoPrioridad<T> | null {
         return this.inicio;
     }
 
@@ -146,7 +146,7 @@ export class ColaDePrioridad {
         }
 
         let actual = this.inicio;
-        let ultimoNodoClonado: NodoPrioridad | null = null;
+        let ultimoNodoClonado: NodoPrioridad<T> | null = null;
 
         while (actual !== null) {
             const nodoCopia = new NodoPrioridad(

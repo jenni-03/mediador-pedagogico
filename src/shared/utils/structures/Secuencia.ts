@@ -5,10 +5,10 @@ import { sequentialAddressGenerator } from "../memoryAllocator";
 /**
  * Clase que representa un vector.
  */
-export class Secuencia {
+export class Secuencia<T> {
 
     // Vector donde se almacena los objetos.
-    private vector: (number | null)[];
+    private vector: (T | null)[];
 
     // Cantidad de elementos actualmente almacenados en la secuencia.
     private cant: number;
@@ -28,7 +28,7 @@ export class Secuencia {
     constructor(
         n: number,
         memoriaExistente?: string[],
-        tamanioNodo: number = 4
+        tamanioNodo: number = 4,
     ) {
         if (n <= 0) {
             this.vector = [];
@@ -38,7 +38,7 @@ export class Secuencia {
             return;
         }
 
-        this.vector = new Array<number | null>(n).fill(null);
+        this.vector = new Array<T | null>(n).fill(null);
         this.cant = 0;
         this.tamanioNodo = tamanioNodo;
 
@@ -54,7 +54,7 @@ export class Secuencia {
      * Método que inserta un nuevo elemento a la secuencia.
      * @param elem Elemento a insertar.
      */
-    insertar(elem: number) {
+    public insertar(elem: T) {
         if (this.cant >= this.vector.length) {
             throw new Error(`No hay espacio para insertar el elemento ${elem}.`);
         }
@@ -65,7 +65,7 @@ export class Secuencia {
      * Método que elimina un elemento a la secuencia dada su posición.
      * @param pos Posición del elemento a eliminar.
      */
-    eliminarPos(pos: number) {
+    public eliminarPos(pos: number) {
         if (this.cant === 0) {
             throw new Error(
                 "No fue posible eliminar el elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0)."
@@ -87,7 +87,7 @@ export class Secuencia {
     /**
      * Método que vacía la secuencia.
      */
-    vaciar(): void {
+    public vaciar(): void {
         this.cant = 0;
         this.vector = [];
     }
@@ -97,7 +97,7 @@ export class Secuencia {
      * @param i Posición del elemento.
      * @returns El elemento indicado o null si la posición es inválida.
      */
-    get(i: number): number | null {
+    public get(i: number): T | null {
         if (this.cant === 0) {
             throw new Error(
                 "No fue posible acceder al elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0)."
@@ -116,7 +116,7 @@ export class Secuencia {
      * @param i Posición a modificar.
      * @param nuevo Nuevo elemento a insertar.
      */
-    set(i: number, nuevo: number) {
+    public set(i: number, nuevo: T) {
         if (i < 0 || i >= this.cant) {
             throw new Error(
                 `Posición inválida, no se puede acceder a la posición ${i} porque no está en un rango válido. Primero debe insertar el elemento ${nuevo} en la posición ${i} antes de poder modificarlo. Le recomendamos primero hacer "insertLast(${nuevo});"`
@@ -130,7 +130,7 @@ export class Secuencia {
      * @param elem Elemento a buscar.
      * @returns true si se encuentra, false en caso contrario.
      */
-    esta(elem: number): boolean {
+    public esta(elem: T): boolean {
         if (this.vector.includes(elem)) {
             return true;
         }
@@ -141,7 +141,7 @@ export class Secuencia {
      * Método que retorna el número de elementos almacenados.
      * @returns Cantidad de elementos.
      */
-    getTamanio() {
+    public getTamanio() {
         return this.cant;
     }
 
@@ -149,7 +149,7 @@ export class Secuencia {
      * Método que retorna el tamaño en bytes de los nodos almacenados.
      * @returns Tamaño en bytes de los nodos.
      */
-    getTamanioNodo() {
+    public getTamanioNodo() {
         return this.tamanioNodo;
     }
 
@@ -157,7 +157,7 @@ export class Secuencia {
      * Método que verifica si la secuencia está vacía.
      * @returns true si está vacía.
      */
-    esVacia() {
+    public esVacia() {
         return this.cant === 0;
     }
 
@@ -165,7 +165,7 @@ export class Secuencia {
      * Método que retorna la capacidad (tamaño real) del vector.
      * @returns Capacidad de la secuencia.
      */
-    getCapacidad() {
+    public getCapacidad() {
         return this.vector.length;
     }
 
@@ -173,7 +173,7 @@ export class Secuencia {
      * Método que retorna el vector contenedor de la secuencia.
      * @returns Vector contenedor.
      */
-    getVector() {
+    public getVector() {
         return this.vector;
     }
 
@@ -181,10 +181,10 @@ export class Secuencia {
      * Método que clona la secuencia actual.
      * @returns Nueva secuencia clonada.
      */
-    clonar() {
-        const secuenciaClonada = new Secuencia(this.getCapacidad(), this.vectorMemoria);
+    public clonar() {
+        const secuenciaClonada = new Secuencia<T>(this.getCapacidad(), this.vectorMemoria);
         for (let i = 0; i < this.getTamanio(); i++) {
-            secuenciaClonada.insertar(this.get(i) ?? -1);
+            secuenciaClonada.insertar(this.get(i)!);
         }
         return secuenciaClonada;
     }
@@ -194,7 +194,7 @@ export class Secuencia {
      * @param i Índice del vector.
      * @returns Dirección de memoria correspondiente al índice.
      */
-    getDireccion(i: number): string | null {
+    public getDireccion(i: number): string | null {
         if (i < 0 || i >= this.vector.length) {
             return null;
         }
@@ -205,7 +205,7 @@ export class Secuencia {
      * Método que retorna el vector de direcciones de memoria completo.
      * @returns Vector con las direcciones de memoria.
      */
-    getVectorMemoria(): string[] {
+    public getVectorMemoria(): string[] {
         return this.vectorMemoria;
     }
 

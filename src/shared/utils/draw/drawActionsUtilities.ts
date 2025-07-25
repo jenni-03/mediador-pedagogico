@@ -4,10 +4,7 @@ import {
   ListNodeData,
 } from "../../../types";
 import { SVG_STYLE_VALUES } from "../../constants/consts";
-import {
-  calculateCircularLinkPath,
-  calculateLinkPath,
-} from "./calculateLinkPath";
+import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
@@ -133,29 +130,29 @@ export function drawListNodes(
             return `translate(${x}, ${y})`;
           });
 
-        // Contenedor del nodo
-        gEnter
-          .append("rect")
-          .attr("width", elementWidth)
-          .attr("height", elementHeight)
-          .attr("rx", 6)
-          .attr("ry", 6)
-          .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-          .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-          .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+                // Contenedor del nodo
+                gEnter.append("rect")
+                    .attr("class", "node-container")
+                    .attr("width", elementWidth)
+                    .attr("height", elementHeight)
+                    .attr("rx", 6)
+                    .attr("ry", 6)
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
 
-        // Valor del nodo
-        gEnter
-          .append("text")
-          .attr("x", elementWidth / 2)
-          .attr("y", elementHeight / 2)
-          .attr("dy", "0.35em")
-          .attr("text-anchor", "middle")
-          .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
-          .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
-          .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-          .text((d) => d.value)
-          .style("letter-spacing", "0.5px");
+                // Valor del nodo
+                gEnter.append("text")
+                    .attr("class", "node-value")
+                    .attr("x", elementWidth / 2)
+                    .attr("y", elementHeight / 2)
+                    .attr("dy", "0.35em")
+                    .attr("text-anchor", "middle")
+                    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+                    .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
+                    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+                    .text(d => d.value)
+                    .style("letter-spacing", "0.5px");
 
         // Bloque de dirección de memoria
         gEnter
@@ -192,10 +189,16 @@ export function drawListNodes(
           positions.set(d.id, { x, y });
         });
 
-        return update;
-      },
-      (exit) => exit
-    );
+                // Actualizar colores del contenedor en caso de haber cambiado
+                update.select(".node-container")
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+
+                return update;
+            },
+            exit => exit
+        );
 }
 
 /**
@@ -227,28 +230,14 @@ export function drawListLinks(
           .attr("class", "link")
           .attr("id", (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`);
 
-        // Path del enlace
-        gLink
-          .append("path")
-          .attr("class", (d) => `node-link ${d.type}`)
-          .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-          .attr("stroke-width", 1.5)
-          .attr("marker-end", "url(#arrowhead)")
-          .attr("d", (d) => {
-            if (d.type === "next-circular") {
-              console.log(
-                "DIBUJANDO FLECHA CIRCULAR en drawListLinks " + d.type
-              );
-              return calculateCircularLinkPath(
-                d,
-                positions,
-                elementWidth,
-                elementHeight
-              );
-            }
-            return calculateLinkPath(d, positions, elementWidth, elementHeight);
-          })
-          .style("fill", "none");
+                // Path del enlace
+                gLink.append("path")
+                    .attr("class", d => `node-link ${d.type}`)
+                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+                    .attr("stroke-width", 1.5)
+                    .attr("fill", "none")
+                    .attr("marker-end", "url(#arrowhead)")
+                    .attr("d", d => d.type === "next" || d.type === "prev" ? calculateLinkPath(d, positions, elementWidth, elementHeight) : calculateCircularLPath(d, positions, elementWidth, elementHeight));
 
         return gLink;
       },

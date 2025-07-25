@@ -3,10 +3,10 @@ import { NodoS } from "../nodes/NodoS";
 /**
  * Clase que representa una Pila utilizando nodos simples.
  */
-export class Pila {
+export class Pila<T> {
 
     // Nodo tope de la pila.
-    private tope: NodoS | null;
+    private tope: NodoS<T> | null;
 
     // Tamaño de la pila.
     private tamanio: number;
@@ -32,7 +32,7 @@ export class Pila {
      * Método que apila un nuevo elemento en la pila.
      * @param valor Elemento a apilar.
      */
-    public apilar(valor: number): void {
+    public apilar(valor: T): void {
         if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible apilar el elemento: Cantidad de elementos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoS(valor);
@@ -52,11 +52,11 @@ export class Pila {
      * Método que desapila (quita) el elemento tope de la pila.
      * @returns Elemento removido o null si la pila está vacía.
      */
-    public desapilar(): number | null {
+    public desapilar(): T {
         if (this.esVacia()) throw new Error("No fue posible desapilar: No hay elementos en la pila.");
 
-        const valor = this.tope?.getValor() ?? null;
-        this.tope = this.tope?.getSiguiente() ?? null;
+        const valor = this.tope!.getValor();
+        this.tope = this.tope!.getSiguiente();
         this.tamanio--;
 
         return valor;
@@ -66,7 +66,7 @@ export class Pila {
      * Método para obtener el valor del tope de la pila sin desapilar.
      * @returns Valor del nodo en el tope o null si la pila está vacía.
      */
-    public getInfoTope(): number | null {
+    public getInfoTope(): T | null {
         return this.tope?.getValor() ?? null;
     }
 
@@ -74,7 +74,7 @@ export class Pila {
      * Método que obtiene el nodo en el tope de la pila.
      * @returns NodoS o null si la pila está vacía.
      */
-    public getTope(): NodoS | null {
+    public getTope(): NodoS<T> | null {
         return this.tope;
     }
 
@@ -90,7 +90,7 @@ export class Pila {
      * Método que retorna el tamaño en bytes de los nodos almacenados.
      * @returns Tamaño en bytes de los nodos.
      */
-    getTamanioNodo() {
+    public getTamanioNodo() {
         return this.tamanioNodo;
     }
 
@@ -139,12 +139,12 @@ export class Pila {
      * @returns Nueva instancia de Pila con los mismos valores.
      */
     public clonar() {
-        const nuevaPila = new Pila();
+        const nuevaPila = new Pila<T>();
 
         if (this.esVacia()) return nuevaPila;
 
         let nodoActual = this.tope;
-        let ultimoNodoClonado: NodoS | null = null;
+        let ultimoNodoClonado: NodoS<T> | null = null;
 
         while (nodoActual !== null) {
             const nuevoNodo = new NodoS(

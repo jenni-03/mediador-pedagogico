@@ -6,19 +6,19 @@ import { doubleNodeAddressGenerator } from "../memoryAllocator";
 /**
  * Clase que representa un Nodo Doble.
  */
-export class NodoD {
+export class NodoD<T> {
 
     // ID único del nodo.
     private id: string;
 
     // Información almacenada en el nodo.
-    private valor: number;
+    private valor: T;
 
     // Información del nodo siguiente.
-    private siguiente: NodoD | null;
+    private siguiente: NodoD<T> | null;
 
     // Información del nodo anterior.
-    private anterior: NodoD | null;
+    private anterior: NodoD<T> | null;
 
     // Dirección de memoria del nodo.
     private direccionMemoria: string;
@@ -29,7 +29,7 @@ export class NodoD {
      * @param id Identificador único del nodo (opcional).
      * @param direccion Dirección de memoria del nodo (opcional).
      */
-    constructor(valor: number, id?: string, direccion?: string) {
+    constructor(valor: T, id?: string, direccion?: string) {
         this.valor = valor;
         this.id = id ?? `node-${uuidv4()}`;
         this.direccionMemoria = direccion ?? doubleNodeAddressGenerator.generateNextAddress();
@@ -41,7 +41,7 @@ export class NodoD {
      * Método que obtiene la información almacenada en el nodo.
      * @returns valor almacenado en el nodo.
      */
-    public getValor(): number {
+    public getValor(): T {
         return this.valor;
     }
 
@@ -49,7 +49,7 @@ export class NodoD {
      * Método que obtiene la referencia al nodo siguiente.
      * @returns Nodo siguiente o null según corresponda.
      */
-    public getSiguiente(): NodoD | null {
+    public getSiguiente(): NodoD<T> | null {
         return this.siguiente;
     }
 
@@ -57,7 +57,7 @@ export class NodoD {
      * Método que obtiene la referencia al nodo anterior.
      * @returns Nodo anterior o null según corresponda.
      */
-    public getAnterior(): NodoD | null {
+    public getAnterior(): NodoD<T> | null {
         return this.anterior;
     }
 
@@ -81,7 +81,7 @@ export class NodoD {
      * Método que establece el valor del nodo.
      * @param valor Valor a establecer.
      */
-    public setValor(valor: number): void {
+    public setValor(valor: T): void {
         this.valor = valor;
     }
 
@@ -89,7 +89,7 @@ export class NodoD {
      * Método que establece la referencia al nodo siguiente.
      * @param nodo Nodo a establecer como siguiente.
      */
-    public setSiguiente(nodo: NodoD | null): void {
+    public setSiguiente(nodo: NodoD<T> | null): void {
         this.siguiente = nodo;
     }
 
@@ -97,7 +97,7 @@ export class NodoD {
      * Método que establece la referencia al nodo anterior.
      * @param nodo Nodo a establecer como anterior.
      */
-    public setAnterior(nodo: NodoD | null): void {
+    public setAnterior(nodo: NodoD<T> | null): void {
         this.anterior = nodo;
     }
 

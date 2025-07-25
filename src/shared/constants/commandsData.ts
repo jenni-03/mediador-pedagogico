@@ -90,7 +90,7 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "getFront",
-        description: "Obtiene el primer elemento que fue insertado en la Cola.",
+        description: "Obtiene el elemento que se encuentra en el frente de la Cola.",
         estructura: "getFront();",
         ejemplo: "getFront();",
       },
@@ -106,25 +106,25 @@ export const commandsData: Record<string, any> = {
     buttons: [
       {
         title: "enqueue",
-        description: "Agregar un elemento a la Cola.",
+        description: "Agrega un elemento a la Cola basado en su prioridad.",
         estructura: "enqueue(valor, prioridad);",
         ejemplo: "enqueue(1, 1);",
       },
       {
         title: "dequeue",
-        description: "Retirar el primer elemento que fue insertado en la Cola.",
+        description: "Retira el elemento con mayor prioridad en la Cola.",
         estructura: "dequeue();",
         ejemplo: "dequeue();",
       },
       {
         title: "getFront",
-        description: "Obtener el primer elemento que fue insertado en la Cola.",
+        description: "Obtiene el elemento que se encuentra en el frente de la Cola.",
         estructura: "getFront();",
         ejemplo: "getFront();",
       },
       {
         title: "clean",
-        description: "Vaciar la cola",
+        description: "Vacia la cola",
         estructura: "clean();",
         ejemplo: "clean();",
       },
@@ -186,78 +186,89 @@ export const commandsData: Record<string, any> = {
     buttons: [
       {
         title: "create",
-        description: "Crear la tabla hash con N slots",
+        description: "Crea la tabla hash con N slots",
         estructura: "create(n);",
         ejemplo: "create(10);",
       },
       {
         title: "set",
-        description: "Insertar o actualizar un par clave→valor",
+        description: "Inserta o actualiza un par clave→valor",
         estructura: "set(clave,valor);",
         ejemplo: "set(25,100);",
       },
       {
         title: "get",
-        description: "Recuperar el valor asociado a una clave",
+        description: "Recupera el valor asociado a una clave",
         estructura: "get(clave);",
         ejemplo: "get(25);",
       },
       {
         title: "delete",
-        description: "Eliminar un par por su clave",
+        description: "Elimina un par por su clave",
         estructura: "delete(clave);",
         ejemplo: "delete(25);",
       },
       {
         title: "clean",
-        description: "Vaciar la tabla hash",
+        description: "Vacia la tabla hash",
         estructura: "clean();",
         ejemplo: "clean();",
       },
     ],
   },
-  bst: {
+  arbol_binario: {
     buttons: [
       {
-        title: "insert",
-        description: "Insertar un nodo en el BST",
-        estructura: "insert(valor);",
-        ejemplo: "insert(1);",
+        title: "insertLeft",
+        description: "Inserta un nodo como hijo izquierdo de un nodo existente.",
+        estructura: "insertLeft(padre, valor);",
+        ejemplo: "insertLeft(1, 2);",
+      },
+      {
+        title: "insertRight",
+        description: "Inserta un nodo como hijo derecho de un nodo existente.",
+        estructura: "insertRight(padre, valor);",
+        ejemplo: "insertRight(2, 3);",
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del BST",
+        description: "Elimina un nodo del árbol binario.",
         estructura: "delete(valor);",
         ejemplo: "delete(1);",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el BST",
+        description: "Busca un nodo dentro del árbol binario.",
         estructura: "search(valor);",
-        ejemplo: "search(1);",
+        ejemplo: "search(3);",
       },
       {
-        title: "traverse",
-        description: "Recorrer el BST en diferentes órdenes",
-        estructura: "traverse(nombreOrden);",
-        ejemplo:
-          "traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del árbol binario.",
+        estructura: "getPreOrder();",
+        ejemplo: "getPreOrder();"
       },
       {
-        title: "findMin",
-        description: "Encontrar el mínimo",
-        estructura: "findMin();",
-        ejemplo: "findMin();",
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del árbol binario.",
+        estructura: "getInOrder();",
+        ejemplo: "getInOrder();"
       },
       {
-        title: "findMax",
-        description: "Encontrar el máximo",
-        estructura: "findMax();",
-        ejemplo: "findMax();",
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del árbol binario.",
+        estructura: "getPostOrder();",
+        ejemplo: "getPostOrder();"
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles del árbol binario.",
+        estructura: "getLevelOrder();",
+        ejemplo: "getLevelOrder();"
       },
       {
         title: "clean",
-        description: "Borrar el BST",
+        description: "Borra el árbol binario.",
         estructura: "clean();",
         ejemplo: "clean();",
       },

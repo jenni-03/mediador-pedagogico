@@ -14,9 +14,11 @@ export const STRUCTURE_NAME = {
     STACK: 'pila',
     LINKED_LIST: 'lista_enlazada',
     SIMPLE_LINKED_LIST: 'lista_simplemente_enlazada',
-    DOUBLE_LINKED_LIST: 'lista_doblemente_enlazada',
+    DOUBLY_LINKED_LIST: 'lista_doblemente_enlazada',
+    CIRCULAR_DOUBLY_LINKED_LIST: 'lista_circular_doblemente_enlazada',
+    CIRCULAR_SIMPLE_LINKED_LIST: 'lista_circular_simplemente_enlazada',
     HASHTABLE: 'tabla_hash',
-    SIMPLE_CIRCULAR_LIST: 'lista_circular_simple',
+    BINARY_TREE: 'arbol_binario'
 } as const
 
 export const SVG_STYLE_VALUES = {
@@ -90,7 +92,7 @@ export const SVG_LINKED_LIST_VALUES = {
     ELEMENT_WIDTH: 80,
     ELEMENT_HEIGHT: 40,
     SPACING: 55,
-    HEIGHT: 230,
+    HEIGHT: 240,
 } as const
 
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
@@ -108,14 +110,17 @@ export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
     },
     circular: {
         showHeadIndicator: true,
-        showTailIndicator: false,
+        showTailIndicator: true,
         showDoubleLinks: false,
-        showCircularLinks: true
+        showCircularLinks: true,
+        showNextCircularLink: true,
     },
     double_circular: {
         showHeadIndicator: true,
         showTailIndicator: false,
         showDoubleLinks: true,
-        showCircularLinks: true
+        showCircularLinks: true,
+        showNextCircularLink: true,
+        showPrevCircularLink: true
     }
 };

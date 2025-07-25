@@ -8,7 +8,7 @@ import { PriorityQueueRender } from "./components/estructures/colaPrioridad/Prio
 
 export function PriorityQueueSimulator() {
     // Instanciación de la estructura Cola
-    const structure = useRef(new ColaDePrioridad()).current;
+    const structure = useRef(new ColaDePrioridad<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {

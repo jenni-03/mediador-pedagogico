@@ -8,7 +8,7 @@ import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
 
 export function StackSimulator() {
     // Instanciación de la estructura Pila
-    const structure = useRef(new Pila()).current;
+    const structure = useRef(new Pila<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {
