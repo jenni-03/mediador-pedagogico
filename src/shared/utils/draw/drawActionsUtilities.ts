@@ -281,7 +281,7 @@ export function drawListNodes(
 
                 return update;
             },
-            exit => exit.remove()
+            exit => exit
         );
 }
 
