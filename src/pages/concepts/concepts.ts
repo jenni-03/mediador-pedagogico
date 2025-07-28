@@ -30,3 +30,4 @@ export { DefinitionTablaHash } from "./components/structures/tabla_hash/Definiti
 export { DefinitionListaDoble } from "./components/structures/lista_doble/DefinitionListaDoble";
 export { DefinitionListaCSimple } from "./components/structures/lista_circular_simple/DefinitionListaCSimple";
 export { DefinitionListaCDoble } from "./components/structures/lista_circular_doble/DefinitionListaCDoble";
+export { DefinitionArbolAVL } from "./components/structures/arbol_avl/DefinitionArbolAVL";
