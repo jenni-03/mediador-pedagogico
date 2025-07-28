@@ -30,8 +30,7 @@ export function useBinaryTreeRender(
         if (!root) return [];
         return root.links().map(link => ({
             sourceId: link.source.data.id,
-            targetId: link.target.data.id,
-            type: link.source.data.children?.[0]?.id === link.target.data.id ? "left" : "right"
+            targetId: link.target.data.id
         }))
     }, [root]);
 
@@ -111,7 +110,7 @@ export function useBinaryTreeRender(
         // Obtenemos el recorrido o ruta desde el nodo raíz hasta el nodo padre del nuevo nodo
         let parentNode: d3.HierarchyNode<HierarchyNodeData<number>> | null = null;
         let pathToParent: d3.HierarchyNode<HierarchyNodeData<number>>[] = [];
-        if (newNode.parent) {
+        if (newNode.parent !== null) {
             parentNode = newNode.parent;
             pathToParent = root.path(parentNode);
         }
@@ -119,14 +118,18 @@ export function useBinaryTreeRender(
         // Animación de inserción del nuevo nodo
         animateInsertNode(
             g,
-            newNode.data.id,
-            parentNode?.data.id ?? null,
-            pathToParent,
+            {
+                newNodeId: newNode.data.id,
+                parentId: parentNode?.data.id ?? null,
+                nodesData: root.descendants(),
+                linksData,
+                pathToParent
+            },
             nodePositions,
             resetQueryValues,
             setIsAnimating
         );
-    }, [root, query.toInsertLeft, query.toInsertRight, resetQueryValues, setIsAnimating]);
+    }, [root, linksData, query.toInsertLeft, query.toInsertRight, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }
