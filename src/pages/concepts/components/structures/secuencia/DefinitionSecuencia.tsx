@@ -3,103 +3,115 @@ import img2 from "../../../../../assets/images/definicion_secuencia_2.jpg";
 
 export function DefinitionSecuencia() {
   return (
-    <div className="py-6 px-8 sm:px-12 bg-[#0f0f0f] text-white leading-relaxed">
-      <h1 className="text-3xl font-extrabold text-white mb-1">SECUENCIA</h1>
-      <h2 className="text-base text-red-500 mb-3 font-semibold">
-        Estructura Lineal
-      </h2>
-      <hr className="mt-2 mb-6 border-t-2 border-red-500" />
-
-      <div>
-        {/* Descripción */}
-        <h3 className="text-2xl font-bold text-red-500 mb-3">Descripción</h3>
-        <p className="text-sm text-gray-300 mb-4">
-          Son estructuras de datos que, una vez definidas, no pueden ser
-          cambiadas por otras de diferente naturaleza o tamaño. No se pueden
-          usar en problemas donde se requiera un tamaño dinámico al momento de
-          la ejecución.
-        </p>
-        <p className="text-sm text-gray-300 mb-6">
-          Una Secuencia es una lista contigua de datos del mismo tipo,
-          accesibles por índice, y representa un vector en Java. Es una
-          estructura estática lineal con tamaño fijo, que almacena elementos de
-          forma sucesiva en memoria.
-        </p>
-        <img
-          src={img1}
-          alt="img 1"
-          className="rounded-xl mb-6 border border-gray-700"
-        />
-
-        {/* Características */}
-        <h3 className="text-2xl font-bold text-red-500 mb-3">
-          Características
-        </h3>
-        <p className="text-sm text-gray-300 mb-4">
-          Almacena datos de forma consecutiva, sin espacios nulos entre la
-          primera y última posición ocupada. Esto permite examinar elementos sin
-          recorrer toda su capacidad.
-        </p>
-        <p className="text-sm text-gray-300 mb-4">
-          Puede almacenar N elementos del mismo tipo, y acceder a cada uno por
-          índice. Así se distinguen:
-        </p>
-        <p className="text-sm text-gray-300 mb-2">
-          ✨ Elementos (valores almacenados)
-        </p>
-        <p className="text-sm text-gray-300 mb-6">
-          ✨ Índices (referencias a los elementos)
-        </p>
-
-        <img
-          src={img2}
-          alt="img 2"
-          className="rounded-xl mb-6 border border-gray-700"
-        />
-
-        {/* Lista de puntos */}
-        <ul className="space-y-3 mb-6">
-          {[
-            "En la ejecución del programa, se reservan tantas posiciones como el tamaño definido de la Secuencia, siendo cada posición del tamaño requerido por el tipo de dato de la estructura.",
-            "El primer elemento de una Secuencia tiene obligatoriamente índice 0.",
-            "Si una Secuencia tiene como máximo n elementos, el último se referenciará con el índice n-1.",
-            "En cuanto a las dimensiones de la Secuencia pueden ser: Unidimensional, Bidimensional, Multidimensional.",
-          ].map((texto, index) => (
-            <li key={index} className="text-sm text-gray-300 leading-6">
-              ✨ {texto}
-            </li>
-          ))}
-        </ul>
-
-        <p className="text-sm text-gray-300 mb-6">
-          <span className="font-semibold text-white">SEED</span> trabaja con la
-          dimensión unidimensional por ser la más relevante. A partir de ella,
-          el estudiante puede implementar otras más complejas si lo considera
-          necesario.
-        </p>
-
-        {/* Secuencia unidimensional */}
-        <h3 className="text-2xl font-bold text-red-500 mb-3">
-          Secuencia unidimensional
-        </h3>
-        <p className="text-sm text-gray-300 mb-4">
-          Es un conjunto de elementos del mismo tipo.
-        </p>
-
-        {[
-          "Declaración: Tipo nombre_Secuencia[Tamaño];",
-          "Tipo: Hace referencia al tipo de los datos contenidos en el vector.",
-          "Tamaño: Hace referencia al número de elementos máximos que puede contener la Secuencia. OJO: Este tamaño se define al crear la estructura y no puede modificarse a lo largo de la operabilidad de la misma.",
-        ].map((element, index) => {
-          const partes = element.split(":");
-          return (
-            <p key={index} className="text-sm text-gray-300 mb-2">
-              <span className="font-bold text-white">{partes[0]}:</span>
-              {partes.slice(1).join(":")}
-            </p>
-          );
-        })}
+    <div className="text-white py-8 px-3 sm:px-10 max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="h-7 w-2 rounded bg-red-600"></div>
+        <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
+          Secuencia
+        </h1>
       </div>
+      <span className="text-base text-red-400 ml-3 font-medium block mb-2">
+        Estructura Lineal
+      </span>
+      <hr className="border-t-2 border-red-500 mb-7 w-40 rounded" />
+
+      {/* Descripción */}
+      <section className="space-y-4 text-[15px] text-gray-200 leading-7">
+        <h3 className="text-xl font-bold text-red-500 mb-1">Descripción</h3>
+        <div className="bg-[#18191a] border-l-4 border-red-500 rounded-md p-4 shadow">
+          <p>
+            Una <b className="text-red-400">Secuencia</b> es una estructura de
+            datos lineal <b>estática</b> que no puede cambiar su tamaño una vez
+            definida. No es adecuada para problemas que requieran crecimiento
+            dinámico durante la ejecución.
+          </p>
+          <p className="mt-3">
+            Representa una lista contigua de datos del mismo tipo, accesibles
+            mediante <b>índices</b>, equivalente a un{" "}
+            <span className="text-cyan-300">vector en Java</span>.
+          </p>
+          <div className="my-4 flex justify-center">
+            <img
+              src={img1}
+              alt="estructura secuencia"
+              className="w-full h-auto max-w-xs sm:max-w-md md:max-w-lg rounded-xl border border-red-600 shadow"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Características */}
+      <section className="mt-8 space-y-4">
+        <h3 className="text-xl font-bold text-red-500 mb-1">Características</h3>
+        <div className="bg-[#18191a] border-l-4 border-red-500 rounded-md p-4 shadow space-y-3">
+          <p>
+            Los elementos se almacenan de forma <b>consecutiva</b> en memoria,
+            lo que permite un acceso rápido por índice sin recorrer toda la
+            estructura.
+          </p>
+          <ul className="pl-4 space-y-1">
+            <li className="flex gap-2 items-start">
+              <span className="text-red-400 mt-1">•</span> Contiene{" "}
+              <b>elementos</b> (valores) y <b>índices</b> (posiciones de
+              acceso).
+            </li>
+            <li className="flex gap-2 items-start">
+              <span className="text-red-400 mt-1">•</span> El primer elemento
+              siempre tiene índice{" "}
+              <code className="bg-black/50 px-1 rounded">0</code>.
+            </li>
+            <li className="flex gap-2 items-start">
+              <span className="text-red-400 mt-1">•</span> Si tiene{" "}
+              <code className="bg-black/50 px-1 rounded">n</code> elementos, el
+              último se referencia con índice{" "}
+              <code className="bg-black/50 px-1 rounded">n-1</code>.
+            </li>
+          </ul>
+          <p className="mt-2">
+            Puede ser <span className="text-yellow-400">Unidimensional</span>,{" "}
+            <span className="text-yellow-400">Bidimensional</span> o{" "}
+            <span className="text-yellow-400">Multidimensional</span>.
+          </p>
+        </div>
+        <div className="bg-[#18191a] border-l-4 border-red-500 rounded-md p-4 shadow">
+          <p>
+            <span className="font-semibold text-white">SEED</span> trabaja
+            principalmente con secuencias <b>unidimensionales</b>, base para
+            construir estructuras más complejas si se requiere.
+          </p>
+        </div>
+        <div className="flex justify-center mt-4">
+          <img
+            src={img2}
+            alt="características secuencia"
+            className="w-full h-auto max-w-md md:max-w-lg rounded-xl border border-cyan-400 shadow"
+          />
+        </div>
+      </section>
+
+      {/* Secuencia unidimensional */}
+      <section className="mt-10 space-y-4">
+        <h3 className="text-xl font-bold text-red-500 mb-1">
+          Secuencia Unidimensional
+        </h3>
+        <div className="bg-[#19191d] border-l-4 border-red-400 rounded-md p-4 shadow space-y-3">
+          <p>Es un conjunto de elementos del mismo tipo dispuestos en línea.</p>
+          {[
+            "Declaración: Tipo nombre_Secuencia[Tamaño];",
+            "Tipo: Define el tipo de los datos contenidos en el vector.",
+            "Tamaño: Número máximo de elementos que puede contener. Este valor es fijo y no puede modificarse durante la ejecución.",
+          ].map((texto, index) => {
+            const partes = texto.split(":");
+            return (
+              <p key={index} className="text-sm">
+                <span className="font-bold text-white">{partes[0]}:</span>{" "}
+                {partes.slice(1).join(":")}
+              </p>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

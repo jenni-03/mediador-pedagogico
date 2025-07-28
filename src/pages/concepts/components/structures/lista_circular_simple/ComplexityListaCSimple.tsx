@@ -1,4 +1,4 @@
-import { complexityListaSimple } from "../../../../../shared/constants/complexityStructures/complexityListaSimple";
+import { complexityListaCSimple } from "../../../../../shared/constants/complexityStructures/complexityListaCSimple";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityListaCSimple() {
@@ -11,7 +11,7 @@ export function ComplexityListaCSimple() {
         </h1>
       </div>
       <span className="text-base text-red-400 ml-3 font-medium block mb-2">
-        Lista Simple
+        Lista Circular Simplemente Enlazada
       </span>
       <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
@@ -50,7 +50,7 @@ export function ComplexityListaCSimple() {
       </section>
 
       <section className="space-y-8">
-        {complexityListaSimple.map((method, index) => (
+        {complexityListaCSimple.map((method, index) => (
           <div key={index} className="border-b border-gray-700 pb-4">
             <h3 className="text-xl font-semibold text-red-400 mb-3">
               {method.title}
@@ -68,14 +68,15 @@ export function ComplexityListaCSimple() {
         <h3 className="text-xl font-bold text-white mb-3">Conclusión</h3>
         <p className="text-sm text-gray-300 leading-6">
           En el análisis anterior se pudo observar que la estructura{" "}
-          <strong>Lista Simple</strong> opta en el mejor de los casos a ser{" "}
-          <span className="text-green-400">constante</span> y en el peor de los
-          casos a ser <span className="text-yellow-400">lineal</span>. Teniendo
-          en cuenta que su comportamiento lineal depende de{" "}
-          <code className="bg-gray-800 px-1 rounded">this.cant</code>, este
-          mismo puede considerarse como{" "}
-          <code className="bg-gray-800 px-1 rounded">n</code> para evaluar el
-          coste operacional de cada algoritmo.
+          <strong>Lista Circular</strong> es similar en comparacion a la{" "}
+          <span className="text-green-400">Lista Simple</span> con la unica
+          variacion en sus metodos auxiliares como lo son{" "}
+          <span className="text-yellow-400">getPos, esVacia y getIndice,</span>.
+          y al añadir un{" "}
+          <code className="bg-gray-800 px-1 rounded">Nodo T</code>, este mismo
+          puede considerarse como{" "}
+          <code className="bg-gray-800 px-1 rounded">n</code> auxiliar suman
+          pocas opraciones mas al calculo de la complejidad.
         </p>
       </section>
     </div>
