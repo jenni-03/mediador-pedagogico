@@ -8,7 +8,9 @@ export { OperationTablaHash } from "./components/structures/tabla_hash/Operation
 export { OperationListaDoble } from "./components/structures/lista_doble/OperationListaDoble";
 export { OperationListaCSimple } from "./components/structures/lista_circular_simple/OperationListaCSimple";
 export { OperationListaCDoble } from "./components/structures/lista_circular_doble/OperationListaCDoble";
-
+export { OperationArbolAVL } from "./components/structures/arbol_avl/OperationArbolAVL";
+export {OperationArbolBinarioBusqueda} from "./components/structures/arbol_bin_busqueda/OperationArbolBin";
+ 
 export { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
 export { ComplexityCola } from "./components/structures/cola/ComplexityCola";
 export { ComplexityColaPrioridad } from "./components/structures/cola_de_prioridad/ComplexityColaPrioridad";
@@ -19,6 +21,8 @@ export { ComplexityTablaHash } from "./components/structures/tabla_hash/Complexi
 export { ComplexityListaDoble } from "./components/structures/lista_doble/ComplexityListaDoble";
 export { ComplexityListaCSimple } from "./components/structures/lista_circular_simple/ComplexityListaCSimple";
 export { ComplexityListaCDoble } from "./components/structures/lista_circular_doble/ComplexityListaCDoble";
+export { ComplexityArbolAVL } from "./components/structures/arbol_avl/ComplexityArbolAVL";
+export { ComplexityArbolBinarioBusqueda} from "./components/structures/arbol_bin_busqueda/ComplexityArbolBin";
 
 export { DefinitionSecuencia } from "./components/structures/secuencia/DefinitionSecuencia";
 export { DefinitionCola } from "./components/structures/cola/DefinitionCola";
@@ -31,3 +35,4 @@ export { DefinitionListaDoble } from "./components/structures/lista_doble/Defini
 export { DefinitionListaCSimple } from "./components/structures/lista_circular_simple/DefinitionListaCSimple";
 export { DefinitionListaCDoble } from "./components/structures/lista_circular_doble/DefinitionListaCDoble";
 export { DefinitionArbolAVL } from "./components/structures/arbol_avl/DefinitionArbolAVL";
+export { DefinitionArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/DefinitionArbolBin";
