@@ -11,6 +11,7 @@ export { OperationListaCDoble } from "./components/structures/lista_circular_dob
 export { OperationArbolAVL } from "./components/structures/arbol_avl/OperationArbolAVL";
 export { OperationArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/OperationArbolBin";
 export { OperationArbolRojiNegro } from "./components/structures/arbol_rojinegro/OperationArbolRojiNegro";
+export { OperationArbolSplay } from "./components/structures/arbol_splay/OperationArbolSplay";
 
 export { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
 export { ComplexityCola } from "./components/structures/cola/ComplexityCola";
@@ -25,6 +26,7 @@ export { ComplexityListaCDoble } from "./components/structures/lista_circular_do
 export { ComplexityArbolAVL } from "./components/structures/arbol_avl/ComplexityArbolAVL";
 export { ComplexityArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/ComplexityArbolBin";
 export { ComplexityArbolRojinegro } from "./components/structures/arbol_rojinegro/ComplexityArbolRojiNegro";
+export { ComplexityArbolSplay } from "./components/structures/arbol_splay/ComplexityArbolSplay";
 
 export { DefinitionSecuencia } from "./components/structures/secuencia/DefinitionSecuencia";
 export { DefinitionCola } from "./components/structures/cola/DefinitionCola";
@@ -39,3 +41,4 @@ export { DefinitionListaCDoble } from "./components/structures/lista_circular_do
 export { DefinitionArbolAVL } from "./components/structures/arbol_avl/DefinitionArbolAVL";
 export { DefinitionArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/DefinitionArbolBin";
 export { DefinitionArbolRojiNegro } from "./components/structures/arbol_rojinegro/DefinitionArbolRojiNegro";
+export { DefinitionArbolSplay } from "./components/structures/arbol_splay/DefinitionArbolSPLAY";

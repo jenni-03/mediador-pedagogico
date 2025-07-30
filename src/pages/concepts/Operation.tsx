@@ -1,6 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
 import {
+  OperationArbolSplay,
   OperationArbolRojiNegro,
   OperationArbolBinarioBusqueda,
   OperationArbolAVL,
@@ -31,6 +32,7 @@ const componentMap: Record<string, React.FC> = {
   "Árbol AVL": OperationArbolAVL,
   "Árbol Binario de Búsqueda": OperationArbolBinarioBusqueda,
   "Árbol RojiNegro": OperationArbolRojiNegro,
+  "Árbol Splay": OperationArbolSplay,
 };
 
 export function Operation() {

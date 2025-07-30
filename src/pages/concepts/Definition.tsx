@@ -1,6 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
 import {
+  DefinitionArbolSplay,
   DefinitionArbolRojiNegro,
   DefinitionArbolBinarioBusqueda,
   DefinitionArbolAVL,
@@ -31,6 +32,7 @@ const componentMap: Record<string, React.FC> = {
   "Lista Circular Doblemente Enlazada": DefinitionListaCDoble,
   "Árbol Binario de Búsqueda": DefinitionArbolBinarioBusqueda,
   "Árbol RojiNegro": DefinitionArbolRojiNegro,
+  "Árbol Splay": DefinitionArbolSplay,
 };
 
 export function Definition() {

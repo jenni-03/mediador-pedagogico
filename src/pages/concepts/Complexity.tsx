@@ -1,6 +1,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { conceptosData } from "../../shared/constants/conceptsData";
 import {
+  ComplexityArbolSplay,
   ComplexityArbolRojinegro,
   ComplexityArbolBinarioBusqueda,
   ComplexityArbolBinario,
@@ -31,6 +32,7 @@ const componentMap: Record<string, React.FC> = {
   "Árbol AVL": ComplexityArbolAVL,
   "Árbol Binario de Búsqueda": ComplexityArbolBinarioBusqueda,
   "Árbol RojiNegro": ComplexityArbolRojinegro,
+  "Árbol Splay": ComplexityArbolSplay,
 };
 
 export function Complexity() {
