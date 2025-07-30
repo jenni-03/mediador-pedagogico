@@ -9,7 +9,7 @@ export function ComplexityArbolRojinegro() {
       </h1>
       <h1 className="text-sm text-red-400 mb-3">Árbol RojiNegro</h1>
       <hr className="mt-2 mb-4 border-red-500 border-t-2" />
-      <AVLAlgorithmAnalysis />
+      <RedBlackAlgorithmAnalysis />
       <div>
         <div className="space-y-8">
           {complexityArbolRojiNegro.map((method, index) => (
@@ -32,7 +32,7 @@ export function ComplexityArbolRojinegro() {
   );
 }
 
-function AVLAlgorithmAnalysis() {
+function RedBlackAlgorithmAnalysis() {
   return (
     <section className="mb-10">
       <div className="bg-[#18181b] border-l-4 border-[#ef4444] rounded-xl p-6 shadow-lg">
@@ -40,12 +40,12 @@ function AVLAlgorithmAnalysis() {
           <span className="drop-shadow">Análisis Algorítmico</span>
         </h2>
         <h3 className="text-lg font-semibold text-[#f87171] mb-4">
-          Costo Operacional y Complejidad (Árbol AVL)
+          Costo Operacional y Complejidad (Árbol RojiNegro)
         </h3>
         <p className="text-gray-200 text-[15px] mb-3">
-          Los siguientes análisis consideran el peor de los casos (
-          <span className="font-bold">Big O</span>) usando el{" "}
-          <span className="text-[#ef4444] font-bold">Teorema Maestro</span> y la
+          Los análisis que se muestran a continuación corresponden al{" "}
+          <span className="font-bold">peor de los casos (Big O)</span>, usando
+          el <span className="text-[#ef4444] font-bold">Teorema Maestro</span> y
           notación estándar de algoritmos recursivos:
         </p>
         {/* Teorema Maestro */}
@@ -100,7 +100,7 @@ function AVLAlgorithmAnalysis() {
             <b>A</b>: Llamadas recursivas &nbsp;|&nbsp;
             <b>B</b>: Divisiones del problema &nbsp;|&nbsp;
             <b>C</b>: Trabajo no recursivo &nbsp;|&nbsp;
-            <b>n</b>: Tamaño de la entrada
+            <b>n</b>: Cantidad de veces a iterar
           </div>
         </div>
         <ul className="text-sm text-gray-300 pl-5 list-disc space-y-1 mb-1">
@@ -109,7 +109,7 @@ function AVLAlgorithmAnalysis() {
           </li>
           <li>
             <span className="font-bold text-[#ef4444]">n:</span> Número de
-            operaciones elementales / cantidad de inputs
+            operaciones elementales / cantidad de veces a iterar
           </li>
           <li>
             Cada instrucción se revisa línea a línea, y los métodos internos se
