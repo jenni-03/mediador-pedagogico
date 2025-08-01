@@ -44,7 +44,9 @@ export function DataStructureInfo({
                                             ? structurePrueba.getPeso()
                                             : item.key === "Altura"
                                               ? structurePrueba.getAltura()
-                                              : "N/A";
+                                              : item.key === "Hojas"
+                                                 ? structurePrueba.contarHojas()
+                                                 : "N/A";
 
               return (
                 <InfoModal

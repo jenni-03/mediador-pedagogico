@@ -100,11 +100,11 @@ export const SVG_BINARY_TREE_VALUES = {
     MARGIN_RIGHT: 30,
     MARGIN_TOP: 30,
     MARGIN_BOTTOM: 30,
-    NODE_RADIUS: 20,
+    NODE_RADIUS: 25,
     NODE_SPACING: 65,
     LEVEL_SPACING: 85,
-    ELEMENT_TEXT_WEIGHT: '500',
-    ELEMENT_TEXT_SIZE: '14px',
+    ELEMENT_TEXT_WEIGHT: '600',
+    ELEMENT_TEXT_SIZE: '16px',
 }
 
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {

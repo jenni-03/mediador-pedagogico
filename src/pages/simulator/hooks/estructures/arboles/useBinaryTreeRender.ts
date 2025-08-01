@@ -4,7 +4,8 @@ import { BaseQueryOperations, HierarchyNodeData, TreeLinkData } from "../../../.
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateInsertNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+import { animateDeleteNode, animateInsertNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 
 export function useBinaryTreeRender(
     treeData: HierarchyNodeData<number> | null,
@@ -22,6 +23,9 @@ export function useBinaryTreeRender(
         return treeData ? d3.hierarchy(treeData) : null;
     }, [treeData]);
 
+    // Estado previo de la raíz
+    const prevRoot = usePrevious(root);
+
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
 
@@ -35,7 +39,9 @@ export function useBinaryTreeRender(
     }, [root]);
 
     console.log("Nodo raiz del arbol");
-    console.log(root?.data);
+    console.log(root?.descendants());
+    console.log("Nodo raíz previo");
+    console.log(prevRoot?.descendants())
     console.log("Data de los enlaces del arbol");
     console.log(linksData);
     console.log("Query actual");
@@ -61,9 +67,10 @@ export function useBinaryTreeRender(
         treeLayout(root);
 
         // Valores minimos y máximos del árbol en cada eje
-        const nodes = root.descendants();
-        const [minX, maxX] = d3.extent(nodes, d => d.x);
-        const [minY, maxY] = d3.extent(nodes, d => d.y);
+        const currNodes = root.descendants();
+        const prevNodes = prevRoot?.descendants() ?? currNodes;
+        const [minX, maxX] = d3.extent([...prevNodes, ...currNodes], d => d.x);
+        const [minY, maxY] = d3.extent([...prevNodes, ...currNodes], d => d.y);
 
         // Cálculo del ancho y alto del SVG
         const width = (maxX! - minX!) + margin.left + margin.right;
@@ -82,8 +89,9 @@ export function useBinaryTreeRender(
         }
         g.attr("transform", `translate(${margin.left - minX!},${margin.top - minY!})`);
 
+
         // Renderizado de los nodos del árbol
-        drawTreeNodes(g, nodes, nodePositions);
+        drawTreeNodes(g, currNodes, nodePositions);
 
         // Renderizado de los enlaces entre nodos
         drawTreeLinks(g, linksData, nodePositions);
@@ -130,6 +138,49 @@ export function useBinaryTreeRender(
             setIsAnimating
         );
     }, [root, linksData, query.toInsertLeft, query.toInsertRight, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la eliminación de un nodo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!prevRoot || !svgRef.current || !query.toDelete) return;
+
+        // Verificación de la estructura de la query del usuario
+        if (query.toDelete.length !== 2) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Grupo contenedor de nodos y enlaces del árbol
+        const g = svg.select<SVGGElement>("g.tree-container");
+
+        // Determinamos el ID del nodo a eliminar
+        const nodeToDeleteId = query.toDelete[0];
+
+        // Ubicamos al nodo a eliminar en el árbol
+        const nodeToDelete = prevRoot.descendants().find(d => d.data.id === nodeToDeleteId);
+        if (!nodeToDelete) return;
+
+        // Ubicamos el nodo a actualizar en el arbol (si aplica)
+        let nodeToUpdate: d3.HierarchyNode<HierarchyNodeData<number>> | null = null;
+        if (query.toDelete[1]) {
+            nodeToUpdate = prevRoot.descendants().find(d => d.data.id === query.toDelete[1])!;
+        }
+
+        // Animación de inserción del nuevo nodo
+        animateDeleteNode(
+            g,
+            {
+                prevRootNode: prevRoot,
+                nodeToDelete,
+                nodeToUpdate,
+                remainingNodesData: root ? root.descendants() : [],
+                remainingLinksData: linksData
+            },
+            nodePositions,
+            resetQueryValues,
+            setIsAnimating
+        );
+    }, [root, prevRoot, linksData, query.toDelete, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }

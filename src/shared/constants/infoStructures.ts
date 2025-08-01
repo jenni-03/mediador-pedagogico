@@ -92,6 +92,10 @@ export const infoStructures: Record<string, any> = {
       {
         key: "Altura",
         description: "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario."
+      },
+      {
+        key: "Hojas",
+        description: "Son hojas que caen :3"
       }
     ],
   },
