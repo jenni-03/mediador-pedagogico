@@ -1,6 +1,6 @@
 import { HierarchyNode } from "d3";
 import { HierarchyNodeData, TreeLinkData } from "../../../types";
-import { repositionTreeNodes } from "./drawActionsUtilities";
+import { higlighTreePath, repositionTreeNodes } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 
 /**
@@ -46,17 +46,7 @@ export async function animateInsertNode(
         await repositionTreeNodes(g, nodesData, linksData, positions);
 
         // Animación de recorrido desde el nodo raíz hasta el nodo padre del nuevo nodo
-        for (const node of pathToParent) {
-            // Selección del grupo del nodo actual
-            const nodeGroup = g.select<SVGGElement>(`g#${node.data.id}`);
-
-            // Resaltado del nodo actual
-            await nodeGroup.select("circle")
-                .transition()
-                .duration(1000)
-                .attr("fill", "#D72638")
-                .end();
-        }
+        await higlighTreePath(g, pathToParent, "#D72638");
 
         // Aparición del nuevo nodo
         await newNodeGroup
@@ -88,7 +78,7 @@ export async function animateInsertNode(
 }
 
 /**
- * Función encargada de animar la eliminacióm de un nodo especifico en el árbol binario.
+ * Función encargada de animar la eliminación de un nodo especifico en el árbol binario.
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
  * @param treeData Objeto con información del árbol necesaria para la animación.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
@@ -156,6 +146,48 @@ export async function animateDeleteNode(
 }
 
 /**
+ * Función encargada de animar la búsqueda de un nodo dentro del árbol binario. 
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param targetNode ID del nodo a buscar.
+ * @param path Array de nodos jerárquicos que representan el camino a resaltar.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
+ * @param setIsAnimating Función para establecer el estado de animación
+ */
+export async function animateSearchNode(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    targetNode: string,
+    path: HierarchyNode<HierarchyNodeData<number>>[],
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Reestablecimiento del fondo original de los nodos
+    g.selectAll(".node-container")
+        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
+
+    // Grupo correspondiente al nodo a buscar
+    const foundNodeGroup = g.select<SVGGElement>(`g#${targetNode}`);
+
+    // Animación de recorrido de los nodos hasta el nodo a buscar
+    await higlighTreePath(g, path, "#D72638");
+
+    // Resaltado final del nodo ubicado
+    await foundNodeGroup.select("circle")
+        .transition()
+        .duration(200)
+        .attr("r", 28)
+        .transition()
+        .duration(200)
+        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+        .end();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+/**
  * Función encargada de animar la eliminación de un nodo hoja o un nodo con un único hijo en el árbol binario.
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
  * @param nodeToDelete Nodo jerárquico que representa el nodo a ser eliminado.
@@ -200,17 +232,7 @@ async function animateLeafOrSingleChild(
     // Si el nodo a eliminar cuenta con nodo padre
     if (parentNodeLinkRemovalGroup) {
         // Animación de recorrido desde el nodo raíz hasta el nodo padre del nodo a eliminar
-        for (const node of pathToParent) {
-            // Selección del grupo del nodo actual
-            const nodeGroup = g.select<SVGGElement>(`g#${node.data.id}`);
-
-            // Resaltado del nodo actual
-            await nodeGroup.select("circle")
-                .transition()
-                .duration(1000)
-                .attr("fill", "#D72638")
-                .end();
-        }
+        await higlighTreePath(g, pathToParent, "#D72638");
 
         // Salida del enlace entre el nodo padre y el nodo a eliminar
         await parentNodeLinkRemovalGroup
@@ -259,7 +281,6 @@ async function animateLeafOrSingleChild(
  * @param nodeToUpdate Nodo jerárquico que representa el nodo cuyo valor será actualizado.
  * @param pathToUpdateNode Arreglo de nodos jerárquicos que representan el camino desde la raíz hasta el nodo a actualziar.
  * @param pathToRemovalNode Arreglo de nodos jerárquicos que representan el camino desde el nodo a actualizar hasta el nodo a eliminar.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  */
 async function animateTwoChildren(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
@@ -283,7 +304,7 @@ async function animateTwoChildren(
     // Nodo hijo del nodo a eliminar
     const childNode = nodeToDelete.children?.[0]?.data.id;
 
-    // Grupo del lienzo correspondiente al enlace del nodo a eliminar que apunta a su nodo hijo
+    // Grupo del lienzo correspondiente al enlace del nodo padre que apunta al nodo a eliminar
     const removalNodeLinkGroup = parentNode
         ? g.select<SVGGElement>(`g#link-${parentNode}-${nodeToDelete.data.id}`)
         : null;
@@ -304,17 +325,7 @@ async function animateTwoChildren(
     }
 
     // Animación de recorrido desde el nodo raíz hasta el nodo que actualizará su valor
-    for (const node of pathToUpdateNode) {
-        // Selección del grupo del nodo actual
-        const nodeGroup = g.select<SVGGElement>(`g#${node.data.id}`);
-
-        // Resaltado del nodo actual
-        await nodeGroup.select("circle")
-            .transition()
-            .duration(1000)
-            .attr("fill", "#D72638")
-            .end();
-    }
+    await higlighTreePath(g, pathToUpdateNode, "#D72638");
 
     // Animación de recorrido desde el nodo a actualizar hasta el nodo a eliminar
     for (const node of pathToRemovalNode) {
@@ -357,7 +368,7 @@ async function animateTwoChildren(
         .style("opacity", 1)
         .end();
 
-    // Salida del enlace entre el nodo a eliminar y su hijo (si aplica)
+    // Salida del enlace entre el nodo padre y el nodo a eliminar
     if (removalNodeLinkGroup) {
         await removalNodeLinkGroup
             .transition()
@@ -367,6 +378,7 @@ async function animateTwoChildren(
         removalNodeLinkGroup.remove();
     }
 
+    // Salida del enlace entre el nodo a eliminar y su hijo (si aplica)
     if (removalChildNodeLinkGroup) {
         await removalChildNodeLinkGroup
             .transition()
@@ -397,6 +409,13 @@ async function animateTwoChildren(
     }
 }
 
+/**
+ * Función encargada de actualizar el enlace entre el nodo padre y su hijo en base a sus posiciones actuales.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param parentId ID del nodo padre.
+ * @param childId ID del nodo hijo.
+ * @param r Radio del contenedor del nodo.
+ */
 function updateTreeLinkPath(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     parentId: string,

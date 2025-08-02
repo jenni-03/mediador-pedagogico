@@ -4,7 +4,7 @@ import { BaseQueryOperations, HierarchyNodeData, TreeLinkData } from "../../../.
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateDeleteNode, animateInsertNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 
 export function useBinaryTreeRender(
@@ -181,6 +181,28 @@ export function useBinaryTreeRender(
             setIsAnimating
         );
     }, [root, prevRoot, linksData, query.toDelete, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la búsqueda de un nodo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!root || !svgRef.current || !query.toSearch) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Grupo contenedor de nodos y enlaces del árbol
+        const g = svg.select<SVGGElement>("g.tree-container");
+
+        // Ubicamos al nodo a buscar en el árbol
+        const nodeToSearch = root.descendants().find(d => d.data.value === query.toSearch);
+        if (!nodeToSearch) return;
+
+        // Ruta de búsqueda del nodo
+        const pathToNode = root.path(nodeToSearch);
+
+        // Animación de búsqueda del nodo
+        animateSearchNode(g, nodeToSearch.data.id, pathToNode, resetQueryValues, setIsAnimating);
+    }, [root, query.toSearch, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }

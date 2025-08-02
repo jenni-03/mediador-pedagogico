@@ -488,3 +488,27 @@ export async function repositionTreeNodes(
 
     return Promise.all([p1, p2]).then(() => { });
 }
+
+/**
+ * Función encargada de resaltar cada nodo a lo largo de un camino dado. 
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param path Array de nodos jerárquicos que representan el camino a resaltar.
+ * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
+ */
+export async function higlighTreePath(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    path: HierarchyNode<HierarchyNodeData<number>>[],
+    highlightColor: string
+) {
+    for (const node of path) {
+        // Selección del grupo del nodo actual
+        const nodeGroup = g.select<SVGGElement>(`g#${node.data.id}`);
+
+        // Resaltado del nodo actual
+        await nodeGroup.select("circle")
+            .transition()
+            .duration(1000)
+            .attr("fill", highlightColor)
+            .end();
+    }
+}
