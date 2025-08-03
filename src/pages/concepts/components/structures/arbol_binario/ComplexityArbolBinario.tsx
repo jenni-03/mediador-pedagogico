@@ -7,7 +7,7 @@ export function ComplexityArbolBinario() {
       <h1 className="text-2xl font-extrabold text-white mb-1">
         COSTO OPERACIONAL Y COMPLEJIDAD
       </h1>
-      <h1 className="text-sm text-red-400 mb-3">Árbol AVL</h1>
+      <h1 className="text-sm text-red-400 mb-3">Árbol Binario</h1>
       <hr className="mt-2 mb-4 border-red-500 border-t-2" />
       <AVLAlgorithmAnalysis />
       <div>
