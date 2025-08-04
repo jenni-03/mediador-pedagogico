@@ -1,6 +1,6 @@
 import { HierarchyNode } from "d3";
 import { HierarchyNodeData, TreeLinkData } from "../../../types";
-import { higlighTreePath, repositionTreeNodes } from "./drawActionsUtilities";
+import { highlightTreePath, repositionTreeNodes } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 
 /**
@@ -46,7 +46,7 @@ export async function animateInsertNode(
         await repositionTreeNodes(g, nodesData, linksData, positions);
 
         // Animación de recorrido desde el nodo raíz hasta el nodo padre del nuevo nodo
-        await higlighTreePath(g, pathToParent, "#D72638");
+        await highlightTreePath(g, pathToParent, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
 
         // Aparición del nuevo nodo
         await newNodeGroup
@@ -151,7 +151,7 @@ export async function animateDeleteNode(
  * @param targetNode ID del nodo a buscar.
  * @param path Array de nodos jerárquicos que representan el camino a resaltar.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
- * @param setIsAnimating Función para establecer el estado de animación
+ * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateSearchNode(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
@@ -165,13 +165,13 @@ export async function animateSearchNode(
         .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
 
     // Grupo correspondiente al nodo a buscar
-    const foundNodeGroup = g.select<SVGGElement>(`g#${targetNode}`);
+    const foundNodeGroup = g.select<SVGCircleElement>(`g#${targetNode} circle`);
 
     // Animación de recorrido de los nodos hasta el nodo a buscar
-    await higlighTreePath(g, path, "#D72638");
+    await highlightTreePath(g, path, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
 
     // Resaltado final del nodo ubicado
-    await foundNodeGroup.select("circle")
+    await foundNodeGroup
         .transition()
         .duration(200)
         .attr("r", 28)
@@ -179,6 +179,98 @@ export async function animateSearchNode(
         .duration(200)
         .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
         .end();
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+/**
+ * Función encargada de animar el recorrido de los nodos de un árbol binario.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param targetNodes Array de IDs de nodos que representan la ruta del recorrido.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateTraversal(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    targetNodes: string[],
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Reestablecimiento del fondo original de los nodos
+    g.selectAll(".node-container")
+        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
+
+    for (const nodeId of targetNodes) {
+        // Selección del grupo del nodo actual
+        const nodeGroup = g.select<SVGCircleElement>(`g#${nodeId} circle`);
+
+        // Resaltado del nodo actual
+        await nodeGroup
+            .transition()
+            .duration(750)
+            .attr("fill", SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR)
+            .end();
+
+        await nodeGroup
+            .transition()
+            .duration(150)
+            .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.2)
+            .transition()
+            .duration(150)
+            .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+            .end();
+
+        // Restablecimiento del fondo del contenedor del nodo
+        await nodeGroup
+            .transition()
+            .duration(750)
+            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+            .end();
+    }
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+/**
+ * Función encargada de eliminar todos los nodos y enlaces dentro del lienzo.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateClearTree(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nodePositions: Map<string, { x: number, y: number }>,
+    resetQueryValues: () => void,
+    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+) {
+    // Animación de salida de los enlaces
+    await g.selectAll("g.link")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Animación de salida de los nodos
+    await g.selectAll("g.node")
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+    // Eliminación del grupo contenedor de los nodos y enlaces del DOM
+    g.remove();
+
+    // Liempiza del mapa de posiciones
+    nodePositions.clear();
 
     // Restablecimiento de los valores de las queries del usuario
     resetQueryValues();
@@ -232,7 +324,7 @@ async function animateLeafOrSingleChild(
     // Si el nodo a eliminar cuenta con nodo padre
     if (parentNodeLinkRemovalGroup) {
         // Animación de recorrido desde el nodo raíz hasta el nodo padre del nodo a eliminar
-        await higlighTreePath(g, pathToParent, "#D72638");
+        await highlightTreePath(g, pathToParent, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
 
         // Salida del enlace entre el nodo padre y el nodo a eliminar
         await parentNodeLinkRemovalGroup
@@ -325,7 +417,7 @@ async function animateTwoChildren(
     }
 
     // Animación de recorrido desde el nodo raíz hasta el nodo que actualizará su valor
-    await higlighTreePath(g, pathToUpdateNode, "#D72638");
+    await highlightTreePath(g, pathToUpdateNode, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
 
     // Animación de recorrido desde el nodo a actualizar hasta el nodo a eliminar
     for (const node of pathToRemovalNode) {
@@ -336,7 +428,7 @@ async function animateTwoChildren(
         await nodeGroup.select("circle")
             .transition()
             .duration(1000)
-            .attr("stroke", "#0066CC")
+            .attr("stroke", SVG_BINARY_TREE_VALUES.UPDATE_STROKE_COLOR)
             .attr("stroke-width", 2)
             .end();
 

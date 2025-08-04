@@ -495,7 +495,7 @@ export async function repositionTreeNodes(
  * @param path Array de nodos jerárquicos que representan el camino a resaltar.
  * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
  */
-export async function higlighTreePath(
+export async function highlightTreePath(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     path: HierarchyNode<HierarchyNodeData<number>>[],
     highlightColor: string

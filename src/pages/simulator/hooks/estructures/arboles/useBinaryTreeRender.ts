@@ -4,7 +4,7 @@ import { BaseQueryOperations, HierarchyNodeData, TreeLinkData } from "../../../.
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+import { animateClearTree, animateDeleteNode, animateInsertNode, animateSearchNode, animateTraversal } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 
 export function useBinaryTreeRender(
@@ -95,7 +95,7 @@ export function useBinaryTreeRender(
 
         // Renderizado de los enlaces entre nodos
         drawTreeLinks(g, linksData, nodePositions);
-    }, [root, linksData]);
+    }, [root, prevRoot, linksData]);
 
     // Efecto para manejar la inserción de nuevos nodos
     useEffect(() => {
@@ -203,6 +203,52 @@ export function useBinaryTreeRender(
         // Animación de búsqueda del nodo
         animateSearchNode(g, nodeToSearch.data.id, pathToNode, resetQueryValues, setIsAnimating);
     }, [root, query.toSearch, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar los recorridos del árbol
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!root || !svgRef.current) return;
+
+        // Determinar el tipo de recorrido a animar
+        const traversalType =
+            query.toGetPreOrder.length > 0 ? "pre" :
+                query.toGetInOrder.length > 0 ? "in" :
+                    query.toGetPostOrder.length > 0 ? "post" :
+                        query.toGetLevelOrder.length > 0 ? "level" :
+                            null;
+
+        if (!traversalType) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Grupo contenedor de nodos y enlaces del árbol
+        const g = svg.select<SVGGElement>("g.tree-container");
+
+        let nodeIds: string[] = [];
+        if (traversalType === "pre") nodeIds = query.toGetPreOrder;
+        else if (traversalType === "in") nodeIds = query.toGetInOrder;
+        else if (traversalType === "post") nodeIds = query.toGetPostOrder;
+        else if (traversalType === "level") nodeIds = query.toGetLevelOrder;
+
+        // Animación de recorrido de los nodos del árbol
+        animateTraversal(g, nodeIds, resetQueryValues, setIsAnimating);
+    }, [root, query.toGetInOrder, query.toGetPreOrder, query.toGetPostOrder, query.toGetLevelOrder, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar la limpieza de lienzo
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!svgRef.current || !query.toClear) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = d3.select(svgRef.current);
+
+        // Grupo contenedor de nodos y enlaces del árbol
+        const g = svg.select<SVGGElement>("g.tree-container");
+
+        // Animación de limpieza del árbol
+        animateClearTree(g, nodePositions, resetQueryValues, setIsAnimating);
+    }, [query.toClear, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }

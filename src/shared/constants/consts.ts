@@ -105,6 +105,8 @@ export const SVG_BINARY_TREE_VALUES = {
     LEVEL_SPACING: 85,
     ELEMENT_TEXT_WEIGHT: '600',
     ELEMENT_TEXT_SIZE: '16px',
+    HIGHLIGHT_COLOR: "#D72638",
+    UPDATE_STROKE_COLOR: "#0066CC"
 }
 
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
