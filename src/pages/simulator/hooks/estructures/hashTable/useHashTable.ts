@@ -1,6 +1,6 @@
 // src/hooks/estructures/hashTable/useHashTable.ts
 import { useReducer, useState } from "react";
-import type { BaseQueryOperations } from "../../../../../types";
+import type { BaseStructureActions } from "../../../../../types";
 
 /* ── Tipos ─────────────────────────────────────────────────── */
 export type HashNode = { key: number; value: number };
@@ -9,7 +9,6 @@ export interface HashQuery {
   key: number | null;
   value: number | null;
 }
-type TableKey = "tabla_hash";
 
 export interface LastAction {
   type: "create" | "set" | "delete" | "clean";
@@ -208,13 +207,14 @@ export function useHashTable(initialSlots = 0) {
   };
 
   /* ── API que consumirá <Simulator> ───────────────────────── */
-  const operations: BaseQueryOperations<TableKey> = {
+  const operations = {
     create,
     set,
     get,
     delete: del,
     clean,
-  };
+  } as BaseStructureActions<"tabla_hash">;
+
   const getDireccionesBuckets = () => {
     return state.buckets.map(
       (_, i) => `0x${(BASE_SEG * (i + 1)).toString(16).padStart(6, "0")}`

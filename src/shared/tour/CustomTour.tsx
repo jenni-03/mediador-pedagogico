@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { getTourDescriptions, TourStep } from "../constants/tourDescriptions";
+import { getTourByStructure } from "../constants/tours/getTourByStructure";
+
+import { TourStep } from "../constants/typesTour"; // o "../core/types" si lo reubicas
+
 import HighlightBox from "./HighlightBox";
 import TourTooltip from "./TourTooltip";
 import ArrowPointer from "./ArrowPointer";
@@ -12,10 +15,10 @@ interface CustomTourProps {
 }
 
 const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
-  const tourSteps: TourStep[] = useMemo(
-    () => getTourDescriptions(tipo),
-    [tipo]
-  );
+  const tourSteps: TourStep[] = useMemo(() => {
+    return getTourByStructure(tipo);
+  }, [tipo]);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [highlightBoxes, setHighlightBoxes] = useState<React.CSSProperties[]>(
