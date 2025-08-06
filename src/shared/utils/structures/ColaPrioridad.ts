@@ -9,8 +9,11 @@ export class ColaDePrioridad<T> {
   // Nodo inicial de la cola.
   private inicio: NodoPrioridad<T> | null;
 
-  // Tamaño de la cola.
-  private tamanio: number;
+    // Tamaño de la cola.
+    private tamanio: number;
+
+    // Tamaño simulado de cada nodo en bytes.
+    private tamanioNodo: number;
 
   // Tamaño máximo permitido para la cola de prioridad.
   private readonly MAX_TAMANIO = 15;
@@ -18,14 +21,16 @@ export class ColaDePrioridad<T> {
   // Tamaño simulado de cada nodo en bytes.
   private tamanioNodo: number;
 
-  /**
-   * Constructor de la clase Cola de Prioridad.
-   */
-  constructor(tamanioNodo: number = 16) {
-    this.inicio = null;
-    this.tamanio = 0;
-    this.tamanioNodo = tamanioNodo;
-  }
+    /**
+     * Constructor de la clase Cola de Prioridad.
+     */
+    constructor(
+        tamanioNodo: number = 20
+    ) {
+        this.inicio = null;
+        this.tamanio = 0;
+        this.tamanioNodo = tamanioNodo;
+    }
 
   /**
    * Método que inserta un elemento en la posición correspondiente según su prioridad.
@@ -102,21 +107,21 @@ export class ColaDePrioridad<T> {
     return this.inicio;
   }
 
-  /**
-   * Método que devuelve el tamaño actual de la cola.
-   * @returns Número de elementos en la cola.
-   */
-  public getTamanio(): number {
-    return this.tamanio;
-  }
+    /**
+     * Método que devuelve el tamaño actual de la cola.
+     * @returns Número de elementos en la cola.
+     */
+    public getTamanio(): number {
+        return this.tamanio;
+    }
 
-  /**
-   * Método que retorna el tamaño en bytes de los nodos almacenados.
-   * @returns Tamaño en bytes de los nodos.
-   */
-  public getTamanioNodo(): number {
-    return this.tamanioNodo;
-  }
+    /**
+     * Método que retorna el tamaño en bytes de los nodos almacenados.
+     * @returns Tamaño en bytes de los nodos.
+     */
+    public getTamanioNodo(): number {
+        return this.tamanioNodo;
+    }
 
   /**
    * Método que verifica si la cola está vacía.

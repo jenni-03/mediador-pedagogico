@@ -98,24 +98,6 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
                         Esta estructura de doble enlace permite que la lista sea recorrida de manera eficiente en ambas direcciones: Desde la cabeza hasta la cola y visceversa.`,
     },
   ],
-  lista_circular_doblemente_enlazada: [
-    {
-      type: "info",
-      description: `Pensemos en un carrusel. Cada caballito está conectado con el que tiene justo delante y con el que tiene detrás. 
-                        Desde cualquier caballito, puedes ver fácilmente cuál es el siguiente y cuál fue el anterior.`,
-    },
-    {
-      type: "info",
-      description: `La característica principal es que el carrusel no tiene un principio ni un fin definidos; Es un ciclo continuo. Si sigues avanzando de un caballito al siguiente, 
-                        eventualmente darás una vuelta completa y regresarás al punto de partida. De la misma manera, si decides moverte hacia atrás. No existe un "último" caballito que te obligue a detenerte.`,
-    },
-    {
-      type: "info",
-      description: `Formalmente, una lista circular doblemente enlazada, es una variación de la lista doble que crea un bucle cerrado. Al igual que en una lista doblemente enlazada,
-                        cada nodo contiene un valor, un puntero al siguiente nodo y otro puntero que apunta al nodo anterior en la secuencia. La diferencia fundamental radica en los extremos de la lista.
-                        El puntero next del último nodo apunta de vuelta al primer nodo y el puntero prev del primer nodo apunta de vuelta al último nodo.`,
-    },
-  ],
   lista_circular_simplemente_enlazada: [
     {
       type: "info",
@@ -132,6 +114,24 @@ export const tourStepsByStructure: Record<string, TourStep[]> = {
       description: `Formalmente, una lista circular simplemente enlazada, es una variación de la lista simple que crea un bucle unidireccional. Al igual que en una lista simple enlazada,
                         cada nodo contiene un valor y un puntero al siguiente nodo. La característica "circular" proviene de cómo se maneja el final de la lista. En lugar de que el puntero siguiente del último nodo
                         apunte a null, este apunta de regreso al primer nodo.`,
+    },
+  ],
+  lista_circular_doblemente_enlazada: [
+    {
+      type: "info",
+      description: `Pensemos en un carrusel. Cada caballito está conectado con el que tiene justo delante y con el que tiene detrás. 
+                        Desde cualquier caballito, puedes ver fácilmente cuál es el siguiente y cuál fue el anterior.`,
+    },
+    {
+      type: "info",
+      description: `La característica principal es que el carrusel no tiene un principio ni un fin definidos; Es un ciclo continuo. Si sigues avanzando de un caballito al siguiente, 
+                        eventualmente darás una vuelta completa y regresarás al punto de partida. De la misma manera, si decides moverte hacia atrás. No existe un "último" caballito que te obligue a detenerte.`,
+    },
+    {
+      type: "info",
+      description: `Formalmente, una lista circular doblemente enlazada, es una variación de la lista doble que crea un bucle cerrado. Al igual que en una lista doblemente enlazada,
+                        cada nodo contiene un valor, un puntero al siguiente nodo y otro puntero que apunta al nodo anterior en la secuencia. La diferencia fundamental radica en los extremos de la lista.
+                        El puntero next del último nodo apunta de vuelta al primer nodo y el puntero prev del primer nodo apunta de vuelta al último nodo.`,
     },
   ],
 };
@@ -265,6 +265,12 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
       description:
         "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
     },
+    {
+      id: "memory-visualization",
+      type: "element",
+      description:
+        "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la cola y cómo se calcula el espacio necesario para cada uno de sus elementos.",
+    },
   ],
   "cola de prioridad": [
     {
@@ -303,6 +309,12 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
       type: "element",
       description:
         "Como puedes ver, el tamaño de la cola es 1, ya que se insertó el número 10, correspondiente al único elemento en esta.",
+    },
+    {
+      id: "memory-visualization",
+      type: "element",
+      description:
+        "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la cola de prioridad y cómo se calcula el espacio necesario para cada uno de sus elementos.",
     },
   ],
   lista_simplemente_enlazada: [
@@ -343,6 +355,12 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
       description:
         "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 30, correspondiente al único elemento en esta.",
     },
+    {
+      id: "memory-visualization",
+      type: "element",
+      description:
+        "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la lista simple y cómo se calcula el espacio necesario para cada uno de sus elementos.",
+    },
   ],
   lista_doblemente_enlazada: [
     {
@@ -382,6 +400,12 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
       description:
         "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 50, correspondiente al único elemento en esta.",
     },
+    {
+      id: "memory-visualization",
+      type: "element",
+      description:
+        "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la lista doble y cómo se calcula el espacio necesario para cada uno de sus elementos.",
+    },
   ],
   lista_circular_simplemente_enlazada: [
     {
@@ -417,6 +441,53 @@ export const tourStepsCommands: Record<string, TourStep[]> = {
       description:
         "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 5, correspondiente al único elemento en esta.",
     },
+    {
+      id: "memory-visualization",
+      type: "element",
+      description:
+        "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la lista circular simple y cómo se calcula el espacio necesario para cada uno de sus elementos.",
+    },
+  ],
+  lista_circular_doblemente_enlazada: [
+    {
+      id: "console",
+      description:
+        "En la consola puedes realizar todas las operaciones de una lista circular doble, tales como, inserción y eliminación de elementos desde diferentes posiciones, y consultar si un elemento se encuentra en la lista.",
+      type: "element",
+    },
+    {
+      id: "inputConsola",
+      text: "insertLast(99);",
+      type: "write",
+    },
+    {
+      id: "console",
+      description:
+        "Este comando sirve para insertar un elemento al final de la lista, en este caso, el número 99.",
+      type: "element",
+    },
+    {
+      id: "inputConsola",
+      type: "enter",
+    },
+    {
+      id: "main-canvas",
+      type: "element",
+      description:
+        "Esta es la lista con su elemento recién insertado, puedes usarla para ejecutar las diferentes operaciones mencionadas anteriormente.",
+    },
+    {
+      id: "info-cards",
+      type: "element",
+      description:
+        "Como puedes ver, el tamaño de la lista es 1, ya que se insertó el número 99, correspondiente al único elemento en esta.",
+    },
+    {
+      id: "memory-visualization",
+      type: "element",
+      description:
+        "Aquí puedes observar cómo se asigna la memoria para almacenar los datos de la lista circular doble y cómo se calcula el espacio necesario para cada uno de sus elementos.",
+    },
   ],
 };
 
@@ -446,7 +517,7 @@ export const getTourSteps = (structureType: string): TourStep[] => [
     id: "structure-info",
     type: "element",
     description: `En esta sección verás información clave de la estructura y otras propiedades importantes.
-                Además, aquí se representa cómo se asigna la memoria para almacenar los datos.`,
+                Además, aquí se mostrará cómo se asigna la memoria para almacenar los datos de la estructura.`,
   },
   {
     id: "main-canvas",

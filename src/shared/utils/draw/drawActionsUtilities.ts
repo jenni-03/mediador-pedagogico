@@ -1,7 +1,7 @@
 import { HierarchyNodeData, IndicatorPositioningConfig, LinkData, ListNodeData, TreeLinkData } from "../../../types";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
-import { HierarchyNode } from "d3";
+import { HierarchyNode, easePolyInOut } from "d3";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.  
@@ -79,6 +79,12 @@ export function drawArrowIndicator(
         );
 }
 
+/**
+ * Función encargada de renderizar los nodos de un árbol dentro del lienzo.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ */
 export function drawTreeNodes(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     nodes: HierarchyNode<HierarchyNodeData<number>>[],
@@ -112,7 +118,6 @@ export function drawTreeNodes(
                 // Valor del nodo
                 gEnter.append("text")
                     .attr("class", "node-value")
-                    .attr("dy", "-0.3em")
                     .attr("text-anchor", "middle")
                     .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
                     .style("font-weight", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_WEIGHT)
@@ -139,6 +144,12 @@ export function drawTreeNodes(
         );
 }
 
+/**
+ * Función encargada de renderizar los enlaces entre nodos de un árbol dentro del lienzo.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ */
 export function drawTreeLinks(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     linksData: TreeLinkData[],
@@ -281,7 +292,7 @@ export function drawListNodes(
 
                 return update;
             },
-            exit => exit.remove()
+            exit => exit
         );
 }
 
@@ -424,4 +435,80 @@ export async function animateClearList(
 
     // Finalización de la animación
     setIsAnimating(false);
+}
+
+/**
+ * Función encargada de reubicar los nodos y ajustar los enlaces de conexión de un árbol.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
+ * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
+ * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @returns Una promesa que se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
+ */
+export async function repositionTreeNodes(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    nodes: HierarchyNode<HierarchyNodeData<number>>[],
+    linksData: TreeLinkData[],
+    nodePositions: Map<string, { x: number, y: number }>
+) {
+    // Selección de nodos a desplazar (re-vinculación de datos)
+    const nodesToMove = g
+        .selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.node")
+        .data(nodes, (d) => d.data.id);
+
+    //  Promesa para movimiento de nodos 
+    const p1 = nodesToMove
+        .transition()
+        .duration(1000)
+        .ease(easePolyInOut)
+        .attr("transform", (d) => {
+            const finalPos = nodePositions.get(d.data.id)!;
+            return `translate(${finalPos.x}, ${finalPos.y})`;
+        })
+        .end();
+
+    // Selección de enlaces a ajustar (re-vinculación de datos)
+    const linksToAdjust = g
+        .selectAll<SVGGElement, TreeLinkData>("g.link")
+        .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}`);
+
+    // Promesa para ajuste de enlaces
+    const p2 = linksToAdjust
+        .select("path.tree-link")
+        .transition()
+        .duration(1000)
+        .ease(easePolyInOut)
+        .attr("d", (d => {
+            const s = nodePositions.get(d.sourceId)!;
+            const t = nodePositions.get(d.targetId)!;
+            const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
+            return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
+        }))
+        .end();
+
+    return Promise.all([p1, p2]).then(() => { });
+}
+
+/**
+ * Función encargada de resaltar cada nodo a lo largo de un camino dado. 
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param path Array de nodos jerárquicos que representan el camino a resaltar.
+ * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
+ */
+export async function highlightTreePath(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    path: HierarchyNode<HierarchyNodeData<number>>[],
+    highlightColor: string
+) {
+    for (const node of path) {
+        // Selección del grupo del nodo actual
+        const nodeGroup = g.select<SVGGElement>(`g#${node.data.id}`);
+
+        // Resaltado del nodo actual
+        await nodeGroup.select("circle")
+            .transition()
+            .duration(1000)
+            .attr("fill", highlightColor)
+            .end();
+    }
 }
