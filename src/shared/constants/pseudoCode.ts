@@ -1385,7 +1385,7 @@ export const operationsCode: Record<string, any> = {
             `    return false;`,
             `}`,
         ],
-        getInorder: [
+        getInOrder: [
             `/**
  * Método que permite buscar un elemento especifico en la lista.
  * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en la lista.
@@ -1403,7 +1403,7 @@ export const operationsCode: Record<string, any> = {
             `    return false;`,
             `}`,
         ],
-        getPreorder: [
+        getPreOrder: [
             `/**
  * Método que permite buscar un elemento especifico en la lista.
  * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en la lista.
@@ -1421,7 +1421,7 @@ export const operationsCode: Record<string, any> = {
             `    return false;`,
             `}`,
         ],
-        getPostorder: [
+        getPostOrder: [
             `/**
  * Método que permite buscar un elemento especifico en la lista.
  * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en la lista.

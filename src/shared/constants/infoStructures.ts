@@ -83,7 +83,22 @@ export const infoStructures: Record<string, any> = {
       },
     ],
   },
-
+  arbol_binario: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol binario."
+      },
+      {
+        key: "Altura",
+        description: "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario."
+      },
+      {
+        key: "Hojas",
+        description: "Son hojas que caen :3"
+      }
+    ],
+  },
   bst: {
     info: ["Peso", "Altura"],
   },

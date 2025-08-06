@@ -279,5 +279,4 @@ export type HierarchyNodeData<T> = {
 export type TreeLinkData = {
   sourceId: string;
   targetId: string;
-  type: "left" | "right";
 };

@@ -442,12 +442,12 @@ export const commandRules: Record<
           if (parts.length !== 3) {
             return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor del nodo padre y el valor a insertar como argumento." : "Debe proporcionar únicamente 2 números como argumentos (padre, valor)." };
           }
-          const insertPattern = /^\d{1,4}$/; // Regex para validar un número entero de hasta 4 dígitos
+          const insertPattern = /^\d{1,2}$/; // Regex para validar un número entero de hasta 4 dígitos
           if (!insertPattern.test(parts[1])) {
-            return { valid: false, message: "El valor del nodo padre debe ser un número entero positivo de hasta 4 dígitos." };
+            return { valid: false, message: "El valor del nodo padre debe ser un número entero positivo de hasta 2 dígitos." };
           }
           if (!insertPattern.test(parts[2])) {
-            return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 4 dígitos." };
+            return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos." };
           }
           return true;
         }
