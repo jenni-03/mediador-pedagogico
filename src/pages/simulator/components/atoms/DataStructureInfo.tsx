@@ -3,48 +3,45 @@ import MemoryAllocationVisualizer from "./MemoryAllocationVisualizer";
 import { InfoModal } from "../molecules/InfoModal";
 
 export function DataStructureInfo({
-    children,
-    structure,
-    structurePrueba,
-    memoryAddress,
+  children,
+  structure,
+  structurePrueba,
+  memoryAddress,
 }: {
-    children: React.ReactNode;
-    structure: string;
-    structurePrueba: any;
-    memoryAddress?: boolean;
+  children: React.ReactNode;
+  structure: string;
+  structurePrueba: any;
+  memoryAddress?: boolean;
 }) {
-    const info = infoStructures[structure].info;
+  const info = infoStructures[structure].info;
 
-    return (
-        <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] max-h-[500px] overflow-x-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
-            <div
-                data-tour="structure-info"
-                className="flex flex-col md:flex-row gap-4 items-start justify-between"
-            >
-                {/* Info lateral izquierda en cards */}
-                <div
-                    className="flex flex-col gap-4 w-full max-w-xs"
-                    data-tour="info-cards"
-                >
-                    {info.map(
-                        (
-                            item: { key: string; description: string },
-                            index: number
-                        ) => {
-                            const value =
-                                item.key === "Tamaño"
-                                    ? structurePrueba.getTamanio()
-                                    : item.key === "Capacidad"
-                                      ? structurePrueba.vector.length
-                                      : item.key === "Número de elementos"
-                                        ? structurePrueba.getTamanio()
-                                        : item.key === "Número de slots"
-                                          ? structurePrueba.vector.length
-                                          : item.key === "Peso"
-                                            ? structurePrueba.getPeso()
-                                            : item.key === "Altura"
-                                              ? structurePrueba.getAltura()
-                                              : "N/A";
+  return (
+    <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] max-h-[500px] overflow-x-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
+      <div
+        data-tour="structure-info"
+        className="flex flex-col md:flex-row gap-4 items-start justify-between"
+      >
+        {/* Info lateral izquierda en cards */}
+        <div
+          className="flex flex-col gap-4 w-full max-w-xs"
+          data-tour="info-cards"
+        >
+          {info.map(
+            (item: { key: string; description: string }, index: number) => {
+              const value =
+                item.key === "Tamaño"
+                  ? structurePrueba.getTamanio()
+                  : item.key === "Capacidad"
+                    ? structurePrueba.vector.length
+                    : item.key === "Número de elementos"
+                      ? structurePrueba.getTamanio()
+                      : item.key === "Número de slots"
+                        ? structurePrueba.vector.length
+                        : item.key === "Peso"
+                          ? structurePrueba.getPeso()
+                          : item.key === "Altura"
+                            ? structurePrueba.getAltura()
+                            : "N/A";
 
               return (
                 <InfoModal
@@ -91,7 +88,9 @@ export function DataStructureInfo({
               }
               direccionBase={1000}
               tamanioNodo={
-                structure === "tabla_hash" ? 4 : structurePrueba.getTamanioNodo()
+                structure === "tabla_hash"
+                  ? 4
+                  : structurePrueba.getTamanioNodo()
               }
               direcciones={
                 structure === "secuencia"
@@ -106,13 +105,10 @@ export function DataStructureInfo({
         </div>
       </div>
 
-            {/* Contenido visual (estructura de datos) */}
-            <div
-                data-tour="main-canvas"
-                className="flex-1 flex items-center mt-5"
-            >
-                {children}
-            </div>
-        </div>
-    );
+      {/* Contenido visual (estructura de datos) */}
+      <div data-tour="main-canvas" className="flex-1 flex items-center mt-5">
+        {children}
+      </div>
+    </div>
+  );
 }
