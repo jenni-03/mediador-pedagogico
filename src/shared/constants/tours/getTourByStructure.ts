@@ -10,6 +10,7 @@ import { getListaCircularSimplementeEnlazadaTour } from "./listaCircularSimpleme
 import { getListaCircularDoblementeEnlazadaTour } from "./listaCircularDoblementeEnlazadaTour.ts";
 import { getTablaHashTour } from "./tablaHashTour.ts";
 import { getMemoriaTour } from "./memoriaTour.ts";
+import { getArbolBinarioTour } from "./arbolBinarioTour.ts";
 
 // Función para formatear nombres como "lista_simplemente_enlazada" → "Lista Simplemente Enlazada"
 function formatStructureName(type: string): string {
@@ -30,6 +31,7 @@ const tourStepLoaders: Record<string, () => TourStep[]> = {
   pila: getPilaTourSteps,
   cola: getColaTourSteps,
   "cola de prioridad": getColaPrioridadTour,
+  arbol_binario: getArbolBinarioTour,
   memoria: getMemoriaTour,
 };
 
