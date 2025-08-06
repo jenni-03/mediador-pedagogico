@@ -23,7 +23,7 @@ export function DataStructureInfo({
       >
         {/* Info lateral izquierda en cards */}
         <div
-          className="flex flex-col gap-4 w-full max-w-xs"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xs"
           data-tour="info-cards"
         >
           {info.map(
