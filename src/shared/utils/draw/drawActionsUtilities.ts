@@ -1,11 +1,11 @@
-import { HierarchyNodeData, IndicatorPositioningConfig, LinkData, ListNodeData, TreeLinkData } from "../../../types";
+import { HierarchyNodeData, IndicatorPositioningConfig, LinkData, ListNodeData, TraversalNodeType, TreeLinkData } from "../../../types";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 import { HierarchyNode, easePolyInOut } from "d3";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.  
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param svg Selección D3 del elemento SVG donde se va a renderizar el indicador.
  * @param indicatorId Identificador del indicador.
  * @param indicatorClass Selector de clase del indicador.
  * @param nodePosition Posición del nodo al que apunta el indicador.
@@ -81,7 +81,7 @@ export function drawArrowIndicator(
 
 /**
  * Función encargada de renderizar los nodos de un árbol dentro del lienzo.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los nodos del árbol.
  * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  */
@@ -122,7 +122,7 @@ export function drawTreeNodes(
                     .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
                     .style("font-weight", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_WEIGHT)
                     .style("font-size", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_SIZE)
-                    .text(d => d.data.value);
+                    .text(d => d.data.value ?? 0);
 
                 return gEnter;
             },
@@ -146,7 +146,7 @@ export function drawTreeNodes(
 
 /**
  * Función encargada de renderizar los enlaces entre nodos de un árbol dentro del lienzo.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los enlaces del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  */
@@ -187,7 +187,7 @@ export function drawTreeLinks(
 
 /**
  * Función encargada de renderizar los nodos de una lista dentro del lienzo.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param svg Selección D3 del elemento SVG donde se van a renderizar los nodos de la lista.
  * @param listNodes Array con información de los nodos a renderizar.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param dims Dimensiones del lienzo y sus elementos.
@@ -298,7 +298,7 @@ export function drawListNodes(
 
 /**
  * Función encargada de renderizar los enlaces pertenecientes a los nodos de una lista.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param svg Selección D3 del elemento SVG donde se van a renderizar los enlaces de la lista.
  * @param linksData Array con información de los enlaces a renderizar.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param elementWidth Ancho del nodo.
@@ -338,8 +338,72 @@ export function drawListLinks(
 }
 
 /**
+ * Función encargada de renderizar la secuencia de valores de nodos para el recorrido del árbol.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) donde se va a renderizar la secuencia de valores de recorrido.
+ * @param values Arreglo de objetos que representan la secuencia a mostrar.
+ * @param opts Objeto de configuración que contiene el posicionamiento y desplazamiento de los elementos del árbol.
+ */
+export function drawTraversalSequence(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    values: TraversalNodeType[],
+    opts: {
+        seqPositions: Map<string, { x: number, y: number }>;
+        nodePositions: Map<string, { x: number, y: number }>;
+        treeOffset: { x: number, y: number };
+        seqOffset: { x: number, y: number };
+    }
+) {
+    // Obtenemos los elementos de posición y desplzamiento
+    const { seqPositions, nodePositions, treeOffset, seqOffset } = opts;
+
+    // Data join para la creación de la secuencia de valores para los recorridos del árbol
+    g.selectAll<SVGGElement, TraversalNodeType>("text.seq")
+        .data(values, d => d.id)
+        .join(
+            enter => {
+                // Creación del grupo para cada nodo entrante
+                const textEnter = enter
+                    .append("text")
+                    .attr("class", "seq")
+                    .attr("id", (d) => d.id)
+                    .attr("transform", (d, i) => {
+                        const posNode = nodePositions.get(d.id)!;
+                        const x0 = (treeOffset.x + posNode.x) - seqOffset.x;
+                        const y0 = (treeOffset.y + posNode.y) - seqOffset.y;
+                        seqPositions.set(d.id, { x: i * SVG_BINARY_TREE_VALUES.SEQUENCE_PADDING, y: 0 });
+                        return `translate(${x0}, ${y0})`;
+                    })
+                    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+                    .style("font-weight", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_WEIGHT)
+                    .style("font-size", SVG_BINARY_TREE_VALUES.ELEMENT_TEXT_SIZE)
+                    .attr("text-anchor", "middle")
+                    .text(d => d.value);
+
+                return textEnter;
+            },
+            update => {
+                // Actualizar la posición y el valor del elemento
+                update
+                    .attr("transform", (d, i) => {
+                        const posNode = nodePositions.get(d.id)!;
+                        const x0 = (treeOffset.x + posNode.x) - seqOffset.x;
+                        const y0 = (treeOffset.y + posNode.y) - seqOffset.y;
+                        seqPositions.set(d.id, { x: i * SVG_BINARY_TREE_VALUES.SEQUENCE_PADDING, y: 0 });
+                        return `translate(${x0}, ${y0})`;
+                    })
+                    .text(d => d.value);
+
+                return update;
+            },
+            exit => exit.each(d => {
+                seqPositions.delete(d.id);
+            }).remove()
+        );
+}
+
+/**
  * Función encargada de resaltar un nodo especifico. 
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param svg Selección D3 del elemento SVG donde se encuentra el nodo a resaltar.
  * @param nodeId Id del nodo a resaltar.
  * @param rectValues Valores de estilo para el contenedor del nodo.
  * @param textValues Valores de estilo para el texto del nodo.
@@ -439,7 +503,7 @@ export async function animateClearList(
 
 /**
  * Función encargada de reubicar los nodos y ajustar los enlaces de conexión de un árbol.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
  * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
@@ -490,8 +554,8 @@ export async function repositionTreeNodes(
 }
 
 /**
- * Función encargada de resaltar cada nodo a lo largo de un camino dado. 
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces.
+ * Función encargada de resaltar cada nodo del árbol a lo largo de un camino dado. 
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param path Array de nodos jerárquicos que representan el camino a resaltar.
  * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
  */

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
-import { binaryNodeAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { ArbolBinario } from "../../shared/utils/structures/ArbolBinario";
@@ -9,11 +8,6 @@ import { BinaryTreeRender } from "./components/estructures/arboles/BinaryTreeRen
 export function BinaryTreeSimulator() {
     // Instanciación del árbol binario
     const structure = useRef(new ArbolBinario<number>()).current;
-
-    // Efecto para reiniciar el asignador de memoria al cargar el componente
-    useEffect(() => {
-        binaryNodeAddressGenerator.reset();
-    }, []);
 
     // Llamada al hook useBinaryTree para gestionar el estado del árbol binario
     const { tree, query, error, operations } = useBinaryTree(structure);

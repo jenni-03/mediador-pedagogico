@@ -352,7 +352,7 @@ export class ArbolBinario<T> {
     private clonarAB(root: NodoBin<T> | null): NodoBin<T> | null {
         if (root === null) return null;
 
-        const nuevoNodo = new NodoBin(root.getInfo(), root.getId(), root.getDireccionMemoria());
+        const nuevoNodo = new NodoBin(root.getInfo(), root.getId());
         nuevoNodo.setIzq(this.clonarAB(root.getIzq()));
         nuevoNodo.setDer(this.clonarAB(root.getDer()));
 
@@ -365,15 +365,25 @@ export class ArbolBinario<T> {
      * @returns Estructura jerárquica representando el árbol.
      */
     private toHierarchy(root: NodoBin<T>): HierarchyNodeData<T> {
-        const hijos = [];
-        if (root.getIzq()) hijos.push(this.toHierarchy(root.getIzq()!));
-        if (root.getDer()) hijos.push(this.toHierarchy(root.getDer()!));
+        const left = root.getIzq() ? this.toHierarchy(root.getIzq()!) : null;
+        const right = root.getDer() ? this.toHierarchy(root.getDer()!) : null;
+
+        let children: HierarchyNodeData<T>[] | undefined;
+
+        if (left && right) {
+            children = [left, right];
+        } else if (left && !right) {
+            children = [left, this.createPlaceholder(root, "right")];
+        } else if (!left && right) {
+            children = [this.createPlaceholder(root, "left"), right];
+        } else {
+            children = undefined;
+        }
 
         return {
             id: root.getId(),
             value: root.getInfo(),
-            memoryAddress: root.getDireccionMemoria(),
-            children: hijos.length ? hijos : undefined
+            children
         }
     }
 
@@ -565,5 +575,18 @@ export class ArbolBinario<T> {
         } else {
             return this.get(root.getDer(), info);
         }
+    }
+
+    /**
+     * Método que crea un nodo marcador de posición para la visualización del árbol binario.
+     * @param parent Nodo padre para el que se crea el marcador de posición.
+     * @param side Especifica si el marcador de posición es para el hijo izquierdo o derecho.
+     * @returns Objeto `HierarchyNodeData<T>` que representa un nodo marcador de posición.
+     */
+    private createPlaceholder(parent: NodoBin<T>, side: "left" | "right"): HierarchyNodeData<T> {
+        return {
+            id: `${parent.getId()}-ph${side === "left" ? "L" : "R"}`,
+            isPlaceholder: true
+        };
     }
 }

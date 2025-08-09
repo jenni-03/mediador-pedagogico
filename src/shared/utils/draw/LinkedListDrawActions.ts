@@ -81,8 +81,8 @@ export async function animateInsertFirst(
     // Selección y establecimiento de estado visual inicial de enlaces circulares (solo para listas circulares)
     const nextCircularLinkGroup = showNextCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${lastNode}-${newHeadNode}-circular-next`
-        )
+        `g#link-${lastNode}-${newHeadNode}-circular-next`
+      )
       : null;
     if (nextCircularLinkGroup) {
       nextCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -90,8 +90,8 @@ export async function animateInsertFirst(
 
     const prevCircularLinkGroup = showPrevCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${newHeadNode}-${lastNode}-circular-prev`
-        )
+        `g#link-${newHeadNode}-${lastNode}-circular-prev`
+      )
       : null;
     if (prevCircularLinkGroup) {
       prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -136,17 +136,17 @@ export async function animateInsertFirst(
         .attr("d", (d) =>
           d.type === "next" || d.type === "prev"
             ? calculateLinkPath(
-                d,
-                positions,
-                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-              )
+              d,
+              positions,
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            )
             : calculateCircularLPath(
-                d,
-                positions,
-                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-              )
+              d,
+              positions,
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            )
         )
         .end()
     );
@@ -365,8 +365,8 @@ export async function animateInsertLast(
     // Selección y establecimiento de estado visual inicial de enlaces circulares (solo para listas circulares)
     const nextCircularLinkGroup = showNextCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${newLastNode}-${headNode}-circular-next`
-        )
+        `g#link-${newLastNode}-${headNode}-circular-next`
+      )
       : null;
     if (nextCircularLinkGroup) {
       nextCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -374,8 +374,8 @@ export async function animateInsertLast(
 
     const prevCircularLinkGroup = showPrevCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${headNode}-${newLastNode}-circular-prev`
-        )
+        `g#link-${headNode}-${newLastNode}-circular-prev`
+      )
       : null;
     if (prevCircularLinkGroup) {
       prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -701,17 +701,17 @@ export async function animateInsertAtPosition(
       .attr("d", (d) =>
         d.type === "next" || d.type === "prev"
           ? calculateLinkPath(
-              d,
-              positions,
-              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-            )
+            d,
+            positions,
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+          )
           : calculateCircularLPath(
-              d,
-              positions,
-              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-            )
+            d,
+            positions,
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+          )
       )
       .end()
   );
@@ -1019,8 +1019,8 @@ export async function animateRemoveFirst(
     // Selección y establecimiento de estado visual inicial de enlaces circulares (solo para listas circulares)
     const nextCircularLinkGroup = showNextCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${lastNode}-${newHeadNode}-circular-next`
-        )
+        `g#link-${lastNode}-${newHeadNode}-circular-next`
+      )
       : null;
     if (nextCircularLinkGroup) {
       nextCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -1028,8 +1028,8 @@ export async function animateRemoveFirst(
 
     const prevCircularLinkGroup = showPrevCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${newHeadNode}-${lastNode}-circular-prev`
-        )
+        `g#link-${newHeadNode}-${lastNode}-circular-prev`
+      )
       : null;
     if (prevCircularLinkGroup) {
       prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -1054,15 +1054,15 @@ export async function animateRemoveFirst(
       const newHeadNodeInitialXPos =
         SVG_LINKED_LIST_VALUES.MARGIN_LEFT +
         1 *
-          (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH +
-            SVG_LINKED_LIST_VALUES.SPACING);
+        (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH +
+          SVG_LINKED_LIST_VALUES.SPACING);
 
       // Posición inicial en x del último nodo
       const lastNodeInitialXPos =
         SVG_LINKED_LIST_VALUES.MARGIN_LEFT +
         remainingNodesData.length *
-          (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH +
-            SVG_LINKED_LIST_VALUES.SPACING);
+        (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH +
+          SVG_LINKED_LIST_VALUES.SPACING);
 
       tempPositions.set(newHeadNode, {
         x: newHeadNodeInitialXPos,
@@ -1220,17 +1220,17 @@ export async function animateRemoveFirst(
         .attr("d", (d) =>
           d.type === "next" || d.type === "prev"
             ? calculateLinkPath(
-                d,
-                positions,
-                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-              )
+              d,
+              positions,
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            )
             : calculateCircularLPath(
-                d,
-                positions,
-                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-              )
+              d,
+              positions,
+              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            )
         )
         .end()
     );
@@ -1368,8 +1368,8 @@ export async function animateRemoveLast(
     // Selección y establecimiento de estado visual inicial de enlaces circulares (solo para listas circulares)
     const nextCircularLinkGroup = showNextCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${newLastNode}-${headNode}-circular-next`
-        )
+        `g#link-${newLastNode}-${headNode}-circular-next`
+      )
       : null;
     if (nextCircularLinkGroup) {
       nextCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -1377,8 +1377,8 @@ export async function animateRemoveLast(
 
     const prevCircularLinkGroup = showPrevCircularLink
       ? svg.select<SVGGElement>(
-          `g#link-${headNode}-${newLastNode}-circular-prev`
-        )
+        `g#link-${headNode}-${newLastNode}-circular-prev`
+      )
       : null;
     if (prevCircularLinkGroup) {
       prevCircularLinkGroup.select("path.node-link").style("opacity", 0);
@@ -1690,7 +1690,7 @@ export async function animateRemoveAtPosition(
   const nextNodeInitialXPos =
     SVG_LINKED_LIST_VALUES.MARGIN_LEFT +
     (deletePosition + 1) *
-      (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING);
+    (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING);
 
   // Mapa temporal de posiciones para calular la forma final de los enlaces asociados al nodo a eliminar
   const tempPositions: Map<
@@ -1916,17 +1916,17 @@ export async function animateRemoveAtPosition(
       .attr("d", (d) =>
         d.type === "next" || d.type === "prev"
           ? calculateLinkPath(
-              d,
-              positions,
-              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-            )
+            d,
+            positions,
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+          )
           : calculateCircularLPath(
-              d,
-              positions,
-              SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
-              SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
-            )
+            d,
+            positions,
+            SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+            SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+          )
       )
       .end()
   );

@@ -157,10 +157,10 @@ export type BaseQueryOperations<T extends string> =
     toInsertRight: string | null;
     toDelete: [string, string | null] | [];
     toSearch: number | null;
-    toGetPreOrder: string[] | [];
-    toGetInOrder: string[] | [];
-    toGetPostOrder: string[] | [];
-    toGetLevelOrder: string[] | [];
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
     toClear: boolean;
   }
   : never; // Fallback para otros casos
@@ -271,12 +271,17 @@ export type EqualityFn<T> = (a: T, b: T) => boolean;
 
 export type HierarchyNodeData<T> = {
   id: string;
-  value: T;
-  memoryAddress: string;
+  value?: T;
+  isPlaceholder?: boolean;
   children?: HierarchyNodeData<T>[];
 }
 
 export type TreeLinkData = {
   sourceId: string;
   targetId: string;
+};
+
+export type TraversalNodeType = {
+  id: string;
+  value: number;
 };
