@@ -9,6 +9,7 @@ import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
+import { getPseudoCodeByStructure } from "../../../../shared/constants/pseudocode/getPseudoCodeByStructure";
 
 export function Simulator<T extends string>({
   structureName,
@@ -39,7 +40,7 @@ export function Simulator<T extends string>({
   const buttons = commandsData[dataSelector].buttons;
 
   // Pseudocódigo de las operaciones de la estructura
-  const operations_code = operationsCode[pageTitle];
+  const operations_code = getPseudoCodeByStructure(pageTitle);
 
   // Referencia al elemento de consola
   const consoleRef = useRef<HTMLDivElement>(null);
