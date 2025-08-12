@@ -121,50 +121,90 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
 
     // Operación para obtener el recorrido en preorden
     const getPreOrder = () => {
-        // Obtener el recorrido en preorden del árbol
-        const preorder = tree.preOrden();
+        try {
+            // Obtener el recorrido en preorden del árbol
+            const preorder = tree.preOrden();
 
-        // Actualizar la query a partir de la operación realizada
-        setQuery((prev) => ({
-            ...prev,
-            toGetPreOrder: preorder.map(node => node.getId())
-        }));
+            // Verificar la existencia de nodos
+            if (preorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+            // Actualizar la query a partir de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toGetPreOrder: preorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
     }
 
     // Operación para obtener el recorrido en inorden
     const getInOrder = () => {
-        // Obtener el recorrido en inorden del árbol
-        const inorder = tree.inOrden();
+        try {
+            // Obtener el recorrido en inorden del árbol
+            const inorder = tree.inOrden();
 
-        // Actualizar la query a partir de la operación realizada
-        setQuery((prev) => ({
-            ...prev,
-            toGetInOrder: inorder.map(node => node.getId())
-        }));
+            // Verificar la existencia de nodos
+            if (inorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+            // Actualizar la query a partir de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toGetInOrder: inorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
     }
 
     // Operación para obtener el recorrido en postorden
     const getPostOrder = () => {
-        // Obtener el recorrido en postorden del árbol
-        const postorder = tree.postOrden();
+        try {
+            // Obtener el recorrido en postorden del árbol
+            const postorder = tree.postOrden();
 
-        // Actualizar la query a partir de la operación realizada
-        setQuery((prev) => ({
-            ...prev,
-            toGetPostOrder: postorder.map(node => node.getId())
-        }));
+            // Verificar la existencia de nodos
+            if (postorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+            // Actualizar la query a partir de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toGetPostOrder: postorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
     }
 
     // Operación para obtener el recorrido por niveles
     const getLevelOrder = () => {
-        // Obtener el recorrido por niveles del árbol
-        const levelOrder = tree.getNodosPorNiveles();
+        try {
+            // Obtener el recorrido por niveles del árbol
+            const levelOrder = tree.getNodosPorNiveles();
 
-        // Actualizar la query a partir de la operación realizada
-        setQuery((prev) => ({
-            ...prev,
-            toGetLevelOrder: levelOrder.map(node => node.getId())
-        }));
+            // Verificar la existencia de nodos
+            if (levelOrder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+            // Actualizar la query a partir de la operación realizada
+            setQuery((prev) => ({
+                ...prev,
+                toGetLevelOrder: levelOrder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+            }));
+
+            // Limpieza del error existente
+            setError(null);
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now() });
+        }
     }
 
     // Operación para vaciar el árbol

@@ -48,7 +48,7 @@ export class ArbolBinario<T> {
         if (this.esVacio()) {
             this.setRaiz(nuevoNodo);
         } else {
-            const nodoPadre = this.get(this.getRaiz(), padre);
+            const nodoPadre = this.get(padre);
 
             if (nodoPadre === null) {
                 throw new Error(`No fue posible insertar el nodo: El nodo padre con valor ${padre} no existe.`);
@@ -85,7 +85,7 @@ export class ArbolBinario<T> {
         if (this.esVacio()) {
             this.setRaiz(nuevoNodo);
         } else {
-            const nodoPadre = this.get(this.getRaiz(), padre);
+            const nodoPadre = this.get(padre);
 
             if (nodoPadre === null) {
                 throw new Error(`No fue posible insertar el nodo: El nodo padre con valor ${padre} no existe.`);
@@ -114,7 +114,7 @@ export class ArbolBinario<T> {
             return this.eliminarRaiz();
         }
 
-        const padre = this.getPadre(this.getRaiz(), info);
+        const padre = this.getPadre(info);
         if (!padre) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
 
         let nodo = padre.getIzq();
@@ -148,8 +148,7 @@ export class ArbolBinario<T> {
             succ = succ.getIzq()!;
         }
         nodo.setInfo(succ.getInfo());
-        const hijoSuc = succ.getDer();
-        this.reemplazarHijo(sucPadre, succ, hijoSuc);
+        this.reemplazarHijo(sucPadre, succ, succ.getDer());
 
         this.tamanio--;
         return { removed: succ, updated: nodo };
@@ -220,7 +219,7 @@ export class ArbolBinario<T> {
      * @returns Grado del nodo.
      */
     public getGrado(info: T): number {
-        const nodo = this.get(this.getRaiz(), info);
+        const nodo = this.get(info);
 
         if (!nodo) return -1;
 
@@ -325,23 +324,15 @@ export class ArbolBinario<T> {
 
     /**
      * Método que obtiene el nodo padre de un elemento particular.
-     * @param root Raíz del árbol binario.
      * @param info Elemento a buscar.
      * @returns El nodo padre del elemento almacenado en el árbol o null en caso de no existir.
      */
-    protected getPadre(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
-        if (root === null || !this.raiz || this.equals(this.raiz.getInfo(), info)) {
+    protected getPadre(info: T): NodoBin<T> | null {
+        if (!this.raiz || this.equals(this.raiz.getInfo(), info)) {
             return null;
         }
 
-        if ((root.getIzq() !== null && this.equals(root.getIzq()!.getInfo(), info)) || (root.getDer() !== null && this.equals(root.getDer()!.getInfo(), info))) {
-            return root;
-        }
-
-        const izq = this.getPadre(root.getIzq(), info);
-        if (izq) return izq;
-
-        return this.getPadre(root.getDer(), info);
+        return this.getPadreAux(this.getRaiz(), info);
     }
 
     /**
@@ -352,7 +343,7 @@ export class ArbolBinario<T> {
     private clonarAB(root: NodoBin<T> | null): NodoBin<T> | null {
         if (root === null) return null;
 
-        const nuevoNodo = new NodoBin(root.getInfo(), root.getId(), root.getDireccionMemoria());
+        const nuevoNodo = new NodoBin(root.getInfo(), root.getId());
         nuevoNodo.setIzq(this.clonarAB(root.getIzq()));
         nuevoNodo.setDer(this.clonarAB(root.getDer()));
 
@@ -365,15 +356,25 @@ export class ArbolBinario<T> {
      * @returns Estructura jerárquica representando el árbol.
      */
     private toHierarchy(root: NodoBin<T>): HierarchyNodeData<T> {
-        const hijos = [];
-        if (root.getIzq()) hijos.push(this.toHierarchy(root.getIzq()!));
-        if (root.getDer()) hijos.push(this.toHierarchy(root.getDer()!));
+        const left = root.getIzq() ? this.toHierarchy(root.getIzq()!) : null;
+        const right = root.getDer() ? this.toHierarchy(root.getDer()!) : null;
+
+        let children: HierarchyNodeData<T>[] | undefined;
+
+        if (left && right) {
+            children = [left, right];
+        } else if (left && !right) {
+            children = [left, this.createPlaceholder(root, "right")];
+        } else if (!left && right) {
+            children = [this.createPlaceholder(root, "left"), right];
+        } else {
+            children = undefined;
+        }
 
         return {
             id: root.getId(),
             value: root.getInfo(),
-            memoryAddress: root.getDireccionMemoria(),
-            children: hijos.length ? hijos : undefined
+            children
         }
     }
 
@@ -438,6 +439,27 @@ export class ArbolBinario<T> {
             return 0;
         }
         return this.getPesoAux(root.getIzq()) + 1 + this.getPesoAux(root.getDer());
+    }
+
+    /**
+     * Método que obtiene el nodo padre de un elemento particular.
+     * @param root Raíz del árbol binario.
+     * @param info Elemento a buscar.
+     * @returns El nodo padre del elemento almacenado en el árbol o null en caso de no existir.
+     */
+    protected getPadreAux(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
+        if (root === null) {
+            return null;
+        }
+
+        if ((root.getIzq() !== null && this.equals(root.getIzq()!.getInfo(), info)) || (root.getDer() !== null && this.equals(root.getDer()!.getInfo(), info))) {
+            return root;
+        }
+
+        const izq = this.getPadreAux(root.getIzq(), info);
+        if (izq) return izq;
+
+        return this.getPadreAux(root.getDer(), info);
     }
 
     /**
@@ -547,23 +569,45 @@ export class ArbolBinario<T> {
     }
 
     /**
+     * Método que obtiene un elemento existente dentro del árbol binario.
+     * @param info Información del elemento a obtener.
+     * @returns Nodo encontrado o null si no existe.
+     */
+    private get(info: T): NodoBin<T> | null {
+        return this.getNodo(this.getRaiz(), info);
+    }
+
+    /**
      * Método que obtiene un elemento existente dentro del árbol binario. 
      * @param root Nodo raíz del árbol.
      * @param info Información del elemento a obtener.
      * @returns Nodo encontrado o null si no existe.
      */
-    private get(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
+    private getNodo(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
         if (root === null) return null;
 
         if (this.equals(root.getInfo(), info)) {
             return root;
         }
 
-        const left = this.get(root.getIzq(), info);
+        const left = this.getNodo(root.getIzq(), info);
         if (left !== null) {
             return left;
         } else {
-            return this.get(root.getDer(), info);
+            return this.getNodo(root.getDer(), info);
         }
+    }
+
+    /**
+     * Método que crea un nodo marcador de posición para la visualización del árbol binario.
+     * @param parent Nodo padre para el que se crea el marcador de posición.
+     * @param side Especifica si el marcador de posición es para el hijo izquierdo o derecho.
+     * @returns Objeto `HierarchyNodeData<T>` que representa un nodo marcador de posición.
+     */
+    private createPlaceholder(parent: NodoBin<T>, side: "left" | "right"): HierarchyNodeData<T> {
+        return {
+            id: `${parent.getId()}-ph${side === "left" ? "L" : "R"}`,
+            isPlaceholder: true
+        };
     }
 }

@@ -95,7 +95,7 @@ export const infoStructures: Record<string, any> = {
       },
       {
         key: "Hojas",
-        description: "Son hojas que caen :3"
+        description: "Nodo terminal en la estructura del árbol que no posee descendientes."
       }
     ],
   },

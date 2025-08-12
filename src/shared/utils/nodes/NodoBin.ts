@@ -1,7 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
 import { v4 as uuidv4 } from "uuid";
-import { binaryNodeAddressGenerator } from "../memoryAllocator";
 
 /**
  * Clase que representa un Nodo Binario.
@@ -20,19 +19,15 @@ export class NodoBin<T> {
     // Hijo derecho del nodo binario.
     private derecho: NodoBin<T> | null;
 
-    // Dirección de memoria del nodo binario.
-    private direccionMemoria: string;
-
     /**
      * Constructor de la clase Nodo Binario.
      * @param info Información a almacenar en el nodo.
      * @param id Identificador único del nodo (opcional).
      * @param direccion Dirección de memoria del nodo (opcional).
      */
-    constructor(info: T, id?: string, direccion?: string) {
+    constructor(info: T, id?: string) {
         this.info = info;
         this.id = id ?? `node-${uuidv4()}`;
-        this.direccionMemoria = direccion ?? binaryNodeAddressGenerator.generateNextAddress();
         this.izquierdo = null;
         this.derecho = null;
     }
@@ -67,14 +62,6 @@ export class NodoBin<T> {
      */
     public getId(): string {
         return this.id;
-    }
-
-    /**
-     * Método que obtiene la dirección de memoria del nodo binario.
-     * @returns Dirección de memoria del nodo binario.
-     */
-    public getDireccionMemoria(): string {
-        return this.direccionMemoria;
     }
 
     /**
