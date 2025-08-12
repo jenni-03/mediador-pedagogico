@@ -1,4 +1,4 @@
-import { complexityListaSimple } from "../../../../../shared/constants/complexityStructures/complexityListaSimple";
+import { complexityListaCDoble } from "../../../../../shared/constants/complexityStructures/complexityListaCDoble";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityListaCDoble() {
@@ -11,7 +11,7 @@ export function ComplexityListaCDoble() {
         </h1>
       </div>
       <span className="text-base text-red-400 ml-3 font-medium block mb-2">
-        Lista Simple
+        Lista Circular Doblemente Enlazada
       </span>
       <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
@@ -50,7 +50,7 @@ export function ComplexityListaCDoble() {
       </section>
 
       <section className="space-y-8">
-        {complexityListaSimple.map((method, index) => (
+        {complexityListaCDoble.map((method, index) => (
           <div key={index} className="border-b border-gray-700 pb-4">
             <h3 className="text-xl font-semibold text-red-400 mb-3">
               {method.title}
@@ -68,14 +68,11 @@ export function ComplexityListaCDoble() {
         <h3 className="text-xl font-bold text-white mb-3">Conclusión</h3>
         <p className="text-sm text-gray-300 leading-6">
           En el análisis anterior se pudo observar que la estructura{" "}
-          <strong>Lista Simple</strong> opta en el mejor de los casos a ser{" "}
-          <span className="text-green-400">constante</span> y en el peor de los
-          casos a ser <span className="text-yellow-400">lineal</span>. Teniendo
-          en cuenta que su comportamiento lineal depende de{" "}
-          <code className="bg-gray-800 px-1 rounded">this.cant</code>, este
-          mismo puede considerarse como{" "}
-          <code className="bg-gray-800 px-1 rounded">n</code> para evaluar el
-          coste operacional de cada algoritmo.
+          <strong>Lista Circular Doble</strong> en comparacion a la{" "}
+          <span className="text-green-400">Lista Circular Simple</span> para
+          esta implementacion en especifico se modificaron algunos metodos
+          auxiliares que disminuyeron o aumentaron su costo operacional sin
+          cambiar su complejidad.
         </p>
       </section>
     </div>

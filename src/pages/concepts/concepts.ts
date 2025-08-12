@@ -8,6 +8,15 @@ export { OperationTablaHash } from "./components/structures/tabla_hash/Operation
 export { OperationListaDoble } from "./components/structures/lista_doble/OperationListaDoble";
 export { OperationListaCSimple } from "./components/structures/lista_circular_simple/OperationListaCSimple";
 export { OperationListaCDoble } from "./components/structures/lista_circular_doble/OperationListaCDoble";
+export { OperationArbolAVL } from "./components/structures/arbol_avl/OperationArbolAVL";
+export { OperationArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/OperationArbolBin";
+export { OperationArbolRojiNegro } from "./components/structures/arbol_rojinegro/OperationArbolRojiNegro";
+export { OperationArbolSplay } from "./components/structures/arbol_splay/OperationArbolSplay";
+export { OperationArbolHeap } from "./components/structures/arbol_heap/OperationArbolHeap";
+export { OperationArbolEneario } from "./components/structures/arbol_eneario/OperationArbolEneario";
+export { OperationArbol123 } from "./components/structures/arbol_123/OperationArbol123";
+export { OperationArbolB } from "./components/structures/arbol_b/OperationArbolB";
+export { OperationArbolB2 } from "./components/structures/arbol_b+/OperationArbolB+";
 
 export { ComplexitySecuencia } from "./components/structures/secuencia/ComplexitySecuencia";
 export { ComplexityCola } from "./components/structures/cola/ComplexityCola";
@@ -19,6 +28,15 @@ export { ComplexityTablaHash } from "./components/structures/tabla_hash/Complexi
 export { ComplexityListaDoble } from "./components/structures/lista_doble/ComplexityListaDoble";
 export { ComplexityListaCSimple } from "./components/structures/lista_circular_simple/ComplexityListaCSimple";
 export { ComplexityListaCDoble } from "./components/structures/lista_circular_doble/ComplexityListaCDoble";
+export { ComplexityArbolAVL } from "./components/structures/arbol_avl/ComplexityArbolAVL";
+export { ComplexityArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/ComplexityArbolBin";
+export { ComplexityArbolRojinegro } from "./components/structures/arbol_rojinegro/ComplexityArbolRojiNegro";
+export { ComplexityArbolSplay } from "./components/structures/arbol_splay/ComplexityArbolSplay";
+export { ComplexityArbolHeap } from "./components/structures/arbol_heap/ComplexityArbolHeap";
+export { ComplexityArbolEneario } from "./components/structures/arbol_eneario/ComplexityArbolEneario";
+export { ComplexityArbol123 } from "./components/structures/arbol_123/ComplexityArbol123";
+export { ComplexityArbolB } from "./components/structures/arbol_b/ComplexityArbolB";
+export { ComplexityArbolB2 } from "./components/structures/arbol_b+/ComplexityArbolB+";
 
 export { DefinitionSecuencia } from "./components/structures/secuencia/DefinitionSecuencia";
 export { DefinitionCola } from "./components/structures/cola/DefinitionCola";
@@ -30,3 +48,12 @@ export { DefinitionTablaHash } from "./components/structures/tabla_hash/Definiti
 export { DefinitionListaDoble } from "./components/structures/lista_doble/DefinitionListaDoble";
 export { DefinitionListaCSimple } from "./components/structures/lista_circular_simple/DefinitionListaCSimple";
 export { DefinitionListaCDoble } from "./components/structures/lista_circular_doble/DefinitionListaCDoble";
+export { DefinitionArbolAVL } from "./components/structures/arbol_avl/DefinitionArbolAVL";
+export { DefinitionArbolBinarioBusqueda } from "./components/structures/arbol_bin_busqueda/DefinitionArbolBin";
+export { DefinitionArbolRojiNegro } from "./components/structures/arbol_rojinegro/DefinitionArbolRojiNegro";
+export { DefinitionArbolSplay } from "./components/structures/arbol_splay/DefinitionArbolSplay";
+export { DefinitionArbolHeap } from "./components/structures/arbol_heap/DefinitionArbolHeap";
+export { DefinitionArbolEneario } from "./components/structures/arbol_eneario/DefinitionArbolEneario";
+export { DefinitionArbol123 } from "./components/structures/arbol_123/DefinitionArbol123";
+export { DefinitionArbolB } from "./components/structures/arbol_b/DefinitionArbolB";
+export { DefinitionArbolB2 } from "./components/structures/arbol_b+/DefinitionArbolB+";

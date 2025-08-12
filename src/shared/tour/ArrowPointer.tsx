@@ -40,7 +40,6 @@ const ArrowPointer: React.FC<ArrowPointerProps> = ({
         pointerEvents: "none", // Esto permite que el arrow no interfiera en los eventos sobre otros elementos
       }}
     >
-      {/* Aquí podrías usar un ícono o una imagen con la flecha, e incluso aplicar una rotación condicional */}
       🤖
     </div>
   );

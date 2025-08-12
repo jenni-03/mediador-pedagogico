@@ -1,16 +1,6 @@
-import { TourType } from "../tour/CustomTour";
-import { getTourSteps } from "./tourStepsSimulatorByStructure";
+import { TourStep } from "../typesTour";
 
-// types
-export type TourStep = {
-  id?: string;
-  description?: string;
-  type: "element" | "info" | "action" | "write" | "enter";
-  text?: string;
-};
-
-//Categoría: MEMORIA
-export const memoriaDescriptions: TourStep[] = [
+export const getMemoriaTour = (): TourStep[] => [
   {
     type: "info",
     description:
@@ -223,39 +213,3 @@ export const memoriaDescriptions: TourStep[] = [
       "🔄 Todo lo que haces se **refleja en tiempo real**. Aprovecha esta herramienta para entender cómo funciona la memoria de manera **visual, interactiva y divertida**.",
   },
 ];
-
-//Categoría: ESTRUCTURAS
-export const estructurasDescriptions: TourStep[] = [
-  {
-    type: "info",
-    description: "Aquí aprenderás cómo funciona una estructura de árbol.",
-  },
-  {
-    id: "tree-visualizer",
-    description: "Visualiza cómo se estructura el árbol.",
-    type: "element",
-  },
-  {
-    id: "insert-node",
-    description: "Inserta un nuevo nodo en la estructura.",
-    type: "element",
-  },
-  {
-    id: "delete-node",
-    description: "Elimina un nodo existente.",
-    type: "element",
-  },
-  {
-    type: "info",
-    description: "¡Muy bien! Ya sabes lo básico para comenzar.",
-  },
-];
-
-// Función para obtener por tipo
-export const getTourDescriptions = (tipo: TourType): TourStep[] => {
-  if (tipo === "memoria") {
-    return memoriaDescriptions;
-  } else {
-    return getTourSteps(tipo);
-  }
-};

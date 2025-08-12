@@ -4,11 +4,11 @@ export function OperationListaCDoble() {
       <div className="flex items-center gap-3 mb-2">
         <div className="h-7 w-2 rounded bg-red-600"></div>
         <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
-          Operaciones · Lista Simple
+          Operaciones · Lista Circular Doble
         </h1>
       </div>
       <span className="text-base text-red-400 ml-3 font-medium block mb-2">
-        Lista Simple
+        Lista Circular Doblemente Enlazada
       </span>
       <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
@@ -23,14 +23,23 @@ export function OperationListaCDoble() {
         </h4>
         <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow mb-3">
           <p>
-            El nuevo elemento que se desea incorporar a una lista se puede
-            insertar de distintas formas, según la posición de inserción. Ésta
-            puede ser:
+            En una lista circular doble, el primer nodo (cabeza) está conectado
+            con el último, y viceversa. Para insertar al inicio:
           </p>
-          <ul className="list-disc ml-4">
-            <li> En la cabeza (elemento primero) de la lista.</li>
-            <li> En el final de la lista (elemento último).</li>
-            <li> Ordenado.</li>
+          <ul className="list-disc ml-5 mt-2 space-y-1">
+            <li>Crear un nuevo nodo con el valor deseado.</li>
+            <li>
+              El nuevo nodo apunta hacia adelante al nodo cabeza actual y hacia
+              atrás al nodo final.
+            </li>
+            <li>
+              El nodo final debe actualizar su puntero <b>sig</b> al nuevo nodo.
+            </li>
+            <li>
+              La cabeza actual debe apuntar hacia atrás (<b>ant</b>) al nuevo
+              nodo.
+            </li>
+            <li>Actualizar la cabeza al nuevo nodo.</li>
           </ul>
         </div>
 
@@ -38,15 +47,21 @@ export function OperationListaCDoble() {
           Inserción al Final
         </h4>
         <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow mb-3">
-          <p>
-            El nuevo elemento que se desea incorporar a una lista se puede
-            insertar de distintas formas, según la posición de inserción. Ésta
-            puede ser:
-          </p>
-          <ul className="list-disc ml-4">
-            <li> En la cabeza (elemento primero) de la lista.</li>
-            <li> En el final de la lista (elemento último).</li>
-            <li> Ordenado.</li>
+          <p>Para insertar al final:</p>
+          <ul className="list-disc ml-5 mt-2 space-y-1">
+            <li>Crear un nuevo nodo con el valor a insertar.</li>
+            <li>
+              El nuevo nodo apunta hacia atrás al nodo final actual y hacia
+              adelante a la cabeza.
+            </li>
+            <li>
+              El nodo final actual actualiza su puntero <b>sig</b> para apuntar
+              al nuevo nodo.
+            </li>
+            <li>
+              La cabeza actual actualiza su puntero <b>ant</b> para apuntar al
+              nuevo nodo.
+            </li>
           </ul>
         </div>
 
@@ -55,14 +70,22 @@ export function OperationListaCDoble() {
         </h4>
         <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow mb-3">
           <p>
-            El nuevo elemento que se desea incorporar a una lista se puede
-            insertar de distintas formas, según la posición de inserción. Ésta
-            puede ser:
+            Para mantener la lista ordenada, se recorre desde la cabeza
+            comparando valores hasta encontrar el punto adecuado:
           </p>
-          <ul className="list-disc ml-4">
-            <li> En la cabeza (elemento primero) de la lista.</li>
-            <li> En el final de la lista (elemento último).</li>
-            <li> Ordenado.</li>
+          <ul className="list-disc ml-5 mt-2 space-y-1">
+            <li>
+              Si el nuevo valor es menor que el de la cabeza, se usa la lógica
+              de inserción al inicio.
+            </li>
+            <li>
+              Si se llega nuevamente a la cabeza sin insertar, el nuevo nodo se
+              agrega al final.
+            </li>
+            <li>
+              Los punteros <b>ant</b> y <b>sig</b> de los nodos adyacentes se
+              actualizan para enlazar correctamente al nuevo nodo.
+            </li>
           </ul>
         </div>
       </section>
@@ -70,38 +93,39 @@ export function OperationListaCDoble() {
       {/* Editar / Buscar / Eliminar */}
       <section className="mt-10 text-sm leading-6 space-y-8">
         <h3 className="text-2xl font-semibold text-red-400 mb-2">Editar</h3>
-
         <div className="bg-[#19191d] border-l-4 border-yellow-400 rounded-md p-4 shadow mb-3">
           <p>
-            La operación editar un elemento recorre la lista hasta encontrar el
-            nodo deseado y modifica su información. Puede devolver la referencia
-            al nodo modificado o simplemente un valor booleano indicando el
-            éxito de la operación.
+            Editar un nodo en esta estructura es eficiente, ya que se puede
+            recorrer desde cualquier extremo. Una vez localizado el nodo, se
+            modifica su valor sin necesidad de ajustar los punteros.
           </p>
         </div>
 
         <h3 className="text-2xl font-semibold text-red-400 mb-2">Buscar</h3>
         <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow mb-3">
           <p>
-            La búsqueda recorre la lista hasta encontrar el nodo con el elemento
-            solicitado. Devuelve la referencia al nodo o <code>null</code> si no
-            se encuentra. Alternativamente puede devolver un booleano.
+            La búsqueda se puede hacer desde la cabeza o desde el final,
+            recorriendo con los punteros <b>sig</b> o <b>ant</b>. El recorrido
+            finaliza cuando se vuelve al punto de inicio o cuando se encuentra
+            el valor buscado.
           </p>
         </div>
 
         <h3 className="text-2xl font-semibold text-red-400 mb-2">Eliminar</h3>
         <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-3">
           <p>
-            La operación de eliminar un nodo requiere actualizar el enlace del
-            nodo anterior para que apunte al nodo siguiente y liberar la memoria
-            del nodo eliminado.
+            Eliminar en una lista circular doble requiere ajustar correctamente
+            los enlaces de ambos lados y considerar el caso donde se elimina la
+            cabeza:
           </p>
           <ul className="mt-3 space-y-2 list-inside">
             {[
-              "Buscar el nodo a eliminar y su anterior.",
-              "Actualizar el enlace del nodo anterior al nodo siguiente.",
-              "Si el nodo a eliminar es la cabeza, actualizar la cabeza al siguiente nodo.",
-              "Liberar la memoria del nodo eliminado.",
+              "Localizar el nodo a eliminar.",
+              "Si el nodo es el único de la lista, la lista queda vacía.",
+              "Si el nodo es la cabeza, se actualiza la cabeza al nodo siguiente.",
+              "El nodo anterior al eliminado apunta con 'sig' al nodo siguiente.",
+              "El nodo siguiente al eliminado apunta con 'ant' al nodo anterior.",
+              "Liberar el nodo eliminado (o permitir que el recolector lo maneje).",
             ].map((step, index) => (
               <li key={index} className="text-sm">
                 <span className="text-red-400 font-semibold">{index + 1}.</span>{" "}
@@ -109,24 +133,10 @@ export function OperationListaCDoble() {
               </li>
             ))}
           </ul>
-          <p className="mt-4">
-            Para listas dobles o circulares dobles, se deben actualizar tanto la
-            referencia adelante como atrás:
+          <p className="mt-3">
+            Gracias a su doble conexión, no es necesario buscar el nodo anterior
+            antes de eliminar, lo que simplifica la operación.
           </p>
-          <ul className="mt-3 space-y-2  list-inside">
-            {[
-              "Buscar el nodo que contiene el dato.",
-              "Actualizar la referencia adelante del nodo anterior.",
-              "Actualizar la referencia atrás del nodo siguiente.",
-              "Si es el nodo cabeza, actualizar la cabeza.",
-              "La memoria del nodo se libera automáticamente.",
-            ].map((step, index) => (
-              <li key={index} className="text-sm">
-                <span className="text-red-400 font-semibold">{index + 1}.</span>{" "}
-                {step}
-              </li>
-            ))}
-          </ul>
         </div>
       </section>
     </div>
