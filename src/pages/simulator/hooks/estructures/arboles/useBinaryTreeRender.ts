@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType, TreeLinkData } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
-import { drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateClearTree, animateDeleteNode, animateInsertNode, animateSearchNode, animateTraversal } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+import { animateClearTree, animateTreeTraversal, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 
 export function useBinaryTreeRender(
@@ -287,7 +287,7 @@ export function useBinaryTreeRender(
         );
 
         // Animación de recorrido de los nodos del árbol
-        animateTraversal(treeG, seqG, nodes, seqPositions, resetQueryValues, setIsAnimating);
+        animateTreeTraversal(treeG, seqG, nodes, seqPositions, resetQueryValues, setIsAnimating);
     }, [query.toGetInOrder, query.toGetPreOrder, query.toGetPostOrder, query.toGetLevelOrder, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la limpieza de lienzo
