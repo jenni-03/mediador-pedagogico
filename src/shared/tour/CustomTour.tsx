@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { getTourByStructure } from "../constants/tours/getTourByStructure";
-
-import { TourStep } from "../constants/typesTour"; // o "../core/types" si lo reubicas
+import { TourStep } from "../constants/typesTour";
 
 import HighlightBox from "./HighlightBox";
 import TourTooltip from "./TourTooltip";
 import ArrowPointer from "./ArrowPointer";
 import useViewport from "./useViewport";
+
+// leer isAnimating global
+import { useAnimation } from "../hooks/useAnimation";
 
 export type TourType = "memoria" | "secuencia" | "pila";
 
@@ -29,6 +31,23 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
   const { width: viewportWidth, height: viewportHeight } = useViewport();
   const step = tourSteps[currentStep];
 
+  // estado global de animación
+  const { isAnimating } = useAnimation();
+
+  // aviso visual (no bloqueante)
+  const [warn, setWarn] = useState<string | null>(null);
+
+  // refs para evitar acciones cuando el tour ya no está activo / paso cambió
+  const activeRef = useRef(isActive);
+  useEffect(() => {
+    activeRef.current = isActive;
+  }, [isActive]);
+
+  const stepIndexRef = useRef(currentStep);
+  useEffect(() => {
+    stepIndexRef.current = currentStep;
+  }, [currentStep]);
+
   useEffect(() => {
     setIsActive(true);
     setCurrentStep(0);
@@ -38,6 +57,7 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
     if (!isActive) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Solo bloqueamos Enter global en pasos que NO son enter.
       if (step?.type === "enter") return;
 
       if (e.key === "Enter") {
@@ -50,7 +70,37 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isActive, currentStep]);
+  }, [isActive, currentStep, step?.type]);
+
+  // util simple para esperar condición (con timeout)
+  function waitUntil(
+    predicate: () => boolean,
+    { interval = 80, timeout = 20000 } = {}
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const tick = () => {
+        if (!activeRef.current) return resolve(false);
+        if (predicate()) return resolve(true);
+        if (Date.now() - start >= timeout) return resolve(false);
+        setTimeout(tick, interval);
+      };
+      tick();
+    });
+  }
+
+  // 🔹 Auto-limpieza del aviso si cambia el contexto
+  useEffect(() => {
+    // si el tour no está activo o el paso no es 'enter' -> limpiar
+    if (!isActive || step?.type !== "enter") {
+      if (warn) setWarn(null);
+      return;
+    }
+    // si ya no hay animación, limpiar
+    if (!isAnimating && warn) {
+      setWarn(null);
+    }
+  }, [isActive, step?.type, isAnimating, warn]);
 
   useEffect(() => {
     if (!isActive || !step) return;
@@ -58,13 +108,11 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
     if (step.type === "info") {
       document.body.style.overflow = "auto";
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setTimeout(() => {
+      const t = setTimeout(() => {
         document.body.style.overflow = "hidden";
       }, 600);
-
-      // 👇 LIMPIAMOS cualquier highlight anterior
       setHighlightBoxes([]);
-      return;
+      return () => clearTimeout(t);
     }
 
     if (step.type === "action" && step.id) {
@@ -93,20 +141,76 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       return;
     }
 
+    // SOLO aquí aplicamos isAnimating: cuando el asistente hará Enter en la consola
     if (step.type === "enter" && step.id) {
-      const el = document.querySelector<HTMLInputElement>(
-        `[data-tour="${step.id}"]`
-      );
-      if (el) {
-        const enterEvent = new KeyboardEvent("keydown", {
-          bubbles: true,
-          cancelable: true,
-          key: "Enter",
-          code: "Enter",
-        });
-        el.dispatchEvent(enterEvent);
+      const doEnter = () => {
+        // limpiar aviso por si quedó visible
+        setWarn(null);
+        const el = document.querySelector<HTMLInputElement>(
+          `[data-tour="${step.id}"]`
+        );
+        if (el) {
+          const enterEvent = new KeyboardEvent("keydown", {
+            bubbles: true,
+            cancelable: true,
+            key: "Enter",
+            code: "Enter",
+          });
+          el.dispatchEvent(enterEvent);
+        }
+        // asegurar limpieza un frame después (carreras de estado)
+        setTimeout(() => setWarn(null), 0);
+        setTimeout(() => setCurrentStep((prev) => prev + 1), 300);
+      };
+
+      // Si hay animación en curso, mostramos aviso y esperamos a que termine.
+      if (isAnimating) {
+        setWarn("Animación en curso, por favor espere…");
+        let cancelled = false;
+        let warnTimeout: number | undefined;
+
+        (async () => {
+          const ok = await waitUntil(() => !isAnimating, {
+            interval: 80,
+            timeout: 20000,
+          });
+
+          if (
+            !activeRef.current ||
+            stepIndexRef.current !== currentStep ||
+            cancelled
+          ) {
+            return;
+          }
+
+          if (!ok) {
+            // Expiró la espera: mensaje breve y auto-ocultar para no dejarlo pegado
+            setWarn(
+              "La animación tarda más de lo normal. Intenta de nuevo en un momento."
+            );
+            warnTimeout = window.setTimeout(() => {
+              if (activeRef.current && stepIndexRef.current === currentStep) {
+                setWarn(null);
+              }
+            }, 2000);
+            return;
+          }
+
+          // Ya terminó la animación
+          setWarn(null);
+          doEnter();
+        })();
+
+        // cleanup por si cambiamos de paso o desmonta
+        return () => {
+          cancelled = true;
+          if (warnTimeout) clearTimeout(warnTimeout);
+          if (!isAnimating) setWarn(null);
+        };
       }
-      setTimeout(() => setCurrentStep((prev) => prev + 1), 300);
+
+      // Si NO está animando, proceder normal
+      doEnter();
       return;
     }
 
@@ -114,7 +218,6 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       let ids: string[] = [];
 
       if (/\[.*\]$/.test(step.id)) {
-        // Soporta tanto comandoCreado[1,2,3] como comandoCreado.[1,2,3]
         const match = step.id.match(/^([a-zA-Z0-9_-]+)(?:\.)?\[(.*)\]$/);
         if (match) {
           const base = match[1];
@@ -168,13 +271,9 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
         setHighlightBoxes(boxes);
       };
 
-      // Scroll to the first element
       elements[0].scrollIntoView({ behavior: "smooth", block: "center" });
+      const t = setTimeout(updateHighlightPosition, 400);
 
-      // Actualizar una vez que se haya centrado
-      setTimeout(updateHighlightPosition, 400);
-
-      // Listener para seguir el scroll y resize
       window.addEventListener("scroll", updateHighlightPosition, true);
       window.addEventListener("resize", updateHighlightPosition);
 
@@ -182,12 +281,20 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       elements.forEach((el) => resizeObserver.observe(el));
 
       return () => {
+        clearTimeout(t);
         window.removeEventListener("scroll", updateHighlightPosition, true);
         window.removeEventListener("resize", updateHighlightPosition);
         resizeObserver.disconnect();
       };
     }
-  }, [currentStep, isActive, step, viewportHeight, viewportWidth]);
+  }, [
+    currentStep,
+    isActive,
+    step,
+    viewportHeight,
+    viewportWidth,
+    isAnimating, // re-evaluar cuando cambie
+  ]);
 
   const nextStep = () => {
     if (currentStep < tourSteps.length - 1) {
@@ -237,6 +344,22 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
             />
           </>
         )}
+
+      {/* pequeño toast de advertencia; no oculta el asistente */}
+      {isActive && warn && (
+        <div
+          className="
+            fixed bottom-24 left-1/2 -translate-x-1/2
+            z-[10000] px-4 py-2 rounded-xl
+            bg-[#1b1b1f] text-white text-sm
+            border border-red-500/50 shadow-[0_0_12px_rgba(239,68,68,0.35)]
+          "
+          role="status"
+          aria-live="polite"
+        >
+          {warn}
+        </div>
+      )}
 
       {!isActive && (
         <button

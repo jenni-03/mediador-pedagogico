@@ -4,7 +4,6 @@ import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
 import { SimulatorProps } from "../../../../types";
 import { useRef, useState } from "react";
 import { commandsData } from "../../../../shared/constants/commandsData";
-import { operationsCode } from "../../../../shared/constants/pseudoCode";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { Header } from "../molecules/Header";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
