@@ -87,24 +87,41 @@ export const infoStructures: Record<string, any> = {
     info: [
       {
         key: "Peso",
-        description: "Número total de nodos en el árbol binario."
+        description: "Número total de nodos en el árbol binario.",
       },
       {
         key: "Altura",
-        description: "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario."
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario.",
       },
       {
         key: "Hojas",
-        description: "Nodo terminal en la estructura del árbol que no posee descendientes."
-      }
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
     ],
   },
   bst: {
     info: ["Peso", "Altura"],
   },
 
-  avl: {
-    info: ["Peso", "Altura"],
+  arbol_avl: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol binario.",
+      },
+      {
+        key: "Altura",
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario.",
+      },
+      {
+        key: "Hojas",
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
+    ],
   },
 
   roji_negro: {

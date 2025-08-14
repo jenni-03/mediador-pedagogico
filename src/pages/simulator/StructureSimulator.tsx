@@ -10,6 +10,7 @@ import { DoublyLinkedListSimulator } from "./DoublyLinkedListSimulator";
 import { CircularDoublyLinkedListSimulator } from "./CircularDoublyLinkedListSimulator";
 import { CircularSimpleLinkedListSimulator } from "./CircularSimpleLinkedListSimulator";
 import { BinaryTreeSimulator } from "./BinaryTreeSimulator";
+import { AvlTreeSimulator } from "./AvlTreeSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -23,6 +24,7 @@ const componentMap: Record<string, React.FC> = {
     "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
     "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
     "Árbol Binario": BinaryTreeSimulator,
+    "Árbol AVL" : AvlTreeSimulator,
 };
 
 export function StructureSimulator() {
