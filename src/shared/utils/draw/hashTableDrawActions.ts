@@ -181,7 +181,6 @@ export function drawHashTable(
   const {
     bucketWidth,
     bucketHeight,
-    nodeHeight,
     padding,
     bucketGradientFrom,
     bucketGradientTo,
@@ -313,6 +312,37 @@ export function drawHashTable(
       .enter()
       .append("feMergeNode")
       .attr("in", (d) => d);
+  }
+
+  // ——— defs para flechas de inserción (si no existen) ———
+  if (svg.select("#ins-tip").empty()) {
+    const defs = svg.select("defs");
+
+    // Punta reutilizable (orientación automática)
+    defs
+      .append("marker")
+      .attr("id", "ins-tip")
+      .attr("viewBox", "0 0 12 12")
+      .attr("refX", 10) // dónde engancha la punta al final del path
+      .attr("refY", 6)
+      .attr("markerWidth", 10)
+      .attr("markerHeight", 10)
+      .attr("markerUnits", "strokeWidth")
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,0 L12,6 L0,12 L3,6 Z")
+      .attr("fill", "#60A5FA");
+
+    // Glow azulado (sombra hacia afuera)
+    defs
+      .append("filter")
+      .attr("id", "ins-glow")
+      .append("feDropShadow")
+      .attr("dx", 0)
+      .attr("dy", 0)
+      .attr("stdDeviation", 2.2)
+      .attr("flood-color", "#60A5FA")
+      .attr("flood-opacity", 0.85);
   }
 
   /* -------------- tamaño del canvas -------------- */
@@ -1009,66 +1039,71 @@ export function drawHashTable(
       .remove();
   });
 
-  /* ───────── LÍNEA bucket ↓ cadena (una por bucket) ───────── */
-  const PAD_TOP = -50; // espacio bajo la tapa del bucket
-  const PAD_BOT = -16; // se “clava” 4 px dentro del último nodo
+  /* ───────── LÍNEAS bucket ↕ cadena (todas las secciones) ───────── */
+  const FROM_BUCKET = 8; // separación bajo la tapa del bucket
+  const INTO_NODE = 6; // pequeña intrusión dentro del nodo
   const COLOR = "#8b5cf6";
   const WIDTH = 4;
   const DASH = "6 4";
 
-  /* 1. capa detrás de todos los nodos (se crea una sola vez) */
+  // capa detrás de todos los nodos (se crea una sola vez)
   let chainLayer = svg.select<SVGGElement>("g.chain-lines");
   if (chainLayer.empty()) {
     chainLayer = svg
-      .insert("g", "g.node") // ← queda justo detrás
+      .insert("g", "g.node") // queda detrás de los nodos
       .attr("class", "chain-lines")
       .attr("pointer-events", "none");
   }
-  chainLayer.selectAll("*").remove(); // limpiamos antes de redibujar
 
-  /* 2. calculamos una línea vertical por cada bucket con al menos un nodo */
-  interface VLine {
+  interface Seg {
     id: string;
     d: string;
   }
-  const vLines: VLine[] = [];
+  const segs: Seg[] = [];
 
-  buckets.forEach((bucket, bi) => {
-    if (!bucket.length) return; // bucket vacío → nada que dibujar
+  // agrupamos los nodos por bucket y los ordenamos por 'order'
+  const grouped = d3.group(flat, (n) => n.bucketIdx);
+  for (const [bi, arrRaw] of grouped) {
+    const arr = [...arrRaw].sort((a, b) => a.order - b.order);
+    if (!arr.length) continue;
 
-    /* ‣ X centrado en el nodo (todos alineados) */
-    const x = posX({ bucketIdx: bi, order: 0 } as any, s) + s.nodeWidth / 2;
+    const x =
+      posX({ bucketIdx: bi as number, order: 0 } as any, s) + s.nodeWidth / 2;
 
-    /* ‣ Y de inicio: parte inferior del bucket */
-    const y1 = bucketStartY + bucketHeight + PAD_TOP;
+    // tramo: bucket → primer nodo (hasta su borde superior)
+    const yBucket = bucketStartY + bucketHeight + FROM_BUCKET;
+    const yFirstTop = posY(arr[0], s) + yOffset + INTO_NODE;
+    segs.push({ id: `b2f-${bi}`, d: `M${x},${yBucket} L${x},${yFirstTop}` });
 
-    /* ‣ Y final: base del último nodo de la cadena (coordenada global) */
-    const last = flat
-      .filter((n) => n.bucketIdx === bi)
-      .reduce((a, b) => (a.order > b.order ? a : b));
-    const y2 = posY(last, s) + yOffset + s.nodeHeight - PAD_BOT;
+    // tramos: entre nodos consecutivos (base del i → techo del i+1)
+    for (let k = 0; k < arr.length - 1; k++) {
+      const a = arr[k];
+      const b = arr[k + 1];
+      const yA = posY(a, s) + yOffset + s.nodeHeight - INTO_NODE;
+      const yB = posY(b, s) + yOffset + INTO_NODE;
+      segs.push({ id: `lnk-${bi}-${k}`, d: `M${x},${yA} L${x},${yB}` });
+    }
+  }
 
-    vLines.push({ id: `cl-${bi}`, d: `M${x},${y1} L${x},${y2}` });
-  });
+  // pintamos / actualizamos sin limpiar toda la capa (evita parpadeos)
+  const paths = chainLayer
+    .selectAll<SVGPathElement, Seg>("path.chain-line")
+    .data(segs, (d: any) => d.id);
 
-  /* 3. pintamos / actualizamos las líneas */
-  chainLayer
-    .selectAll<SVGPathElement, VLine>("path.chain-line")
-    .data(vLines, (d) => d.id)
-    .join(
-      (enter) =>
-        enter
-          .append("path")
-          .attr("class", "chain-line")
-          .attr("fill", "none")
-          .attr("stroke", COLOR)
-          .attr("stroke-width", WIDTH)
-          .attr("stroke-linecap", "round")
-          .attr("stroke-dasharray", DASH)
-          .attr("d", (d) => d.d),
-      (update) => update.attr("d", (d) => d.d),
-      (exit) => exit.remove()
-    );
+  paths
+    .enter()
+    .append("path")
+    .attr("class", "chain-line")
+    .attr("fill", "none")
+    .attr("stroke", COLOR)
+    .attr("stroke-width", WIDTH)
+    .attr("stroke-linecap", "round")
+    .attr("stroke-dasharray", DASH)
+    .attr("d", (d) => d.d);
+
+  paths.attr("d", (d) => d.d);
+
+  paths.exit().remove();
   /* ─────────────────────────────────────────────────────────── */
 }
 
@@ -1220,38 +1255,85 @@ function flashSideArrows(
   s: StyleConfig,
   yOffset: number
 ) {
+  // 1) limpiar efectos anteriores
+  svg.selectAll(".insert-arrow, .insert-arrow-head").interrupt().remove();
+
+  // 2) geometría base
   const addrH = s.fontSize - 2 + 6;
   const kvH = s.nodeHeight - addrH;
-  const arrowLen = 40; // longitud inicial de la flecha
   const yMid = posY(d, s) + yOffset + kvH / 2;
 
-  // calculamos X de inicio y fin
-  const leftStart = posX(d, s) - arrowLen;
-  const leftEnd = posX(d, s);
-  const rightStart = posX(d, s) + s.nodeWidth + arrowLen;
-  const rightEnd = posX(d, s) + s.nodeWidth;
+  const xLeft = posX(d, s);
+  const xRight = xLeft + s.nodeWidth;
 
-  // helper para dibujar y animar cada flecha
+  const arrowLen = 52; // cuánto sobresale hacia fuera
+  const curve = 12; // curvatura vertical
+
+  const leftStart = xLeft - arrowLen;
+  const leftEnd = xLeft + 2;
+  const rightStart = xRight + arrowLen;
+  const rightEnd = xRight - 2;
+
+  // 3) helper para dibujar y animar cada flecha
   function draw(dir: "left" | "right") {
     const x0 = dir === "left" ? leftStart : rightStart;
     const x1 = dir === "left" ? leftEnd : rightEnd;
-    const markerId = dir === "left" ? "arrow-right-dash" : "arrow-left-dash";
+    const bend = dir === "left" ? -curve : curve; // panza hacia afuera
 
-    svg
+    // línea curva (quadratic bezier)
+    const dPath = `M${x0},${yMid} Q${(x0 + x1) / 2},${yMid + bend} ${x1},${yMid}`;
+
+    const path = svg
       .append("path")
       .attr("class", "insert-arrow")
-      .attr("d", `M${x0},${yMid} L${x0},${yMid}`) // segmento de longitud 0
+      .attr("d", dPath)
       .attr("fill", "none")
-      .attr("stroke", "#60A5FA")
-      .attr("stroke-width", 2)
-      .attr("stroke-dasharray", "6 4") // guiones de 6px separados 4px
-      .attr("marker-end", `url(#${markerId})`)
-      .style("opacity", 0.8)
+      .attr("stroke", "#93c5fd") // azul suave
+      .attr("stroke-width", 3.5)
+      .attr("stroke-linecap", "round")
+      .attr("stroke-linejoin", "round")
+      .attr("stroke-dasharray", "10 6") // guiones más elegantes
+      .style("opacity", 0.95);
+
+    // animación: “draw-on” usando dashoffset
+    const L = (path.node() as SVGPathElement).getTotalLength();
+    path
+      .attr("stroke-dasharray", L)
+      .attr("stroke-dashoffset", L)
       .transition()
-      .duration(400)
-      .attr("d", `M${x0},${yMid} L${x1},${yMid}`) // extiende hasta el nodo
+      .duration(420)
+      .ease(d3.easeCubicOut)
+      .attr("stroke-dashoffset", 0)
       .transition()
-      .duration(400)
+      .delay(240)
+      .duration(220)
+      .style("opacity", 0)
+      .remove();
+
+    // punta personalizada (triángulo redondeado)
+    const headW = 11; // largo de la punta
+    const headH = 7; // alto de la punta
+    const points =
+      dir === "left"
+        ? // apunta hacia la derecha
+          `${x1},${yMid} ${x1 - headW},${yMid - headH} ${x1 - headW},${yMid + headH}`
+        : // apunta hacia la izquierda
+          `${x1},${yMid} ${x1 + headW},${yMid - headH} ${x1 + headW},${yMid + headH}`;
+
+    svg
+      .append("polygon")
+      .attr("class", "insert-arrow-head")
+      .attr("points", points)
+      .attr("fill", "#60A5FA")
+      .attr("stroke", "#2563eb")
+      .attr("stroke-width", 1)
+      .style("opacity", 0)
+      .transition()
+      .duration(280)
+      .style("opacity", 1)
+      .transition()
+      .delay(220)
+      .duration(220)
       .style("opacity", 0)
       .remove();
   }
