@@ -7,7 +7,6 @@ import TourTooltip from "./TourTooltip";
 import ArrowPointer from "./ArrowPointer";
 import useViewport from "./useViewport";
 
-// leer isAnimating global
 import { useAnimation } from "../hooks/useAnimation";
 
 export type TourType = "memoria" | "secuencia" | "pila";
@@ -17,9 +16,7 @@ interface CustomTourProps {
 }
 
 const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
-  const tourSteps: TourStep[] = useMemo(() => {
-    return getTourByStructure(tipo);
-  }, [tipo]);
+  const tourSteps: TourStep[] = useMemo(() => getTourByStructure(tipo), [tipo]);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -31,13 +28,17 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
   const { width: viewportWidth, height: viewportHeight } = useViewport();
   const step = tourSteps[currentStep];
 
-  // estado global de animación
+  // Animación global
   const { isAnimating } = useAnimation();
+  const animRef = useRef(isAnimating);
+  useEffect(() => {
+    animRef.current = isAnimating;
+  }, [isAnimating]);
 
-  // aviso visual (no bloqueante)
+  // Aviso
   const [warn, setWarn] = useState<string | null>(null);
 
-  // refs para evitar acciones cuando el tour ya no está activo / paso cambió
+  // Guards / refs
   const activeRef = useRef(isActive);
   useEffect(() => {
     activeRef.current = isActive;
@@ -48,34 +49,53 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
     stepIndexRef.current = currentStep;
   }, [currentStep]);
 
+  const stepLockRef = useRef(false);
+  const withStepLock = (fn: () => void) => {
+    if (stepLockRef.current) return;
+    stepLockRef.current = true;
+    try {
+      fn();
+    } finally {
+      window.setTimeout(() => {
+        stepLockRef.current = false;
+      }, 220);
+    }
+  };
+
+  const enterInProgressRef = useRef(false);
+
   useEffect(() => {
     setIsActive(true);
     setCurrentStep(0);
   }, []);
 
+  // Enter global: en 'enter' disparamos triggerEnterStep; en info/element avanzamos
   useEffect(() => {
     if (!isActive) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Solo bloqueamos Enter global en pasos que NO son enter.
-      if (step?.type === "enter") return;
+      if (e.key !== "Enter") return;
 
-      if (e.key === "Enter") {
+      if (step?.type === "enter") {
+        e.preventDefault();
+        triggerEnterStep();
+        return;
+      }
+
+      if (step?.type === "info" || step?.type === "element") {
         e.preventDefault();
         nextStep();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isActive, currentStep, step?.type]);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isActive, step?.type]);
 
-  // util simple para esperar condición (con timeout)
+  // Espera condición (sin capturar valores stale)
   function waitUntil(
     predicate: () => boolean,
-    { interval = 80, timeout = 20000 } = {}
+    { interval = 60, timeout = 20000 } = {}
   ): Promise<boolean> {
     return new Promise((resolve) => {
       const start = Date.now();
@@ -89,18 +109,14 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
     });
   }
 
-  // 🔹 Auto-limpieza del aviso si cambia el contexto
+  // Auto-limpieza del aviso si cambia el contexto
   useEffect(() => {
-    // si el tour no está activo o el paso no es 'enter' -> limpiar
     if (!isActive || step?.type !== "enter") {
       if (warn) setWarn(null);
       return;
     }
-    // si ya no hay animación, limpiar
-    if (!isAnimating && warn) {
-      setWarn(null);
-    }
-  }, [isActive, step?.type, isAnimating, warn]);
+    if (!animRef.current && warn) setWarn(null);
+  }, [isActive, step?.type, warn]);
 
   useEffect(() => {
     if (!isActive || !step) return;
@@ -129,94 +145,20 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
         `[data-tour="${step.id}"]`
       );
       if (el) {
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        const setter = Object.getOwnPropertyDescriptor(
           window.HTMLInputElement.prototype,
           "value"
         )?.set;
-        nativeInputValueSetter?.call(el, step.text);
-        const inputEvent = new Event("input", { bubbles: true });
-        el.dispatchEvent(inputEvent);
+        setter?.call(el, step.text);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
       }
       setTimeout(() => setCurrentStep((prev) => prev + 1), 300);
       return;
     }
 
-    // SOLO aquí aplicamos isAnimating: cuando el asistente hará Enter en la consola
-    if (step.type === "enter" && step.id) {
-      const doEnter = () => {
-        // limpiar aviso por si quedó visible
-        setWarn(null);
-        const el = document.querySelector<HTMLInputElement>(
-          `[data-tour="${step.id}"]`
-        );
-        if (el) {
-          const enterEvent = new KeyboardEvent("keydown", {
-            bubbles: true,
-            cancelable: true,
-            key: "Enter",
-            code: "Enter",
-          });
-          el.dispatchEvent(enterEvent);
-        }
-        // asegurar limpieza un frame después (carreras de estado)
-        setTimeout(() => setWarn(null), 0);
-        setTimeout(() => setCurrentStep((prev) => prev + 1), 300);
-      };
-
-      // Si hay animación en curso, mostramos aviso y esperamos a que termine.
-      if (isAnimating) {
-        setWarn("Animación en curso, por favor espere…");
-        let cancelled = false;
-        let warnTimeout: number | undefined;
-
-        (async () => {
-          const ok = await waitUntil(() => !isAnimating, {
-            interval: 80,
-            timeout: 20000,
-          });
-
-          if (
-            !activeRef.current ||
-            stepIndexRef.current !== currentStep ||
-            cancelled
-          ) {
-            return;
-          }
-
-          if (!ok) {
-            // Expiró la espera: mensaje breve y auto-ocultar para no dejarlo pegado
-            setWarn(
-              "La animación tarda más de lo normal. Intenta de nuevo en un momento."
-            );
-            warnTimeout = window.setTimeout(() => {
-              if (activeRef.current && stepIndexRef.current === currentStep) {
-                setWarn(null);
-              }
-            }, 2000);
-            return;
-          }
-
-          // Ya terminó la animación
-          setWarn(null);
-          doEnter();
-        })();
-
-        // cleanup por si cambiamos de paso o desmonta
-        return () => {
-          cancelled = true;
-          if (warnTimeout) clearTimeout(warnTimeout);
-          if (!isAnimating) setWarn(null);
-        };
-      }
-
-      // Si NO está animando, proceder normal
-      doEnter();
-      return;
-    }
-
+    // element (highlight)
     if (step.type === "element" && step.id) {
       let ids: string[] = [];
-
       if (/\[.*\]$/.test(step.id)) {
         const match = step.id.match(/^([a-zA-Z0-9_-]+)(?:\.)?\[(.*)\]$/);
         if (match) {
@@ -287,27 +229,105 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
         resizeObserver.disconnect();
       };
     }
-  }, [
-    currentStep,
-    isActive,
-    step,
-    viewportHeight,
-    viewportWidth,
-    isAnimating, // re-evaluar cuando cambie
-  ]);
+  }, [currentStep, isActive, step, viewportHeight, viewportWidth]);
 
-  const nextStep = () => {
-    if (currentStep < tourSteps.length - 1) {
+  // --- Paso ENTER centralizado ---
+  const triggerEnterStep = () => {
+    if (enterInProgressRef.current) return;
+    if (!step || step.type !== "enter" || !step.id) return;
+
+    enterInProgressRef.current = true;
+
+    const doEnterAndAdvance = async () => {
+      setWarn(null);
+
+      // 1) Disparar Enter en la consola
+      const el = document.querySelector<HTMLInputElement>(
+        `[data-tour="${step.id}"]`
+      );
+      if (el) {
+        const enterEvent = new KeyboardEvent("keydown", {
+          bubbles: true,
+          cancelable: true,
+          key: "Enter",
+          code: "Enter",
+        });
+        el.dispatchEvent(enterEvent);
+      }
+
+      // 2) Esperar a que la animación COMIENCE (si aún no empezó)
+      //    Damos una ventana corta (ej. 800ms). Si no empieza, asumimos operación inmediata.
+      const started = animRef.current
+        ? true
+        : await waitUntil(() => animRef.current === true, {
+            interval: 40,
+            timeout: 800,
+          });
+
+      // 3) Si empezó (o ya estaba), esperar a que TERMINE; si no, fallback pequeño
+      if (started) {
+        const ended = await waitUntil(() => animRef.current === false, {
+          interval: 60,
+          timeout: 20000,
+        });
+        // si no terminó por timeout, igual avanzamos para no colgar el tour
+        if (!ended) {
+          setWarn("La animación tarda más de lo normal. Continuando…");
+          setTimeout(() => setWarn(null), 1500);
+        }
+      } else {
+        // No hubo animación detectable; pequeño buffer para estabilidad visual
+        await new Promise((r) => setTimeout(r, 250));
+      }
+
+      // 4) Avanzar de paso (si todo sigue válido)
+      if (!activeRef.current || stepIndexRef.current !== currentStep) {
+        enterInProgressRef.current = false;
+        return;
+      }
       setCurrentStep((prev) => prev + 1);
-    } else {
-      setIsActive(false);
+      enterInProgressRef.current = false;
+    };
+
+    // Si YA está animando cuando llegamos a este paso, mostramos aviso
+    if (animRef.current) {
+      setWarn("Relax, aún no finaliza la animación…");
     }
+
+    // Ejecutar
+    void doEnterAndAdvance();
+  };
+
+  // Auto-disparar 'enter' cuando el paso cambia a 'enter'
+  useEffect(() => {
+    if (!isActive) return;
+    if (step?.type === "enter") {
+      // microtask para asegurar que el DOM del paso esté listo
+      const t = setTimeout(() => triggerEnterStep(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [isActive, step?.type]);
+
+  // Botones: si es 'enter', ejecutan triggerEnterStep; si no, avanzan normal
+  const nextStep = () => {
+    withStepLock(() => {
+      if (!step) return;
+      if (step.type === "enter") {
+        triggerEnterStep();
+        return;
+      }
+      if (currentStep < tourSteps.length - 1) {
+        setCurrentStep((prev) => prev + 1);
+      } else {
+        setIsActive(false);
+      }
+    });
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-    }
+    withStepLock(() => {
+      if (currentStep > 0) setCurrentStep((prev) => prev - 1);
+    });
   };
 
   return (
@@ -345,7 +365,6 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
           </>
         )}
 
-      {/* pequeño toast de advertencia; no oculta el asistente */}
       {isActive && warn && (
         <div
           className="
