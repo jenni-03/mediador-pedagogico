@@ -399,12 +399,7 @@ export function drawHashTable(
         hashText += `   →   B${activeBucketIdx}`;
       }
       g.select("text.hash-text").text(hashText);
-      // ••• AÑADIR PUNTO LUMINOSO EN EL PANEL •••
-      panelEnter
-        .append("circle")
-        .attr("class", "hash-dot")
-        .attr("r", 4)
-        .attr("fill", "#60A5FA");
+
 
       // Calcula las dimensiones para el fondo del panel
       const txt = g.select<SVGTextElement>("text.hash-text").node()!;
