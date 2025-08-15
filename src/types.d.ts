@@ -269,6 +269,8 @@ export type IndicatorPositioningConfig = {
 
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 
+export type Comparator<T> = (a: T, b: T) => number;
+
 export type HierarchyNodeData<T> = {
   id: string;
   value?: T;

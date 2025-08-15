@@ -5,7 +5,7 @@ import { NodoBin } from "../nodes/NodoBin";
 import { Cola } from "./Cola";
 
 /**
- * Clase que representa el funcionamiento de una lista circular doble.
+ * Clase que representa el funcionamiento de un árbol binario.
  */
 export class ArbolBinario<T> {
 
@@ -16,7 +16,7 @@ export class ArbolBinario<T> {
     private tamanio: number;
 
     // Limite de nodos.
-    private readonly MAX_NODOS = 30;
+    protected readonly MAX_NODOS = 30;
 
     /**
      * Constructor de la clase ArbolBinario.
@@ -31,19 +31,19 @@ export class ArbolBinario<T> {
     /**
      * Método que inserta un nuevo nodo como hijo izquierdo.
      * @param padre Padre del nuevo nodo.
-     * @param valor Elemento a insertar.
+     * @param info Elemento a insertar.
      * @returns Nodo izquierdo insertado.
      */
-    public insertarHijoIzq(padre: T, valor: T): NodoBin<T> {
+    public insertarHijoIzq(padre: T, info: T): NodoBin<T> {
         if (this.tamanio >= this.MAX_NODOS) {
             throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
         }
 
-        if (this.esta(valor)) {
+        if (this.esta(info)) {
             throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
         }
 
-        const nuevoNodo = new NodoBin(valor);
+        const nuevoNodo = new NodoBin(info);
 
         if (this.esVacio()) {
             this.setRaiz(nuevoNodo);
@@ -68,19 +68,19 @@ export class ArbolBinario<T> {
     /**
      * Método que inserta un nuevo nodo como hijo derecho.
      * @param padre Padre del nuevo nodo.
-     * @param valor Elemento a insertar.
+     * @param info Elemento a insertar.
      * @returns Nodo derecho insertado.
      */
-    public insertarHijoDer(padre: T, valor: T): NodoBin<T> {
+    public insertarHijoDer(padre: T, info: T): NodoBin<T> {
         if (this.tamanio >= this.MAX_NODOS) {
             throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
         }
 
-        if (this.esta(valor)) {
+        if (this.esta(info)) {
             throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
         }
 
-        const nuevoNodo = new NodoBin(valor);
+        const nuevoNodo = new NodoBin(info);
 
         if (this.esVacio()) {
             this.setRaiz(nuevoNodo);
@@ -103,14 +103,14 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que elimina un nodo del árbol binario dado un valor especificado.
-     * @param info Valor del nodo a eliminar.
-     * @returns Nodo eliminado.
+     * Método que elimina un nodo del árbol binario dado su info especificada.
+     * @param info Información del nodo a eliminar.
+     * @returns Objeto que contiene el nodo eliminado y la raíz del subárbol actualizado.
      */
-    eliminar(info: T): { removed: NodoBin<T>, updated?: NodoBin<T> } {
+    public eliminar(info: T): { removed: NodoBin<T>, updated?: NodoBin<T> } {
         if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol encuentra vacío (cantidad de nodos: 0).");
 
-        if (this.getRaiz()!.getInfo() === info) {
+        if (this.equals(this.getRaiz()!.getInfo(), info)) {
             return this.eliminarRaiz();
         }
 
@@ -118,7 +118,7 @@ export class ArbolBinario<T> {
         if (!padre) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
 
         let nodo = padre.getIzq();
-        if (!nodo || (nodo && nodo.getInfo() !== info)) {
+        if (!nodo || (nodo && !this.equals(nodo.getInfo(), info))) {
             nodo = padre.getDer()!;
         }
 
@@ -156,8 +156,8 @@ export class ArbolBinario<T> {
 
     /**
      * Método que verifica la existencia de un elemento dentro del árbol binario.
-     * @param info Información del elemento a buscar.
-     * @returns True o false si el elemento se encuentra o no. 
+     * @param Info Información del elemento a buscar.
+     * @returns Booleano que indica si el elemento fue encontrado o no. 
      */
     public esta(info: T): boolean {
         return this.buscar(this.getRaiz(), info);
@@ -214,8 +214,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que devuelve el grado (número de hijos no nulos) del nodo con el valor especificado.
-     * @param info Valor del nodo.
+     * Método que devuelve el grado (número de hijos no nulos) del nodo con la info especificada.
+     * @param info Información del nodo.
      * @returns Grado del nodo.
      */
     public getGrado(info: T): number {
@@ -336,9 +336,25 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que clona un árbol binario.
-     * @param root Nodo raíz del árbol binario.
-     * @returns Nuevo árbol clonado.
+     * Método que obtiene el contador de nodos del árbol.
+     * @returns Cantidad de nodos existentes en el árbol.
+     */
+    protected getTamanio() {
+        return this.tamanio;
+    }
+
+    /**
+     * Método que modifica el valor del contador de nodos del árbol.
+     * @param tamanio Nuevo valor del contador de nodos del árbol.
+     */
+    protected setTamanio(tamanio: number) {
+        this.tamanio = tamanio;
+    }
+
+    /**
+     * Método recursivo que crea una copia profunda del árbol binario dado un nodo raíz.
+     * @param root Nodo raíz del árbol binario a clonar.
+     * @returns Nodo raíz del árbol binario clonado.
      */
     private clonarAB(root: NodoBin<T> | null): NodoBin<T> | null {
         if (root === null) return null;
@@ -379,8 +395,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que realiza el recorrido in-orden del árbol binario iniciando desde el nodo raíz dado.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que realiza el recorrido in-orden del árbol binario iniciando desde el nodo raíz dado.
+     * @param root Nodo raíz del subárbol actual.
      * @param nodos Array que acumula los nodos visitados durante el recorrido en in-orden.
      */
     private getInOrden(root: NodoBin<T> | null, nodos: NodoBin<T>[]) {
@@ -392,8 +408,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que realiza el recorrido pre-orden del árbol binario iniciando desde el nodo raíz dado.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que realiza el recorrido pre-orden del árbol binario iniciando desde el nodo raíz dado.
+     * @param root Nodo raíz del subárbol actual.
      * @param nodos Array que acumula los nodos visitados durante el recorrido en pre-orden.
      */
     private getPreOrden(root: NodoBin<T> | null, nodos: NodoBin<T>[]) {
@@ -405,8 +421,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que realiza el recorrido post-orden del árbol binario iniciando desde el nodo raíz dado.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que realiza el recorrido post-orden del árbol binario iniciando desde el nodo raíz dado.
+     * @param root Nodo raíz del subárbol actual.
      * @param nodos Array que acumula los nodos visitados durante el recorrido en post-orden.
      */
     private getPostOrden(root: NodoBin<T> | null, nodos: NodoBin<T>[]) {
@@ -418,8 +434,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que calcula recursivamente la altura del árbol binario iniciando en un nodo raíz dado.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que calcula la altura del árbol binario iniciando en un nodo raíz dado.
+     * @param root Nodo raíz del subárbol actual.
      * @returns Altura del árbol enraizado en el nodo dado.
      */
     private getAlturaAux(root: NodoBin<T> | null): number {
@@ -430,8 +446,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que calcula recursivamente el número de nodos (peso) del árbol binario.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que calcula el número de nodos (peso) del árbol binario.
+     * @param root Nodo raíz del subárbol actual.
      * @returns Número total de nodos del árbol.
      */
     private getPesoAux(root: NodoBin<T> | null): number {
@@ -442,12 +458,12 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que obtiene el nodo padre de un elemento particular.
+     * Método recursivo que obtiene el nodo padre de un elemento particular.
      * @param root Raíz del árbol binario.
      * @param info Elemento a buscar.
-     * @returns El nodo padre del elemento almacenado en el árbol o null en caso de no existir.
+     * @returns Nodo padre del elemento almacenado en el árbol o null en caso de no existir.
      */
-    protected getPadreAux(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
+    private getPadreAux(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
         if (root === null) {
             return null;
         }
@@ -472,8 +488,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que cuenta el número de nodo hoja en un árbol binario.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que cuenta el número de nodos hoja en un árbol binario.
+     * @param root Nodo raíz del subárbol actual.
      * @returns Número de nodos hoja en el árbol binario.
      */
     private contarHojasAux(root: NodoBin<T> | null): number {
@@ -489,8 +505,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que recolecta recursivamente todas las hojas de un árbol binario.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que recolecta todas las hojas de un árbol binario.
+     * @param root Nodo raíz del sunárbol actual.
      * @param hojas Array para almacenar los nodos hoja ubicados.
      * @returns Array que contiene todos los nodos hoja encontrados en el árbol.
      */
@@ -553,10 +569,10 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que busca un elemento dentro del árbol binario.
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que busca un elemento dentro del árbol binario.
+     * @param root Nodo raíz del subárbol actual.
      * @param info Información del elemento a buscar.
-     * @returns Un booleano que indica si se encontro o no el elemento.
+     * @returns Booleano que indica si el elemento fue encontrado o no.
      */
     private buscar(root: NodoBin<T> | null, info: T): boolean {
         if (root === null) return false;
@@ -578,8 +594,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que obtiene un elemento existente dentro del árbol binario. 
-     * @param root Nodo raíz del árbol.
+     * Método recursivo que obtiene un elemento existente dentro del árbol binario. 
+     * @param root Nodo raíz del subárbol actual.
      * @param info Información del elemento a obtener.
      * @returns Nodo encontrado o null si no existe.
      */

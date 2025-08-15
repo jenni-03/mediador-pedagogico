@@ -9,6 +9,7 @@ import { getColaCode } from "./colaCode";
 import { getColaPrioridadCode } from "./colaPrioridadCode";
 import { getTablaHashCode } from "./tablaHashCode";
 import { getArbolBinarioCode } from "./arbolBinarioCode";
+
 // Mapa de funciones para cargar operaciones según estructura
 const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   secuencia: getSecuenciaCode,
