@@ -393,7 +393,13 @@ export const commandRules: Record<
 
       case "search":
         if (parts.length !== 2) {
-          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a buscar como argumento." : "El método únicamente espera el valor a buscar como argumento." };
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
         }
         if (isNaN(Number(parts[1]))) {
           return {
@@ -437,37 +443,68 @@ export const commandRules: Record<
     const keyword = parts[0]?.toLowerCase();
     switch (keyword) {
       case "insertleft":
-      case "insertright":
-        {
-          if (parts.length !== 3) {
-            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor del nodo padre y el valor a insertar como argumento." : "Debe proporcionar únicamente 2 números como argumentos (padre, valor)." };
-          }
-          const insertPattern = /^\d{1,2}$/; // Regex para validar un número entero de hasta 4 dígitos
-          if (!insertPattern.test(parts[1])) {
-            return { valid: false, message: "El valor del nodo padre debe ser un número entero positivo de hasta 2 dígitos." };
-          }
-          if (!insertPattern.test(parts[2])) {
-            return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos." };
-          }
-          return true;
+      case "insertright": {
+        if (parts.length !== 3) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor del nodo padre y el valor a insertar como argumento."
+                : "Debe proporcionar únicamente 2 números como argumentos (padre, valor).",
+          };
         }
+        const insertPattern = /^\d{1,2}$/; // Regex para validar un número entero de hasta 4 dígitos
+        if (!insertPattern.test(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor del nodo padre debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        if (!insertPattern.test(parts[2])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
 
       case "delete": {
         if (parts.length !== 2) {
-          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a eliminar como argumento." : "El método únicamente espera el valor a eliminar como argumento." };
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
         }
         if (isNaN(Number(parts[1]))) {
-          return { valid: false, message: "El valor a eliminar debe ser un número válido." };
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
         }
         return true;
       }
 
       case "search": {
         if (parts.length !== 2) {
-          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a buscar como argumento." : "El método únicamente espera el valor a buscar como argumento." };
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
         }
         if (isNaN(Number(parts[1]))) {
-          return { valid: false, message: "El valor a buscar debe ser un número válido." };
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
         }
         return true;
       }
@@ -476,13 +513,96 @@ export const commandRules: Record<
       case "getinorder":
       case "getpostorder":
       case "getlevelorder":
-      case "clean":
-        {
-          if (parts.length !== 1) {
-            return { valid: false, message: "El método no espera ningún argumento." };
-          }
-          return true;
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
         }
+        return true;
+      }
+
+      default:
+        return false;
+    }
+  },
+  arbol_avl: (parts) => {
+    const keyword = parts[0]?.toLowerCase();
+
+    switch (keyword) {
+      case "insert": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a insertar como argumento."
+                : "El método únicamente espera el valor a insertar como argumento.",
+          };
+        }
+        const insertPattern = /^\d{1,2}$/; // hasta 2 dígitos (consistente con arbol_binario)
+        if (!insertPattern.test(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "delete": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "search": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "getpreorder":
+      case "getinorder":
+      case "getpostorder":
+      case "getlevelorder":
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
+        }
+        return true;
+      }
 
       default:
         return false;
@@ -538,15 +658,6 @@ export const commandRules: Record<
       default:
         return false;
     }
-  },
-
-  avl: (parts) => {
-    const keyword = parts[0]?.toLowerCase();
-    return (
-      commandRules.bst(parts) ||
-      (keyword === "balance" && parts.length === 2 && !isNaN(Number(parts[1])))
-    );
-    // || (keyword === "isbalanced" && parts.length === 1);
   },
 
   roji_negro: (parts) => {

@@ -16,13 +16,15 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "get",
-        description: "Obtiene un elemento dentro de la secuencia dada su posición.",
+        description:
+          "Obtiene un elemento dentro de la secuencia dada su posición.",
         estructura: "get(posición);",
         ejemplo: "get(1);",
       },
       {
         title: "set",
-        description: "Actualiza un elemento de la secuencia de acuerdo a su posición.",
+        description:
+          "Actualiza un elemento de la secuencia de acuerdo a su posición.",
         estructura: "set(posición, nuevo-valor);",
         ejemplo: "set(0, 10);",
       },
@@ -34,7 +36,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "delete",
-        description: "Elimina un elemento de la secuencia en la posición especificada.",
+        description:
+          "Elimina un elemento de la secuencia en la posición especificada.",
         estructura: "delete(posición);",
         ejemplo: "delete(0);",
       },
@@ -62,7 +65,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "getTop",
-        description: "Obtiene el elemento que se encuentra en el tope de la Pila.",
+        description:
+          "Obtiene el elemento que se encuentra en el tope de la Pila.",
         estructura: "getTop();",
         ejemplo: "getTop();",
       },
@@ -90,7 +94,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "getFront",
-        description: "Obtiene el elemento que se encuentra en el frente de la Cola.",
+        description:
+          "Obtiene el elemento que se encuentra en el frente de la Cola.",
         estructura: "getFront();",
         ejemplo: "getFront();",
       },
@@ -118,7 +123,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "getFront",
-        description: "Obtiene el elemento que se encuentra en el frente de la Cola.",
+        description:
+          "Obtiene el elemento que se encuentra en el frente de la Cola.",
         estructura: "getFront();",
         ejemplo: "getFront();",
       },
@@ -146,7 +152,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "insertAt",
-        description: "Inserta un elemento en una posición especifica de la Lista.",
+        description:
+          "Inserta un elemento en una posición especifica de la Lista.",
         estructura: "insertAt(valor, posición);",
         ejemplo: "insertAt(2, 1);",
       },
@@ -166,7 +173,7 @@ export const commandsData: Record<string, any> = {
         title: "removeAt",
         description: "Elimina un elemento de la lista en una posición dada.",
         estructura: "removeAt(posición);",
-        ejemplo: "removeAt(1);"
+        ejemplo: "removeAt(1);",
       },
       {
         title: "search",
@@ -220,7 +227,8 @@ export const commandsData: Record<string, any> = {
     buttons: [
       {
         title: "insertLeft",
-        description: "Inserta un nodo como hijo izquierdo de un nodo existente.",
+        description:
+          "Inserta un nodo como hijo izquierdo de un nodo existente.",
         estructura: "insertLeft(padre, valor);",
         ejemplo: "insertLeft(1, 2);",
       },
@@ -246,25 +254,25 @@ export const commandsData: Record<string, any> = {
         title: "getPreOrder",
         description: "Obtiene el recorrido en preorden del árbol binario.",
         estructura: "getPreOrder();",
-        ejemplo: "getPreOrder();"
+        ejemplo: "getPreOrder();",
       },
       {
         title: "getInOrder",
         description: "Obtiene el recorrido en inorden del árbol binario.",
         estructura: "getInOrder();",
-        ejemplo: "getInOrder();"
+        ejemplo: "getInOrder();",
       },
       {
         title: "getPostOrder",
         description: "Obtiene el recorrido en postorden del árbol binario.",
         estructura: "getPostOrder();",
-        ejemplo: "getPostOrder();"
+        ejemplo: "getPostOrder();",
       },
       {
         title: "getLevelOrder",
         description: "Obtiene el recorrido por niveles del árbol binario.",
         estructura: "getLevelOrder();",
-        ejemplo: "getLevelOrder();"
+        ejemplo: "getLevelOrder();",
       },
       {
         title: "clean",
@@ -326,59 +334,59 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  avl: {
+  arbol_avl: {
     buttons: [
       {
         title: "insert",
-        description: "Insertar un nodo en el AVL",
+        description: "Inserta un valor en el AVL (con rebalanceo automático).",
         estructura: "insert(valor);",
-        ejemplo: "insert(1);",
+        ejemplo: "insert(30);",
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del AVL",
+        description: "Elimina un valor del AVL (con rebalanceo automático).",
         estructura: "delete(valor);",
-        ejemplo: "delete(1);",
+        ejemplo: "delete(20);",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el AVL",
+        description: "Busca un valor en el AVL.",
         estructura: "search(valor);",
-        ejemplo: "search(1);",
+        ejemplo: "search(25);",
       },
       {
-        title: "traverse",
-        description: "Recorrer el AVL en diferentes órdenes",
-        estructura: "traverse(nombreOrden);",
-        ejemplo:
-          "traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del AVL.",
+        estructura: "getPreOrder();",
+        ejemplo: "getPreOrder();",
       },
       {
-        title: "findMin",
-        description: "Encontrar el mínimo",
-        estructura: "findMin();",
-        ejemplo: "findMin();",
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del AVL.",
+        estructura: "getInOrder();",
+        ejemplo: "getInOrder();",
       },
       {
-        title: "findMax",
-        description: "Encontrar el máximo",
-        estructura: "findMax();",
-        ejemplo: "findMax();",
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del AVL.",
+        estructura: "getPostOrder();",
+        ejemplo: "getPostOrder();",
       },
       {
-        title: "balance",
-        description: "Balancear el árbol AVL",
-        estructura: "balance();",
-        ejemplo: "balance();",
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles (BFS) del AVL.",
+        estructura: "getLevelOrder();",
+        ejemplo: "getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Borrar el AVL",
+        description: "Vacia el árbol AVL.",
         estructura: "clean();",
         ejemplo: "clean();",
       },
     ],
   },
+
   rojinegro: {
     buttons: [
       {

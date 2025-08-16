@@ -1,5 +1,6 @@
 import { TYPE_FILTER } from "./shared/constants/consts";
 import { NodoS } from "./shared/utils/nodes/NodoS";
+type AvlRotation = { type: "LL" | "LR" | "RR" | "RL"; pivotId: string; childId?: string };
 
 export interface LinkedListInterface<T> {
   insertarAlInicio(valor: T): NodoS<T> | NodoD<T>;
@@ -108,8 +109,8 @@ export interface CardData {
   toPracticar: string;
 }
 
-export type BaseQueryOperations<T extends string> =
-  T extends "secuencia" ? {
+export type BaseQueryOperations<T extends string> = T extends "secuencia"
+  ? {
     create: number | null;
     toAdd: number | null;
     toDelete: number | null;
@@ -117,32 +118,37 @@ export type BaseQueryOperations<T extends string> =
     toSearch: number | null;
     toUpdate: [number, number] | [];
   }
-  : T extends "cola" ? {
+  : T extends "cola"
+  ? {
     toEnqueuedNode: string | null;
     toDequeuedNode: string | null;
     toGetFront: string | null;
     toClear: boolean;
   }
-  : T extends "tabla_hash" ? {
+  : T extends "tabla_hash"
+  ? {
     create: (cap: number) => void;
     set: (key: number, value: number) => void;
     get: (key: number) => void;
     delete: (key: number) => void;
     clean: () => void;
   }
-  : T extends "cola_de_prioridad" ? {
+  : T extends "cola_de_prioridad"
+  ? {
     toEnqueuedNode: string | null;
     toDequeuedNode: string | null;
     toGetFront: string | null;
     toClear: boolean;
   }
-  : T extends "pila" ? {
+  : T extends "pila"
+  ? {
     toPushNode: string | null;
     toPopNode: string | null;
     toGetTop: string | null;
     toClear: boolean;
   }
-  : T extends "lista_enlazada" ? {
+  : T extends "lista_enlazada"
+  ? {
     toAddFirst: string | null;
     toAddLast: string | null;
     toAddAt: [string, number] | [];
@@ -152,7 +158,8 @@ export type BaseQueryOperations<T extends string> =
     toSearch: number | null;
     toClear: boolean;
   }
-  : T extends "arbol_binario" ? {
+  : T extends "arbol_binario"
+  ? {
     toInsertLeft: string | null;
     toInsertRight: string | null;
     toDelete: [string, string | null] | [];
@@ -173,6 +180,18 @@ export type BaseQueryOperations<T extends string> =
     toGetLevelOrder: TraversalNodeType[] | [];
     toClear: boolean;
   }
+  : T extends "arbol_avl"
+  ? {
+    toInsert: number | null;
+    toDelete: number | null;
+    toSearch: number | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+    rotation?: AvlRotation | null;
+  }
   : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
@@ -191,20 +210,23 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     dequeue: () => void;
     getFront: () => void;
     clean: () => void;
-  } :
-  T extends "cola de prioridad" ? {
+  }
+  : T extends "cola de prioridad"
+  ? {
     enqueue: (element: number, priority: number) => void;
     dequeue: () => void;
     getFront: () => void;
     clean: () => void;
-  } :
-  T extends "pila" ? {
+  }
+  : T extends "pila"
+  ? {
     push: (element: number) => void;
     pop: () => void;
     getTop: () => void;
     clean: () => void;
-  } :
-  T extends "lista_enlazada" ? {
+  }
+  : T extends "lista_enlazada"
+  ? {
     insertFirst: (element: number) => void;
     insertLast: (element: number) => void;
     insertAt: (element: number, pos: number) => void;
@@ -213,8 +235,9 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     removeAt: (pos: number) => void;
     search: (element: number) => void;
     clean: () => void;
-  } :
-  T extends "arbol_binario" ? {
+  }
+  : T extends "arbol_binario"
+  ? {
     insertLeft: (parent: number, value: number) => void;
     insertRight: (parent: number, value: number) => void;
     delete: (nodeId: number) => void;
@@ -228,6 +251,17 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
   T extends "arbol_binario_busqueda" ? {
     insert: (value: number) => void;
     delete: (nodeId: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_avl"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
     search: (value: number) => void;
     getPreOrder: () => void;
     getInOrder: () => void;
@@ -296,7 +330,11 @@ export type HierarchyNodeData<T> = {
   value?: T;
   isPlaceholder?: boolean;
   children?: HierarchyNodeData<T>[];
-}
+
+  //(opcionales) para AVL
+  bf?: number;       // balance factor
+  height?: number;   // altura del nodo
+};
 
 export type TreeLinkData = {
   sourceId: string;

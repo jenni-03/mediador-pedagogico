@@ -11,6 +11,8 @@ import { getTablaHashCode } from "./tablaHashCode";
 import { getArbolBinarioCode } from "./arbolBinarioCode";
 import { getArbolBinarioBusquedaCode } from "./arbolBinarioBusquedaCode";
 
+import { getArbolAVLCode } from "./arbolAVLCode";
+
 // Mapa de funciones para cargar operaciones según estructura
 const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   secuencia: getSecuenciaCode,
@@ -24,6 +26,7 @@ const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   tabla_hash: getTablaHashCode,
   arbol_binario: getArbolBinarioCode,
   arbol_binario_busqueda: getArbolBinarioBusquedaCode,
+  arbol_avl: getArbolAVLCode,
 };
 
 // Devuelve el pseudocódigo correspondiente, o {} si no existe
