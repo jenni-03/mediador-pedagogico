@@ -18,7 +18,8 @@ export const STRUCTURE_NAME = {
     CIRCULAR_DOUBLY_LINKED_LIST: 'lista_circular_doblemente_enlazada',
     CIRCULAR_SIMPLE_LINKED_LIST: 'lista_circular_simplemente_enlazada',
     HASHTABLE: 'tabla_hash',
-    BINARY_TREE: 'arbol_binario'
+    BINARY_TREE: 'arbol_binario',
+    BINARY_SEARCH_TREE: 'arbol_binario_busqueda',
 } as const
 
 export const SVG_STYLE_VALUES = {

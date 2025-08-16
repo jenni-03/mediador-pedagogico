@@ -163,6 +163,16 @@ export type BaseQueryOperations<T extends string> =
     toGetLevelOrder: TraversalNodeType[] | [];
     toClear: boolean;
   }
+  : T extends "arbol_binario_busqueda" ? {
+    toInsert: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+  }
   : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
@@ -207,6 +217,16 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
   T extends "arbol_binario" ? {
     insertLeft: (parent: number, value: number) => void;
     insertRight: (parent: number, value: number) => void;
+    delete: (nodeId: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  } :
+  T extends "arbol_binario_busqueda" ? {
+    insert: (value: number) => void;
     delete: (nodeId: number) => void;
     search: (value: number) => void;
     getPreOrder: () => void;

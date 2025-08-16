@@ -5,5 +5,6 @@ export const structureCommands: Record<string, string[]> = {
     "cola de prioridad": ["enqueue", "dequeue", "getFront", "clean"],
     lista_enlazada: ["insertFirst", "insertLast", "insertAt", "removeFirst", "removeLast", "removeAt", "search", "clean"],
     tabla_hash: ["create", "set", "get", "delete", "clean"],
-    arbol_binario: ["insertLeft", "insertRight", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"]
+    arbol_binario: ["insertLeft", "insertRight", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
+    arbol_binario_busqueda: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"]
 };

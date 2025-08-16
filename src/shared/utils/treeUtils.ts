@@ -1,3 +1,6 @@
+import { extent, HierarchyNode } from "d3";
+import { HierarchyNodeData } from "../../types";
+
 export function defaultComparator<T>(a: T, b: T): number {
     if (a === b) return 0;
 
@@ -33,4 +36,43 @@ export function defaultComparator<T>(a: T, b: T): number {
 
     // Para objetos arbitrarios exigimos comparador
     throw new Error("Tipo no comparable por defecto. Proporcione un comparador para este tipo.");
+}
+
+export function computeSvgTreeMetrics(
+    currentNodes: HierarchyNode<HierarchyNodeData<number>>[],
+    prevNodes: HierarchyNode<HierarchyNodeData<number>>[],
+    margin: { left: number; right: number; top: number; bottom: number },
+    sequenceCount: number,
+    sequencePadding: number,
+    sequenceHeight: number
+) {
+    // Valores minimos y máximos del árbol en cada eje
+    const [minX, maxX] = extent([...prevNodes, ...currentNodes], d => d.x);
+    const [minY, maxY] = extent([...prevNodes, ...currentNodes], d => d.y);
+
+    // Ancho y alto requerido por el árbol
+    const treeWidth = (maxX! - minX!) + margin.left + margin.right;
+    const treeHeight = (maxY! - minY!) + margin.top + margin.bottom;
+
+    // Ancho requerido por la secuencia
+    const seqContent = sequenceCount > 0 ? (sequenceCount - 1) * sequencePadding : 0;
+    const seqWidth = seqContent + margin.left + margin.right;
+
+    // Ancho y alto del lienzo (en base a la extensión total del árbol)
+    const width = Math.max(treeWidth, seqWidth);
+    const height = treeHeight;
+
+    // Desplazamientos iniciales para los contenedores (evita que partes queden fuera si las coordenadas son negativas)
+    const treeOffset = { x: margin.left - minX!, y: margin.top - minY! };
+    const seqOffset = {
+        x: margin.left,
+        y: treeOffset.y + (maxY! - minY!) + sequencePadding + sequenceHeight
+    };
+
+    return {
+        width,
+        height: height + sequencePadding + sequenceHeight,
+        treeOffset,
+        seqOffset
+    }
 }

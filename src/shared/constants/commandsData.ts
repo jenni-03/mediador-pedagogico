@@ -274,6 +274,58 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
+  arbol_binario_busqueda: {
+    buttons: [
+      {
+        title: "insert",
+        description: "Inserta un nodo dentro del árbol binario de búsqueda.",
+        estructura: "insert(valor);",
+        ejemplo: "insert(20);",
+      },
+      {
+        title: "delete",
+        description: "Elimina un nodo del árbol binario de búsqueda.",
+        estructura: "delete(valor);",
+        ejemplo: "delete(100);",
+      },
+      {
+        title: "search",
+        description: "Busca un nodo dentro del árbol binario de búsqueda.",
+        estructura: "search(valor);",
+        ejemplo: "search(30);",
+      },
+      {
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del árbol binario de búsqueda.",
+        estructura: "getPreOrder();",
+        ejemplo: "getPreOrder();"
+      },
+      {
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del árbol binario de búsqueda.",
+        estructura: "getInOrder();",
+        ejemplo: "getInOrder();"
+      },
+      {
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del árbol binario de búsqueda.",
+        estructura: "getPostOrder();",
+        ejemplo: "getPostOrder();"
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles del árbol binario de búsqueda.",
+        estructura: "getLevelOrder();",
+        ejemplo: "getLevelOrder();"
+      },
+      {
+        title: "clean",
+        description: "Borra el árbol binario de búsqueda.",
+        estructura: "clean();",
+        ejemplo: "clean();",
+      },
+    ],
+  },
   avl: {
     buttons: [
       {

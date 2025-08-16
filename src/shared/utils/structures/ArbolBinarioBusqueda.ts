@@ -215,10 +215,8 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
         const cmp = this.compare(valor, root.getInfo());
         if (cmp < 0) {
             root.setIzq(this.eliminarABBrec(root.getIzq(), valor, salida));
-            return root;
         } else if (cmp > 0) {
             root.setDer(this.eliminarABBrec(root.getDer(), valor, salida));
-            return root;
         } else {
             if (!root.getIzq()) {
                 salida.removed = root;
@@ -233,10 +231,10 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             const succ = this.minValorNodo(root.getDer()!);
             root.setInfo(succ.getInfo());
             salida.updated = root;
-
             root.setDer(this.eliminarABBrec(root.getDer(), succ.getInfo(), salida));
-            return root;
         }
+
+        return root;
     }
 
     /**
