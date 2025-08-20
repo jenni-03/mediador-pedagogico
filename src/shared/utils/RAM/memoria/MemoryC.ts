@@ -1,5 +1,79 @@
 import { Memory, PrimitiveType } from "./Memory";
 
+type CastOk = { ok: true; value: any };
+type CastErr = { ok: false; error: string };
+type CastResult = CastOk | CastErr;
+
+const TYPES = "(boolean|char|byte|short|int|long|float|double|string)";
+const ID = "([A-Za-z_]\\w*)";
+const JAVA_KEYWORDS = new Set([
+  "abstract",
+  "assert",
+  "boolean",
+  "break",
+  "byte",
+  "case",
+  "catch",
+  "char",
+  "class",
+  "const",
+  "continue",
+  "default",
+  "do",
+  "double",
+  "else",
+  "enum",
+  "extends",
+  "final",
+  "finally",
+  "float",
+  "for",
+  "goto",
+  "if",
+  "implements",
+  "import",
+  "instanceof",
+  "int",
+  "interface",
+  "long",
+  "native",
+  "new",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "return",
+  "short",
+  "static",
+  "strictfp",
+  "super",
+  "switch",
+  "synchronized",
+  "this",
+  "throw",
+  "throws",
+  "transient",
+  "try",
+  "void",
+  "volatile",
+  "while",
+  "true",
+  "false",
+  "null",
+]);
+
+function idError(id: string, ctx: string): string | null {
+  if (/^\d/.test(id))
+    return `${ctx}: el identificador no puede iniciar con dígito.`;
+  if (JAVA_KEYWORDS.has(id.toLowerCase()))
+    return `${ctx}: '${id}' es palabra reservada en Java.`;
+  return null;
+}
+
+function rx(source: string, flags = "i") {
+  return new RegExp(source, flags);
+}
+
 export class MemoryC extends Memory {
   constructor() {
     super();
@@ -7,232 +81,458 @@ export class MemoryC extends Memory {
 
   /**
    * Analiza una instrucción y almacena en la memoria.
-   * @param input Instrucción en formato string (una sola línea).
    * @returns `[true, mensaje]` si es válido, `[false, error]` si hay un problema.
    */
   parseAndStore(input: string): [true, string] | [false, string] {
     input = input.trim();
 
-    // 1) Objeto: "object <nombre> = new object(...);"
-    if (/^object [A-Za-z_]\w* = new object\(.+\);$/.test(input)) {
+    // 1) Objeto: object <nombre> = new object(...);
+    if (
+      rx(`^object\\s+${ID}\\s*=\\s*new\\s+object\\s*\\((.*)\\)\\s*;\\s*$`).test(
+        input
+      )
+    ) {
       return this.parseObject(input);
     }
 
-    // 2) Array: Aceptamos sólo llaves { } para la lista de valores:
-    //    - "tipo[] nombre = {valores};"
-    //    - "tipo nombre[] = {valores};"
+    // 2) Array con {} – forma A: tipo[] nombre = {...};
+    //                         forma B: tipo nombre[] = {...};
     if (
-      /^(boolean|char|byte|short|int|long|float|double|string)\[\] [A-Za-z_]\w* = \{.+\};$/.test(input) ||
-      /^(boolean|char|byte|short|int|long|float|double|string) [A-Za-z_]\w*\[\] = \{.+\};$/.test(input)
+      rx(
+        `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      ).test(input) ||
+      rx(
+        `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      ).test(input)
+    ) {
+      return this.parseArray(input);
+    }
+    //    + NUEVO: con new tipo[]{...}
+    if (
+      rx(
+        `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      ).test(input) ||
+      rx(
+        `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      ).test(input) ||
+      // ---- NUEVO ----
+      rx(
+        `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      ).test(input) ||
+      rx(
+        `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      ).test(input)
     ) {
       return this.parseArray(input);
     }
 
-    // 3) Variable primitiva con asignación: "tipo nombre = valor;"
+    // 2.b) Array con [] (error guiado)
     if (
-      /^(boolean|char|byte|short|int|long|float|double|string) [A-Za-z_]\w* = .+;$/.test(input)
+      rx(`^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*\\[.*\\]\\s*;\\s*$`).test(
+        input
+      ) ||
+      rx(`^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*\\[.*\\]\\s*;\\s*$`).test(
+        input
+      )
     ) {
+      return [
+        false,
+        "Para arreglos usa llaves `{ }`, no corchetes `[ ]`. Ejemplo: `int[] a = {1, 2, 3};`",
+      ];
+    }
+
+    // 2.c) Array sin valores: `tipo[] nombre = ;` o `tipo nombre[] = ;`
+    if (
+      rx(`^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*;\\s*$`).test(input) ||
+      rx(`^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*;\\s*$`).test(input)
+    ) {
+      return [
+        false,
+        "Arreglo: falta la lista de valores entre `{ }`. Ejemplo: `int[] a = {1, 2, 3};`",
+      ];
+    }
+
+    // 2.d) Array con 'new tipo[]' pero SIN valores: `tipo[] nombre = new tipo[];`
+    if (
+      rx(
+        `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*;\\s*$`
+      ).test(input) ||
+      rx(
+        `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*;\\s*$`
+      ).test(input)
+    ) {
+      const m =
+        input.match(
+          rx(
+            `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*;\\s*$`
+          )
+        ) ||
+        input.match(
+          rx(
+            `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*;\\s*$`
+          )
+        );
+
+      const lhs = (m![1] as string).toLowerCase();
+      const name = m![2];
+      const rhs = (m![3] as string).toLowerCase();
+
+      if (lhs !== rhs) {
+        return [
+          false,
+          `Tipo inconsistente: declaraste ${lhs}[] pero instancias new ${rhs}[]; deben coincidir.`,
+        ];
+      }
+      return [
+        false,
+        `Falta el inicializador de valores. Usa: \`${lhs}[] ${name} = new ${lhs}[]{v1, v2, ...};\``,
+      ];
+    }
+
+    // 3) Variable primitiva (con o sin asignación): tipo nombre = valor;
+    if (rx(`^${TYPES}\\s+${ID}(?:\\s*=\\s*(.+?))?\\s*;\\s*$`).test(input)) {
       return this.parsePrimitive(input);
     }
 
-    // 4) Variable primitiva sin asignación: "tipo nombre;"
-    if (
-      /^(boolean|char|byte|short|int|long|float|double|string) [A-Za-z_]\w*;$/.test(input)
-    ) {
-      return this.parsePrimitive(input);
+    // 3.b) Asignación sin valor: `tipo nombre = ;`
+    const mEqNoVal = input.match(rx(`^${TYPES}\\s+${ID}\\s*=\\s*;\\s*$`));
+    if (mEqNoVal) {
+      const type = mEqNoVal[1];
+      const name = mEqNoVal[2];
+      return [
+        false,
+        `Asignación a '${name}': falta un valor tras '='. Forma correcta: \`${type} ${name} = <valor ${type}>;\``,
+      ];
     }
 
-    return [false, "Formato no soportado"];
+    // Fallback con explicación detallada
+    return [false, this.explainFormatError(input)];
   }
 
-  /**
-   * Analiza y almacena un objeto con sintaxis:
-   *   object <nombre> = new object( ...propiedades... );
-   */
+  /* ------------------------ OBJECT ------------------------ */
   private parseObject(input: string): [true, string] | [false, string] {
-    const objectRegex = /^object ([A-Za-z_]\w*) = new object\((.+)\);$/;
-    const match = input.match(objectRegex);
-    if (!match) {
-      return [false, "Error al analizar objeto. Sintaxis esperada: object <nombre> = new object(...);"];
+    const m = input.match(
+      rx(`^object\\s+${ID}\\s*=\\s*new\\s+object\\s*\\((.*)\\)\\s*;\\s*$`)
+    );
+    if (!m) {
+      return [
+        false,
+        "Sintaxis esperada: `object <nombre> = new object(propiedades...);`",
+      ];
     }
 
-    const objectKey = match[1];
-    const rawProps = match[2];
+    const objectKey = m[1];
+    const rawProps = m[2].trim();
 
-    // Separamos propiedades por ";", omitiendo espacios vacíos
+    // permitir objeto vacío: new object();
+    if (rawProps.length === 0) {
+      return this.storeObject(objectKey, []);
+    }
+
+    // Separar propiedades por ';'
     const propStrings = rawProps
       .split(";")
       .map((p) => p.trim())
       .filter((p) => p.length > 0);
 
-    // Acumularemos las propiedades parseadas aquí
     const properties: { type: PrimitiveType; key: string; value: any }[] = [];
 
     for (const propStr of propStrings) {
-      const [ok, result] = this.parseProperty(propStr);
-      if (!ok) {
-        // En cuanto falle una propiedad, retornamos el error
-        return [false, result];
-      }
-      properties.push(result);
+      const [ok, res] = this.parseProperty(propStr);
+      if (!ok) return [false, res];
+      properties.push(res);
     }
-
-    // Si todo se parseó bien, almacenamos el objeto
     return this.storeObject(objectKey, properties);
   }
 
-  /**
-   * Analiza y almacena un array (solo con llaves {}).
-   * Sintaxis permitida:
-   *   - "tipo[] nombre = {val1,val2,...};"
-   *   - "tipo nombre[] = {val1,val2,...};"
-   */
+  /* ------------------------ ARRAY ------------------------- */
   private parseArray(input: string): [true, string] | [false, string] {
-    // Forma A
-    let arrayRegex: RegExp = /^(boolean|char|byte|short|int|long|float|double|string)\[\] ([A-Za-z_]\w*) = \{(.+)\};$/;
-    let match = input.match(arrayRegex);
-    if (!match) {
-      // Forma B
-      arrayRegex = /^(boolean|char|byte|short|int|long|float|double|string) ([A-Za-z_]\w*)\[\] = \{(.+)\};$/;
-      match = input.match(arrayRegex);
+    // 2.1 Literal en la declaración
+    let m = input.match(
+      rx(
+        `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      )
+    );
+    if (m) return this.parseArrayWithValues(m[1], m[2], m[3]);
+
+    m = input.match(
+      rx(
+        `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      )
+    );
+    if (m) return this.parseArrayWithValues(m[1], m[2], m[3]);
+
+    // 2.2 Declarar + instanciar con new T[]{...}
+    m = input.match(
+      rx(
+        `^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      )
+    );
+    if (m) {
+      const lhs = (m[1] as string).toLowerCase() as PrimitiveType; // tipo de la izquierda
+      const key = m[2];
+      const rhs = (m[3] as string).toLowerCase() as PrimitiveType; // tipo dentro del new
+      if (lhs !== rhs) {
+        return [
+          false,
+          `Tipo inconsistente: declaraste ${lhs}[] pero instancias new ${rhs}[]{...}. Deben coincidir.`,
+        ];
+      }
+      return this.parseArrayWithValues(lhs, key, m[4]);
     }
 
-    if (!match) {
-      return [false, "Error al analizar arreglo. Se requiere usar { } para los valores."];
+    m = input.match(
+      rx(
+        `^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*new\\s+${TYPES}\\s*\\[\\s*\\]\\s*\\{\\s*([^}]*)\\s*\\}\\s*;\\s*$`
+      )
+    );
+    if (m) {
+      const lhs = (m[1] as string).toLowerCase() as PrimitiveType;
+      const key = m[2];
+      const rhs = (m[3] as string).toLowerCase() as PrimitiveType;
+      if (lhs !== rhs) {
+        return [
+          false,
+          `Tipo inconsistente: declaraste ${lhs}[] pero instancias new ${rhs}[]{...}. Deben coincidir.`,
+        ];
+      }
+      return this.parseArrayWithValues(lhs, key, m[4]);
     }
 
-    const type = match[1] as PrimitiveType;
-    const key = match[2];
-    const rawValues = match[3].trim();
-
-    // Dividimos valores por coma
-    const values = rawValues.split(",").map((val) => this.castValue(type, val.trim()));
-
-    return this.storeArray(type, key, values);
+    return [
+      false,
+      "Error al analizar arreglo. Formas válidas:\n" +
+        "• `tipo[] nombre = {v1, v2, ...};`  |  `tipo nombre[] = {v1, v2, ...};`\n" +
+        "• `tipo[] nombre = new tipo[]{v1, v2, ...};`  |  `tipo nombre[] = new tipo[]{v1, v2, ...};`",
+    ];
   }
 
-  /**
-   * Analiza una variable primitiva (con o sin asignación).
-   */
-  private parsePrimitive(input: string): [true, string] | [false, string] {
-    const primitiveRegex = /^(boolean|char|byte|short|int|long|float|double|string) ([A-Za-z_]\w*)( = (.+))?;$/;
-    const match = input.match(primitiveRegex);
-    if (!match) {
-      return [false, "Error al analizar primitivo."];
+  private parseArrayWithValues(
+    type: PrimitiveType | string,
+    key: string,
+    rawValues: string
+  ): [true, string] | [false, string] {
+    const t = (type as string).toLowerCase() as PrimitiveType;
+    const raw = (rawValues ?? "").trim();
+    if (raw === "") return this.storeArray(t, key, []); // array vacío permitido
+    const parts = raw.split(",").map((s) => s.trim());
+    if (parts.some((p) => p === "")) {
+      return [
+        false,
+        `Lista de valores de '${key}': hay una coma duplicada o un valor vacío. Evita ',,' o la coma final.`,
+      ];
     }
+    const casted: any[] = [];
 
-    const type = match[1] as PrimitiveType;
-    const key = match[2];
-    let rawValue = match[4];
+    const e2 = idError(key, "Arreglo");
+    if (e2) return [false, e2];
+
+    for (let i = 0; i < parts.length; i++) {
+      const r = this.safeCastValue(t, parts[i], `Elemento ${i} de '${key}'`);
+      if (!r.ok) return [false, r.error];
+      casted.push(r.value);
+    }
+    return this.storeArray(t, key, casted);
+  }
+
+  /* ---------------------- PRIMITIVE ----------------------- */
+  private parsePrimitive(input: string): [true, string] | [false, string] {
+    const m = input.match(
+      rx(`^${TYPES}\\s+${ID}(?:\\s*=\\s*(.+?))?\\s*;\\s*$`)
+    );
+    if (!m) return [false, "Error al analizar variable primitiva."];
+
+    const type = m[1].toLowerCase() as PrimitiveType;
+    const key = m[2];
+
+    const e1 = idError(key, "Variable");
+    if (e1) return [false, e1];
+
+    const rawValue = (m[3] ?? "").trim();
+
     let value: any;
-
-    // Si no se asigna valor, ponemos el default
-    if (rawValue === undefined) {
+    if (rawValue === "") {
       value = this.getDefaultValue(type);
     } else {
-      rawValue = rawValue.trim();
-      value = this.castValue(type, rawValue);
+      const r = this.safeCastValue(type, rawValue, `Asignación a '${key}'`);
+      if (!r.ok) return [false, r.error];
+      value = r.value;
     }
-
     return this.storePrimitive(type, key, value);
   }
 
-  /**
-   * Analiza una propiedad dentro de un objeto: puede ser array o primitivo.
-   * Retorna `[true, { type, key, value }]` en caso de éxito, `[false, mensaje]` en caso de error.
-   */
+  /* ---------------------- PROPERTIES ---------------------- */
   private parseProperty(
     prop: string
-  ): [true, { type: PrimitiveType; key: string; value: any }] | [false, string] {
-    // 1) Caso array: "tipo[] nombre = {val1,val2,...}" o "tipo nombre[] = {val1,val2,...}"
-    const arrayPattern1 = /^(boolean|char|byte|short|int|long|float|double|string)\[\] ([A-Za-z_]\w*) = \{(.+)\}$/;
-    const arrayPattern2 = /^(boolean|char|byte|short|int|long|float|double|string) ([A-Za-z_]\w*)\[\] = \{(.+)\}$/;
+  ):
+    | [true, { type: PrimitiveType; key: string; value: any }]
+    | [false, string] {
+    // Arrays dentro del object
+    let m =
+      prop.match(
+        rx(`^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*\\{\\s*([^}]*)\\s*\\}$`)
+      ) ||
+      prop.match(
+        rx(`^${TYPES}\\s+${ID}\\s*\\[\\s*\\]\\s*=\\s*\\{\\s*([^}]*)\\s*\\}$`)
+      );
 
-    let arrayMatch = prop.match(arrayPattern1);
-    if (!arrayMatch) {
-      arrayMatch = prop.match(arrayPattern2);
+    if (m) {
+      const t = (m[1] || m[2]).toLowerCase() as PrimitiveType;
+      const id = (m[2] || m[1 + 1]) as string;
+      const e3 = idError(id, "Propiedad");
+      if (e3) return [false, e3];
+      const groups = prop.match(
+        rx(`^${TYPES}\\s*\\[\\s*\\]\\s+${ID}\\s*=\\s*\\{\\s*([^}]*)\\s*\\}$`)
+      )
+        ? { type: (m[1] as string).toLowerCase(), id: m[2], values: m[3] }
+        : { type: (m[1] as string).toLowerCase(), id: m[2], values: m[3] };
+
+      const rawValues = (groups.values || "").trim();
+      const parts = rawValues.length
+        ? rawValues.split(",").map((s) => s.trim())
+        : [];
+      const casted: any[] = [];
+
+      for (let i = 0; i < parts.length; i++) {
+        const r = this.safeCastValue(t, parts[i], `Elemento ${i} de '${id}'`);
+        if (!r.ok) return [false, r.error];
+        casted.push(r.value);
+      }
+      return [true, { type: t, key: id, value: casted }];
     }
 
-    if (arrayMatch) {
-      const type = arrayMatch[1] as PrimitiveType;
-      const key = arrayMatch[2];
-      const rawValues = arrayMatch[3].trim();
+    // Primitivo dentro del object: tipo nombre = valor
+    const mp = prop.match(rx(`^${TYPES}\\s+${ID}\\s*=\\s*(.+)$`));
+    if (!mp)
+      return [
+        false,
+        `Propiedad no válida: "${prop}". Usa "tipo nombre = valor" o "tipo[] nombre = {...}".`,
+      ];
 
-      // Si el usuario intentó usar corchetes "[ ]", esto no coincide con el regex, así que
-      // ya estamos en la rama de "sí es un array correcto con {}" y no hay que aceptar "[]".
-      // Si no concuerda, no entraría aquí.
+    const t = mp[1].toLowerCase() as PrimitiveType;
+    const id = mp[2];
+    const raw = mp[3].trim();
 
-      const values = rawValues.split(",").map((val) => this.castValue(type, val.trim()));
-      return [true, { type, key, value: values }];
-    }
+    const r = this.safeCastValue(t, raw, `Propiedad '${id}'`);
+    if (!r.ok) return [false, r.error];
 
-    // 2) Caso primitivo: "tipo nombre = valor"
-    const primitiveRegex = /^(boolean|char|byte|short|int|long|float|double|string) ([A-Za-z_]\w*) = (.+)$/;
-    const primitiveMatch = prop.match(primitiveRegex);
-
-    if (!primitiveMatch) {
-      // No encaja ni con array ni con primitivo → error
-      return [false, `Error al analizar propiedad: "${prop}"`];
-    }
-
-    const type = primitiveMatch[1] as PrimitiveType;
-    const key = primitiveMatch[2];
-    const rawValue = primitiveMatch[3].trim();
-    const value = this.castValue(type, rawValue);
-
-    return [true, { type, key, value }];
+    return [true, { type: t, key: id, value: r.value }];
   }
 
-  /**
-   * Convierte un valor string al tipo adecuado.
-   * Maneja comillas simples/dobles para char y string.
-   */
-  private castValue(type: PrimitiveType, value: string): any {
+  /* ---------------------- CAST & HELP --------------------- */
+
+  private safeCastValue(
+    type: PrimitiveType,
+    raw: string,
+    ctx: string
+  ): CastResult {
     switch (type) {
       case "int":
       case "byte":
       case "short":
-      case "long":
-        if (/^-?\d+$/.test(value)) {
-          return parseInt(value, 10);
-        }
-        return value; // Si no coincide, devolvemos tal cual
+      case "long": {
+        if (/^-?\d+$/.test(raw)) return { ok: true, value: parseInt(raw, 10) };
+        return {
+          ok: false,
+          error: `${ctx}: "${raw}" no es un entero válido. Usa dígitos opcionalmente con signo, p. ej. \`-42\`.`,
+        };
+      }
       case "float":
-      case "double":
-        if (/^-?\d+(\.\d+)?$/.test(value)) {
-          return parseFloat(value);
+      case "double": {
+        if (/^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/.test(raw))
+          return { ok: true, value: parseFloat(raw) };
+        return {
+          ok: false,
+          error: `${ctx}: "${raw}" no es un número real válido. Ejemplos: \`3.14\`, \`-0.5\`, \`1e-3\`.`,
+        };
+      }
+      case "boolean": {
+        if (/^(true|false)$/i.test(raw))
+          return { ok: true, value: /^true$/i.test(raw) };
+        return {
+          ok: false,
+          error: `${ctx}: boolean debe ser \`true\` o \`false\`.`,
+        };
+      }
+      case "char": {
+        if (/^".*"$/.test(raw)) {
+          return {
+            ok: false,
+            error: `${ctx}: char usa comillas simples. Ej.: 'A'.`,
+          };
         }
-        return value;
-      case "boolean":
-        if (value === "true") return true;
-        if (value === "false") return false;
-        return value;
-      case "char":
-        // 'A' => 3 caracteres
-        if (/^'.'$/.test(value)) {
-          const innerChar = value.slice(1, -1);
-          if (innerChar.length === 1) {
-            return innerChar;
-          }
+        // 'a' o escapes como '\n' - un solo caracter lógico
+        if (/^'(?:\\.|[^\\])'$/.test(raw)) {
+          const inner = raw.slice(1, -1);
+          // manejar escape simple
+          return { ok: true, value: inner.startsWith("\\") ? inner : inner };
         }
-        return value;
-      case "string":
-        // "texto" => le quitamos las comillas
-        return value.replace(/^"(.*)"$/, "$1");
+        return {
+          ok: false,
+          error: `${ctx}: char requiere comillas simples con un solo carácter, p. ej. \`'A'\` o \`'\\n'\`.`,
+        };
+      }
+      case "string": {
+        if (/^'.*'$/.test(raw)) {
+          return {
+            ok: false,
+            error: `${ctx}: string usa comillas dobles. Ej.: "hola".`,
+          };
+        }
+
+        // Acepta "texto" (recomendado) o sin comillas si no tiene espacios
+        if (/^".*"$/.test(raw))
+          return { ok: true, value: raw.replace(/^"(.*)"$/, "$1") };
+        if (!/\s/.test(raw)) return { ok: true, value: raw }; // modo permisivo
+        return {
+          ok: false,
+          error: `${ctx}: string debe ir entre comillas dobles si contiene espacios, p. ej. \`"hola mundo"\`.`,
+        };
+      }
       default:
-        return value;
+        return { ok: false, error: `${ctx}: tipo no soportado (${type}).` };
     }
   }
 
-  /**
-   * Valor por defecto para cada tipo primitivo.
-   */
+  private explainFormatError(input: string): string {
+    // Sugerencias guiadas para errores típicos
+    if (!/;\s*$/.test(input)) {
+      return "Falta ';' al final. Ejemplos válidos: `int x = 3;`, `string nombre = \"Ana\";`, `int[] a = {1,2,3};`";
+    }
+    if (/^\s*object\b/i.test(input) && !/\bnew\s+object\s*\(/i.test(input)) {
+      return "Objeto: falta `new object(...)`. Forma: `object persona = new object(tipo nombre = valor; ...);`";
+    }
+    if (
+      rx(`^${TYPES}\\b`, "i").test(input) && // empieza con un tipo
+      !rx(`^${TYPES}\\s*\\[\\s*\\]`, "i").test(input) && // no es 'tipo[] ...'
+      !rx(`^${TYPES}\\s+${ID}`, "i").test(input) // y no hay identificador después del tipo
+    ) {
+      return "Después del tipo debe ir un identificador válido. Ej: `int contador;`";
+    }
+
+    if (
+      /\[\s*.*\s*\]\s*;?\s*$/.test(input) &&
+      /=/.test(input) &&
+      /{/.test(input) === false
+    ) {
+      return "Para los valores del array usa `{ }`, no `[ ]`. Ej: `char[] c = {'a','b'};`";
+    }
+    return (
+      "Formato no soportado. Formatos admitidos:\n" +
+      "• `tipo nombre;`\n" +
+      "• `tipo nombre = valor;`\n" +
+      "• `tipo[] nombre = {v1, v2, ...};` o `tipo nombre[] = {v1, v2, ...};`\n" +
+      "• `object nombre = new object(tipo1 k1 = v1; tipo2[] k2 = { ... }; ...);`"
+    );
+  }
+
+  /* -------------------- Defaults (igual) ------------------- */
   private getDefaultValue(type: PrimitiveType): any {
     switch (type) {
       case "boolean":
         return false;
       case "char":
-        return ""; // O '\u0000'
+        return "";
       case "byte":
       case "short":
       case "int":
