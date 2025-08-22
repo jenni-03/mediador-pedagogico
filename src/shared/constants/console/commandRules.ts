@@ -723,15 +723,6 @@ export const commandRules: Record<
         return true;
       }
 
-      // NUEVOS: mínimos pedagógicos
-      case "findmin":
-      case "findmax": {
-        if (parts.length !== 1) {
-          return { valid: false, message: "Este método no espera argumentos." };
-        }
-        return true;
-      }
-
       case "getpreorder":
       case "getinorder":
       case "getpostorder":

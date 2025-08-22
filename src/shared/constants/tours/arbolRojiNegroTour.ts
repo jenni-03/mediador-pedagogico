@@ -7,7 +7,6 @@ import { TourStep } from "../typesTour";
  */
 export function getArbolRojiNegroTour(): TourStep[] {
   const steps: TourStep[] = [
-   
     // ───────────────────────── T1: Recoloreo simple ─────────────────────────
     {
       type: "info",
@@ -28,7 +27,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description: "✔️ La **raíz** es **negra**.",
     },
 
-    { id: "inputConsola", text: "insert(5);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(5);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -37,7 +36,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(15);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(15);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -46,7 +45,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(1);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(1);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -55,7 +54,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(7);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(7);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -70,7 +69,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T2 – Rotación izquierda (RR)**: tres insert ascendente fuerzan rotación **a la izquierda**.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -81,9 +80,9 @@ export function getArbolRojiNegroTour(): TourStep[] {
 
     { id: "inputConsola", text: "insert(10);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(20);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(30);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(30);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -98,14 +97,14 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T3 – Rotación derecha (LL)**: tres insert descendente fuerzan rotación **a la derecha**.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(30);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(20);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(10);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(10);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -120,14 +119,14 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T4 – Doble rotación LR**: primero derecha en hijo, luego izquierda en abuelo.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(30);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(10);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(10);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(20);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -142,14 +141,14 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T5 – Doble rotación RL**: primero izquierda en hijo, luego derecha en abuelo.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(10);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(30);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(30);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(20);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -164,20 +163,20 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T6 – CLRS**: secuencia clásica del libro (Cormen). Mezcla de recoloreos y rotaciones.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(41);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(38);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(38);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(31);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(31);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(12);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(12);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(19);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(19);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(8);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(8);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -192,14 +191,17 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T7 – Ascendente**: inserciones 1..10. Verás cómo RB mantiene altura pequeña con re-balanceo automático.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
-
+    { id: "inputConsola", text: `insert(1);`, type: "write" },
+    { id: "inputConsola", type: "enter" },
     // insert 1..10
-    ...Array.from({ length: 10 }, (_, i) => i + 1).flatMap((v): TourStep[] => [
-      { id: "inputConsola", text: `insert(${v});`, type: "write" },
+
+    ...Array.from({ length: 10 }, (_, i) => i + 2).flatMap((v): TourStep[] => [
+      { id: "inputConsola", text: `arbolRN.insert(${v});`, type: "write" },
       { id: "inputConsola", type: "enter" },
     ]),
+
     {
       id: "info-cards",
       type: "element",
@@ -213,17 +215,17 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T8 – Borrado de nodo rojo**: no requiere fix-up complejo.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(10);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(5);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(5);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(15);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(15);", type: "write" },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "delete(5);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.delete(5);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -238,19 +240,19 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T9 – Borrado de negro con hijo rojo**: el hijo se vuelve **negro** para compensar la negrura.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(10);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(5);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(5);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(15);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(15);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(12);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(12);", type: "write" },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "delete(15);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.delete(15);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -265,24 +267,24 @@ export function getArbolRojiNegroTour(): TourStep[] {
       description:
         "🧪 **T10–12 – Fix-up variados**: mezcla de inserciones y eliminaciones que fuerzan diferentes caminos de reparación.",
     },
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     { id: "inputConsola", type: "enter" },
 
     { id: "inputConsola", text: "insert(11);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(2);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(2);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(14);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(14);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(1);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(1);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(7);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(7);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(15);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(15);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(5);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(5);", type: "write" },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(8);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.insert(8);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -291,7 +293,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "delete(1);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.delete(1);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -300,7 +302,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "delete(2);", type: "write" },
+    { id: "inputConsola", text: "arbolRN.delete(2);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -323,7 +325,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getPreOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.getPreOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -331,7 +333,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getInOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.getInOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -340,7 +342,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getPostOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.getPostOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -348,7 +350,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getLevelOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.getLevelOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -357,7 +359,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolRN.clean();", type: "write" },
     {
       id: "console",
       type: "element",

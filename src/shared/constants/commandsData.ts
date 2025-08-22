@@ -415,8 +415,10 @@ export const commandsData: Record<string, any> = {
       {
         title: "insert",
         description: "Insertar un nodo en el árbol Rojo-Negro",
-        estructura: "nombreObjeto.insert(valor);",
-        ejemplo: "arbolRN.insert(1);",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
+               Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(30);</strong> ó <strong>arbolRN.insert(30);</strong>",
       },
       {
         title: "delete",
@@ -431,27 +433,38 @@ export const commandsData: Record<string, any> = {
         ejemplo: "arbolRN.search(1);",
       },
       {
-        title: "traverse",
-        description: "Recorrer el árbol Rojo-Negro",
-        estructura: "nombreObjeto.traverse(nombreOrden);",
-        ejemplo:
-          "arbolRN.traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "clean",
+        description: "Borrar el árbol Rojo-Negro",
+        estructura: "nombreObjeto.clean();",
+        ejemplo: "arbolRN.clean();",
+      },
+        {
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del árbol RojiNegro.",
+        estructura: "nombreObjeto.getPreOrder();",
+        ejemplo: "arbolRN.getPreOrder();",
       },
       {
-        title: "findMin",
-        description: "Encontrar el mínimo",
-        estructura: "nombreObjeto.findMin();",
-        ejemplo: "arbolRN.findMin();",
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del árbol RojiNegro.",
+        estructura: "nombreObjeto.getInOrder();",
+        ejemplo: "arbolRN.getInOrder();",
       },
       {
-        title: "findMax",
-        description: "Encontrar el máximo",
-        estructura: "nombreObjeto.findMax();",
-        ejemplo: "arbolRN.findMax();",
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del árbol RojiNegro.",
+        estructura: "nombreObjeto.getPostOrder();",
+        ejemplo: "arbolRN.getPostOrder();",
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles (BFS) del árbol RojiNegro.",
+        estructura: "nombreObjeto.getLevelOrder();",
+        ejemplo: "arbolRN.getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Borrar el árbol Rojo-Negro",
+        description: "Vacia el árbol AVL.",
         estructura: "nombreObjeto.clean();",
         ejemplo: "arbolRN.clean();",
       },

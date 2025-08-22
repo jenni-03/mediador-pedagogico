@@ -16,18 +16,19 @@ import { RbTreeSimulator } from "./RbTreeSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
-    Secuencia: SequenceSimulator,
-    Cola: QueueSimulator,
-    tabla_hash: HashTableSimulator,
-    Pila: StackSimulator,
-    "Cola de Prioridad": PriorityQueueSimulator,
-    "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
-    "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
-    "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
-    "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
-    "Árbol Binario": BinaryTreeSimulator,
-    "Árbol Binario de Búsqueda": BinarySearchTreeSimulator,
-    "Árbol AVL": AvlTreeSimulator,
+  Secuencia: SequenceSimulator,
+  Cola: QueueSimulator,
+  tabla_hash: HashTableSimulator,
+  Pila: StackSimulator,
+  "Cola de Prioridad": PriorityQueueSimulator,
+  "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
+  "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
+  "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
+  "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
+  "Árbol Binario": BinaryTreeSimulator,
+  "Árbol Binario de Búsqueda": BinarySearchTreeSimulator,
+  "Árbol AVL": AvlTreeSimulator,
+  "Árbol RojiNegro": RbTreeSimulator,
 };
 
 export function StructureSimulator() {

@@ -4,6 +4,7 @@ import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { parseCommand } from "../../../../shared/constants/console/parseCommand";
 import { AnimatedButtonModal } from "../../../../shared/components/AnimatedButtonModal";
 
+
 export const structureNames: Record<string, string> = {
   secuencia: "se",
   pila: "pila",
@@ -14,6 +15,7 @@ export const structureNames: Record<string, string> = {
   arbol_binario: "arbolBi",
   arbol_binario_busqueda: "arbolBB",
   arbol_avl: "arbolA",
+  arbol_rojinegro: "arbolRN",
 };
 
 interface ConsoleComponentProps {
