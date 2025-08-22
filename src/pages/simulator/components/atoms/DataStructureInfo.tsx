@@ -19,11 +19,13 @@ export function DataStructureInfo({
     <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] max-h-[500px] overflow-x-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
       <div
         data-tour="structure-info"
-        className="flex flex-col md:flex-row gap-4 items-start justify-between"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start"
       >
         {/* Info lateral izquierda en cards */}
         <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-xs"
+          className={`grid gap-4 md:col-span-1 ${
+            info.length > 2 ? "md:grid-cols-2" : "md:grid-cols-1"
+          }`}
           data-tour="info-cards"
         >
           {info.map(
@@ -80,7 +82,8 @@ export function DataStructureInfo({
         </div>
 
         {/* Visualización de memoria */}
-        <div className="flex-[2]" data-tour="memory-visualization">
+        {/* <div className="flex-[2]" data-tour="memory-visualization"> */}
+        <div className="md:col-span-2" data-tour="memory-visualization">
           {memoryAddress && (
             <MemoryAllocationVisualizer
               n={

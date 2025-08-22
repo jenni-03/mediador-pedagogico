@@ -19,6 +19,7 @@ export const STRUCTURE_NAME = {
     CIRCULAR_SIMPLE_LINKED_LIST: 'lista_circular_simplemente_enlazada',
     HASHTABLE: 'tabla_hash',
     BINARY_TREE: 'arbol_binario',
+    BINARY_SEARCH_TREE: 'arbol_binario_busqueda',
     AVL_TREE: "arbol_avl",
     RB_TREE: "arbol_rojinegro",
 } as const

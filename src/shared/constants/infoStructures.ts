@@ -101,8 +101,21 @@ export const infoStructures: Record<string, any> = {
       },
     ],
   },
-  bst: {
-    info: ["Peso", "Altura"],
+  arbol_binario_busqueda: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol binario."
+      },
+      {
+        key: "Altura",
+        description: "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario."
+      },
+      {
+        key: "Hojas",
+        description: "Nodo terminal en la estructura del árbol que no posee descendientes."
+      }
+    ],
   },
 
   arbol_avl: {

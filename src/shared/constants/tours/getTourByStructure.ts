@@ -11,6 +11,7 @@ import { getListaCircularDoblementeEnlazadaTour } from "./listaCircularDoblement
 import { getTablaHashTour } from "./tablaHashTour.ts";
 import { getMemoriaTour } from "./memoriaTour.ts";
 import { getArbolBinarioTour } from "./arbolBinarioTour.ts";
+import { getArbolBinarioBusquedaTour } from "./arbolBinarioBusquedaTour.ts";
 import { getArbolAVLTour } from "./arbolAVLTour.ts";
 import { getArbolRojiNegroTour } from "./arbolRojiNegroTour.ts";
 
@@ -34,6 +35,7 @@ const tourStepLoaders: Record<string, () => TourStep[]> = {
   cola: getColaTourSteps,
   "cola de prioridad": getColaPrioridadTour,
   arbol_binario: getArbolBinarioTour,
+  arbol_binario_busqueda: getArbolBinarioBusquedaTour,
   arbol_avl: getArbolAVLTour,
   arbol_rojinegro: getArbolRojiNegroTour,
   memoria: getMemoriaTour,

@@ -96,7 +96,7 @@ export const getArbolBinarioCode = (): OperationCode => ({
  * Método que permite buscar un elemento especifico en el árbol binario.
  * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en el árbol.
  * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
- * @param elem es de tipo T y corresponde al elemento a buscar.
+ * @param info es de tipo T y corresponde al elemento a buscar.
  * @return Booleano que indica si el elemento fue encontrado.
  */`,
         `private boolean buscar(NodoBin<T> root, T info) {`,

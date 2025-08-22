@@ -2,15 +2,15 @@ import * as d3 from "d3";
 import { useEffect, useMemo, useRef } from "react";
 import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType, TreeLinkData } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
+import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { animateClearTree, animateTreeTraversal, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
-import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { computeSvgTreeMetrics } from "../../../../../shared/utils/treeUtils";
 
-export function useBinaryTreeRender(
+export function useBinarySearchTreeRender(
     treeData: HierarchyNodeData<number> | null,
-    query: BaseQueryOperations<"arbol_binario">,
+    query: BaseQueryOperations<"arbol_binario_busqueda">,
     resetQueryValues: () => void
 ) {
     // Referencia que apunta al elemento SVG del DOM
@@ -126,7 +126,7 @@ export function useBinaryTreeRender(
     // Efecto para manejar la inserción de nuevos nodos
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
-        if (!root || !svgRef.current || (!query.toInsertLeft && !query.toInsertRight)) return;
+        if (!root || !svgRef.current || !query.toInsert) return;
 
         // Selección del elemento SVG a partir de su referencia
         const svg = d3.select(svgRef.current);
@@ -138,7 +138,7 @@ export function useBinaryTreeRender(
         const seqG = svg.select<SVGGElement>("g.seq-container");
 
         // Determinamos el ID del nuevo nodo a insertar
-        const nodeToInsert = query.toInsertLeft ? query.toInsertLeft : query.toInsertRight!;
+        const nodeToInsert = query.toInsert;
 
         // Ubicamos al nuevo nodo en el árbol
         const newNode = currentNodes.find(d => d.data.id === nodeToInsert);
@@ -167,7 +167,7 @@ export function useBinaryTreeRender(
             resetQueryValues,
             setIsAnimating
         );
-    }, [root, currentNodes, linksData, query.toInsertLeft, query.toInsertRight, resetQueryValues, setIsAnimating]);
+    }, [root, currentNodes, linksData, query.toInsert, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
