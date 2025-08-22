@@ -13,6 +13,20 @@ import {
 import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 import { HierarchyNode, easePolyInOut } from "d3";
 
+const waitEnd = (t: d3.Transition<any, any, any, any>) =>
+  new Promise<void>((resolve) => t.on("end", resolve).on("interrupt", resolve));
+
+type TraversalAnimOptions = {
+  /** "recolor" = comportamiento anterior; "preserve-fill" = NO tocar fill */
+  style?: "recolor" | "preserve-fill";
+  /** Color del resaltado (stroke/anillo) en modo preserve-fill */
+  strokeColor?: string;
+  /** Hacer un pequeño bounce de radio (solo visual) */
+  bounce?: boolean;
+  /** Mostrar anillo pulsante temporal */
+  pulse?: boolean;
+};
+
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
  * @param svg Selección D3 del elemento SVG donde se va a renderizar el indicador.
@@ -725,58 +739,145 @@ export async function animateTreeTraversal(
   targetNodes: TraversalNodeType[],
   seqPositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>,
+  opts: TraversalAnimOptions = {}
 ) {
-  // Reestablecimiento del fondo original de los nodos
-  treeG
-    .selectAll(".node-container")
-    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
+  const {
+    style = "preserve-fill",
+    strokeColor = "#8aa0ff",
+    bounce = true,
+    pulse = true,
+  } = opts;
 
-  // Reestablecimiento de la opacidad original para el contendor de la secuencia de valores de recorrido
+  // ⚠️ Antes reseteaba SIEMPRE el fill => rompía RB.
+  if (style === "recolor") {
+    treeG
+      .selectAll(".node-container")
+      .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
+  }
+
+  // Asegura opacidad de la banda de secuencia
   seqG.style("opacity", 1);
 
-  for (const nodeId of targetNodes) {
-    // Selección del grupo del nodo actual
-    const nodeGroup = treeG.select<SVGCircleElement>(`g#${nodeId.id} circle`);
-    const seqText = seqG.select<SVGTextElement>(`text#${nodeId.id}`);
+  setIsAnimating(true);
 
-    // Resaltado del nodo actual
-    await nodeGroup
-      .transition()
-      .duration(750)
-      .attr("fill", SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR)
-      .end();
+  for (const node of targetNodes) {
+    const id = node.id;
+    const circle = treeG.select<SVGCircleElement>(`g#${id} circle`);
+    const seqText = seqG.select<SVGTextElement>(`text#${id}`);
 
-    await nodeGroup
-      .transition()
-      .duration(150)
-      .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.2)
-      .transition()
-      .duration(150)
-      .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-      .end();
+    if (circle.empty()) continue;
 
-    // Transición del valor de recorrido a su posición final
+    // MODO A: comportamiento antiguo (recolor)
+    if (style === "recolor") {
+      await circle
+        .transition()
+        .duration(750)
+        .attr("fill", SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR)
+        .end();
+
+      if (bounce) {
+        await circle
+          .transition()
+          .duration(150)
+          .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.2)
+          .transition()
+          .duration(150)
+          .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+          .end();
+      }
+
+      // mover texto de secuencia
+      await seqText
+        .transition()
+        .duration(800)
+        .attr("transform", () => {
+          const finalPos = seqPositions.get(id)!;
+          return `translate(${finalPos.x}, ${finalPos.y})`;
+        })
+        .end();
+
+      await circle
+        .transition()
+        .duration(750)
+        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+        .end();
+
+      continue;
+    }
+
+    // MODO B: preserve-fill (NO tocar fill) → glow + stroke + pulso
+    circle.interrupt();
+
+    // 1) encender glow / stroke
+    await waitEnd(
+      circle
+        .transition()
+        .duration(140)
+        .attr("filter", "url(#softGlow)")
+        .attr("stroke", strokeColor)
+        .attr("stroke-width", 2)
+    );
+
+    // 2) pulso opcional (un círculo temporal dentro del grupo del nodo)
+    if (pulse) {
+      const r0 = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
+      const pulseRing = circle
+        .select(function () {
+          // agregamos un sibling en el mismo g del nodo
+          return (this!.parentNode as SVGGElement) || this!;
+        })
+        .append("circle")
+        .attr("class", "pulse-ring")
+        .attr("r", r0 + 2)
+        .attr("fill", "none")
+        .attr("stroke", strokeColor)
+        .attr("stroke-width", 2)
+        .style("opacity", 0.9);
+
+      await waitEnd(
+        pulseRing
+          .transition()
+          .duration(420)
+          .attr("r", r0 + 12)
+          .style("opacity", 0)
+          .remove()
+      );
+    }
+
+    // 3) pequeño bounce (sin tocar fill)
+    if (bounce) {
+      await circle
+        .transition()
+        .duration(150)
+        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.12)
+        .transition()
+        .duration(150)
+        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+        .end();
+    }
+
+    // 4) mover texto de secuencia a su posición final
     await seqText
       .transition()
       .duration(800)
       .attr("transform", () => {
-        const finalPos = seqPositions.get(nodeId.id)!;
+        const finalPos = seqPositions.get(id)!;
         return `translate(${finalPos.x}, ${finalPos.y})`;
       })
       .end();
 
-    // Restablecimiento del fondo del contenedor del nodo
-    await nodeGroup
-      .transition()
-      .duration(750)
-      .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-      .end();
+    // 5) apagar glow / stroke
+    await waitEnd(
+      circle
+        .transition()
+        .duration(140)
+        .attr("filter", null)
+        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+    );
   }
 
-  // Restablecimiento de los valores de las queries del usuario
   resetQueryValues();
-
-  // Finalización de la animación
   setIsAnimating(false);
 }

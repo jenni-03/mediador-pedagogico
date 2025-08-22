@@ -20,6 +20,7 @@ export const STRUCTURE_NAME = {
     HASHTABLE: 'tabla_hash',
     BINARY_TREE: 'arbol_binario',
     AVL_TREE: "arbol_avl",
+    RB_TREE: "arbol_rojinegro",
 } as const
 
 export const SVG_STYLE_VALUES = {

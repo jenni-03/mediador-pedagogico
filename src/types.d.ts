@@ -1,6 +1,17 @@
 import { TYPE_FILTER } from "./shared/constants/consts";
 import { NodoS } from "./shared/utils/nodes/NodoS";
-type AvlRotation = { type: "LL" | "LR" | "RR" | "RL"; pivotId: string; childId?: string };
+
+//AVL
+type AvlRotation = {
+  type: "LL" | "LR" | "RR" | "RL";
+  pivotId: string;
+  childId?: string;
+};
+
+//RojoNegro
+export type RbRotation = { type: "left" | "right"; pivotId: string };
+export type RbRecolor = { id: string; to: "red" | "black" };
+export type RBRenderColor = "red" | "black";
 
 export interface LinkedListInterface<T> {
   insertarAlInicio(valor: T): NodoS<T> | NodoD<T>;
@@ -190,7 +201,31 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
 
                     rotation?: AvlRotation | null;
                   }
-                : never; // Fallback para otros casos
+                : T extends "arbol_rojinegro" | "arbol_rb"
+                  ? {
+                      /* Operaciones mutables */
+                      toInsert: number | null; // insert(x)
+                      toDelete: number | null; // delete(x)
+
+                      /* Consultas */
+                      toSearch: number | null; // search(x)
+
+                      /* Recorridos */
+                      toGetPreOrder: TraversalNodeType[] | [];
+                      toGetInOrder: TraversalNodeType[] | [];
+                      toGetPostOrder: TraversalNodeType[] | [];
+                      toGetLevelOrder: TraversalNodeType[] | [];
+
+                      /* Limpieza */
+                      toClear: boolean; // clear()
+
+                      /* Fix-ups RB detectados en la última operación (opcional) */
+                      rbFix?: {
+                        rotations: RbRotation[]; // p.ej. [{dir:"left", pivotId:"n3"}]
+                        recolors: RbRecolor[]; // p.ej. [{id:"n1", to:"black"}, ...]
+                      } | null;
+                    }
+                  : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -259,7 +294,20 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
 
                   clean: () => void; // reset total
                 }
-              : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+              : T extends "arbol_rojinegro"
+                ? {
+                    insert: (value: number) => void; // inserta y hace fix-up RB
+                    delete: (value: number) => void; // elimina y hace fix-up RB
+                    search: (value: number) => void; // búsqueda BST
+
+                    getPreOrder: () => void;
+                    getInOrder: () => void;
+                    getPostOrder: () => void;
+                    getLevelOrder: () => void;
+
+                    clean: () => void; // reset total
+                  }
+                : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
@@ -320,8 +368,11 @@ export type HierarchyNodeData<T> = {
   children?: HierarchyNodeData<T>[];
 
   //(opcionales) para AVL
-  bf?: number;       // balance factor
-  height?: number;   // altura del nodo
+  bf?: number; // balance factor
+  height?: number; // altura del nodo
+
+  // (opcional) para Árbol Roji-Negro
+  color?: RBRenderColor; // "red" | "black" si viene de RB
 };
 
 export type TreeLinkData = {

@@ -43,4 +43,16 @@ export const structureCommands: Record<string, string[]> = {
     "getLevelOrder",
     "clean",
   ],
+  arbol_rojinegro: [
+    "insert",
+    "delete",
+    "search",
+    "getPreOrder",
+    "getInOrder",
+    "getPostOrder",
+    "getLevelOrder",
+    "findMin",
+    "findMax",
+    "clean",
+  ],
 };

@@ -335,7 +335,7 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  rojinegro: {
+  arbol_rojinegro: {
     buttons: [
       {
         title: "insert",
@@ -356,23 +356,28 @@ export const commandsData: Record<string, any> = {
         ejemplo: "search(1);",
       },
       {
-        title: "traverse",
-        description: "Recorrer el árbol Rojo-Negro",
-        estructura: "traverse(nombreOrden);",
-        ejemplo:
-          "traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del árbol Rojo-Negro.",
+        estructura: "getPreOrder();",
+        ejemplo: "getPreOrder();",
       },
       {
-        title: "findMin",
-        description: "Encontrar el mínimo",
-        estructura: "findMin();",
-        ejemplo: "findMin();",
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del árbol Rojo-Negro.",
+        estructura: "getInOrder();",
+        ejemplo: "getInOrder();",
       },
       {
-        title: "findMax",
-        description: "Encontrar el máximo",
-        estructura: "findMax();",
-        ejemplo: "findMax();",
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del árbol Rojo-Negro.",
+        estructura: "getPostOrder();",
+        ejemplo: "getPostOrder();",
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles (BFS) del árbol Rojo-Negro.",
+        estructura: "getLevelOrder();",
+        ejemplo: "getLevelOrder();",
       },
       {
         title: "clean",

@@ -11,35 +11,37 @@ import { CircularDoublyLinkedListSimulator } from "./CircularDoublyLinkedListSim
 import { CircularSimpleLinkedListSimulator } from "./CircularSimpleLinkedListSimulator";
 import { BinaryTreeSimulator } from "./BinaryTreeSimulator";
 import { AvlTreeSimulator } from "./AvlTreeSimulator";
+import { RbTreeSimulator } from "./RbTreeSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
-    Secuencia: SequenceSimulator,
-    Cola: QueueSimulator,
-    tabla_hash: HashTableSimulator,
-    Pila: StackSimulator,
-    "Cola de Prioridad": PriorityQueueSimulator,
-    "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
-    "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
-    "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
-    "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
-    "Árbol Binario": BinaryTreeSimulator,
-    "Árbol AVL" : AvlTreeSimulator,
+  Secuencia: SequenceSimulator,
+  Cola: QueueSimulator,
+  tabla_hash: HashTableSimulator,
+  Pila: StackSimulator,
+  "Cola de Prioridad": PriorityQueueSimulator,
+  "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
+  "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
+  "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
+  "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
+  "Árbol Binario": BinaryTreeSimulator,
+  "Árbol AVL": AvlTreeSimulator,
+  "Árbol RojiNegro": RbTreeSimulator,
 };
 
 export function StructureSimulator() {
-    const route = getRouteApi("/simulador/$estructura");
+  const route = getRouteApi("/simulador/$estructura");
 
-    const { estructura } = route.useParams();
-    const nombre: string = conceptosData[estructura].nombre;
+  const { estructura } = route.useParams();
+  const nombre: string = conceptosData[estructura].nombre;
 
-    // Buscar el componente correspondiente en el mapeo, si no existe, usar un fallback
-    const DynamicComponent =
-        componentMap[nombre] || (() => <p>Componente no encontrado</p>);
+  // Buscar el componente correspondiente en el mapeo, si no existe, usar un fallback
+  const DynamicComponent =
+    componentMap[nombre] || (() => <p>Componente no encontrado</p>);
 
-    return (
-        <div>
-            <DynamicComponent />
-        </div>
-    );
+  return (
+    <div>
+      <DynamicComponent />
+    </div>
+  );
 }

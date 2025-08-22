@@ -10,6 +10,7 @@ import { getColaPrioridadCode } from "./colaPrioridadCode";
 import { getTablaHashCode } from "./tablaHashCode";
 import { getArbolBinarioCode } from "./arbolBinarioCode";
 import { getArbolAVLCode } from "./arbolAVLCode";
+import { getArbolRNCode } from "./arbolRNCode";
 
 // Mapa de funciones para cargar operaciones según estructura
 const pseudoCodeLoaders: Record<string, () => OperationCode> = {
@@ -24,6 +25,7 @@ const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   tabla_hash: getTablaHashCode,
   arbol_binario: getArbolBinarioCode,
   arbol_avl: getArbolAVLCode,
+  arbol_rojinegro: getArbolRNCode,
 };
 
 // Devuelve el pseudocódigo correspondiente, o {} si no existe
