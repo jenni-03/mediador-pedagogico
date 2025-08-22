@@ -153,6 +153,7 @@ export function Simulator<T extends string>({
                   structureType={dataSelector}
                   onCommand={handleCommand}
                   error={error}
+                  structurePrueba={structure}
                 />
               </div>
               {/* Comandos */}
