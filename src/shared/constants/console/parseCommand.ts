@@ -19,6 +19,7 @@ const creatorCommands: Record<string, string[]> = {
   arbol_binario_busqueda: ["insert"],
   arbol_avl: ["insert"],
   arbol_rojinegro: ["insert"],
+  arbol_nario: ["createRoot"],
 };
 
 const isCreatorCommand = (structureType: string, command: string): boolean => {
@@ -162,59 +163,103 @@ export const parseCommand = (
   // args
   if (argsString.trim() === "") return [command];
 
-  const rawArgs = argsString.split(",").map((a) => a.trim());
+  // split robusto + normalización (quitamos comillas exteriores)
+  const rawArgs = splitArgsSafe(argsString).map(stripOuterQuotes);
   if (rawArgs.some((a) => a === "")) {
     return { error: "Argumentos mal formateados (comas de más o vacías)." };
   }
 
+  // ────────────────── COERCIÓN ESPECÍFICA PARA ÁRBOL N-ARIO ──────────────────
+  if (structureType === "arbol_nario") {
+    const toNum = (s: string) => Number(s); // asume validación previa
+    switch (command) {
+      case "createRoot": {
+        const value = toNum(rawArgs[0]);
+        return [command, value] as any;
+      }
+      case "insertChild": {
+        // parts: parentId value [index]
+        const parentId = toNum(rawArgs[0]);
+        const value = toNum(rawArgs[1]);
+        const index = rawArgs[2] !== undefined ? toNum(rawArgs[2]) : undefined;
+        return (
+          index === undefined
+            ? [command, parentId, value]
+            : [command, parentId, value, index]
+        ) as any;
+      }
+      case "deleteNode": {
+        const id = toNum(rawArgs[0]);
+        return [command, id] as any;
+      }
+      case "moveNode": {
+        // parts: id newParentId [index]
+        const id = toNum(rawArgs[0]);
+        const newParentId = toNum(rawArgs[1]);
+        const index = rawArgs[2] !== undefined ? toNum(rawArgs[2]) : undefined;
+        return (
+          index === undefined
+            ? [command, id, newParentId]
+            : [command, id, newParentId, index]
+        ) as any;
+      }
+      case "updateValue": {
+        const id = toNum(rawArgs[0]);
+        const newValue = toNum(rawArgs[1]);
+        return [command, id, newValue] as any;
+      }
+      case "search": {
+        const value = toNum(rawArgs[0]);
+        return [command, value] as any;
+      }
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // Por defecto (todas las otras estructuras): devolver strings
   return [command, ...rawArgs];
 };
 
-// if (
-//   command2 === "create" &&
-//   (structureType === "tabla_hash" || structureType === "secuencia")
-// ) {
-// } else {
-//   if (isCreated) {
-//     if (
-//       command2 === "create" &&
-//       (structureType === "tabla_hash" || structureType === "secuencia")
-//     ) {
-//     }
+// === helpers nuevos ===
+function splitArgsSafe(args: string): string[] {
+  // separa por comas, respetando '...' y "..."
+  const out: string[] = [];
+  let cur = "";
+  let inS = false,
+    inD = false,
+    depth = 0;
 
-//     // ya creada → prefijo OBLIGATORIO
-//     if (!methodCall.startsWith(`${expectedPrefix}.`)) {
-//       return {
-//         error: `Debe indicar el objeto sobre el cuál se va a realizar la acción, el comando debe empezar con el prefijo '${expectedPrefix}.'`,
-//       };
-//     }
-//     // 4. Quitar el prefijo
-//     methodCall = methodCall.slice(expectedPrefix.length + 1);
-//   } else {
-//     // Si la estructura está vacía Y tiene prefijo Y es comando creador → no debe ser permitido
-//     if (
-//       structurePrueba.getTamanio() == 0 &&
-//       hasPrefix &&
-//       isCreatorCommand(structureType, command2)
-//     ) {
-//       return {
-//         error: `No puede usar el prefijo '${expectedPrefix}.' porque la estructura aún no existe. Use: ${command2}(); (sin prefijo)`,
-//       };
-//     }
+  for (let i = 0; i < args.length; i++) {
+    const ch = args[i];
 
-//     // Solo validar si la estructura está vacía Y no es un comando creador
-//     if (
-//       disallowPrefixBeforeCreation &&
-//       structurePrueba.getTamanio() == 0 &&
-//       !isCreatorCommand(structureType, command2)
-//     ) {
-//       return {
-//         error: `Aún no existe un objeto de la estructura. Primero debe crearla usando comandos como: ${creatorCommands[structureType]?.join(", ") || "create"}.`,
-//       };
-//     }
+    if (ch === "'" && !inD) {
+      inS = !inS;
+      cur += ch;
+      continue;
+    }
+    if (ch === '"' && !inS) {
+      inD = !inD;
+      cur += ch;
+      continue;
+    }
 
-//     if (hasPrefix) {
-//       methodCall = methodCall.slice(expectedPrefix.length + 1);
-//     }
-//   }
-// }
+    if (!inS && !inD) {
+      if (ch === "(") depth++;
+      if (ch === ")" && depth > 0) depth--;
+      if (ch === "," && depth === 0) {
+        const token = cur.trim();
+        if (token !== "") out.push(token);
+        cur = "";
+        continue;
+      }
+    }
+    cur += ch;
+  }
+  const last = cur.trim();
+  if (last !== "") out.push(last);
+  return out;
+}
+
+function stripOuterQuotes(s: string): string {
+  return s.replace(/^'(.*)'$/, "$1").replace(/^"(.*)"$/, "$1");
+}

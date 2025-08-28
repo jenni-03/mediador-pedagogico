@@ -14,6 +14,7 @@ import { getArbolBinarioTour } from "./arbolBinarioTour.ts";
 import { getArbolBinarioBusquedaTour } from "./arbolBinarioBusquedaTour.ts";
 import { getArbolAVLTour } from "./arbolAVLTour.ts";
 import { getArbolRojiNegroTour } from "./arbolRojiNegroTour.ts";
+import { getArbolNarioTour } from "./arbolNarioTour.ts";
 
 // Función para formatear nombres como "lista_simplemente_enlazada" → "Lista Simplemente Enlazada"
 function formatStructureName(type: string): string {
@@ -39,6 +40,7 @@ const tourStepLoaders: Record<string, () => TourStep[]> = {
   arbol_avl: getArbolAVLTour,
   arbol_rojinegro: getArbolRojiNegroTour,
   memoria: getMemoriaTour,
+  arbol_nario: getArbolNarioTour,
 };
 
 // Devuelve el tour correspondiente, si existe

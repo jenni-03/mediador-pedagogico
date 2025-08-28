@@ -228,7 +228,39 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
                           recolors: RbRecolor[]; // p.ej. [{id:"n1", to:"black"}, ...]
                         } | null;
                       }
-                    : never; // Fallback para otros casos
+                    : T extends "arbol_nario"
+                      ? {
+                          /** Crear raíz si está vacío */
+                          toCreateRoot: number | null;
+
+                          /** Insertar hijo: [parentId, value, index?]  ← parentId es string */
+                          toInsertChild:
+                            | []
+                            | [parentId: string, value: number, index?: number];
+
+                          /** Eliminar nodo/subárbol por id */
+                          toDeleteNode: string | null;
+
+                          /** Mover subárbol: [id, newParentId, index?]  ← ids son string */
+                          toMoveNode:
+                            | []
+                            | [id: string, newParentId: string, index?: number];
+
+                          /** Actualizar valor de un nodo: [id, newValue]  ← id es string */
+                          toUpdateValue: [] | [id: string, newValue: number];
+
+                          /** Buscar valor (por contenido) */
+                          toSearch: number | null;
+
+                          /** Recorridos */
+                          toGetPreOrder: TraversalNodeType[] | [];
+                          toGetPostOrder: TraversalNodeType[] | [];
+                          toGetLevelOrder: TraversalNodeType[] | [];
+
+                          /** Vaciar árbol completo */
+                          toClear: boolean;
+                        }
+                      : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -319,7 +351,38 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
 
                       clean: () => void; // reset total
                     }
-                  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+                  : T extends "arbol_nario"
+                    ? {
+                        /** Crea la raíz si el árbol está vacío */
+                        createRoot: (value: number) => void;
+
+                        /** parentId es NUMÉRICO aquí */
+                        insertChild: (
+                          parentId: number,
+                          value: number,
+                          index?: number
+                        ) => void;
+
+                        /** ids numéricos */
+                        deleteNode: (id: number) => void;
+
+                        moveNode: (
+                          id: number,
+                          newParentId: number,
+                          index?: number
+                        ) => void;
+
+                        updateValue: (id: number, newValue: number) => void;
+
+                        search: (value: number) => void;
+
+                        getPreOrder: () => void;
+                        getPostOrder: () => void;
+                        getLevelOrder: () => void;
+
+                        clean: () => void;
+                      }
+                    : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
@@ -387,6 +450,16 @@ export type HierarchyNodeData<T> = {
 
   // (opcional) para Árbol Roji-Negro
   color?: RBRenderColor; // "red" | "black" si viene de RB
+
+  // N-ario (opcional)
+  degree?: number; // número de hijos del nodo (para tooltips/etiquetas)
+  order?: number; // aridad máxima del árbol/nodo (si quieres mostrarla)
+
+  idNum?: number; // id numérico original (opcional)
+  meta?: {
+    nIndex?: number; // para n-ario (posición del hijo)
+    // puedes añadir otros campos que uses visualmente
+  };
 };
 
 export type TreeLinkData = {

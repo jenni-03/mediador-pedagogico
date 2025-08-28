@@ -438,7 +438,7 @@ export const commandsData: Record<string, any> = {
         estructura: "nombreObjeto.clean();",
         ejemplo: "arbolRN.clean();",
       },
-        {
+      {
         title: "getPreOrder",
         description: "Obtiene el recorrido en preorden del árbol RojiNegro.",
         estructura: "nombreObjeto.getPreOrder();",
@@ -458,7 +458,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "getLevelOrder",
-        description: "Obtiene el recorrido por niveles (BFS) del árbol RojiNegro.",
+        description:
+          "Obtiene el recorrido por niveles (BFS) del árbol RojiNegro.",
         estructura: "nombreObjeto.getLevelOrder();",
         ejemplo: "arbolRN.getLevelOrder();",
       },
@@ -545,38 +546,74 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  arboleneario: {
+  arbol_nario: {
     buttons: [
       {
-        title: "insert",
-        description: "Insertar un nodo en el árbol N-ario",
-        estructura: "nombreObjeto.insert(valorPadre,nuevoValor);",
-        ejemplo: "arbolEne.insert(5,1);",
+        title: "createRoot",
+        description: "Crea la raíz del árbol N-ario si aún no existe.",
+        estructura: `Si el objeto no ha sido instanciado: <strong>createRoot(valor);</strong> 
+               Si el objeto ya existe: <strong>nombreObjeto.createRoot(valor);</strong>`,
+        ejemplo:
+          "<strong>createRoot(10);</strong> ó <strong>nario.createRoot(10);</strong>",
       },
       {
-        title: "delete",
-        description: "Eliminar un nodo del árbol N-ario",
-        estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolEne.delete(1);",
+        title: "insertChild",
+        description:
+          "Inserta un hijo bajo un padre (por id). Opcionalmente puedes indicar la posición 'index' (0-based) para fijar su lugar entre los hijos.",
+        estructura: "nombreObjeto.insertChild(parentId, valor, index?);",
+        ejemplo:
+          'nario.insertChild("node-a", 25);  // al final\nnario.insertChild("node-a", 30, 0);  // en posición 0',
+      },
+      {
+        title: "deleteNode",
+        description: "Elimina un nodo (y todo su subárbol) por id.",
+        estructura: "nombreObjeto.deleteNode(id);",
+        ejemplo: 'nario.deleteNode("node-b");',
+      },
+      {
+        title: "moveNode",
+        description:
+          "Mueve un subárbol a otro padre (por id). Usa 'index' opcional para colocar el nodo en una posición específica entre los hijos del nuevo padre.",
+        estructura: "nombreObjeto.moveNode(id, newParentId, index?);",
+        ejemplo:
+          'nario.moveNode("node-c", "node-a");\nnario.moveNode("node-c", "node-a", 1);',
+      },
+      {
+        title: "updateValue",
+        description: "Actualiza el valor almacenado en un nodo por su id.",
+        estructura: "nombreObjeto.updateValue(id, nuevoValor);",
+        ejemplo: 'nario.updateValue("node-d", 42);',
       },
       {
         title: "search",
-        description: "Buscar un nodo en el árbol N-ario",
+        description:
+          "Busca el primer nodo cuyo valor coincida (BFS). Resalta el camino encontrado.",
         estructura: "nombreObjeto.search(valor);",
-        ejemplo: "arbolEne.search(1);",
+        ejemplo: "nario.search(42);",
       },
       {
-        title: "traverse",
-        description: "Recorrer el árbol N-ario en diferentes órdenes",
-        estructura: "nombreObjeto.traverse(nombreOrden);",
-        ejemplo:
-          "arbolEne.traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden (nodo → hijos).",
+        estructura: "nombreObjeto.getPreOrder();",
+        ejemplo: "nario.getPreOrder();",
+      },
+      {
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden (hijos → nodo).",
+        estructura: "nombreObjeto.getPostOrder();",
+        ejemplo: "nario.getPostOrder();",
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles (BFS).",
+        estructura: "nombreObjeto.getLevelOrder();",
+        ejemplo: "nario.getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Borrar el árbol N-ario",
+        description: "Vacía por completo el árbol N-ario.",
         estructura: "nombreObjeto.clean();",
-        ejemplo: "arbolEne.clean();",
+        ejemplo: "nario.clean();",
       },
     ],
   },

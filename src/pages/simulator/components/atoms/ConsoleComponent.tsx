@@ -4,7 +4,6 @@ import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { parseCommand } from "../../../../shared/constants/console/parseCommand";
 import { AnimatedButtonModal } from "../../../../shared/components/AnimatedButtonModal";
 
-
 export const structureNames: Record<string, string> = {
   secuencia: "se",
   pila: "pila",
@@ -16,6 +15,7 @@ export const structureNames: Record<string, string> = {
   arbol_binario_busqueda: "arbolBB",
   arbol_avl: "arbolA",
   arbol_rojinegro: "arbolRN",
+  arbol_nario: "arbolNario",
 };
 
 interface ConsoleComponentProps {
@@ -71,7 +71,7 @@ export function ConsoleComponent({
   }, [error?.id]);
 
   // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos
-  const structuresRequiringCreate = ["secuencia, tabla_hash"];
+  const structuresRequiringCreate = ["secuencia", "tabla_hash"];
 
   // Función para procesar comando (reutilizable)
   const processCommand = (
@@ -83,7 +83,17 @@ export function ConsoleComponent({
       setInput("");
       return;
     }
-    console.log(isFromTutorial);
+
+    // --- LOGGER DETALLADO ---
+    console.groupCollapsed(
+      `[ConsoleComponent] processCommand | "${commandValue}" | fromTutorial=${isFromTutorial}`
+    );
+    console.log("➡️ Raw command:", commandValue);
+    console.log("➡️ structureType:", structureType);
+    console.log("➡️ expectedPrefix:", structureNames[structureType]);
+    console.log("➡️ isCreated:", isCreated);
+    console.log("➡️ structurePrueba:", structurePrueba);
+    // -------------------------
 
     const expectedPrefix = structureNames[structureType];
 
@@ -93,10 +103,12 @@ export function ConsoleComponent({
       disallowPrefixBeforeCreation: true, // Para NO permitir prefijo antes de crear
       structurePrueba,
     });
+    console.log("➡️ parsed result:", parsed);
 
     // const parsed = parseCommand(commandValue.trim(), structureType);
 
     if ("error" in parsed) {
+      console.warn("❌ parseCommand error:", parsed.error);
       onCommand([], false);
       setHistory((prev) => [
         ...prev,
@@ -112,14 +124,17 @@ export function ConsoleComponent({
     const parts = parsed;
     const commandValidation = commandRules[structureType](parts);
 
+    console.log("➡️ parts:", parts);
+    console.log("➡️ commandValidation:", commandValidation);
+
     // Verifica si el comando es válido según las reglas de la estructura, es decir, es un booleano
     if (typeof commandValidation === "boolean") {
       if (commandValidation) {
         const command = parts[0]?.toLowerCase();
-
+             console.log("✅ Valid command:", command);
         // Verificar si la estructura necesita "create"
         const needsCreate = structuresRequiringCreate.includes(structureType);
-
+         console.log("➡️ needsCreate:", needsCreate);
         // Caso 1: Si la estructura no ha sido creada y el comando es distinto a create
         if (needsCreate && !isCreated && command !== "create") {
           onCommand([], false);
