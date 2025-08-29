@@ -1,5 +1,6 @@
-import { extent, HierarchyNode } from "d3";
+import { extent, hierarchy, type HierarchyNode, tree } from "d3";
 import { HierarchyNodeData } from "../../types";
+import { SVG_BINARY_TREE_VALUES } from "../constants/consts";
 
 export function defaultComparator<T>(a: T, b: T): number {
     if (a === b) return 0;
@@ -75,4 +76,16 @@ export function computeSvgTreeMetrics(
         treeOffset,
         seqOffset
     }
+}
+
+export const hierarchyFrom = (data: HierarchyNodeData<number>) => {
+    const h = hierarchy(data);
+    tree<HierarchyNodeData<number>>()
+        .nodeSize([SVG_BINARY_TREE_VALUES.NODE_SPACING, SVG_BINARY_TREE_VALUES.LEVEL_SPACING + 15])(h);
+    const nodes = h.descendants().filter(d => !d.data.isPlaceholder);
+    const links = h.links().reduce<{ sourceId: string, targetId: string }[]>((acc, l) => {
+        if (!l.target.data.isPlaceholder) acc.push({ sourceId: l.source.data.id, targetId: l.target.data.id });
+        return acc;
+    }, []);
+    return { root: h, nodes, links };
 }

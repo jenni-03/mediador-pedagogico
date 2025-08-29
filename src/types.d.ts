@@ -1,6 +1,6 @@
+import { type HierarchyNode } from "d3";
 import { TYPE_FILTER } from "./shared/constants/consts";
-import { NodoS } from "./shared/utils/nodes/NodoS";
-type AvlRotation = { type: "LL" | "LR" | "RR" | "RL"; pivotId: string; childId?: string };
+import type { NodoS } from "./shared/utils/nodes/NodoS";
 
 export interface LinkedListInterface<T> {
   insertarAlInicio(valor: T): NodoS<T> | NodoD<T>;
@@ -182,15 +182,15 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
   }
   : T extends "arbol_avl"
   ? {
-    toInsert: number | null;
-    toDelete: number | null;
+    toInsert: string | null;
+    toDelete: [string, string | null] | [];
     toSearch: number | null;
     toGetPreOrder: TraversalNodeType[] | [];
     toGetInOrder: TraversalNodeType[] | [];
     toGetPostOrder: TraversalNodeType[] | [];
     toGetLevelOrder: TraversalNodeType[] | [];
     toClear: boolean;
-    rotation?: AvlRotation | null;
+    avlTrace: OperationTrace<number> | null;
   }
   : never; // Fallback para otros casos
 
@@ -329,11 +329,10 @@ export type HierarchyNodeData<T> = {
   id: string;
   value?: T;
   isPlaceholder?: boolean;
-  children?: HierarchyNodeData<T>[];
-
   //(opcionales) para AVL
   bf?: number;       // balance factor
   height?: number;   // altura del nodo
+  children?: HierarchyNodeData<T>[];
 };
 
 export type TreeLinkData = {
@@ -345,3 +344,31 @@ export type TraversalNodeType = {
   id: string;
   value: number;
 };
+
+export type RotationStep = {
+  type: "LL" | "RR" | "LR" | "RL";
+  zId: string; // Nodo desbalanceado (raíz del subárbol que rota)
+  yId: string; // Hijo de la rama pesada
+  xId?: string | null; // Nieto (solo LR/RL)
+  parentOfZId?: string | null; // Padre de Z
+  BId?: string | null; // LL/RR y.right (LL) o y.left (RR)
+  xLeftId?: string | null; // LR/RL x.left
+  xRightId?: string | null; // LR/RL x.right
+}
+
+export type OperationTrace<T> = {
+  rotations: RotationStep[];
+  hierarchies: {
+    pre: HierarchyNodeData<T> | null;
+    mids: HierarchyNodeData<T>[];
+  }
+}
+
+export type AvlFrame = {
+  root: HierarchyNode<HierarchyNodeData<number>>;
+  nodes: HierarchyNode<HierarchyNodeData<number>>[];
+  links: {
+    sourceId: string;
+    targetId: string;
+  }[];
+}

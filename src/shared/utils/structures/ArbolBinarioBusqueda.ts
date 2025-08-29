@@ -1,3 +1,5 @@
+// Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
+
 import { Comparator } from "../../../types";
 import { NodoBin } from "../nodes/NodoBin";
 import { defaultComparator } from "../treeUtils";
@@ -12,7 +14,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Constructor de la clase ArbolBinarioBusqueda.
      */
     constructor(
-        private compare: Comparator<T> = defaultComparator
+        protected compare: Comparator<T> = defaultComparator
     ) {
         super((a, b) => compare(a, b) === 0);
     }
@@ -35,10 +37,10 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
     /**
      * Método que elimina un nodo del árbol binario de búsqueda dado un valor especificado.
      * @param valor Valor del nodo a ser eliminado.
-     * @returns Objeto que contiene el nodo eliminado y la raíz del subárbol actualizado.
+     * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
      */
     public eliminarABB(valor: T): { removed: NodoBin<T> | null, updated: NodoBin<T> | null } {
-        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol encuentra vacío (cantidad de nodos: 0).");
+        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
 
         const salida = { removed: null, updated: null };
         this.setRaiz(this.eliminarABBrec(this.getRaiz(), valor, salida));
@@ -166,7 +168,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * @returns Retorna un nuevo árbol correspondiente a una copia profunda del árbol actual.
      */
     public clonarABB(): ArbolBinarioBusqueda<T> {
-        const nuevoArbol = new ArbolBinarioBusqueda<T>();
+        const nuevoArbol = new ArbolBinarioBusqueda<T>(this.compare);
         nuevoArbol.setRaiz(this.clonarABBrec(this.getRaiz()));
         nuevoArbol.setTamanio(this.getTamanio());
         return nuevoArbol;

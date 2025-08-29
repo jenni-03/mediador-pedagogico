@@ -113,6 +113,25 @@ export const SVG_BINARY_TREE_VALUES = {
     UPDATE_STROKE_COLOR: "#0066CC"
 }
 
+export const SVG_AVL_TREE_VALUES = {
+    PANEL_OFFSET_Y: SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2,
+    CORNER: 7,
+    LABEL_COLOR: "#9aa4b2",
+    LABEL_FONT_SIZE: '9px',
+    LABEL_FONT_WEIGHT: 600,
+    ELEMENT_TEXT_SIZE: '10px',
+    ELEMENT_TEXT_WEIGHT: 700,
+    HVAL_COLOR: "#8aa0ff",
+    BACKGROUND_COLOR: "#12161f",
+    STROKE_COLOR: "#39404d",
+    STROKE_WIDTH: 0.8,
+    COL_BF: 28,
+    COL_H: 25,
+    ROW_H_LABEL: 7,
+    ROW_H_VALUE: 11,
+    EXTRA_W: 2
+}
+
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
     simple: {
         showHeadIndicator: true,

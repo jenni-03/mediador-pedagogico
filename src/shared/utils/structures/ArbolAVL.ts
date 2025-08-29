@@ -1,453 +1,452 @@
-// src/shared/utils/estructures/ArbolAVL.ts
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { EqualityFn, HierarchyNodeData } from "../../../types";
-import { Cola } from "./Cola";
+import { Comparator, HierarchyNodeData, OperationTrace } from "../../../types";
 import { NodoAVL } from "../nodes/NodoAVL";
-type RotationInfo = {
-  type: "LL" | "LR" | "RR" | "RL";
-  pivotId: string; // id del nodo que quedó como pivote tras el rebalanceo
-  childId?: string; // id del hijo usado en la rotación doble (opcional)
-};
+import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
+import { defaultComparator } from "../treeUtils";
 
 /**
- * Árbol AVL (BST balanceado): inserciones y eliminaciones garantizan altura O(log n)
- * mediante rotaciones. Mantiene interfaz similar a ArbolBinario para facilitar
- * la integración con el simulador/renderer.
+ * Clase que representa el funcionamiento de un árbol AVL.
  */
-export class ArbolAVL<T> {
-  // Raíz del árbol
-  private raiz: NodoAVL<T> | null;
+export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
-  // Número de nodos
-  private tamanio: number;
+  private lastAvlTrace: OperationTrace<T> | null = null;
 
-  // Límite para el simulador
-  private readonly MAX_NODOS = 30;
-
-  //guarda la última rotación detectada por rebalancear()
-  private lastRotation: RotationInfo | null = null;
   /**
-   * @param equals  Función de igualdad (para mensajes o utilidades). Por defecto a===b.
-   * @param compare Función de comparación total (BST): <0 a<b, 0 a=b, >0 a>b.
+   * Constructor de la clase ArbolAVL.
    */
   constructor(
-    private equals: EqualityFn<T> = (a, b) => a === b,
-    private compare: (a: T, b: T) => number = defaultCompare
+    compare: Comparator<T> = defaultComparator
   ) {
-    this.raiz = null;
-    this.tamanio = 0;
+    super(compare);
   }
 
-  /* ─────────────────────────────── API Pública ─────────────────────────────── */
-
   /**
-   * Inserta un valor (BST) y rebalancea.
-   * @throws Error si el valor ya existe o se supera MAX_NODOS.
+   * Método que inserta un nuevo nodo en el árbol AVL.
+   * @param valor Elemento a insertar.
+   * @returns Nodo insertado.
    */
-  public insertar(valor: T): NodoAVL<T> {
-    this.clearLastRotation();
-    if (this.tamanio >= this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
-      );
-    }
-    if (this.esta(valor)) {
-      throw new Error(
-        `No fue posible insertar el nodo: El elemento ya existe en el árbol.`
-      );
+  public override insertar(valor: T): NodoAVL<T> {
+    if (super.getTamanio() >= this.MAX_NODOS) {
+      throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
     }
 
-    this.raiz = this.insertarRec(this.raiz, valor);
-    this.tamanio++;
-    return this.get(valor)!;
-  }
-
-  private lastDeletion: { removed?: NodoAVL<T>; updated?: NodoAVL<T> } = {};
-
-  /**
-   * Elimina un valor (BST) y rebalancea.
-   * @throws Error si el árbol está vacío o el valor no existe.
-   */
-  public eliminar(valor: T): { removed: NodoAVL<T>; updated?: NodoAVL<T> } {
-    this.clearLastRotation();
-    if (this.esVacio()) {
-      throw new Error(
-        "No fue posible eliminar el nodo: El árbol encuentra vacío (cantidad de nodos: 0)."
-      );
-    }
-    if (!this.esta(valor)) {
-      throw new Error(
-        "No fue posible eliminar el nodo: El elemento no existe en el árbol AVL."
-      );
-    }
-
-    // Resetea el meta, elimina y rebalancea
-    this.lastDeletion = {};
-    this.raiz = this.eliminarRec(this.raiz, valor, this.lastDeletion);
-    this.tamanio--;
-
-    return {
-      removed: this.lastDeletion.removed!,
-      updated: this.lastDeletion.updated,
+    this.lastAvlTrace = {
+      rotations: [],
+      hierarchies: { pre: null, mids: [] }
     };
+
+    const salida = { inserted: null };
+    this.setRaiz(this.insertarAVL(this.getRaiz(), valor, salida, null));
+    this.setTamanio(this.getTamanio() + 1);
+    return salida.inserted!;
   }
 
-  /** Retorna true si existe el valor en el árbol. */
-  public esta(valor: T): boolean {
-    return this.get(valor) !== null;
+  /**
+   * Método que elimina un nodo del árbol AVL.
+   * @param valor Elemento a eliminar.
+   * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
+   */
+  public override eliminar(valor: T): { removed: NodoAVL<T>; updated: NodoAVL<T> | null } {
+    if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
+
+    this.lastAvlTrace = {
+      rotations: [],
+      hierarchies: { pre: null, mids: [] }
+    };
+
+    const salida: { removed: NodoAVL<T> | null, updated: NodoAVL<T> | null } = { removed: null, updated: null };
+    this.setRaiz(this.eliminarAVL(this.getRaiz(), valor, salida, null));
+
+    if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
+
+    this.setTamanio(this.getTamanio() - 1);
+    return { removed: salida.removed, updated: salida.updated };
   }
 
-  /** Vacía el árbol. */
-  public vaciar(): void {
-    this.raiz = null;
-    this.tamanio = 0;
-    this.lastRotation = null; // opcional
-    this.lastDeletion = {}; // opcional
+  /**
+   * Método que verifica la existencia de un elemento dentro del árbol AVL.
+   * @param valor Valor del elemento a buscar.
+   * @returns Booleano que indica si el elemento fue encontrado o no. 
+   */
+  public override esta(valor: T): boolean {
+    return super.esta(valor);
   }
 
-  /** True si no hay nodos. */
-  public esVacio(): boolean {
-    return this.raiz === null;
+  /**
+   * Método que obtiene la raíz del árbol AVL.
+   * @returns Nodo raíz del árbol o null si está vacío.
+   */
+  public override getRaiz(): NodoAVL<T> | null {
+    return super.getRaiz() as NodoAVL<T> | null;
   }
 
-  /** Altura del árbol. */
-  public getAltura(): number {
-    return this.getAlturaNodo(this.raiz);
+  /**
+   * Método que modifica la raíz del árbol AVL.
+   * @param raiz Nuevo nodo raíz del árbol AVL.
+   */
+  public override setRaiz(raiz: NodoAVL<T> | null) {
+    super.setRaiz(raiz);
   }
 
-  /** Número de nodos. */
-  public getPeso(): number {
-    return this.tamanio;
+  /**
+   * Método que obtiene todos los nodos hojas del árbol AVL.
+   * @returns Array de nodos que representan las hojas del árbol.
+   */
+  public override getHojas(): NodoAVL<T>[] {
+    return super.getHojas() as NodoAVL<T>[];
   }
 
-  /** Obtiene la raíz. */
-  public getRaiz(): NodoAVL<T> | null {
-    return this.raiz;
+  /**
+   * Método que cuenta el número de nodos hoja del árbol AVL.
+   * @returns Número de nodos hoja del árbol.
+   */
+  public override contarHojas(): number {
+    return super.contarHojas();
   }
 
-  //para que el hook/renderer puedan leerla y limpiarla
-  public getLastRotation(): RotationInfo | null {
-    return this.lastRotation;
-  }
-  public clearLastRotation() {
-    this.lastRotation = null;
-  }
-
-  /** Asigna la raíz. */
-  public setRaiz(raiz: NodoAVL<T> | null): void {
-    this.raiz = raiz;
+  /**
+   * Método que calcula el peso total (número de nodos) del árbol AVL.
+   * @returns Número total de nodos del árbol.
+   */
+  public override getPeso(): number {
+    return super.getPeso();
   }
 
-  /** Recorrido in-orden (ordenado). */
-  public inOrden(): NodoAVL<T>[] {
-    const out: NodoAVL<T>[] = [];
-    this.inOrdenRec(this.raiz, out);
-    return out;
+  /**
+   * Método que calcula la altura del árbol AVL.
+   * @returns Altura del árbol.
+   */
+  public override getAltura(): number {
+    return super.getAltura();
   }
 
-  /** Recorrido pre-orden. */
-  public preOrden(): NodoAVL<T>[] {
-    const out: NodoAVL<T>[] = [];
-    this.preOrdenRec(this.raiz, out);
-    return out;
+  /**
+   * Método que vacia el árbol AVL.
+   */
+  public override vaciar(): void {
+    super.vaciar();
   }
 
-  /** Recorrido post-orden. */
-  public postOrden(): NodoAVL<T>[] {
-    const out: NodoAVL<T>[] = [];
-    this.postOrdenRec(this.raiz, out);
-    return out;
+  /**
+   * Método que verifica si el árbol AVL está vacío.
+   * @returns True si se encuentra vacío, false en caso contrario.
+   */
+  public override esVacio(): boolean {
+    return super.esVacio();
   }
 
-  /** Recorrido por niveles (BFS). */
-  public getNodosPorNiveles(): NodoAVL<T>[] {
-    const nodos: NodoAVL<T>[] = [];
-    if (!this.esVacio()) {
-      const cola = new Cola<NodoAVL<T>>();
-      cola.encolar(this.raiz!);
-      while (!cola.esVacia()) {
-        const x = cola.decolar().getValor();
-        nodos.push(x);
-        if (x.getIzq()) cola.encolar(x.getIzq() as NodoAVL<T>);
-        if (x.getDer()) cola.encolar(x.getDer() as NodoAVL<T>);
-      }
-    }
-    return nodos;
+  /**
+   * Método que realiza el recorrido in-orden del árbol AVL.
+   * @returns Array de nodos en secuencia in-orden.
+   */
+  public override inOrden(): NodoAVL<T>[] {
+    return super.inOrden() as NodoAVL<T>[];
   }
 
-  /** Convierte a estructura jerárquica con placeholders para el renderer. */
-  public convertirEstructuraJerarquica(): HierarchyNodeData<T> | null {
+  /**
+   * Método que realiza el recorrido pre-orden del árbol AVL.
+   * @returns Array de nodos en secuencia pre-orden.
+   */
+  public override preOrden(): NodoAVL<T>[] {
+    return super.preOrden() as NodoAVL<T>[];
+  }
+
+  /**
+   * Método que realiza el recorrido post-orden del árbol AVL.
+   * @returns Array de nodos en secuencia post-orden.
+   */
+  public override postOrden(): NodoAVL<T>[] {
+    return super.postOrden() as NodoAVL<T>[];
+  }
+
+  /**
+   * Método que realiza el recorrido por niveles del árbol AVL.
+   * @returns Array de nodos por niveles.
+   */
+  public override getNodosPorNiveles(): NodoAVL<T>[] {
+    return super.getNodosPorNiveles() as NodoAVL<T>[];
+  }
+
+  /**
+   * Método que convierte el árbol AVL en una estructura jerárquica.
+   * @returns Representación jerárquica del árbol o null si está vacío.
+   */
+  public override convertirEstructuraJerarquica(): HierarchyNodeData<T> | null {
     if (this.esVacio()) return null;
-    return this.toHierarchy(this.raiz!);
+    return this.toAVLHierarchy(this.getRaiz()!);
   }
 
-  /** Clona profundamente el árbol (incluye alturas). */
-  public clonar(): ArbolAVL<T> {
-    const nuevo = new ArbolAVL<T>(this.equals, this.compare);
-    nuevo.setRaiz(this.clonarNodo(this.raiz));
-    nuevo.tamanio = this.tamanio;
-    return nuevo;
+  /**
+   * Método que crea una copia profunda del árbol AVL.
+   * @returns Retorna un nuevo árbol correspondiente a una copia profunda del árbol actual.
+   */
+  public clonarAVL(): ArbolAVL<T> {
+    const nuevoArbol = new ArbolAVL<T>(this.compare);
+    nuevoArbol.setRaiz(this.clonarAVLrec(this.getRaiz()));
+    nuevoArbol.setTamanio(this.getTamanio());
+    return nuevoArbol;
   }
 
-  /** Devuelve el nodo con cierto valor, o null si no existe. */
-  public get(valor: T): NodoAVL<T> | null {
-    let cur = this.raiz;
-    while (cur) {
-      const cmp = this.compare(valor, cur.getInfo());
-      if (cmp === 0) return cur;
-      cur =
-        cmp < 0
-          ? (cur.getIzq() as NodoAVL<T> | null)
-          : (cur.getDer() as NodoAVL<T> | null);
+  /**
+   * Método que consume la última traza de operación del árbol AVL.
+   * @returns La última traza de operación o null si no hay ninguna.
+   */
+  public consumeLastAvlTrace(): OperationTrace<T> | null {
+    const t = this.lastAvlTrace;
+    this.lastAvlTrace = null;
+    return t;
+  }
+
+  /**
+   * Método recursivo que inserta un nuevo nodo en el árbol AVL.
+   * @param root Nodo raíz del subárbol actual.
+   * @param valor Elemento a insertar.
+   * @param salida Objeto usado para guardar la referencia al nodo insertado.
+   * @param parent Nodo padre del nodo actual (usado para trazas).
+   * @returns Nodo raíz del subárbol actualizado luego de la inserción.
+   */
+  private insertarAVL(root: NodoAVL<T> | null, valor: T, salida: { inserted: NodoAVL<T> | null }, parent: NodoAVL<T> | null): NodoAVL<T> {
+    if (root === null) {
+      const nuevo = new NodoAVL(valor);
+      salida.inserted = nuevo;
+      return nuevo;
     }
-    return null;
-  }
-
-  /* ────────────────────────── Balanceo y Rotaciones ───────────────────────── */
-
-  private getAlturaNodo(n: NodoAVL<T> | null): number {
-    return n ? n.getAltura() : 0;
-  }
-
-  private actualizarAltura(n: NodoAVL<T> | null): void {
-    if (!n) return;
-    const hi = this.getAlturaNodo(n.getIzq() as NodoAVL<T> | null);
-    const hd = this.getAlturaNodo(n.getDer() as NodoAVL<T> | null);
-    n.setAltura(Math.max(hi, hd) + 1);
-  }
-
-  private factorBalance(n: NodoAVL<T> | null): number {
-    if (!n) return 0;
-    return (
-      this.getAlturaNodo(n.getIzq() as NodoAVL<T> | null) -
-      this.getAlturaNodo(n.getDer() as NodoAVL<T> | null)
-    );
-  }
-
-  private rotacionDerecha(y: NodoAVL<T>): NodoAVL<T> {
-    const x = y.getIzq() as NodoAVL<T>;
-    const T2 = x.getDer() as NodoAVL<T> | null;
-
-    x.setDer(y);
-    y.setIzq(T2);
-
-    this.actualizarAltura(y);
-    this.actualizarAltura(x);
-    return x;
-  }
-
-  private rotacionIzquierda(x: NodoAVL<T>): NodoAVL<T> {
-    const y = x.getDer() as NodoAVL<T>;
-    const T2 = y.getIzq() as NodoAVL<T> | null;
-
-    y.setIzq(x);
-    x.setDer(T2);
-
-    this.actualizarAltura(x);
-    this.actualizarAltura(y);
-    return y;
-  }
-
-  private rebalancear(n: NodoAVL<T>): NodoAVL<T> {
-    this.actualizarAltura(n);
-    const bf = this.factorBalance(n);
-
-    // Izquierda pesada
-    if (bf > 1) {
-      const izq = n.getIzq() as NodoAVL<T>;
-      if (this.factorBalance(izq) < 0) {
-        // LR
-        this.lastRotation = {
-          type: "LR",
-          pivotId: n.getId(),
-          childId: izq.getId(),
-        };
-        n.setIzq(this.rotacionIzquierda(izq));
-        return this.rotacionDerecha(n);
-      } else {
-        // LL
-        this.lastRotation = {
-          type: "LL",
-          pivotId: n.getId(),
-          childId: izq.getId(),
-        };
-        return this.rotacionDerecha(n);
-      }
-    }
-
-    // Derecha pesada
-    if (bf < -1) {
-      const der = n.getDer() as NodoAVL<T>;
-      if (this.factorBalance(der) > 0) {
-        // RL
-        this.lastRotation = {
-          type: "RL",
-          pivotId: n.getId(),
-          childId: der.getId(),
-        };
-        n.setDer(this.rotacionDerecha(der));
-        return this.rotacionIzquierda(n);
-      } else {
-        // RR
-        this.lastRotation = {
-          type: "RR",
-          pivotId: n.getId(),
-          childId: der.getId(),
-        };
-        return this.rotacionIzquierda(n);
-      }
-    }
-
-    return n;
-  }
-
-  /* ──────────────────────── Inserción / Eliminación ───────────────────────── */
-
-  private insertarRec(root: NodoAVL<T> | null, valor: T): NodoAVL<T> {
-    if (!root) return new NodoAVL<T>(valor);
 
     const cmp = this.compare(valor, root.getInfo());
     if (cmp < 0) {
-      root.setIzq(this.insertarRec(root.getIzq() as NodoAVL<T> | null, valor));
+      root.setIzq(this.insertarAVL(root.getIzq(), valor, salida, root));
     } else if (cmp > 0) {
-      root.setDer(this.insertarRec(root.getDer() as NodoAVL<T> | null, valor));
+      root.setDer(this.insertarAVL(root.getDer(), valor, salida, root));
     } else {
-      // Duplicado (ya validado arriba). No hace nada.
-      return root;
+      throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
     }
 
-    return this.rebalancear(root);
+    root.recomputarAltura();
+
+    return this.rebalancear(root, parent);
   }
 
-  private eliminarRec(
+  /**
+   * Método recursivo que elimina un nodo con el valor especificado del árbol AVL.
+   * @param root Nodo raíz del subárbol actual que se esta procesando.
+   * @param valor Valor del nodo a ser eliminado.
+   * @param salida Objeto usado para guardar las referencias al nodo eliminado y actualizado.
+   * @param parent Nodo padre del nodo actual (usado para trazas).
+   * @returns Nodo raíz del subárbol actualizado luego de la eliminación.
+   */
+  private eliminarAVL(
     root: NodoAVL<T> | null,
     valor: T,
-    meta: { removed?: NodoAVL<T>; updated?: NodoAVL<T> }
+    salida: { removed: NodoAVL<T> | null, updated: NodoAVL<T> | null },
+    parent: NodoAVL<T> | null
   ): NodoAVL<T> | null {
     if (!root) return null;
 
     const cmp = this.compare(valor, root.getInfo());
     if (cmp < 0) {
-      root.setIzq(
-        this.eliminarRec(root.getIzq() as NodoAVL<T> | null, valor, meta)
-      );
+      root.setIzq(this.eliminarAVL(root.getIzq(), valor, salida, root));
     } else if (cmp > 0) {
-      root.setDer(
-        this.eliminarRec(root.getDer() as NodoAVL<T> | null, valor, meta)
-      );
+      root.setDer(this.eliminarAVL(root.getDer(), valor, salida, root));
     } else {
-      // Encontrado
-      const izq = root.getIzq() as NodoAVL<T> | null;
-      const der = root.getDer() as NodoAVL<T> | null;
-
-      // 0 ó 1 hijo: el eliminado físico es "root"
-      if (!izq || !der) {
-        meta.removed = root;
-        const unico = izq ?? der; // si es hoja => null
-        return unico ? this.rebalancear(unico) : null;
+      if (!root.getIzq()) {
+        salida.removed = root;
+        return root.getDer();
       }
 
-      // 2 hijos: copiar valor del sucesor y eliminar físicamente al sucesor
-      const succ = this.minNodo(der);
-      meta.updated = root; // éste copia el valor
-      meta.removed = succ; // éste se elimina físicamente
+      if (!root.getDer()) {
+        salida.removed = root;
+        return root.getIzq();
+      }
 
-      root.setInfo(succ.getInfo()); // conserva el id del nodo root
-      root.setDer(this.eliminarRec(der, succ.getInfo(), meta));
-      return this.rebalancear(root);
+      const succ = this.minNodo(root.getDer()!);
+      root.setInfo(succ.getInfo());
+      salida.updated = root;
+      root.setDer(this.eliminarAVL(root.getDer(), succ.getInfo(), salida, root));
     }
 
-    return this.rebalancear(root);
+    root.recomputarAltura();
+
+    return this.rebalancear(root, parent);
   }
 
-  private minNodo(root: NodoAVL<T>): NodoAVL<T> {
-    let cur = root;
-    while (cur.getIzq() !== null) cur = cur.getIzq() as NodoAVL<T>;
-    return cur;
-  }
+  /**
+   * Método que rebalancea un nodo AVL si se ha vuelto desequilibrado después de una inserción o eliminación.
+   * @param nodo Nodo AVL a rebalancear.
+   * @param parent Nodo padre del nodo a rebalancear.
+   * @returns Nodo raíz del subárbol después del rebalanceo.
+   */
+  private rebalancear(nodo: NodoAVL<T>, parent: NodoAVL<T> | null): NodoAVL<T> {
+    const bf = nodo.getBalance();
 
-  /* ───────────────────────────── Recorridos ──────────────────────────────── */
+    // Izquierda pesada
+    if (bf === 2) {
+      const y = nodo.getIzq()!;
 
-  private inOrdenRec(root: NodoAVL<T> | null, out: NodoAVL<T>[]) {
-    if (!root) return;
-    this.inOrdenRec(root.getIzq() as NodoAVL<T> | null, out);
-    out.push(root);
-    this.inOrdenRec(root.getDer() as NodoAVL<T> | null, out);
-  }
+      if (this.lastAvlTrace && !this.lastAvlTrace.hierarchies.pre) {
+        this.lastAvlTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
+      }
 
-  private preOrdenRec(root: NodoAVL<T> | null, out: NodoAVL<T>[]) {
-    if (!root) return;
-    out.push(root);
-    this.preOrdenRec(root.getIzq() as NodoAVL<T> | null, out);
-    this.preOrdenRec(root.getDer() as NodoAVL<T> | null, out);
-  }
+      if (y.getBalance() < 0) {
+        // -------- LR: rotarIzq(y) -> rotarDer(nodo)
+        const x = y.getDer()!;
 
-  private postOrdenRec(root: NodoAVL<T> | null, out: NodoAVL<T>[]) {
-    if (!root) return;
-    this.postOrdenRec(root.getIzq() as NodoAVL<T> | null, out);
-    this.postOrdenRec(root.getDer() as NodoAVL<T> | null, out);
-    out.push(root);
-  }
+        this.lastAvlTrace?.rotations.push({
+          type: "LR",
+          zId: nodo.getId(),
+          yId: y.getId(),
+          xId: x.getId(),
+          parentOfZId: parent?.getId() ?? null,
+          xLeftId: x.getIzq()?.getId() ?? null,
+          xRightId: x.getDer()?.getId() ?? null
+        });
 
-  // ----- API pública extra para las tarjetas -----
+        nodo.setIzq(this.rotacionIzquierda(y));
 
-  /** Tamaño actual del árbol (por si alguna tarjeta usa "Tamaño"). */
-  public getTamanio(): number {
-    return this.tamanio;
-  }
+        this.pushMid();
 
-  /** Cantidad de nodos hoja. */
-  public contarHojas(): number {
-    return this.contarHojasAux(this.raiz);
-  }
+        const newRoot = this.rotacionDerecha(nodo);
 
-  /** Devuelve un arreglo con todos los nodos hoja (opcional, por si lo usas). */
-  public getHojas(): NodoAVL<T>[] {
-    const hojas: NodoAVL<T>[] = [];
-    this.getArrayHojas(this.raiz, hojas);
-    return hojas;
-  }
+        this.reattachAfterRotation(parent, nodo, newRoot);
+        this.pushMid();
 
-  // ----- Helpers privados -----
+        return newRoot;
+      } else {
+        // -------- Ll: rotarDer(nodo)
+        this.lastAvlTrace?.rotations.push({
+          type: "LL",
+          zId: nodo.getId(),
+          yId: y.getId(),
+          parentOfZId: parent?.getId() ?? null,
+          BId: y.getDer()?.getId() ?? null
+        });
 
-  private contarHojasAux(root: NodoAVL<T> | null): number {
-    if (!root) return 0;
-    const izq = root.getIzq() as NodoAVL<T> | null;
-    const der = root.getDer() as NodoAVL<T> | null;
-    if (!izq && !der) return 1; // es hoja
-    return this.contarHojasAux(izq) + this.contarHojasAux(der);
-  }
+        const newRoot = this.rotacionDerecha(nodo);
 
-  private getArrayHojas(root: NodoAVL<T> | null, hojas: NodoAVL<T>[]): void {
-    if (!root) return;
-    const izq = root.getIzq() as NodoAVL<T> | null;
-    const der = root.getDer() as NodoAVL<T> | null;
-    if (!izq && !der) {
-      hojas.push(root);
-    } else {
-      this.getArrayHojas(izq, hojas);
-      this.getArrayHojas(der, hojas);
+        this.reattachAfterRotation(parent, nodo, newRoot);
+        this.pushMid();
+
+        return newRoot;
+      }
     }
+
+    // Derecha pesada
+    if (bf === -2) {
+      const y = nodo.getDer()!;
+
+      if (this.lastAvlTrace && !this.lastAvlTrace.hierarchies.pre) {
+        this.lastAvlTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
+      }
+
+      if (y.getBalance() > 0) {
+        // -------- RL: rotarDer(y) -> rotarIzq(nodo)
+        const x = y.getIzq()!;
+
+        this.lastAvlTrace?.rotations.push({
+          type: "RL",
+          zId: nodo.getId(),
+          yId: y.getId(),
+          xId: x.getId(),
+          parentOfZId: parent?.getId() ?? null,
+          xLeftId: x.getIzq()?.getId() ?? null,
+          xRightId: x.getDer()?.getId() ?? null
+        });
+
+        nodo.setDer(this.rotacionDerecha(y));
+
+        this.pushMid();
+
+        const newRoot = this.rotacionIzquierda(nodo);
+
+        this.reattachAfterRotation(parent, nodo, newRoot);
+        this.pushMid();
+
+        return newRoot;
+      } else {
+        // -------- RR: rotarDer(nodo)
+        this.lastAvlTrace?.rotations.push({
+          type: "RR",
+          zId: nodo.getId(),
+          yId: y.getId(),
+          parentOfZId: parent?.getId() ?? null,
+          BId: y.getIzq()?.getId() ?? null
+        });
+
+        const newRoot = this.rotacionIzquierda(nodo);
+
+        this.reattachAfterRotation(parent, nodo, newRoot);
+        this.pushMid();
+
+        return newRoot;
+      }
+    }
+
+    return nodo;
   }
 
-  /* ─────────────── Conversión a Jerarquía para la Visualización ───────────── */
+  /**
+   * Método que realiza una rotación derecha en el nodo AVL dado.
+   * @param x Nodo raíz del subárbol a rotar.
+   * @returns Nuevo nodo raíz del subárbol rotado.
+   */
+  private rotacionDerecha(y: NodoAVL<T>): NodoAVL<T> {
+    const x = y.getIzq()!;
+    const T2 = x.getDer();
 
-  private toHierarchy(root: NodoAVL<T>): HierarchyNodeData<T> {
-    const left = root.getIzq()
-      ? this.toHierarchy(root.getIzq() as NodoAVL<T>)
-      : null;
-    const right = root.getDer()
-      ? this.toHierarchy(root.getDer() as NodoAVL<T>)
-      : null;
+    x.setDer(y);
+    y.setIzq(T2);
+
+    y.recomputarAltura();
+    x.recomputarAltura();
+
+    return x;
+  }
+
+  /**
+   * Método que realiza una rotación izquierda en el nodo AVL dado.
+   * @param x Nodo raíz del subárbol a rotar.
+   * @returns Nuevo nodo raíz del subárbol rotado.
+   */
+  private rotacionIzquierda(x: NodoAVL<T>): NodoAVL<T> {
+    const y = x.getDer()!;
+    const T2 = y.getIzq();
+
+    y.setIzq(x);
+    x.setDer(T2);
+
+    x.recomputarAltura();
+    y.recomputarAltura();
+
+    return y;
+  }
+
+  /**
+   * Método que obtiene el nodo con menor valor del árbol binario AVL.
+   * @param n Nodo raíz del árbol.
+   * @returns Nodo más izquierdo del árbol.
+   */
+  private minNodo(n: NodoAVL<T>): NodoAVL<T> {
+    while (n.getIzq()) n = n.getIzq()!;
+    return n;
+  }
+
+  /**
+   * Método que transforma el árbol AVL en una estructura jerárquica.
+   * @param root Nodo raíz del árbol AVL.
+   * @returns Estructura jerárquica representando el árbol.
+   */
+  private toAVLHierarchy(root: NodoAVL<T>): HierarchyNodeData<T> {
+    const left = root.getIzq() ? this.toAVLHierarchy(root.getIzq()!) : null;
+    const right = root.getDer() ? this.toAVLHierarchy(root.getDer()!) : null;
 
     let children: HierarchyNodeData<T>[] | undefined;
+
     if (left && right) {
       children = [left, right];
     } else if (left && !right) {
-      children = [left, this.createPlaceholder(root, "right")];
+      children = [left, super.createPlaceholder(root, "right")];
     } else if (!left && right) {
-      children = [this.createPlaceholder(root, "left"), right];
+      children = [super.createPlaceholder(root, "left"), right];
     } else {
       children = undefined;
     }
@@ -455,39 +454,52 @@ export class ArbolAVL<T> {
     return {
       id: root.getId(),
       value: root.getInfo(),
-      children,
-      bf: this.factorBalance(root),
+      bf: root.getBalance(),
       height: root.getAltura(),
+      children
     };
   }
 
-  private createPlaceholder(
-    parent: NodoAVL<T>,
-    side: "left" | "right"
-  ): HierarchyNodeData<T> {
-    return {
-      id: `${parent.getId()}-ph${side === "left" ? "L" : "R"}`,
-      isPlaceholder: true,
-    };
+  /**
+   * Método recursivo que clona un árbol binario iniciando desde el nodo raíz dado.
+   * @param root Nodo raíz del árbol BST a clonar.
+   * @returns Nuevo subárbol clonado con raíz en el nodo dado.
+   */
+  private clonarAVLrec(root: NodoAVL<T> | null): NodoAVL<T> | null {
+    if (root === null) return null;
+
+    const nuevoNodo = new NodoAVL<T>(root.getInfo(), root.getId());
+    nuevoNodo.setAltura(root.getAltura());
+    nuevoNodo.setIzq(this.clonarAVLrec(root.getIzq()));
+    nuevoNodo.setDer(this.clonarAVLrec(root.getDer()));
+
+    return nuevoNodo;
   }
 
-  /* ─────────────────────────────── Clonado ──────────────────────────────── */
-
-  private clonarNodo(root: NodoAVL<T> | null): NodoAVL<T> | null {
-    if (!root) return null;
-    const nuevo = new NodoAVL<T>(root.getInfo(), root.getId());
-    nuevo.setAltura(root.getAltura());
-    nuevo.setIzq(this.clonarNodo(root.getIzq() as NodoAVL<T> | null));
-    nuevo.setDer(this.clonarNodo(root.getDer() as NodoAVL<T> | null));
-    return nuevo;
+  /**
+   * Método que reatacha un nodo después de una rotación en el árbol AVL.
+   * @param parent Nodo padre del subárbol.
+   * @param before Nodo que estaba antes de la rotación.
+   * @param after Nodo que está después de la rotación.
+   */
+  private reattachAfterRotation(
+    parent: NodoAVL<T> | null,
+    before: NodoAVL<T>,
+    after: NodoAVL<T>
+  ) {
+    if (!parent) { this.setRaiz(after); return; }
+    if (parent.getIzq() === before) parent.setIzq(after);
+    else if (parent.getDer() === before) parent.setDer(after);
   }
-}
 
-/* ──────────────────────────── Utilidades locales ─────────────────────────── */
+  /**
+   * Método que agrega la estructura jerárquica actual al seguimiento de cambios.
+   */
+  private pushMid(): void {
+    if (!this.lastAvlTrace) return;
+    this.lastAvlTrace.hierarchies.mids.push(
+      this.convertirEstructuraJerarquica() as HierarchyNodeData<T>
+    );
+  }
 
-function defaultCompare(a: any, b: any): number {
-  if (typeof a === "number" && typeof b === "number") return a - b;
-  if (typeof a === "string" && typeof b === "string") return a.localeCompare(b);
-  // Fallback genérico (no recomendado para tipos complejos)
-  return `${a}`.localeCompare(`${b}`);
 }

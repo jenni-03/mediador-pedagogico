@@ -158,13 +158,9 @@ export function drawTreeNodes(
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
           .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
 
-        //actualizar el valor visible del nodo
-        update
-          .select<SVGTextElement>(".node-value")
-          .text((d) => d.data.value ?? 0);
         return update;
       },
-      (exit) => exit
+      exit => exit
     );
 }
 
@@ -177,27 +173,25 @@ export function drawTreeNodes(
 export function drawTreeLinks(
   g: d3.Selection<SVGGElement, unknown, null, undefined>,
   linksData: TreeLinkData[],
-  positions: Map<string, { x: number; y: number }>
+  positions: Map<string, { x: number, y: number }>,
 ) {
   // Data join para la creación de los enlaces entre nodos
   g.selectAll<SVGGElement, LinkData>("g.link")
-    .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}`)
+    .data(linksData, d => `link-${d.sourceId}-${d.targetId}`)
     .join(
-      (enter) => {
+      enter => {
         // Creación del grupo para cada nuevo enlace
-        const gLink = enter
-          .append("g")
+        const gLink = enter.append("g")
           .attr("class", "link")
           .attr("id", (d) => `link-${d.sourceId}-${d.targetId}`);
 
         // Path del enlace
-        gLink
-          .append("path")
+        gLink.append("path")
           .attr("class", `tree-link`)
           .attr("fill", "none")
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
           .attr("stroke-width", 1.5)
-          .attr("d", (d) => {
+          .attr("d", d => {
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
             const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
@@ -206,19 +200,9 @@ export function drawTreeLinks(
 
         return gLink;
       },
-      // 🔁 actualizar la ruta cuando cambian posiciones o rotan (AVL)
-      (update) => {
-        update.select<SVGPathElement>("path.tree-link").attr("d", (d) => {
-          const s = positions.get(d.sourceId)!;
-          const t = positions.get(d.targetId)!;
-          const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-          return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
-        });
-        return update;
-      },
-      // 🧹 eliminar enlaces obsoletos para evitar “fantasmas”
-      (exit) => exit.transition().duration(300).style("opacity", 0).remove()
-    );
+      update => update,
+      exit => exit
+    )
 }
 
 /**
@@ -375,11 +359,11 @@ export function drawListLinks(
             d.type === "next" || d.type === "prev"
               ? calculateLinkPath(d, positions, elementWidth, elementHeight)
               : calculateCircularLPath(
-                  d,
-                  positions,
-                  elementWidth,
-                  elementHeight
-                )
+                d,
+                positions,
+                elementWidth,
+                elementHeight
+              )
           );
 
         return gLink;
@@ -683,7 +667,7 @@ export async function repositionTreeNodes(
     })
     .end();
 
-  return Promise.all([p1, p2]).then(() => {});
+  return Promise.all([p1, p2]).then(() => { });
 }
 
 /**

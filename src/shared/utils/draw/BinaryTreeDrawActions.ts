@@ -209,7 +209,7 @@ export async function animateSearchNode(
  * @param parentNodeId ID del nodo padre o null si el nodo a eliminar es la raíz.
  * @param pathToParent Arreglo de nodos jerárquicos que representan el camino desde la raíz hasta el padre del nodo a eliminar.
  */
-async function animateLeafOrSingleChild(
+export async function animateLeafOrSingleChild(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
     parentNodeId: string | null,
@@ -298,7 +298,7 @@ async function animateLeafOrSingleChild(
  * @param pathToUpdateNode Arreglo de nodos jerárquicos que representan el camino desde la raíz hasta el nodo a actualziar.
  * @param pathToRemovalNode Arreglo de nodos jerárquicos que representan el camino desde el nodo a actualizar hasta el nodo a eliminar.
  */
-async function animateTwoChildren(
+export async function animateTwoChildren(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
     nodeToUpdate: HierarchyNode<HierarchyNodeData<number>>,
