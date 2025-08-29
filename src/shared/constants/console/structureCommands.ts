@@ -8,4 +8,8 @@ export const structureCommands: Record<string, string[]> = {
   arbol_binario: ["insertLeft", "insertRight", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_binario_busqueda: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_avl: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
+  arbol_rojinegro: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
+  arbol_nario: [
+    "createRoot", "insertChild", "deleteNode", "moveNode", "updateValue", "search", "getPreOrder", "getPostOrder", "getLevelOrder", "clean",
+  ],
 };

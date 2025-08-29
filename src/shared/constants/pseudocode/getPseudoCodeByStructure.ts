@@ -12,6 +12,8 @@ import { getArbolBinarioCode } from "./arbolBinarioCode";
 import { getArbolBinarioBusquedaCode } from "./arbolBinarioBusquedaCode";
 
 import { getArbolAVLCode } from "./arbolAVLCode";
+import { getArbolRNCode } from "./arbolRNCode";
+import { getArbolNarioCode } from "./arbolNarioCode";
 
 // Mapa de funciones para cargar operaciones según estructura
 const pseudoCodeLoaders: Record<string, () => OperationCode> = {
@@ -27,6 +29,8 @@ const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   arbol_binario: getArbolBinarioCode,
   arbol_binario_busqueda: getArbolBinarioBusquedaCode,
   arbol_avl: getArbolAVLCode,
+  arbol_rojinegro: getArbolRNCode,
+  arbol_nario: getArbolNarioCode,
 };
 
 // Devuelve el pseudocódigo correspondiente, o {} si no existe

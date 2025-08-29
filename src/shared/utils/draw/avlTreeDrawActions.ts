@@ -700,6 +700,7 @@ export function showRotationHint(
     overlay.raise();
 }
 
+// Función para determinar el color del valor del factor de equilibrio del nodo
 const bfColor = (bf: number) => {
     const a = Math.abs(bf ?? 0);
     if (a <= 1) return "#71c562";

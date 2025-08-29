@@ -43,13 +43,14 @@ export function CustomModal({
                   <span className="font-semibold text-[#1E88E5]">
                     🛠️ Estructura del comando:
                   </span>{" "}
-                  {structure}
+                  {/* {structure} */}
+                  <span dangerouslySetInnerHTML={{ __html: structure }} />
                 </p>
                 <p>
                   <span className="font-semibold text-[#00C896]">
                     📌 Ejemplo de uso:
                   </span>{" "}
-                  {example}
+                  <span dangerouslySetInnerHTML={{ __html: example }} />
                 </p>
               </div>
             </div>

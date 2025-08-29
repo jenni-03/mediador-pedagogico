@@ -2,17 +2,34 @@ import { useEffect, useRef, useState } from "react";
 import { commandRules } from "../../../../shared/constants/console/commandRules";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { parseCommand } from "../../../../shared/constants/console/parseCommand";
+import { AnimatedButtonModal } from "../../../../shared/components/AnimatedButtonModal";
+
+export const structureNames: Record<string, string> = {
+  secuencia: "se",
+  pila: "pila",
+  cola: "cola",
+  "cola de prioridad": "colaP",
+  tabla_hash: "th",
+  lista_enlazada: "le",
+  arbol_binario: "arbolBi",
+  arbol_binario_busqueda: "arbolBB",
+  arbol_avl: "arbolA",
+  arbol_rojinegro: "arbolRN",
+  arbol_nario: "arbolNario",
+};
 
 interface ConsoleComponentProps {
   structureType: string;
   onCommand: (command: string[], isValid: boolean) => void;
   error: { message: string; id: number } | null;
+  structurePrueba: any;
 }
 
 export function ConsoleComponent({
   structureType,
   onCommand,
   error,
+  structurePrueba,
 }: ConsoleComponentProps) {
   const [history, setHistory] = useState<string[]>([]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]); // Solo comandos válidos
@@ -20,9 +37,20 @@ export function ConsoleComponent({
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [isCreated, setIsCreated] = useState<boolean>(false);
 
+  // Estado para el modal
+  const [showCreationModal, setShowCreationModal] = useState(false);
+
   const { isAnimating, setIsAnimating } = useAnimation();
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Detectar creación de la estructura
+  useEffect(() => {
+    if (structurePrueba && structurePrueba.getTamanio() > 0 && !isCreated) {
+      setIsCreated(true);
+      setShowCreationModal(true);
+    }
+  }, [structurePrueba?.getTamanio()]);
 
   useEffect(() => {
     if (!isAnimating && inputRef.current) {
@@ -43,7 +71,7 @@ export function ConsoleComponent({
   }, [error?.id]);
 
   // TODO: Cambiar el nombre de las estructuras, revisar si esos son los correctos
-  const structuresRequiringCreate = ["secuencia"];
+  const structuresRequiringCreate = ["secuencia", "tabla_hash"];
 
   // Función para procesar comando (reutilizable)
   const processCommand = (
@@ -55,11 +83,32 @@ export function ConsoleComponent({
       setInput("");
       return;
     }
-    console.log(isFromTutorial);
 
-    const parsed = parseCommand(commandValue.trim(), structureType);
+    // --- LOGGER DETALLADO ---
+    console.groupCollapsed(
+      `[ConsoleComponent] processCommand | "${commandValue}" | fromTutorial=${isFromTutorial}`
+    );
+    console.log("➡️ Raw command:", commandValue);
+    console.log("➡️ structureType:", structureType);
+    console.log("➡️ expectedPrefix:", structureNames[structureType]);
+    console.log("➡️ isCreated:", isCreated);
+    console.log("➡️ structurePrueba:", structurePrueba);
+    // -------------------------
+
+    const expectedPrefix = structureNames[structureType];
+
+    const parsed = parseCommand(commandValue.trim(), structureType, {
+      isCreated, // ← clave: solo obliga prefijo cuando ya fue creada
+      expectedPrefix,
+      disallowPrefixBeforeCreation: true, // Para NO permitir prefijo antes de crear
+      structurePrueba,
+    });
+    console.log("➡️ parsed result:", parsed);
+
+    // const parsed = parseCommand(commandValue.trim(), structureType);
 
     if ("error" in parsed) {
+      console.warn("❌ parseCommand error:", parsed.error);
       onCommand([], false);
       setHistory((prev) => [
         ...prev,
@@ -75,14 +124,17 @@ export function ConsoleComponent({
     const parts = parsed;
     const commandValidation = commandRules[structureType](parts);
 
+    console.log("➡️ parts:", parts);
+    console.log("➡️ commandValidation:", commandValidation);
+
     // Verifica si el comando es válido según las reglas de la estructura, es decir, es un booleano
     if (typeof commandValidation === "boolean") {
       if (commandValidation) {
         const command = parts[0]?.toLowerCase();
-
+             console.log("✅ Valid command:", command);
         // Verificar si la estructura necesita "create"
         const needsCreate = structuresRequiringCreate.includes(structureType);
-
+         console.log("➡️ needsCreate:", needsCreate);
         // Caso 1: Si la estructura no ha sido creada y el comando es distinto a create
         if (needsCreate && !isCreated && command !== "create") {
           onCommand([], false);
@@ -108,6 +160,10 @@ export function ConsoleComponent({
         else {
           if (command == "create") {
             setIsCreated(true); // Marcar como creada
+            setShowCreationModal(true);
+          }
+          if (isCreated && command == "clean") {
+            setIsCreated(false); // Marcar como no creada
           }
 
           onCommand(parsed, true);
@@ -231,6 +287,28 @@ export function ConsoleComponent({
           data-tour="inputConsola"
         />
       </div>
+
+      {/* Modal */}
+      {showCreationModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#1E1E22] p-6 rounded-2xl shadow-xl text-center w-96">
+            <h2 className="text-xl font-bold text-white mb-4">
+              ✅ Objeto creado
+            </h2>
+            <p className="text-gray-300 mb-6">
+              Se creó el objeto {structureType}{" "}
+              <span className="font-mono">
+                "{structureNames[structureType] || "se"}"
+              </span>
+            </p>
+            <AnimatedButtonModal
+              bgColor="#D72638"
+              text="Aceptar"
+              onClick={() => setShowCreationModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

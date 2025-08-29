@@ -1,9 +1,38 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MemoryDisplay } from "./MemoryDisplay";
 import { FaSearch } from "react-icons/fa";
 import { TestCasesModal } from "./TestCasesModal";
 import { Consola } from "../../../../shared/utils/RAM/Consola";
 import { motion } from "framer-motion";
+
+/* ───────── Constantes ───────── */
+const PRIMITIVE_SEGMENTS = [
+  "boolean",
+  "char",
+  "byte",
+  "short",
+  "int",
+  "long",
+  "float",
+  "double",
+  "string",
+] as const;
+
+const COMPLEX_SEGMENTS = ["array", "object"] as const;
+
+const PREFIX_TO_SEG: Record<string, string> = {
+  "0x": "boolean",
+  "1x": "char",
+  "2x": "byte",
+  "3x": "short",
+  "4x": "int",
+  "5x": "long",
+  "6x": "float",
+  "7x": "double",
+  "8x": "string",
+  "9x": "object",
+  ax: "array",
+};
 
 interface MemoryScreenProps {
   consolaRef: React.RefObject<Consola>;
@@ -30,263 +59,228 @@ export function MemoryScreen({
     setMemoryState(newState, lastInsertedType);
   };
 
+  const hasDataInSelected = useMemo(() => {
+    const arr = memoryState[selectedSegment] as any[] | undefined;
+    return Array.isArray(arr) && arr.length > 0;
+  }, [memoryState, selectedSegment]);
+
+  /* ───────── Handlers ───────── */
+  const clearMemory = () => {
+    const result = consolaRef.current?.ejecutarComando("clear memory");
+    if (result && result[0]) handleUpdateMemory(result[2]);
+  };
+
+  const onSearchChange = (val: string) => {
+    setSearchTerm(val);
+    if (val.length >= 2) {
+      const prefix = val.slice(0, 2).toLowerCase();
+      if (prefix in PREFIX_TO_SEG) setSelectedSegment(PREFIX_TO_SEG[prefix]);
+    }
+  };
+
   return (
-    <div className="
-      w-full flex flex-col items-center
-      px-4 sm:px-6 xl:px-10 2xl:px-20
-      max-w-[1800px] mx-auto
-      mt-4 sm:mt-6
-      relative
-    ">
-      <div className="
-        w-full
-        bg-[#1A1A1A]
-        border border-[#2E2E2E]
-        rounded-3xl
-        shadow-xl shadow-black/50
-        flex flex-col
-        max-h-[85vh]
-        overflow-visible
-        transition-all duration-300
-      ">
-        {/* Título principal */}
-        <div className="
-          sticky top-0 left-0 w-full
-          bg-[#1A1A1A]
-          p-4 z-20
-          border-b border-[#2E2E2E]
-          flex flex-col items-center
-          rounded-t-3xl
-          shadow
-        ">
-          <h3 className="
-            text-[#E0E0E0]
-            text-2xl font-bold tracking-wider
-            text-center
-            flex items-center gap-2
-          ">
-            <span>SEGMENTO DE MEMORIA:</span>
-            <span className="text-[#D72638]">
-              {selectedSegment.toUpperCase()}
-            </span>
-          </h3>
-
-          {/* Segment buttons */}
-          <div className="
-            flex flex-wrap
-            justify-center sm:justify-between
-            items-center
-            gap-3 sm:gap-4
-            w-full max-w-5xl
-            mt-3
-          ">
-            {/* Limpiar memoria */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              onClick={() => {
-                const result = consolaRef.current?.ejecutarComando("clear memory");
-                if (result && result[0]) {
-                  handleUpdateMemory(result[2]);
-                }
-              }}
+    <div
+      className="
+        w-full flex flex-col items-center
+        px-4 sm:px-6 xl:px-10 2xl:px-20
+        max-w-[1800px] mx-auto
+        mt-4 sm:mt-6
+        relative
+      "
+    >
+      <div
+        className="
+          w-full bg-[#111]/95
+          border border-white/10
+          rounded-3xl
+          shadow-[0_10px_40px_-10px_rgba(0,0,0,.8)]
+          flex flex-col
+          max-h-[85vh]
+          /* IMPORTANTE: recorta dentro del radio y el fondo cubre TODO */
+          overflow-hidden
+          transition-all duration-300
+        "
+      >
+        {/* Header sticky */}
+        <div
+          className="
+            sticky top-0 left-0 w-full z-20
+            bg-[#111]/95 backdrop-blur-sm
+            border-b border-white/10
+            rounded-t-3xl
+          "
+        >
+          <div className="p-4">
+            <h3
               className="
-                px-5 py-2
-                text-sm font-bold uppercase
-                text-[#D72638]
-                border border-[#D72638]
-                rounded-full
-                hover:bg-[#2E2E2E]
-                transition-colors duration-200
-                flex items-center gap-2
-                shadow-sm
+                text-[#E0E0E0]
+                text-2xl font-extrabold tracking-wider
+                text-center
+                flex items-center justify-center gap-2
               "
-              data-tour="limpiar"
             >
-              🧹 <span>Limpiar Memoria</span>
-            </motion.button>
+              <span>SEGMENTO DE MEMORIA:</span>
+              <span className="text-[#D72638]">{selectedSegment.toUpperCase()}</span>
+            </h3>
 
-            {/* Buscador de memoria */}
+            {/* Toolbar: limpiar · buscar · casos */}
             <div
               className="
-                flex items-center flex-1 min-w-[180px]
-                bg-[#262626]
-                border border-[#2E2E2E]
-                rounded-full
-                px-4 py-2
-                shadow-sm
+                mt-3 w-full max-w-5xl mx-auto
+                flex flex-wrap items-center gap-3
+                justify-center sm:justify-between
               "
-              data-tour="buscador"
             >
-              <FaSearch className="text-[#A0A0A0] mr-2" />
-              <input
-                type="text"
-                placeholder="Buscar dirección..."
+              {/* Limpiar memoria */}
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.03 }}
+                onClick={clearMemory}
                 className="
-                  w-full
-                  bg-transparent
-                  text-sm text-[#E0E0E0]
-                  placeholder-[#A0A0A0]
-                  outline-none
+                  px-5 py-2 text-sm font-bold uppercase
+                  text-[#ff7a8a]
+                  bg-[#D72638]/15 border border-[#D72638]/40
+                  rounded-full hover:bg-[#D72638]/25
+                  transition-colors
+                  flex items-center gap-2
+                  shadow-sm
                 "
-                value={searchTerm}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSearchTerm(val);
+                data-tour="limpiar"
+              >
+                🧹 <span>Limpiar Memoria</span>
+              </motion.button>
 
-                  // Detección de prefijo (mapeo)
-                  if (val.length >= 2) {
-                    const prefix = val.slice(0, 2).toLowerCase();
-                    const mapping: Record<string, string> = {
-                      "0x": "boolean",
-                      "1x": "char",
-                      "2x": "byte",
-                      "3x": "short",
-                      "4x": "int",
-                      "5x": "long",
-                      "6x": "float",
-                      "7x": "double",
-                      "8x": "string",
-                      "9x": "object",
-                      ax: "array",
-                    };
+              {/* Buscador */}
+              <div
+                className="
+                  flex items-center flex-1 min-w-[200px] max-w-xl
+                  bg-white/5 border border-white/10
+                  rounded-full px-4 py-2 shadow-sm
+                "
+                data-tour="buscador"
+              >
+                <FaSearch className="text-[#A0A0A0] mr-2" />
+                <input
+                  type="text"
+                  placeholder="Buscar dirección… (0x, 4x, ax)"
+                  className="
+                    w-full bg-transparent
+                    text-sm text-[#E0E0E0] placeholder-[#8c8c8c]
+                    outline-none
+                  "
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => onSearchChange("")}
+                    className="ml-2 text-xs text-gray-400 hover:text-gray-200"
+                    aria-label="Limpiar búsqueda"
+                    title="Limpiar"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-                    if (prefix in mapping) {
-                      setSelectedSegment(mapping[prefix]);
-                    }
-                  }
-                }}
-              />
+              {/* Casos de prueba */}
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                whileHover={{ scale: 1.03 }}
+                onClick={() => setShowModal(true)}
+                className="
+                  px-5 py-2 text-sm font-bold uppercase
+                  text-[#ff7a8a]
+                  bg-[#D72638]/15 border border-[#D72638]/40
+                  rounded-full hover:bg-[#D72638]/25
+                  transition-colors
+                  flex items-center gap-2
+                  shadow-sm
+                "
+                data-tour="casosPrueba"
+              >
+                🧪 <span>Casos de Prueba</span>
+              </motion.button>
             </div>
-
-            {/* Casos de prueba */}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              onClick={() => setShowModal(true)}
-              className="
-                px-5 py-2
-                text-sm font-bold uppercase
-                text-[#D72638]
-                border border-[#D72638]
-                rounded-full
-                hover:bg-[#2E2E2E]
-                transition-colors duration-200
-                flex items-center gap-2
-                shadow-sm
-              "
-              data-tour="casosPrueba"
-            >
-              🧪 <span>Casos de Prueba</span>
-            </motion.button>
           </div>
         </div>
 
-        {/* Área de visualización de variables */}
-        <div
-          className="
-            w-full
-            flex-1
-            min-h-0
-            overflow-y-auto
-            px-2 pt-4 pb-28
-            scrollbar-thin
-            scrollbar-thumb-[#D72638]
-            scrollbar-track-[#2E2E2E]
-          "
-          data-tour="visualizacionVariables"
-        >
-          <MemoryDisplay
-            segment={selectedSegment}
-            searchTerm={searchTerm}
-            consolaRef={consolaRef}
-            memoryState={memoryState}
-            setMemoryState={setMemoryState}
-          />
+        {/* Área scroll con velos top/bottom */}
+        <div className="relative flex-1 min-h-0">
+          {/* Velos para indicar scroll */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-black/30 to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/30 to-transparent z-10" />
+
+          {/* Contenido */}
+          <div
+            className="
+              w-full h-full overflow-y-auto
+              px-2 pt-4 pb-28
+              scrollbar-thin
+              scrollbar-thumb-[#D72638]
+              scrollbar-track-transparent
+            "
+            data-tour="visualizacionVariables"
+          >
+            {!hasDataInSelected && !searchTerm ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center text-sm text-gray-400">
+                  No hay datos en este segmento.
+                </div>
+              </div>
+            ) : (
+              <MemoryDisplay
+                segment={selectedSegment}
+                searchTerm={searchTerm}
+                consolaRef={consolaRef}
+                memoryState={memoryState}
+                setMemoryState={setMemoryState}
+              />
+            )}
+          </div>
         </div>
 
-        {/* Barra de segmentos */}
+        {/* Barra de segmentos sticky al fondo */}
         <div
           className="
-            w-full
-            bg-[#1A1A1A]
-            border-t border-[#2E2E2E]
-            shadow-inner
+            sticky bottom-0 left-0 w-full z-20
+            bg-[#111]/95
+            border-t border-white/10
             rounded-b-3xl
-            relative z-10
+            shadow-[inset_0_1px_0_0_rgba(255,255,255,.04)]
           "
           data-tour="segment-buttons"
         >
           <div className="w-full px-2 py-4 flex flex-wrap justify-center gap-3">
-            {[
-              "boolean",
-              "char",
-              "byte",
-              "short",
-              "int",
-              "long",
-              "float",
-              "double",
-              "string",
-            ].map((seg) => (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.05 }}
+            {/* Primitivos */}
+            {PRIMITIVE_SEGMENTS.map((seg) => (
+              <Chip
                 key={seg}
+                label={seg}
+                active={selectedSegment === seg}
                 onClick={() => setSelectedSegment(seg)}
-                className={`
-                  px-4 py-2
-                  text-xs sm:text-sm
-                  font-semibold uppercase tracking-wide
-                  rounded-full border
-                  transition-all duration-300
-                  shadow-sm
-                  ${
-                    selectedSegment === seg
-                      ? "bg-[#D72638]/20 border-[#D72638] text-[#D72638] shadow"
-                      : "bg-[#262626] border-[#2E2E2E] text-[#A0A0A0] hover:bg-[#333] hover:text-[#E0E0E0]"
-                  }
-                `}
-              >
-                {seg}
-              </motion.button>
+              />
             ))}
 
-            <span className="
-              mx-3
-              hidden sm:inline-block
-              text-[#444]
-              font-bold
-              select-none
-            ">
+            <span
+              className="
+                mx-2 hidden sm:inline-block
+                text-[#444] font-bold select-none
+              "
+              aria-hidden
+            >
               |
             </span>
 
-            {["array", "object"].map((seg) => (
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                whileHover={{ scale: 1.05 }}
+            {/* Compuestos */}
+            {COMPLEX_SEGMENTS.map((seg) => (
+              <Chip
                 key={seg}
+                label={seg}
+                active={selectedSegment === seg}
                 onClick={() => setSelectedSegment(seg)}
-                data-tour="botonArray"
-                className={`
-                  px-4 py-2
-                  text-xs sm:text-sm
-                  font-semibold uppercase tracking-wide
-                  rounded-full border
-                  transition-all duration-300
-                  shadow-sm
-                  ${
-                    selectedSegment === seg
-                      ? "bg-[#D72638]/20 border-[#D72638] text-[#D72638] shadow"
-                      : "bg-[#262626] border-[#2E2E2E] text-[#A0A0A0] hover:bg-[#333] hover:text-[#E0E0E0]"
-                  }
-                `}
-              >
-                {seg}
-              </motion.button>
+                dataTour={seg === "array" ? "botonArray" : undefined}
+              />
             ))}
           </div>
         </div>
@@ -301,5 +295,36 @@ export function MemoryScreen({
         />
       )}
     </div>
+  );
+}
+
+/* ───────── UI Atómicas ───────── */
+
+function Chip({
+  label,
+  active,
+  onClick,
+  dataTour,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  dataTour?: string;
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.05 }}
+      onClick={onClick}
+      data-tour={dataTour}
+      className={[
+        "px-4 py-2 text-xs sm:text-sm font-semibold uppercase tracking-wide rounded-full border transition-all duration-300 shadow-sm",
+        active
+          ? "bg-[#D72638]/20 border-[#D72638] text-[#ff7a8a] shadow"
+          : "bg-white/5 border-white/10 text-[#BFBFBF] hover:bg-white/10 hover:text-white",
+      ].join(" ")}
+    >
+      {label}
+    </motion.button>
   );
 }

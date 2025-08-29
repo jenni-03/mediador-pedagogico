@@ -105,23 +105,6 @@ export const infoStructures: Record<string, any> = {
     info: [
       {
         key: "Peso",
-        description: "Número total de nodos en el árbol binario."
-      },
-      {
-        key: "Altura",
-        description: "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario."
-      },
-      {
-        key: "Hojas",
-        description: "Nodo terminal en la estructura del árbol que no posee descendientes."
-      }
-    ],
-  },
-
-  arbol_avl: {
-    info: [
-      {
-        key: "Peso",
         description: "Número total de nodos en el árbol binario.",
       },
       {
@@ -137,8 +120,42 @@ export const infoStructures: Record<string, any> = {
     ],
   },
 
-  roji_negro: {
-    info: ["Peso", "Altura"],
+  arbol_avl: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol.",
+      },
+      {
+        key: "Altura",
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
+      },
+      {
+        key: "Hojas",
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
+    ],
+  },
+
+  arbol_rojinegro: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol.",
+      },
+      {
+        key: "Altura",
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
+      },
+      {
+        key: "Hojas",
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
+    ],
   },
 
   splay: {
@@ -149,8 +166,23 @@ export const infoStructures: Record<string, any> = {
     info: ["Peso", "Altura"],
   },
 
-  arbol_eneario: {
-    info: ["Peso", "Altura", "Gordura"],
+  arbol_nario: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol.",
+      },
+      {
+        key: "Altura",
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
+      },
+      {
+        key: "Hojas",
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
+    ],
   },
 
   arbol_b: {

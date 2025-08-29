@@ -611,34 +611,61 @@ export const commandRules: Record<
   arbol_binario_busqueda: (parts) => {
     const keyword = parts[0]?.toLowerCase();
     switch (keyword) {
-      case "insert":
-        {
-          if (parts.length !== 2) {
-            return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a insertar como argumento." : "El método únicamente espera el valor a insertar como argumento." };
-          }
-          const insertPattern = /^\d{1,2}$/; // Regex para validar un número entero de hasta 4 dígitos
-          if (!insertPattern.test(parts[1])) {
-            return { valid: false, message: "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos." };
-          }
-          return true;
+      case "insert": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a insertar como argumento."
+                : "El método únicamente espera el valor a insertar como argumento.",
+          };
         }
+        const insertPattern = /^\d{1,2}$/; // Regex para validar un número entero de hasta 4 dígitos
+        if (!insertPattern.test(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
 
       case "delete": {
         if (parts.length !== 2) {
-          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a eliminar como argumento." : "El método únicamente espera el valor a eliminar como argumento." };
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
         }
         if (isNaN(Number(parts[1]))) {
-          return { valid: false, message: "El valor a eliminar debe ser un número válido." };
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
         }
         return true;
       }
 
       case "search": {
         if (parts.length !== 2) {
-          return { valid: false, message: parts.length === 1 ? "Debe proporcionar el valor a buscar como argumento." : "El método únicamente espera el valor a buscar como argumento." };
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
         }
         if (isNaN(Number(parts[1]))) {
-          return { valid: false, message: "El valor a buscar debe ser un número válido." };
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
         }
         return true;
       }
@@ -647,23 +674,101 @@ export const commandRules: Record<
       case "getinorder":
       case "getpostorder":
       case "getlevelorder":
-      case "clean":
-        {
-          if (parts.length !== 1) {
-            return { valid: false, message: "El método no espera ningún argumento." };
-          }
-          return true;
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
         }
+        return true;
+      }
 
       default:
         return false;
     }
   },
 
-  roji_negro: (parts) => {
-    // const keyword = parts[0]?.toLowerCase();
-    return commandRules.bst(parts);
-    // || (keyword === "color" && parts.length === 2 && !isNaN(Number(parts[1]))); // Obtener el color de un nodo
+  arbol_rojinegro: (parts) => {
+    const keyword = parts[0]?.toLowerCase();
+
+    switch (keyword) {
+      case "insert": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a insertar como argumento."
+                : "El método únicamente espera el valor a insertar como argumento.",
+          };
+        }
+        const insertPattern = /^\d{1,2}$/; // hasta 2 dígitos
+        if (!insertPattern.test(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "delete": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "search": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "getpreorder":
+      case "getinorder":
+      case "getpostorder":
+      case "getlevelorder":
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
+        }
+        return true;
+      }
+
+      default:
+        return false;
+    }
   },
 
   splay: (parts) => {
@@ -686,22 +791,168 @@ export const commandRules: Record<
     );
   },
 
-  arbol_eneario: (parts) => {
-    const keyword = parts[0]?.toLowerCase();
-    switch (keyword) {
-      case "insert":
-      case "delete":
-      case "search":
-        return parts.length === 2 && !isNaN(Number(parts[1])); // Requiere un solo número
-      case "traverse":
-        return (
-          parts.length === 2 &&
-          ["levelorder", "preorder", "postorder"].includes(
-            parts[1].toLowerCase()
-          )
-        );
-      case "clean":
-        return parts.length === 1; // No requiere parámetros
+  arbol_nario: (parts) => {
+    // k puede no ser string si parts[0] viniera mal
+    const k = typeof parts[0] === "string" ? parts[0].toLowerCase() : "";
+
+    // ---- helpers robustos (aceptan number | string | undefined) ----
+    const asStr = (v: unknown) => (v == null ? "" : String(v));
+    const stripQuotes = (v: unknown) => asStr(v).replace(/^['"]|['"]$/g, "");
+    const isIntStr = (v: unknown) => /^\d+$/.test(asStr(v)); // "0", "35"
+    const isTwoDigits = (v: unknown) => /^\d{1,2}$/.test(asStr(v)); // 1..99
+    const normId = (v: unknown) => {
+      const n = Number(stripQuotes(v));
+      return Number.isFinite(n) ? String(n) : asStr(v);
+    };
+
+    switch (k) {
+      case "createroot": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor de la raíz como argumento."
+                : "El método únicamente espera el valor de la raíz.",
+          };
+        }
+        if (!isTwoDigits(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor de la raíz debe ser un entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "insertchild": {
+        // insertChild parentId value [index]
+        if (parts.length !== 3 && parts.length !== 4) {
+          return {
+            valid: false,
+            message:
+              "Uso: insertChild idPadre valor [index]. Ej.: insertChild 1 25 0",
+          };
+        }
+        if (!isIntStr(parts[1])) {
+          return {
+            valid: false,
+            message: "El id del padre debe ser un entero (ej.: 1, '1', \"1\").",
+          };
+        }
+        // normaliza a string numérica sin comillas / ceros a la izquierda
+        parts[1] = normId(parts[1]);
+
+        if (!isTwoDigits(parts[2])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un entero positivo de hasta 2 dígitos.",
+          };
+        }
+        if (parts.length === 4 && !isIntStr(parts[3])) {
+          return {
+            valid: false,
+            message: "El índice (si se indica) debe ser un entero >= 0.",
+          };
+        }
+        return true;
+      }
+
+      case "deletenode": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message: "Uso: deleteNode id. Ej.: deleteNode 3",
+          };
+        }
+        if (!isIntStr(parts[1])) {
+          return { valid: false, message: "El id debe ser un entero." };
+        }
+        parts[1] = normId(parts[1]);
+        return true;
+      }
+
+      case "movenode": {
+        // moveNode id newParentId [index]
+        if (parts.length !== 3 && parts.length !== 4) {
+          return {
+            valid: false,
+            message: "Uso: moveNode id nuevoPadre [index]. Ej.: moveNode 5 1 2",
+          };
+        }
+        if (!isIntStr(parts[1]) || !isIntStr(parts[2])) {
+          return {
+            valid: false,
+            message: "Los ids deben ser enteros (ej.: 5, 1).",
+          };
+        }
+        parts[1] = normId(parts[1]);
+        parts[2] = normId(parts[2]);
+
+        if (parts.length === 4 && !isIntStr(parts[3])) {
+          return {
+            valid: false,
+            message: "El índice debe ser un entero >= 0.",
+          };
+        }
+        return true;
+      }
+
+      case "updatevalue": {
+        // updateValue id newValue
+        if (parts.length !== 3) {
+          return {
+            valid: false,
+            message: "Uso: updateValue id nuevoValor. Ej.: updateValue 7 42",
+          };
+        }
+        if (!isIntStr(parts[1])) {
+          return { valid: false, message: "El id debe ser un entero." };
+        }
+        parts[1] = normId(parts[1]);
+
+        if (!isTwoDigits(parts[2])) {
+          return {
+            valid: false,
+            message:
+              "El nuevo valor debe ser un entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "search": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message: "Debe proporcionar el valor a buscar. Ej.: search 25",
+          };
+        }
+        if (!isTwoDigits(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a buscar debe ser un entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "getpreorder":
+      case "getpostorder":
+      case "getlevelorder":
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
+        }
+        return true;
+      }
+
       default:
         return false;
     }
