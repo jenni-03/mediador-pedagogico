@@ -53,7 +53,7 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
             const clonedTree = tree.clonarABB();
 
             // Obtener el nodo a ser eliminado para acceder a su ID
-            const deletedNodeData = clonedTree.eliminarABB(value);
+            const deletedNodeData = clonedTree.eliminar(value);
 
             // Actualizar el estado del árbol
             setTree(clonedTree);
@@ -183,22 +183,21 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
 
     // Operación para vaciar el árbol
     const clearTree = useCallback(() => {
-        setTree(prev => {
-            // Clonar el árbol para asegurar la inmutabilidad del estado
-            const clonedTree = prev.clonarABB();
+        // Clonar el árbol para asegurar la inmutabilidad del estado
+        const cloned = tree.clonarABB();
 
-            // Vaciar el árbol
-            clonedTree.vaciar();
+        // Vaciar el árbol
+        cloned.vaciar();
 
-            // Actualizar la query a partir de la operación realizada
-            setQuery((prev) => ({
-                ...prev,
-                toClear: true
-            }));
+        // Actualizar el estado del árbol
+        setTree(cloned);
 
-            return clonedTree;
-        });
-    }, []);
+        // Actualizar la query a partir de la operación realizada
+        setQuery((prev) => ({
+            ...prev,
+            toClear: true
+        }));
+    }, [tree]);
 
     // Función de restablecimiento de las queries del usuario
     const resetQueryValues = useCallback(() => {

@@ -492,3 +492,8 @@ export type AvlFrame = {
     targetId: string;
   }[];
 }
+
+type TreeTraversalAnimOptions = {
+  recolor?: boolean;
+  strokeColor?: string;
+};

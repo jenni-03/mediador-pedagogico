@@ -1,4 +1,3 @@
-import * as d3 from "d3";
 import { useEffect, useMemo, useRef } from "react";
 import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType, TreeLinkData } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
@@ -7,6 +6,7 @@ import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { animateClearTree, animateTreeTraversal, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { computeSvgTreeMetrics } from "../../../../../shared/utils/treeUtils";
+import { hierarchy, type HierarchyNode, select, tree } from "d3";
 
 export function useBinarySearchTreeRender(
     treeData: HierarchyNodeData<number> | null,
@@ -22,13 +22,13 @@ export function useBinarySearchTreeRender(
     // Mapa para guardar posiciones {x, y} de los valores de secuencia dentro del lienzo
     const seqPositions = useRef(new Map<string, { x: number, y: number }>()).current;
 
-    // Objetos para guardar el desplazamiento inicial de los contenedores del árbol y secuencia de recorrido
+    // offsets para contenedores de árbol y secuencia
     const treeOffset = useRef({ x: 0, y: 0 }).current;
     const seqOffset = useRef({ x: 0, y: 0 }).current;
 
     // Nodo raíz D3 jerárquico que representa la estructura del árbol
     const root = useMemo(() => {
-        return treeData ? d3.hierarchy(treeData) : null;
+        return treeData ? hierarchy(treeData) : null;
     }, [treeData]);
 
     // Lista de nodos actuales (sin placeholders)
@@ -71,7 +71,7 @@ export function useBinarySearchTreeRender(
         const levelSpacing = SVG_BINARY_TREE_VALUES.LEVEL_SPACING;
 
         // Creación del layout del árbol
-        const treeLayout = d3.tree<HierarchyNodeData<number>>()
+        const treeLayout = tree<HierarchyNodeData<number>>()
             .nodeSize([nodeSpacing, levelSpacing]);
         treeLayout(root);
 
@@ -86,7 +86,7 @@ export function useBinarySearchTreeRender(
         );
 
         // Configuración del contenedor SVG
-        const svg = d3.select(svgRef.current)
+        const svg = select(svgRef.current)
             .attr("height", metrics.height)
             .attr("width", metrics.width);
 
@@ -129,7 +129,7 @@ export function useBinarySearchTreeRender(
         if (!root || !svgRef.current || !query.toInsert) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -145,8 +145,8 @@ export function useBinarySearchTreeRender(
         if (!newNode) return;
 
         // Obtenemos el recorrido o ruta desde el nodo raíz hasta el nodo padre del nuevo nodo
-        let parentNode: d3.HierarchyNode<HierarchyNodeData<number>> | null = null;
-        let pathToParent: d3.HierarchyNode<HierarchyNodeData<number>>[] = [];
+        let parentNode: HierarchyNode<HierarchyNodeData<number>> | null = null;
+        let pathToParent: HierarchyNode<HierarchyNodeData<number>>[] = [];
         if (newNode.parent !== null) {
             parentNode = newNode.parent;
             pathToParent = root.path(parentNode);
@@ -178,7 +178,7 @@ export function useBinarySearchTreeRender(
         if (query.toDelete.length !== 2) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -194,7 +194,7 @@ export function useBinarySearchTreeRender(
         if (!nodeToDelete) return;
 
         // Ubicamos el nodo a actualizar en el arbol (si aplica)
-        let nodeToUpdate: d3.HierarchyNode<HierarchyNodeData<number>> | null = null;
+        let nodeToUpdate: HierarchyNode<HierarchyNodeData<number>> | null = null;
         if (query.toDelete[1]) {
             nodeToUpdate = prevRoot.descendants().find(d => d.data.id === query.toDelete[1])!;
         }
@@ -222,7 +222,7 @@ export function useBinarySearchTreeRender(
         if (!root || !svgRef.current || !query.toSearch) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -257,7 +257,7 @@ export function useBinarySearchTreeRender(
         if (!traversalType) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -293,7 +293,7 @@ export function useBinarySearchTreeRender(
         if (!svgRef.current || !query.toClear) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g.tree-container");

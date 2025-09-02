@@ -1,4 +1,4 @@
-import { HierarchyNode } from "d3";
+import type { HierarchyNode, Selection } from "d3";
 import { HierarchyNodeData, TreeLinkData } from "../../../types";
 import { highlightTreePath, repositionTreeNodes } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
@@ -13,8 +13,8 @@ import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateInsertNode(
-    treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
-    seqG: d3.Selection<SVGGElement, unknown, null, undefined>,
+    treeG: Selection<SVGGElement, unknown, null, undefined>,
+    seqG: Selection<SVGGElement, unknown, null, undefined>,
     treeData: {
         newNodeId: string;
         parentId: string | null;
@@ -92,8 +92,8 @@ export async function animateInsertNode(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateDeleteNode(
-    treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
-    seqG: d3.Selection<SVGGElement, unknown, null, undefined>,
+    treeG: Selection<SVGGElement, unknown, null, undefined>,
+    seqG: Selection<SVGGElement, unknown, null, undefined>,
     treeData: {
         prevRootNode: HierarchyNode<HierarchyNodeData<number>>;
         nodeToDelete: HierarchyNode<HierarchyNodeData<number>>;
@@ -165,8 +165,8 @@ export async function animateDeleteNode(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateSearchNode(
-    treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
-    seqG: d3.Selection<SVGGElement, unknown, null, undefined>,
+    treeG: Selection<SVGGElement, unknown, null, undefined>,
+    seqG: Selection<SVGGElement, unknown, null, undefined>,
     targetNode: string,
     path: HierarchyNode<HierarchyNodeData<number>>[],
     resetQueryValues: () => void,
@@ -210,7 +210,7 @@ export async function animateSearchNode(
  * @param pathToParent Arreglo de nodos jerárquicos que representan el camino desde la raíz hasta el padre del nodo a eliminar.
  */
 export async function animateLeafOrSingleChild(
-    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    g: Selection<SVGGElement, unknown, null, undefined>,
     nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
     parentNodeId: string | null,
     pathToParent: HierarchyNode<HierarchyNodeData<number>>[]
@@ -254,8 +254,8 @@ export async function animateLeafOrSingleChild(
             .transition()
             .duration(1000)
             .style("opacity", 0)
+            .remove()
             .end();
-        parentNodeLinkRemovalGroup.remove();
     }
 
     // Desconexión del enlace entre el nodo a eliminar y su hijo (si aplica)
@@ -264,8 +264,8 @@ export async function animateLeafOrSingleChild(
             .transition()
             .duration(1000)
             .style("opacity", 0)
+            .remove()
             .end();
-        removalNodeLinkGroup.remove();
     }
 
     // Salida del nodo a eliminar
@@ -273,8 +273,8 @@ export async function animateLeafOrSingleChild(
         .transition()
         .duration(1000)
         .style("opacity", 0)
+        .remove()
         .end();
-    removedG.remove();
 
     // Si el nodo a eliminar cuenta con un nodo hijo
     if (newChildLinkGroup) {
@@ -299,7 +299,7 @@ export async function animateLeafOrSingleChild(
  * @param pathToRemovalNode Arreglo de nodos jerárquicos que representan el camino desde el nodo a actualizar hasta el nodo a eliminar.
  */
 export async function animateTwoChildren(
-    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    g: Selection<SVGGElement, unknown, null, undefined>,
     nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
     nodeToUpdate: HierarchyNode<HierarchyNodeData<number>>,
     pathToUpdateNode: HierarchyNode<HierarchyNodeData<number>>[],
@@ -390,8 +390,8 @@ export async function animateTwoChildren(
             .transition()
             .duration(1000)
             .style("opacity", 0)
+            .remove()
             .end();
-        removalNodeLinkGroup.remove();
     }
 
     // Desconexión del enlace entre el nodo a eliminar y su hijo (si aplica)
@@ -400,8 +400,8 @@ export async function animateTwoChildren(
             .transition()
             .duration(1000)
             .style("opacity", 0)
+            .remove()
             .end();
-        removalChildNodeLinkGroup.remove();
     }
 
     // Salida del nodo a eliminar
@@ -409,8 +409,8 @@ export async function animateTwoChildren(
         .transition()
         .duration(1000)
         .style("opacity", 0)
+        .remove()
         .end();
-    removedG.remove();
 
     // Si el nodo a eliminar cuenta con un nodo hijo
     if (newChildLinkGroup) {
@@ -434,7 +434,7 @@ export async function animateTwoChildren(
  * @param r Radio del contenedor del nodo.
  */
 function updateTreeLinkPath(
-    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    g: Selection<SVGGElement, unknown, null, undefined>,
     parentId: string,
     childId: string,
     r: number
