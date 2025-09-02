@@ -617,6 +617,63 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
+  arbol_123: {
+    buttons: [
+      {
+        title: "insert",
+        description:
+          "Inserta un valor en el Árbol 1-2-3 (ajustando nodos y promoviendo claves cuando sea necesario).",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
+               Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(30);</strong> ó <strong>arbol123.insert(30);</strong>",
+      },
+      {
+        title: "delete",
+        description:
+          "Elimina un valor del Árbol 1-2-3 (fusionando o redistribuyendo nodos según el caso).",
+        estructura: "nombreObjeto.delete(valor);",
+        ejemplo: "arbol123.delete(20);",
+      },
+      {
+        title: "search",
+        description: "Busca un valor en el Árbol 1-2-3.",
+        estructura: "nombreObjeto.search(valor);",
+        ejemplo: "arbol123.search(25);",
+      },
+      {
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getPreOrder();",
+        ejemplo: "arbol123.getPreOrder();",
+      },
+      {
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getInOrder();",
+        ejemplo: "arbol123.getInOrder();",
+      },
+      {
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getPostOrder();",
+        ejemplo: "arbol123.getPostOrder();",
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles (BFS) del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getLevelOrder();",
+        ejemplo: "arbol123.getLevelOrder();",
+      },
+      {
+        title: "clean",
+        description: "Vacía por completo el Árbol 1-2-3.",
+        estructura: "nombreObjeto.clean();",
+        ejemplo: "arbol123.clean();",
+      },
+    ],
+  },
+
   arbolb: {
     buttons: [
       {

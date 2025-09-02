@@ -28,6 +28,26 @@ export interface LinkedListInterface<T> {
   getTamanio(): number;
 }
 
+// Un nodo de jerarquía 2-3 SIEMPRE tiene:
+// - id: "n-<idNum>"
+// - idNum: presente
+// - value: number[] (todas las claves del nodo, en orden)
+// - children?: TwoThreeHierarchy[] (sin placeholders)
+export type TwoThreeHierarchy = {
+  id: string; // "n-<id>"
+  idNum: number; // requerido
+  value: number[]; // requerido
+  children?: TwoThreeHierarchy[];
+  // opcionalmente puedes conservar campos de HierarchyNodeData si los usas:
+  isPlaceholder?: boolean;
+  degree?: number;
+  order?: number;
+  meta?: { nIndex?: number };
+};
+
+// Conveniencia para las operaciones del simulador 2-3
+export type TwoThreeQuery = BaseQueryOperations<"arbol_123">;
+
 export type ListRenderConfig = {
   showHeadIndicator: boolean;
   showTailIndicator: boolean;
@@ -260,7 +280,25 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
                           /** Vaciar árbol completo */
                           toClear: boolean;
                         }
-                      : never; // Fallback para otros casos
+                      : T extends "arbol_123" | "arbol_23"
+                        ? {
+                            /** Operaciones mutables */
+                            toInsert: number | null; // insert(x)
+                            toDelete: number | null; // delete(x)
+
+                            /** Consultas */
+                            toSearch: number | null; // search(x)
+
+                            /** Recorridos (nota: cada key del nodo se emite como elemento de la secuencia) */
+                            toGetPreOrder: TraversalNodeType[] | [];
+                            toGetInOrder: TraversalNodeType[] | [];
+                            toGetPostOrder: TraversalNodeType[] | [];
+                            toGetLevelOrder: TraversalNodeType[] | [];
+
+                            /** Limpieza */
+                            toClear: boolean; // clear()
+                          }
+                        : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -382,7 +420,25 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
 
                         clean: () => void;
                       }
-                    : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+                    : T extends "arbol_123" | "arbol_23"
+                      ? {
+                          /** Mutaciones */
+                          insert: (value: number) => void;
+                          delete: (value: number) => void;
+
+                          /** Consultas */
+                          search: (value: number) => void;
+
+                          /** Recorridos */
+                          getPreOrder: () => void;
+                          getInOrder: () => void;
+                          getPostOrder: () => void;
+                          getLevelOrder: () => void;
+
+                          /** Limpieza total (tras esto, vuelve a usarse createRoot) */
+                          clean: () => void;
+                        }
+                      : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
