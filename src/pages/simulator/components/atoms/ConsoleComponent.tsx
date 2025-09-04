@@ -17,6 +17,7 @@ export const structureNames: Record<string, string> = {
   arbol_rojinegro: "arbolRN",
   arbol_nario: "arbolNario",
   arbol_123: "arbol123",
+  arbol_b: "arbolB",
 };
 
 interface ConsoleComponentProps {
@@ -132,10 +133,10 @@ export function ConsoleComponent({
     if (typeof commandValidation === "boolean") {
       if (commandValidation) {
         const command = parts[0]?.toLowerCase();
-             console.log("✅ Valid command:", command);
+        console.log("✅ Valid command:", command);
         // Verificar si la estructura necesita "create"
         const needsCreate = structuresRequiringCreate.includes(structureType);
-         console.log("➡️ needsCreate:", needsCreate);
+        console.log("➡️ needsCreate:", needsCreate);
         // Caso 1: Si la estructura no ha sido creada y el comando es distinto a create
         if (needsCreate && !isCreated && command !== "create") {
           onCommand([], false);

@@ -1039,23 +1039,83 @@ export const commandRules: Record<
         return false;
     }
   },
-
   arbol_b: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
-      case "insert":
-      case "delete":
-      case "search":
-        return parts.length === 2 && !isNaN(Number(parts[1])); // Requiere un solo número
-      // case "split": // Si un nodo se llena, se divide en dos.
-      // case "merge": // Si un nodo tiene muy pocas claves, se fusiona con un hermano.
-      case "traverse":
-        return (
-          parts.length === 2 &&
-          ["levelorder", "inorder"].includes(parts[1].toLowerCase())
-        );
-      case "clean":
-        return parts.length === 1; // No requiere parámetros
+      case "insert": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a insertar como argumento."
+                : "El método únicamente espera el valor a insertar como argumento.",
+          };
+        }
+        const insertPattern = /^\d{1,2}$/; // hasta 2 dígitos (consistente con arbol_binario)
+        if (!insertPattern.test(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "delete": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "search": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "getpreorder":
+      case "getinorder":
+      case "getpostorder":
+      case "getlevelorder":
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
+        }
+        return true;
+      }
+
       default:
         return false;
     }

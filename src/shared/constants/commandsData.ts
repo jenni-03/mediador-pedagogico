@@ -674,41 +674,68 @@ export const commandsData: Record<string, any> = {
     ],
   },
 
-  arbolb: {
+  arbol_b: {
     buttons: [
       {
         title: "insert",
-        description: "Insertar un nodo en el árbol B",
-        estructura: "nombreObjeto.insert(valor);",
-        ejemplo: "arbolB.insert(1);",
+        description:
+          "Inserta un valor en el Árbol B. Si un nodo se llena, se divide (split) y se promueve la clave media.",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong>
+               Si el objeto ya existe: <strong>arbolB.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(30);</strong> ó <strong>arbolB.insert(30);</strong>",
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del árbol B",
-        estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolB.delete(1);",
+        description:
+          "Elimina un valor del Árbol B. Corrige con redistribución (préstamo) o fusión (merge) si algún nodo queda con pocas claves.",
+        estructura: "<strong>arbolB.delete(valor);</strong>",
+        ejemplo: "<strong>arbolB.delete(20);</strong>",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el árbol B",
-        estructura: "nombreObjeto.search(valor);",
-        ejemplo: "arbolB.search(1);",
+        description:
+          "Busca un valor en el Árbol B descendiendo por los intervalos que determinan sus claves.",
+        estructura: "<strong>arbolB.search(valor);</strong>",
+        ejemplo: "<strong>arbolB.search(25);</strong>",
       },
       {
-        title: "traverse",
-        description: "Recorrer el Árbol B en diferentes órdenes",
-        estructura: "nombreObjeto.traverse(nombreOrden);",
-        ejemplo:
-          "arbolB.traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description:
+          "Obtiene el recorrido en preorden del Árbol B (claves del nodo, luego sus hijos de izquierda a derecha).",
+        estructura: "<strong>arbolB.getPreOrder();</strong>",
+        ejemplo: "<strong>arbolB.getPreOrder();</strong>",
+      },
+      {
+        title: "getInOrder",
+        description:
+          "Obtiene el recorrido en inorden del Árbol B (child[0], k0, child[1], k1, ..., child[m]).",
+        estructura: "<strong>arbolB.getInOrder();</strong>",
+        ejemplo: "<strong>arbolB.getInOrder();</strong>",
+      },
+      {
+        title: "getPostOrder",
+        description:
+          "Obtiene el recorrido en postorden del Árbol B (todos los hijos y al final las claves del nodo).",
+        estructura: "<strong>arbolB.getPostOrder();</strong>",
+        ejemplo: "<strong>arbolB.getPostOrder();</strong>",
+      },
+      {
+        title: "getLevelOrder",
+        description:
+          "Obtiene el recorrido por niveles (BFS) del Árbol B (se encolan nodos y se emiten sus claves en orden).",
+        estructura: "<strong>arbolB.getLevelOrder();</strong>",
+        ejemplo: "<strong>arbolB.getLevelOrder();</strong>",
       },
       {
         title: "clean",
-        description: "Borrar el árbol B",
-        estructura: "nombreObjeto.clean();",
-        ejemplo: "arbolB.clean();",
+        description: "Vacía por completo el Árbol B.",
+        estructura: "<strong>arbolB.clean();</strong>",
+        ejemplo: "<strong>arbolB.clean();</strong>",
       },
     ],
   },
+
   arbolbplus: {
     buttons: [
       {

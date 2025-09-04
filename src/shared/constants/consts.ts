@@ -24,6 +24,7 @@ export const STRUCTURE_NAME = {
     RB_TREE: "arbol_rojinegro",
     NARY_TREE : "arbol_nario",
     TREE_123: "arbol_123",
+    TREE_B: "arbol_b",
 } as const
 
 export const SVG_STYLE_VALUES = {

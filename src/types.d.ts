@@ -47,6 +47,51 @@ export type TwoThreeHierarchy = {
 
 // Conveniencia para las operaciones del simulador 2-3
 export type TwoThreeQuery = BaseQueryOperations<"arbol_123">;
+export type BQuery = BaseQueryOperations<"arbol_b">;
+
+// Un nodo de Árbol B para el renderer D3/SVG (similar a TwoThreeHierarchy, pero m-ario genérico).
+export type BHierarchy = {
+  id: string; // "n-<idNum>"
+  idNum: number; // requerido
+  keys: number[]; // claves del nodo en orden ascendente
+  children?: BHierarchy[]; // hijos reales (sin placeholders)
+
+  // Campos opcionales ya usados en tu ecosistema
+  isPlaceholder?: boolean;
+
+  // Metadatos útiles para tooltips/inspección
+  order?: number; // m (aridad máx del árbol, p.ej. 4 → B-tree de orden 4)
+  degree?: number; // número de hijos actuales
+  minKeys?: number; // t-1 si t=grado mínimo
+  maxKeys?: number; // m-1
+  meta?: { nIndex?: number };
+};
+
+/* ─────────────────────────── 2.1) Eventos de animación/fix-ups B ───────────────── */
+export type BSplitEvent = {
+  type: "split";
+  nodeId: string; // id del nodo que se parte
+  midKey: number; // clave separadora promovida
+  leftId?: string; // ids resultantes (si ya existen tras la operación)
+  rightId?: string;
+};
+
+export type BMergeEvent = {
+  type: "merge";
+  leftId: string; // nodo que absorbe
+  rightId: string; // hermano que se fusiona
+  sepKey: number; // separador que baja desde el padre
+};
+
+export type BRedistributeEvent = {
+  type: "redistribute";
+  fromId: string; // donante
+  toId: string; // receptor
+  viaKey: number; // separador ajustado en el padre
+  direction: "left" | "right";
+};
+
+export type BFixLog = (BSplitEvent | BMergeEvent | BRedistributeEvent)[];
 
 export type ListRenderConfig = {
   showHeadIndicator: boolean;
@@ -298,7 +343,30 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
                             /** Limpieza */
                             toClear: boolean; // clear()
                           }
-                        : never; // Fallback para otros casos
+                        : T extends "arbol_b"
+                          ? {
+                              toInit?: number | null; // t (grado mínimo). Si no se usa, queda undefined/null.
+
+                              /** Mutaciones */
+                              toInsert: number | null; // insert(x)
+                              toDelete: number | null; // delete(x)
+
+                              /** Consultas */
+                              toSearch: number | null; // search(x)
+
+                              /** Recorridos */
+                              toGetPreOrder: TraversalNodeType[] | [];
+                              toGetInOrder: TraversalNodeType[] | [];
+                              toGetPostOrder: TraversalNodeType[] | [];
+                              toGetLevelOrder: TraversalNodeType[] | [];
+
+                              /** Limpieza */
+                              toClear: boolean; // clear()
+
+                              /** (Opcional) registro de fix-ups para el renderer */
+                              bFix?: BFixLog | null;
+                            }
+                          : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -438,7 +506,19 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
                           /** Limpieza total (tras esto, vuelve a usarse createRoot) */
                           clean: () => void;
                         }
-                      : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+                      : T extends "arbol_b"
+                        ? {
+                            init?: (t: number) => void;
+                            insert: (value: number) => void;
+                            delete: (value: number) => void;
+                            search: (value: number) => void;
+                            getPreOrder: () => void;
+                            getInOrder: () => void;
+                            getPostOrder: () => void;
+                            getLevelOrder: () => void;
+                            clean: () => void;
+                          }
+                        : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
