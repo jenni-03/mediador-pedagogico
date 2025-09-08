@@ -14,6 +14,7 @@ import { BinarySearchTreeSimulator } from "./BinarySearchTreeSimulator";
 import { AvlTreeSimulator } from "./AvlTreeSimulator";
 import { RbTreeSimulator } from "./RbTreeSimulator";
 import { NaryTreeSimulator } from "./NaryTreeSimulator";
+import { HeapTreeSimulator } from "./HeapTreeSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
@@ -31,6 +32,7 @@ const componentMap: Record<string, React.FC> = {
   "Árbol AVL": AvlTreeSimulator,
   "Árbol RojiNegro": RbTreeSimulator,
   "Árbol Eneario": NaryTreeSimulator,
+  "Árbol Heap": HeapTreeSimulator,
 };
 
 export function StructureSimulator() {

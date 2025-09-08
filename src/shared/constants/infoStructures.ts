@@ -162,8 +162,23 @@ export const infoStructures: Record<string, any> = {
     info: ["Peso", "Altura"],
   },
 
-  heap: {
-    info: ["Peso", "Altura"],
+  arbol_heap: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol.",
+      },
+      {
+        key: "Altura",
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
+      },
+      {
+        key: "Hojas",
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
+    ],
   },
 
   arbol_nario: {

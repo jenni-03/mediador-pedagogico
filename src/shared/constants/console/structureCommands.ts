@@ -12,4 +12,5 @@ export const structureCommands: Record<string, string[]> = {
   arbol_nario: [
     "createRoot", "insertChild", "deleteNode", "moveNode", "updateValue", "search", "getPreOrder", "getPostOrder", "getLevelOrder", "clean",
   ],
+  arbol_heap: ["insert", "delete", "deleteR", "search", "peek", "getLevelOrder", "clean"],
 };

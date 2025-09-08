@@ -254,6 +254,16 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
     /** Vaciar árbol completo */
     toClear: boolean;
   }
+  : T extends "arbol_heap"
+  ? {
+    toInsert: string | null;
+    toDeleteRoot: [string, string | null] | [];
+    toSearch: number | null;
+    toPeek: number | null;
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+    swapPath: string[];
+  }
   : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
@@ -374,6 +384,16 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     getPostOrder: () => void;
     getLevelOrder: () => void;
 
+    clean: () => void;
+  }
+  : T extends "arbol_heap"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    deleteRoot: () => void;
+    search: (value: number) => void;
+    peek: () => void;
+    getLevelOrder: () => void;
     clean: () => void;
   }
   : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos

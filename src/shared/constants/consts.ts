@@ -22,7 +22,8 @@ export const STRUCTURE_NAME = {
     BINARY_SEARCH_TREE: 'arbol_binario_busqueda',
     AVL_TREE: "arbol_avl",
     RB_TREE: "arbol_rojinegro",
-    NARY_TREE : "arbol_nario"
+    NARY_TREE : "arbol_nario",
+    HEAP_TREE : "arbol_heap",
 } as const
 
 export const SVG_STYLE_VALUES = {

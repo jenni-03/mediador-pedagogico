@@ -192,8 +192,8 @@ export function drawTraversalSequence(
   opts: {
     seqPositions: Map<string, { x: number; y: number }>;
     nodePositions?: Map<string, { x: number; y: number }>; // ya no se usa aquí
-    treeOffset?: { x: number; y: number };                 // idem
-    seqOffset?: { x: number; y: number };                  // idem
+    treeOffset?: { x: number; y: number }; // idem
+    seqOffset?: { x: number; y: number }; // idem
     seqPadding?: number;
     textSize?: string;
     textWeight?: number;
@@ -269,7 +269,6 @@ export function drawTraversalSequence(
       (exit) => exit.each((d) => seqPositions.delete(d.id)).remove()
     );
 }
-
 
 /* ────────────────────────── Clear (genérico) ────────────────────────── */
 export async function animateClearTree(
@@ -510,7 +509,11 @@ export async function animateTreeTraversal(
 
       // 1) atenúa el número central del nodo para evitar “doble texto”
       if (!centerText.empty()) {
-        await centerText.transition().duration(120).style("opacity", 0.15).end();
+        await centerText
+          .transition()
+          .duration(120)
+          .style("opacity", 0.15)
+          .end();
       }
 
       // 2) pop/fade del texto de secuencia (ya posicionado en drawTraversalSequence)
@@ -519,7 +522,10 @@ export async function animateTreeTraversal(
 
       if (!existsVisible) {
         await seqText
-          .attr("transform", `translate(${finalPos.x}, ${finalPos.y}) scale(0.9)`)
+          .attr(
+            "transform",
+            `translate(${finalPos.x}, ${finalPos.y}) scale(0.9)`
+          )
           .style("opacity", 0)
           .transition()
           .duration(420)
@@ -532,7 +538,10 @@ export async function animateTreeTraversal(
           .transition()
           .duration(420)
           .ease(d3.easeCubicOut)
-          .attr("transform", `translate(${finalPos.x}, ${finalPos.y}) scale(1.02)`)
+          .attr(
+            "transform",
+            `translate(${finalPos.x}, ${finalPos.y}) scale(1.02)`
+          )
           .transition()
           .duration(180)
           .ease(d3.easeCubicOut)
@@ -568,7 +577,11 @@ export async function animateTreeTraversal(
       }
 
       // 4) restaura fill y el número del nodo
-      await sel.transition().duration(200).attr("fill", originalFill ?? null).end();
+      await sel
+        .transition()
+        .duration(200)
+        .attr("fill", originalFill ?? null)
+        .end();
       if (!centerText.empty()) {
         await centerText.transition().duration(120).style("opacity", 1).end();
       }
@@ -642,7 +655,11 @@ export async function animateTreeTraversal(
       // ── aparición del número en banda ──
       // 1) atenúa el número central
       if (!centerText.empty()) {
-        await centerText.transition().duration(120).style("opacity", 0.15).end();
+        await centerText
+          .transition()
+          .duration(120)
+          .style("opacity", 0.15)
+          .end();
       }
 
       // 2) pop/fade del seqText en su posición final
@@ -652,7 +669,10 @@ export async function animateTreeTraversal(
 
       if (!existsVisible) {
         await seqText
-          .attr("transform", `translate(${finalPos.x}, ${finalPos.y}) scale(0.9)`)
+          .attr(
+            "transform",
+            `translate(${finalPos.x}, ${finalPos.y}) scale(0.9)`
+          )
           .style("opacity", 0)
           .transition()
           .duration(420)
@@ -665,7 +685,10 @@ export async function animateTreeTraversal(
           .transition()
           .duration(420)
           .ease(d3.easeCubicOut)
-          .attr("transform", `translate(${finalPos.x}, ${finalPos.y}) scale(1.02)`)
+          .attr(
+            "transform",
+            `translate(${finalPos.x}, ${finalPos.y}) scale(1.02)`
+          )
           .transition()
           .duration(180)
           .ease(d3.easeCubicOut)
@@ -702,7 +725,6 @@ export async function animateTreeTraversal(
   resetQueryValues();
   setIsAnimating(false);
 }
-
 
 /* ────────────────────────── SKIN “NEO” PARA N-ARIO ────────────────────────── */
 export type NaryNeoSkinOptions = {
