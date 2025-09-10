@@ -18,6 +18,7 @@ export const structureNames: Record<string, string> = {
   arbol_nario: "arbolNario",
   arbol_123: "arbol123",
   arbol_b: "arbolB",
+  arbol_b_plus: "arbolBP",
 };
 
 interface ConsoleComponentProps {

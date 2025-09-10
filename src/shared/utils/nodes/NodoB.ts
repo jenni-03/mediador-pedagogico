@@ -1,4 +1,4 @@
-// nodes/NodoaB.ts
+// nodes/NodoB.ts
 // Nodo para Árbol B (NO B+): guarda (clave, valor) en internos y hojas.
 // Inspirado en la interfaz/estilo de Nodo23, con API paralela y mejoras para B-tree.
 

@@ -16,6 +16,7 @@ import { getArbolRNCode } from "./arbolRNCode";
 import { getArbolNarioCode } from "./arbolNarioCode";
 import { getArbol123Code } from "./arbol123Code";
 import { getArbolBCode } from "./arbolBCode";
+import { getArbolBPlusCode } from "./arbolBPlusCode";
 
 // Mapa de funciones para cargar operaciones según estructura
 const pseudoCodeLoaders: Record<string, () => OperationCode> = {
@@ -35,6 +36,7 @@ const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   arbol_nario: getArbolNarioCode,
   arbol_123: getArbol123Code,
   arbol_b: getArbolBCode,
+  arbol_b_plus: getArbolBPlusCode,
 };
 
 // Devuelve el pseudocódigo correspondiente, o {} si no existe

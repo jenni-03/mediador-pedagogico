@@ -8,7 +8,7 @@ const dlog = (...a: any[]) => {
   if (DEBUG_B) console.log("[useBTree]", ...a);
 };
 
-// helper: normaliza a id de DOM (string con prefijo) para el renderer/D3
+// helper: normali  za a id de DOM (string con prefijo) para el renderer/D3
 const toDomId = (id: number | string) =>
   typeof id === "number" ? `n-${id}` : id;
 

@@ -1122,6 +1122,137 @@ export const commandRules: Record<
   },
 
   arbol_b_plus: (parts) => {
-    return commandRules.arbol_b(parts);
+    const k = parts[0]?.toLowerCase();
+
+    // helpers
+    const isTwoDigits = (v: unknown) => /^\d{1,2}$/.test(String(v));
+    const toNum = (v: unknown) => Number(String(v));
+    const noArgsMsg = {
+      valid: false,
+      message: "El método no espera ningún argumento.",
+    };
+
+    switch (k) {
+      case "insert": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a insertar como argumento."
+                : "El método únicamente espera el valor a insertar como argumento.",
+          };
+        }
+        if (!isTwoDigits(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "delete": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
+        }
+        if (isNaN(toNum(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "search": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
+        }
+        if (isNaN(toNum(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      // Alias aceptado: getRange
+      case "range":
+      case "getrange": {
+        if (parts.length !== 3) {
+          return {
+            valid: false,
+            message: "Uso: range from to. Ej.: range 10 25",
+          };
+        }
+        const [fromStr, toStr] = [parts[1], parts[2]];
+        if (!isTwoDigits(fromStr) || !isTwoDigits(toStr)) {
+          return {
+            valid: false,
+            message:
+              "Los parámetros from y to deben ser enteros positivos de hasta 2 dígitos.",
+          };
+        }
+        const from = toNum(fromStr);
+        const to = toNum(toStr);
+        if (from > to) {
+          return {
+            valid: false,
+            message:
+              "El primer argumento debe ser menor o igual que el segundo (from ≤ to).",
+          };
+        }
+        return true;
+      }
+
+      case "scanfrom": {
+        if (parts.length !== 3) {
+          return {
+            valid: false,
+            message: "Uso: scanFrom start limit. Ej.: scanFrom 15 5",
+          };
+        }
+        const [startStr, limitStr] = [parts[1], parts[2]];
+        if (!isTwoDigits(startStr)) {
+          return {
+            valid: false,
+            message:
+              "El parámetro start debe ser un entero positivo de hasta 2 dígitos.",
+          };
+        }
+        if (!/^\d+$/.test(String(limitStr)) || toNum(limitStr) <= 0) {
+          return {
+            valid: false,
+            message: "El parámetro limit debe ser un entero positivo (≥ 1).",
+          };
+        }
+        return true;
+      }
+
+      case "getinorder":
+      case "getlevelorder":
+      case "clean": {
+        if (parts.length !== 1) return noArgsMsg;
+        return true;
+      }
+
+      default:
+        return false;
+    }
   },
 };

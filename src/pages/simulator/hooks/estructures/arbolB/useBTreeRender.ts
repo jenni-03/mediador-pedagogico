@@ -27,12 +27,12 @@ import {
   drawBTreeLinks,
   animateBCreateRoot,
   animateBInsertNode,
-  animateBDeleteSmart, // ← usa la versión que recibe posiciones previas y nuevas
+  animateBDeleteSmart, // versión "smart" que usa posiciones previas y nuevas
   animateBSearchPath,
   animateBTraversal,
 } from "../../../../../shared/utils/draw/BTreeDrawActions";
 
-/* ───────────────────── Config HUD (badge de t) ───────────────────── */
+/* ───────────────────── HUD (badge superior de grado/orden) ───────────────────── */
 const HUD = {
   x: 12,
   y: 10,
@@ -47,7 +47,9 @@ const HUD = {
   fontWeight: 600 as const,
 };
 
-/* ───────────────────── Helpers locales ───────────────────── */
+/* ╔════════════════════════════════════════════════════════════════════════════╗
+   ║                              Helpers locales                               ║
+   ╚════════════════════════════════════════════════════════════════════════════╝*/
 
 /** Dibuja/actualiza el badge superior con t y orden. */
 function writeDegreeBadge(
@@ -91,8 +93,7 @@ function writeDegreeBadge(
     .attr("stroke", HUD.stroke)
     .attr("stroke-width", HUD.sw);
 
-  hud.raise(); // que el HUD quede por encima
-
+  hud.raise(); // asegura que quede por encima
   return { w: bb.width + HUD.padX * 2, h: bb.height + HUD.padY * 2 };
 }
 
@@ -108,13 +109,12 @@ function sanitizeTraversal(values: TraversalNodeType[]): TraversalNodeType[] {
   return Array.from(byId.values());
 }
 
-/** Limpia nodos fantasma de capas previas. */
+/** Limpia nodos “fantasma” que hayan quedado de renders previos. */
 function cleanupGhostNodes(
   treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
   validIds: Set<string>
 ) {
   const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
-
   // Remueve nodos que ya no existen en data
   nodesLayer
     .selectAll<SVGGElement, unknown>("g.node")
@@ -123,8 +123,7 @@ function cleanupGhostNodes(
       return !!id && !validIds.has(id);
     })
     .remove();
-
-  // Remueve nodos “apagados” (< 5% opacidad) de animaciones previas
+  // Remueve nodos con opacidad muy baja (apagados por animaciones)
   nodesLayer
     .selectAll<SVGGElement, unknown>("g.node")
     .filter(function () {
@@ -150,7 +149,7 @@ function findNodeWithKey(
   return null;
 }
 
-/** Brillo breve en la “cajita” de una clave dentro del nodo B. */
+/** Brillo breve en la “cajita” (slot) de una clave dentro del nodo B. */
 async function highlightBKeySlot(
   treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
   nodeId: string,
@@ -181,16 +180,18 @@ async function highlightBKeySlot(
     .end();
 }
 
-/* ───────────────────── Hook principal ───────────────────── */
+/* ╔════════════════════════════════════════════════════════════════════════════╗
+   ║                                Hook principal                              ║
+   ╚════════════════════════════════════════════════════════════════════════════╝*/
 
 export function useBTreeRender(
   treeData: BHierarchy | null,
-  query: BaseQueryOperations<"arbol_b">, // alias del tipo de query para Árbol B
+  query: BaseQueryOperations<"arbol_b">,
   resetQueryValues: () => void
 ) {
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Cache de posiciones (DOM-space) para nodos y banda de secuencia
+  // Cache de posiciones (DOM space) para nodos y banda de secuencia
   const nodePositions = useRef(
     new Map<string, { x: number; y: number }>()
   ).current;
@@ -202,29 +203,26 @@ export function useBTreeRender(
   const treeOffset = useRef({ x: 0, y: 0 }).current;
   const seqOffset = useRef({ x: 0, y: 0 }).current;
 
-  // D3: raíz jerárquica + nodos actuales
+  // Hierarchy D3
   const root = useMemo(
     () => (treeData ? d3.hierarchy<BHierarchy>(treeData) : null),
     [treeData]
   );
   const currentNodes = useMemo(() => (root ? root.descendants() : []), [root]);
 
-  // Estado previo del hierarchy para animaciones (delete)
+  // Estado previo (para animaciones de delete) + flag animando
   const prevRoot = usePrevious(root);
   const { setIsAnimating } = useAnimation();
 
-  /* ─────────── Render base: layout + capas + dibujo ───────────
-     ⚠️ IMPORTANTÍSIMO: si hay un delete en curso y tenemos prevRoot,
-     NO redibujamos aquí. Dejamos que animateBDeleteSmart maneje la
-     transición desde el layout previo al nuevo.
-  ---------------------------------------------------------------- */
+  /* ───────────────── Render base (layout + capas + dibujo) ─────────────────
+     IMPORTANTE: si hay un delete en curso (query.toDelete != null) y tenemos
+     prevRoot, evitamos redibujar aquí para no pisar la animación de borrado.
+  -------------------------------------------------------------------------- */
   useEffect(() => {
     if (!root || !svgRef.current) return;
+    if (query.toDelete != null && prevRoot) return; // bloqueo durante delete
 
-    // ⛔ Bloquea el render base durante delete (con prevRoot presente)
-    if (query.toDelete != null && prevRoot) return;
-
-    // 1) Layout D3 → HierarchyPointNode (x,y en coordenadas de árbol)
+    // 1) Layout D3 → HierarchyPointNode (x,y)
     const margin = {
       left: SVG_NARY_VALUES.MARGIN_LEFT,
       right: SVG_NARY_VALUES.MARGIN_RIGHT,
@@ -236,11 +234,10 @@ export function useBTreeRender(
       .tree<BHierarchy>()
       .nodeSize([SVG_NARY_VALUES.NODE_SPACING, SVG_NARY_VALUES.LEVEL_SPACING]);
 
-    // ¡Usa SIEMPRE el nodo devuelto por treeLayout!
     const pRoot = treeLayout(root);
     type HPN = d3.HierarchyPointNode<BHierarchy>;
 
-    /* 1.1) Compactador suave sin solapes horizontales entre hermanos */
+    // 1.1) Compactación horizontal suave entre hermanos
     const GAP_SIBLINGS = 10;
     const MAX_SHIFT_PER_PAIR = 22;
     const PASSES = 2;
@@ -271,7 +268,7 @@ export function useBTreeRender(
           }
         }
 
-        // Recentrar el padre respecto al promedio de sus hijos
+        // Recentra el padre en el promedio de sus hijos
         const avgX = kids.reduce((s, k) => s + k.x, 0) / kids.length;
         p.x = avgX;
       });
@@ -292,36 +289,20 @@ export function useBTreeRender(
     const minYv = d3.min(nodesP, (d) => d.y - nodeH / 2)!;
     const maxYv = d3.max(nodesP, (d) => d.y + nodeH / 2)!;
 
-    // Anchura estimada para la banda de secuencia
-    const nSlotsAprox = nodesP.reduce(
-      (acc, n) => acc + (n.data.keys?.length ?? 0),
-      0
-    );
-    const seqContent =
-      nSlotsAprox > 0
-        ? (nSlotsAprox - 1) * SVG_NARY_VALUES.SEQUENCE_PADDING
-        : 0;
-    const seqWidth = seqContent + margin.left + margin.right;
-
     // 3) Selección SVG + defs (tamaño final se ajusta tras escribir HUD)
     const svg = d3.select(svgRef.current);
     ensureBTreeSkinDefs(svg);
 
-    // 4) HUD (decide t y mide su caja antes de colocar árbol)
+    // 4) HUD: deducimos t desde order (sin comando init)
     const order = treeData?.order;
-    const tFromOrder =
-      order && order > 0 ? Math.max(2, Math.floor(order / 2)) : undefined;
-    const tVal =
-      query.toInit != null
-        ? Math.max(2, Math.floor(query.toInit))
-        : (tFromOrder ?? 2);
+    const tVal = order && order > 0 ? Math.max(2, Math.floor(order / 2)) : 2;
 
     const { w: hudW, h: hudH } = writeDegreeBadge(svg, tVal, order);
     const SAFE_GAP = 10;
     const extraTop = hudH + SAFE_GAP; // margen superior para el HUD
-    const extraRight = HUD.x + hudW + SAFE_GAP; // asegura que el HUD no se corta a la derecha
+    const extraRight = HUD.x + hudW + SAFE_GAP; // para que no se corte a la derecha
 
-    // 5) Offsets para centrar contenido visual + despejar HUD
+    // 5) Offsets (centra contenido visual y despeja HUD)
     treeOffset.x = margin.left - minXv;
     treeOffset.y = margin.top - minYv + extraTop;
 
@@ -339,6 +320,16 @@ export function useBTreeRender(
       nodesLayer = treeG.append("g").attr("class", "nodes-layer");
 
     // 7) Banda de secuencia (debajo del árbol)
+    const nSlotsAprox = nodesP.reduce(
+      (acc, n) => acc + (n.data.keys?.length ?? 0),
+      0
+    );
+    const seqContent =
+      nSlotsAprox > 0
+        ? (nSlotsAprox - 1) * SVG_NARY_VALUES.SEQUENCE_PADDING
+        : 0;
+    const seqWidth = seqContent + margin.left + margin.right;
+
     seqOffset.x = margin.left;
     seqOffset.y =
       treeOffset.y +
@@ -377,18 +368,17 @@ export function useBTreeRender(
       SVG_NARY_VALUES.SEQUENCE_HEIGHT;
 
     svg.attr("width", width).attr("height", height);
-  }, [root, query.toInit, treeData, query.toDelete, prevRoot]); // ← dependencias incluyen delete/prevRoot
+  }, [root, treeData, query.toDelete, prevRoot]);
 
-  /* ─────────── Pre-comando: limpiar banda de recorridos a prueba de balas ─────────── */
+  /* ─────────────────── Limpieza robusta de banda de recorridos ─────────────────── */
   useEffect(() => {
     if (!svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
     const seqG = svg.select<SVGGElement>("g.seq-container");
 
-    // ¿Llegó cualquier comando?
+    // ¿Llegó cualquier comando que requiera limpiar banda/overlays?
     const anyCommand =
-      query.toInit != null ||
       query.toInsert != null ||
       query.toDelete != null ||
       query.toSearch != null ||
@@ -404,14 +394,13 @@ export function useBTreeRender(
     seqG.selectAll("*").interrupt();
     svg.selectAll("g.tt-traverse-overlay, g.b-traverse-overlay").interrupt();
 
-    // 2) Vaciar TODO el contenido de la banda (no el <g>)
+    // 2) Vaciar TODO el contenido de la banda (no el <g> en sí)
     seqG.selectAll("*").remove();
 
     // 3) Limpiar caché y overlays
     seqPositions.clear();
     svg.selectAll("g.tt-traverse-overlay, g.b-traverse-overlay").remove();
   }, [
-    query.toInit,
     query.toInsert,
     query.toDelete,
     query.toSearch,
@@ -422,7 +411,7 @@ export function useBTreeRender(
     query.toGetLevelOrder,
   ]);
 
-  /* ─────────── Crear raíz ─────────── */
+  /* ─────────────────────────── Crear raíz (primer insert) ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current || query.toInsert == null) return;
     // Si antes no había root, ahora sí: animación de creación de raíz
@@ -433,7 +422,7 @@ export function useBTreeRender(
     }
   }, [root, prevRoot, query.toInsert, resetQueryValues, setIsAnimating]);
 
-  /* ─────────── Inserción (reflow + highlight de slot) ─────────── */
+  /* ───────────────────────── Inserción (reflow + highlight) ───────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current || query.toInsert == null) return;
 
@@ -461,7 +450,7 @@ export function useBTreeRender(
     );
   }, [root, currentNodes, query.toInsert, resetQueryValues, setIsAnimating]);
 
-  /* ─────────── Eliminación (animación mejorada con prev/new positions) ─────────── */
+  /* ─────────────── Eliminación (animación “smart” con prev/new positions) ─────────────── */
   useEffect(() => {
     if (!svgRef.current || query.toDelete == null) return;
     if (!prevRoot || !root) return;
@@ -514,8 +503,8 @@ export function useBTreeRender(
         deleteHit,
         fixSteps,
       },
-      nextPositions, // ← posiciones NUEVAS
-      prevPositions, // ← posiciones PREVIAS
+      nextPositions, // posiciones NUEVAS
+      prevPositions, // posiciones PREVIAS
       resetQueryValues,
       setIsAnimating
     );
@@ -528,7 +517,7 @@ export function useBTreeRender(
     setIsAnimating,
   ]);
 
-  /* ─────────── Búsqueda (por valor) ─────────── */
+  /* ─────────────────────────────── Búsqueda (por valor) ─────────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current || query.toSearch == null) return;
 
@@ -546,12 +535,12 @@ export function useBTreeRender(
       resetQueryValues,
       setIsAnimating
     ).then(() => {
-      // Pequeño brillo en el slot exacto
+      // brillo en el slot exacto
       highlightBKeySlot(treeG, hit.node.data.id, hit.keyIndex).catch(() => {});
     });
   }, [root, currentNodes, query.toSearch, resetQueryValues, setIsAnimating]);
 
-  /* ─────────── Recorridos (pre/in/post/level) ─────────── */
+  /* ─────────────────────────────── Recorridos (traversals) ─────────────────────────────── */
   useEffect(() => {
     if (!svgRef.current) return;
 
@@ -617,7 +606,7 @@ export function useBTreeRender(
     setIsAnimating,
   ]);
 
-  /* ─────────── Limpieza total ─────────── */
+  /* ─────────────────────────────────── Clear total ─────────────────────────────────── */
   useEffect(() => {
     if (!svgRef.current || !query.toClear) return;
 
@@ -633,7 +622,7 @@ export function useBTreeRender(
       setIsAnimating
     );
 
-    // Limpia overlays auxiliares (si los usaste)
+    // Limpia overlays auxiliares (por si llegasen a existir)
     svg.selectAll("g.nary-search-overlay").remove();
     svg.selectAll("g.nary-move-overlay").remove();
   }, [query.toClear, resetQueryValues, setIsAnimating]);

@@ -21,7 +21,8 @@ const creatorCommands: Record<string, string[]> = {
   arbol_rojinegro: ["insert"],
   arbol_nario: ["createRoot"],
   arbol_123: ["insert"],
-  arbol_b: ["init", "insert"],
+  arbol_b: ["insert"],
+  arbol_b_plus: ["insert"],
 };
 
 const isCreatorCommand = (structureType: string, command: string): boolean => {

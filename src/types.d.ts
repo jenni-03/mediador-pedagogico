@@ -44,6 +44,7 @@ export type TwoThreeHierarchy = {
   order?: number;
   meta?: { nIndex?: number };
 };
+export type BPlusQuery = BaseQueryOperations<"arbol_bplus">;
 
 // Conveniencia para las operaciones del simulador 2-3
 export type TwoThreeQuery = BaseQueryOperations<"arbol_123">;
@@ -91,7 +92,66 @@ export type BRedistributeEvent = {
   direction: "left" | "right";
 };
 
+/* ───────── Fix-ups B+: leaf links + split/merge diferenciados ───────── */
+export type BPlusSplitEvent = {
+  type: "splitLeaf" | "splitInternal";
+  nodeId: string; // nodo que se parte
+  midKey: number; // clave separadora (se duplica hacia arriba en B+)
+  leftId?: string;
+  rightId?: string;
+};
+
+export type BPlusMergeEvent = {
+  type: "mergeLeaf" | "mergeInternal";
+  leftId: string; // absorbe
+  rightId: string; // hermano fusionado
+  sepKey: number; // separador que se ajusta en el padre (se elimina/actualiza)
+};
+
+export type BPlusRedistributeEvent = {
+  type: "redistributeLeaf" | "redistributeInternal";
+  fromId: string; // donante
+  toId: string; // receptor
+  viaKey: number; // separador ajustado en el padre
+  direction: "left" | "right";
+};
+
+export type BPlusLeafLinkEvent = {
+  type: "linkLeaves";
+  leftLeafId: string;
+  rightLeafId: string;
+};
+
+export type BPlusFixLog = (
+  | BPlusSplitEvent
+  | BPlusMergeEvent
+  | BPlusRedistributeEvent
+  | BPlusLeafLinkEvent
+)[];
+
 export type BFixLog = (BSplitEvent | BMergeEvent | BRedistributeEvent)[];
+
+// Un nodo de Árbol B+ para el renderer D3/SVG.
+// En B+ todas las claves "reales" viven en hojas. Los internos solo enrutan.
+export type BPlusHierarchy = {
+  id: string; // "n-<idNum>"
+  idNum: number; // requerido
+  keys: number[]; // claves ordenadas asc
+  children?: BPlusHierarchy[]; // hijos reales (sin placeholders) solo si !isLeaf
+
+  // B+ específico
+  isLeaf: boolean; // ← diferenciador clave
+  nextLeafId?: string; // enlace lateral derecha (lista enlazada de hojas)
+  prevLeafId?: string; // enlace lateral izquierda (opcional)
+
+  // (Opcionales) Metadatos para tooltips/inspección
+  order?: number; // m (aridad máx del árbol)
+  degree?: number; // hijos actuales (internos) o #keys (hoja)
+  minKeys?: number; // t-1 si t = grado mínimo
+  maxKeys?: number; // m-1
+  isPlaceholder?: boolean;
+  meta?: { nIndex?: number };
+};
 
 export type ListRenderConfig = {
   showHeadIndicator: boolean;
@@ -345,8 +405,6 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
                           }
                         : T extends "arbol_b"
                           ? {
-                              toInit?: number | null; // t (grado mínimo). Si no se usa, queda undefined/null.
-
                               /** Mutaciones */
                               toInsert: number | null; // insert(x)
                               toDelete: number | null; // delete(x)
@@ -366,7 +424,30 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
                               /** (Opcional) registro de fix-ups para el renderer */
                               bFix?: BFixLog | null;
                             }
-                          : never; // Fallback para otros casos
+                          : T extends "arbol_bplus"
+                            ? {
+                                /** Mutaciones */
+                                toInsert: number | null;
+                                toDelete: number | null;
+
+                                /** Consultas puntuales */
+                                toSearch: number | null;
+
+                                /** Parámetros para animar RANGE / SCAN FROM (solo args) */
+                                toGetRange: [] | [from: number, to: number];
+                                toScanFrom: [] | [start: number, limit: number];
+
+                                /** Secuencias para la banda inferior (resultado que se dibuja) */
+                                toGetInOrder: TraversalNodeType[] | [];
+                                toGetLevelOrder: TraversalNodeType[] | [];
+
+                                /** Limpieza */
+                                toClear: boolean;
+
+                                /** Fix-ups para el renderer (opcional) */
+                                bPlusFix?: BPlusFixLog | null;
+                              }
+                            : never; // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -490,25 +571,17 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
                       }
                     : T extends "arbol_123" | "arbol_23"
                       ? {
-                          /** Mutaciones */
                           insert: (value: number) => void;
                           delete: (value: number) => void;
-
-                          /** Consultas */
                           search: (value: number) => void;
-
-                          /** Recorridos */
                           getPreOrder: () => void;
                           getInOrder: () => void;
                           getPostOrder: () => void;
                           getLevelOrder: () => void;
-
-                          /** Limpieza total (tras esto, vuelve a usarse createRoot) */
                           clean: () => void;
                         }
                       : T extends "arbol_b"
                         ? {
-                            init?: (t: number) => void;
                             insert: (value: number) => void;
                             delete: (value: number) => void;
                             search: (value: number) => void;
@@ -518,7 +591,23 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
                             getLevelOrder: () => void;
                             clean: () => void;
                           }
-                        : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+                        : T extends "arbol_b_plus"
+                          ? {
+                              insert: (value: number) => void;
+                              delete: (value: number) => void;
+                              search: (value: number) => void;
+
+                              // Propios de B+
+                              range: (from: number, to: number) => void;
+                              scanFrom: (start: number, limit: number) => void;
+
+                              // Recorridos
+                              getInOrder: () => void;
+                              getLevelOrder: () => void;
+
+                              clean: () => void;
+                            }
+                          : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
