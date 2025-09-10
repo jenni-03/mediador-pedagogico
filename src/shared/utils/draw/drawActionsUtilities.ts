@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from "react";
 import {
   HierarchyNodeData,
   IndicatorPositioningConfig,
@@ -470,7 +471,7 @@ export function animateHighlightNode(
     textFontWeight: string;
   },
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Estilos para contenedor y texto del nodo
   const { highlightColor, rectStrokeColor, rectStrokeWidth } = rectValues;
@@ -527,7 +528,7 @@ export async function animateClearList(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodePositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Animación de salida de los enlaces
   await svg
@@ -575,7 +576,7 @@ export async function animateClearTree(
     seqPositions: Map<string, { x: number; y: number }>;
   },
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Obtenemos los mapas de posiciones de los elementos
   const { nodePositions, seqPositions } = elementPositions;
@@ -712,7 +713,7 @@ export async function animateTreeTraversal(
   targetNodes: TraversalNodeType[],
   seqPositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>,
   opts: TreeTraversalAnimOptions = {}
 ) {
   const {

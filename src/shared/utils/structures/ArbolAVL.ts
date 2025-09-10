@@ -461,8 +461,8 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método recursivo que clona un árbol binario iniciando desde el nodo raíz dado.
-   * @param root Nodo raíz del árbol BST a clonar.
+   * Método recursivo que clona un árbol AVL iniciando desde el nodo raíz dado.
+   * @param root Nodo raíz del árbol AVL a clonar.
    * @returns Nuevo subárbol clonado con raíz en el nodo dado.
    */
   private clonarAVLrec(root: NodoAVL<T> | null): NodoAVL<T> | null {

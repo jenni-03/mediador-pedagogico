@@ -28,6 +28,7 @@ export function AvlTreeSimulator() {
     // Conversión a jerarquía para renderizar
     const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
+    // Acciones disponibles para el usuario
     const actions = useMemo(
         () => ({
             insert: insertNode,
@@ -53,9 +54,7 @@ export function AvlTreeSimulator() {
 
     return (
         <Simulator
-            structureName={
-                STRUCTURE_NAME.AVL_TREE /* ajusta si tu const es STRUCTURE_NAME.ARBOL_AVL */
-            }
+            structureName={STRUCTURE_NAME.AVL_TREE}
             structure={tree}
             actions={actions}
             query={query}
@@ -69,5 +68,3 @@ export function AvlTreeSimulator() {
         </Simulator>
     );
 }
-
-export default AvlTreeSimulator;

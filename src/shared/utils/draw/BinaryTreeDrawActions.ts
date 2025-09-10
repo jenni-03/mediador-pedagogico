@@ -2,6 +2,7 @@ import type { HierarchyNode, Selection } from "d3";
 import { HierarchyNodeData, TreeLinkData } from "../../../types";
 import { highlightTreePath, repositionTreeNodes } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import type { Dispatch, SetStateAction } from "react";
 
 /**
  * Función encargada de animar la inserción de un nuevo nodo en el árbol binario.
@@ -24,7 +25,7 @@ export async function animateInsertNode(
     },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Elementos del árbol requeridos para la animación 
     const { newNodeId, parentId, nodesData, linksData, pathToParent } = treeData;
@@ -103,7 +104,7 @@ export async function animateDeleteNode(
     },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Elementos del árbol requeridos para la animación 
     const { nodeToDelete, prevRootNode, remainingNodesData, remainingLinksData, nodeToUpdate } = treeData;
@@ -170,7 +171,7 @@ export async function animateSearchNode(
     targetNode: string,
     path: HierarchyNode<HierarchyNodeData<number>>[],
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Reestablecimiento del fondo original de los nodos
     treeG.selectAll(".node-container")

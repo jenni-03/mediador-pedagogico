@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
-import { ArbolBinarioBusqueda } from "../../../../../shared/utils/structures/ArbolBinarioBusqueda";
+import { type ArbolBinarioBusqueda } from "../../../../../shared/utils/structures/ArbolBinarioBusqueda";
 
 export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Estado para manejar el árbol binario de búsqueda

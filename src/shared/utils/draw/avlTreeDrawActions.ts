@@ -3,6 +3,7 @@ import { AvlFrame, HierarchyNodeData, RotationStep, TreeLinkData } from "../../.
 import { drawTreeLinks, drawTreeNodes, highlightTreePath, repositionTreeNodes } from "./drawActionsUtilities";
 import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES } from "../../constants/consts";
 import { animateLeafOrSingleChild, animateTwoChildren } from "./BinaryTreeDrawActions";
+import type { Dispatch, SetStateAction } from "react";
 
 /**
  * Función encargada de animar la inserción de un nuevo nodo en el árbol AVL.
@@ -27,7 +28,7 @@ export async function animateAVLTreeInsert(
     },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Elementos del árbol requeridos para la animación 
     const { newNodeId, parentId, nodesData, linksData, pathToParent, rotations, frames } = insertionData;
@@ -217,7 +218,7 @@ export async function animateAVLTreeDelete(
     },
     positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Elementos del árbol requeridos para la animación 
     const { nodeToDelete, prevRootNode, remainingNodesData, remainingLinksData, nodeToUpdate, rotations, frames } = deletionData;

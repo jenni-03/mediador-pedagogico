@@ -2,9 +2,6 @@ import { type HierarchyNode } from "d3";
 import { TYPE_FILTER } from "./shared/constants/consts";
 import { type NodoS } from "./shared/utils/nodes/NodoS";
 
-//RojoNegro
-export type RbRotation = { type: "left" | "right"; pivotId: string };
-export type RbRecolor = { id: string; to: "red" | "black" };
 export type RBRenderColor = "red" | "black";
 
 export interface LinkedListInterface<T> {
@@ -198,29 +195,17 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
     toClear: boolean;
     avlTrace: OperationTrace<number> | null;
   }
-  : T extends "arbol_rojinegro" | "arbol_rb"
+  : T extends "arbol_rojinegro"
   ? {
-    /* Operaciones mutables */
-    toInsert: number | null; // insert(x)
-    toDelete: number | null; // delete(x)
-
-    /* Consultas */
-    toSearch: number | null; // search(x)
-
-    /* Recorridos */
+    toInsert: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
     toGetPreOrder: TraversalNodeType[] | [];
     toGetInOrder: TraversalNodeType[] | [];
     toGetPostOrder: TraversalNodeType[] | [];
     toGetLevelOrder: TraversalNodeType[] | [];
-
-    /* Limpieza */
-    toClear: boolean; // clear()
-
-    /* Fix-ups RB detectados en la última operación (opcional) */
-    rbFix?: {
-      rotations: RbRotation[]; // p.ej. [{dir:"left", pivotId:"n3"}]
-      recolors: RbRecolor[]; // p.ej. [{id:"n1", to:"black"}, ...]
-    } | null;
+    toClear: boolean;
+    rbTrace: RBTrace<number> | null;
   }
   : T extends "arbol_nario"
   ? {
@@ -492,6 +477,20 @@ export type AvlFrame = {
     targetId: string;
   }[];
 }
+
+export type RBAction =
+  | { kind: "recolor"; id: string; from: RBColor; to: RBColor; }
+  | { kind: "rotation"; tag: "L(p)" | "R(p)" | "R(w)" | "L(w)" | "R(g)" | "L(g)"; step: RotationStep };
+
+export type RBTrace<T> = {
+  actions: RBAction[];
+  hierarchies: {
+    bst: HierarchyNodeData<T> | null;
+    mids: HierarchyNodeData<T>[];
+  };
+};
+
+export type RBColor = "RED" | "BLACK";
 
 type TreeTraversalAnimOptions = {
   recolor?: boolean;

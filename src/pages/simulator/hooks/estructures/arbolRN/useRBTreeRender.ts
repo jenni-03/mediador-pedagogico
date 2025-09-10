@@ -31,11 +31,11 @@ type RbEvent =
   | { kind: "compare"; nodeId: string; with: string; dir: "left" | "right" }
   | { kind: "traverse"; to: string }
   | {
-      kind: "violation";
-      type: "double-red" | "black-height";
-      pivotId: string;
-      uncleId?: string;
-    }
+    kind: "violation";
+    type: "double-red" | "black-height";
+    pivotId: string;
+    uncleId?: string;
+  }
   | { kind: "recolor"; id: string; to: "red" | "black" }
   | { kind: "rotate"; dir: "left" | "right"; pivotId: string; childId?: string }
   | { kind: "finish" };
@@ -409,7 +409,7 @@ async function playRbSteps(
    ╰─────────────────────────── */
 export function useRBTreeRender(
   treeData: HierarchyNodeData<number> | null,
-  query: BaseQueryOperations<"arbol_rb">,
+  query: BaseQueryOperations<"arbol_rojinegro">,
   resetQueryValues: () => void
 ) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -492,8 +492,8 @@ export function useRBTreeRender(
       .attr(
         "height",
         height +
-          SVG_BINARY_TREE_VALUES.SEQUENCE_PADDING +
-          SVG_BINARY_TREE_VALUES.SEQUENCE_HEIGHT
+        SVG_BINARY_TREE_VALUES.SEQUENCE_PADDING +
+        SVG_BINARY_TREE_VALUES.SEQUENCE_HEIGHT
       )
       .attr("width", width);
 
