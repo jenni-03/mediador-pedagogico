@@ -804,7 +804,54 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-
+  arbol_heap: {
+    buttons: [
+      {
+        title: "insert",
+        description: "Insertar un nodo en el árbol heap",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
+               Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(1);</strong> ó <strong>arbHeap.insert(1);</strong>",
+      },
+      {
+        title: "delete",
+        description: "Eliminar un nodo del árbol heap",
+        estructura: "nombreObjeto.delete(valor);",
+        ejemplo: "arbHeap.delete(1);",
+      },
+      {
+        title: "deleteR",
+        description: "Eliminar el nodo raíz del árbol heap",
+        estructura: "nombreObjeto.deleteR(valor);",
+        ejemplo: "arbHeap.deleteR(1);",
+      },
+      {
+        title: "search",
+        description: "Buscar un nodo en el árbol heap",
+        estructura: "nombreObjeto.search(valor);",
+        ejemplo: "arbHeap.search(1);",
+      },
+      {
+        title: "peek",
+        description: "Ver el nodo raíz del árbol heap",
+        estructura: "nombreObjeto.peek(valor);",
+        ejemplo: "arbHeap.peek(1);",
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles del árbol heap.",
+        estructura: "nombreObjeto.getLevelOrder();",
+        ejemplo: "arbHeap.getLevelOrder();",
+      },
+      {
+        title: "clean",
+        description: "Borrar el árbol heap",
+        estructura: "nombreObjeto.clean();",
+        ejemplo: "arbHeap.clean();",
+      },
+    ],
+  },
   memoria: {
     buttons: [
       {

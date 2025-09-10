@@ -95,7 +95,7 @@ export const getArbolBinarioCode = (): OperationCode => ({
         `/**
  * Método que permite buscar un elemento especifico en el árbol binario.
  * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en el árbol.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param info es de tipo T y corresponde al elemento a buscar.
  * @return Booleano que indica si el elemento fue encontrado.
  */`,
@@ -111,7 +111,7 @@ export const getArbolBinarioCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido inOrden del árbol binario.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `private void inOrden(NodoBin<T> root, ListaCD<T> nodos) {`,
@@ -125,7 +125,7 @@ export const getArbolBinarioCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido preOrden del árbol binario.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `private void preOrden(NodoBin<T> root, ListaCD<T> nodos) {`,
@@ -139,7 +139,7 @@ export const getArbolBinarioCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido postOrden del árbol binario.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `private void postOrden(NodoBin<T> root, ListaCD<T> nodos) {`,
@@ -153,7 +153,7 @@ export const getArbolBinarioCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido por niveles del árbol binario.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `public ListaCD<T> getNiveles(NodoBin<T> root) {`,

@@ -10,7 +10,7 @@ export const getArbolBinarioBusquedaCode = (): OperationCode => ({
  * @return Raíz del árbol actualizada con el nodo insertado.
  */`,
         `private NodoBin<T> insertarABB(NodoBin<T> root, T valor){`,
-        `    if (root == null) return new NodoBin<T>(hijo);`,
+        `    if (root == null) return new NodoBin<T>(valor);`,
         `    int compara = ((Comparable)root.getInfo()).compareTo(valor);`,
         `    if (compara < 0) {`,
         `        root.setIzq(this.insertarABB(root.getIzq(), valor));`,
@@ -53,7 +53,7 @@ export const getArbolBinarioBusquedaCode = (): OperationCode => ({
         `/**
  * Método que permite buscar un elemento especifico en el árbol binario de búsqueda.
  * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en el árbol.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param valor es de tipo T y corresponde al elemento a buscar.
  * @return Booleano que indica si el elemento fue encontrado.
  */`,
@@ -64,16 +64,14 @@ export const getArbolBinarioBusquedaCode = (): OperationCode => ({
         `    int compara = ((Comparable)root.getInfo()).compareTo(valor);`,
         `    if (compara < 0) return this.buscarABB(root.getIzq(), valor);`,
         `    else if (compara > 0) return this.buscarABB(root.getDer(), valor);`,
-        `    else {`,
-        `       return true;`,
-        `    }`,
+        `    else return true;`,
         `}`,
     ],
     getInOrder: [
         `/**
  * Método que permite obtener el recorrido inOrden del árbol binario de búsqueda.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `private void inOrden(NodoBin<T> root, ListaCD<T> nodos) {`,
@@ -87,7 +85,7 @@ export const getArbolBinarioBusquedaCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido preOrden del árbol binario de búsqueda.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `private void preOrden(NodoBin<T> root, ListaCD<T> nodos) {`,
@@ -101,7 +99,7 @@ export const getArbolBinarioBusquedaCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido postOrden del árbol binario de búsqueda.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `private void postOrden(NodoBin<T> root, ListaCD<T> nodos) {`,
@@ -115,7 +113,7 @@ export const getArbolBinarioBusquedaCode = (): OperationCode => ({
         `/**
  * Método que permite obtener el recorrido por niveles del árbol binario de búsqueda.
  * post: Se retornó una lista de los elementos del árbol en el orden dado por el recorrido.
- * @param root es de tipo NodoBin<T> y corresponde a la ráiz del árbol.
+ * @param root es de tipo NodoBin<T> y corresponde a la raíz del árbol.
  * @param nodos es una lista T para almacenar los datos del árbol.
  */`,
         `public ListaCD<T> getNiveles(NodoBin<T> root) {`,

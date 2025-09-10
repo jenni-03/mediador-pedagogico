@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
 import { ArbolBinarioBusqueda } from "../../../../../shared/utils/structures/ArbolBinarioBusqueda";
 
@@ -22,7 +22,7 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     });
 
     // Operación de inserción de un nodo en el árbol
-    const insertNode = (value: number) => {
+    const insertNode = useCallback((value: number) => {
         try {
             // Clonar el árbol para garantizar la inmutabilidad del estado
             const clonedTree = tree.clonarABB();
@@ -44,16 +44,16 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [tree]);
 
     // Operación de eliminar un nodo del árbol
-    const deleteNode = (value: number) => {
+    const deleteNode = useCallback((value: number) => {
         try {
             // Clonar el árbol para asegurar la inmutabilidad del estado
             const clonedTree = tree.clonarABB();
 
             // Obtener el nodo a ser eliminado para acceder a su ID
-            const deletedNodeData = clonedTree.eliminarABB(value);
+            const deletedNodeData = clonedTree.eliminar(value);
 
             // Actualizar el estado del árbol
             setTree(clonedTree);
@@ -69,10 +69,10 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [tree]);
 
-    // Operación para buscar un nodo en el árbol 
-    const searchNode = (value: number) => {
+    // Operación para buscar un nodo en el árbol
+    const searchNode = useCallback((value: number) => {
         try {
             // Buscar el nodo en el árbol
             const foundNode = tree.esta(value);
@@ -91,10 +91,10 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    };
+    }, [tree]);
 
     // Operación para obtener el recorrido en preorden
-    const getPreOrder = () => {
+    const getPreOrder = useCallback(() => {
         try {
             // Obtener el recorrido en preorden del árbol
             const preorder = tree.preOrden();
@@ -113,10 +113,10 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [tree]);
 
     // Operación para obtener el recorrido en inorden
-    const getInOrder = () => {
+    const getInOrder = useCallback(() => {
         try {
             // Obtener el recorrido en inorden del árbol
             const inorder = tree.inOrden();
@@ -135,10 +135,10 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [tree]);
 
     // Operación para obtener el recorrido en postorden
-    const getPostOrder = () => {
+    const getPostOrder = useCallback(() => {
         try {
             // Obtener el recorrido en postorden del árbol
             const postorder = tree.postOrden();
@@ -157,10 +157,10 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [tree]);
 
     // Operación para obtener el recorrido por niveles
-    const getLevelOrder = () => {
+    const getLevelOrder = useCallback(() => {
         try {
             // Obtener el recorrido por niveles del árbol
             const levelOrder = tree.getNodosPorNiveles();
@@ -179,28 +179,28 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [tree]);
 
     // Operación para vaciar el árbol
-    const clearTree = () => {
+    const clearTree = useCallback(() => {
         // Clonar el árbol para asegurar la inmutabilidad del estado
-        const clonedTree = tree.clonarABB();
+        const cloned = tree.clonarABB();
 
         // Vaciar el árbol
-        clonedTree.vaciar();
+        cloned.vaciar();
 
         // Actualizar el estado del árbol
-        setTree(clonedTree);
+        setTree(cloned);
 
         // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true
         }));
-    }
+    }, [tree]);
 
     // Función de restablecimiento de las queries del usuario
-    const resetQueryValues = () => {
+    const resetQueryValues = useCallback(() => {
         setQuery({
             toInsert: null,
             toDelete: [],
@@ -211,22 +211,29 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
             toGetLevelOrder: [],
             toClear: false
         })
-    }
+    }, []);
+
+    // Objeto de operaciones estable
+    const operations = useMemo(() => ({
+        insertNode,
+        deleteNode,
+        searchNode,
+        getPreOrder,
+        getInOrder,
+        getPostOrder,
+        getLevelOrder,
+        clearTree,
+        resetQueryValues,
+    }), [
+        insertNode, deleteNode, searchNode,
+        getPreOrder, getInOrder, getPostOrder, getLevelOrder,
+        clearTree, resetQueryValues
+    ]);
 
     return {
         tree,
         query,
         error,
-        operations: {
-            insertNode,
-            deleteNode,
-            searchNode,
-            getPreOrder,
-            getInOrder,
-            getPostOrder,
-            getLevelOrder,
-            clearTree,
-            resetQueryValues
-        }
+        operations
     }
 }

@@ -1,243 +1,249 @@
-// src/hooks/estructures/avl/useAVLTree.ts
-
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
 import { ArbolAVL } from "../../../../../shared/utils/structures/ArbolAVL";
 
-/**
- * Hook de alto nivel para operar sobre un Árbol AVL.
- * - Clona el árbol antes de mutarlo (estado inmutable para React).
- * - Actualiza la query que consumen las animaciones/renderer.
- * - Expone errores de validación/operación.
- *
- * IMPORTANTE:
- *  - El factor de equilibrio (bf) y altura (height) ya viajan en el árbol
- *    a través de `toHierarchy()` (lo agregaste en ArbolAVL.ts).
- *  - La rotación que se haya hecho durante la operación actual
- *    se envía en `query.rotation` usando `getLastRotation()`.
- */
 export function useAVLTree(structure: ArbolAVL<number>) {
-  // Estado del árbol AVL (se guarda la instancia; siempre clonamos antes de mutar)
+  // Estado para manejar el árbol AVL
   const [tree, setTree] = useState(structure);
 
-  // Estado de error para la consola
-  const [error, setError] = useState<{ message: string; id: number } | null>(
-    null
-  );
+  // Estado para manejar el error
+  const [error, setError] = useState<{ message: string, id: number } | null>(null);
 
   // Estado de la "query" que usan los renderers/animaciones
   const [query, setQuery] = useState<BaseQueryOperations<"arbol_avl">>({
     toInsert: null,
-    toDelete: null,
+    toDelete: [],
     toSearch: null,
     toGetPreOrder: [],
     toGetInOrder: [],
     toGetPostOrder: [],
     toGetLevelOrder: [],
     toClear: false,
-    rotation: null, // <- aquí reportamos la rotación (si hubo)
+    avlTrace: null
   });
 
-  /* ─────────────────────────────── Operaciones ─────────────────────────────── */
-
-  /** Insertar valor (AVL: inserta, rebalancea y reporta rotación si aplica) */
-  const insertNode = (value: number) => {
+  // Operación de inserción
+  const insertNode = useCallback((value: number) => {
     try {
-      const cloned = tree.clonar();
-      cloned.insertar(value);
+      // Clonar el árbol para garantizar la inmutabilidad del estado
+      const cloned = tree.clonarAVL();
 
-      // Rotación detectada por rebalancear() en ArbolAVL
-      const rotation = cloned.getLastRotation();
+      // Insertar el nuevo nodo
+      const inserted = cloned.insertar(value);
 
-      // Guardamos el árbol resultante
+      // Obtener la traza de rotaciones
+      const trace = cloned.consumeLastAvlTrace();
+
+      // Actualizar el estado del árbol
       setTree(cloned);
 
-      // Disparamos la animación de inserción y enviamos la rotación
+      // Actualizar la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toInsert: value, // si tu renderer usa ID, cambia a: cloned.get(value)!.getId()
-        rotation: rotation ?? null, // LL, LR, RR, RL o null si no hubo rotación
+        toInsert: inserted.getId(),
+        avlTrace: trace
       }));
 
+      // Limpieza del error existente
       setError(null);
     } catch (e: any) {
       setError({ message: e.message, id: Date.now() });
     }
-  };
+  }, [tree]);
 
-  /** Eliminar valor (AVL: elimina, rebalancea y reporta rotación si aplica) */
-  const deleteNode = (value: number) => {
+  // Operación de eliminar un nodo del árbol
+  const deleteNode = useCallback((value: number) => {
     try {
-      const cloned = tree.clonar();
+      // Clonar el árbol para asegurar la inmutabilidad del estado
+      const cloned = tree.clonarAVL();
 
-      // eliminar() ahora retorna { removed, updated? }
-      const { removed /*, updated*/ } = cloned.eliminar(value);
+      // Obtener el nodo a ser eliminado para acceder a su ID
+      const { removed, updated } = cloned.eliminar(value);
 
-      // Rotación detectada durante la eliminación
-      const rotation = cloned.getLastRotation();
+      // Obtener la traza de rotaciones
+      const trace = cloned.consumeLastAvlTrace();
 
+      // Actualizar el estado del árbol
       setTree(cloned);
 
-      // En la animación, borramos el *eliminado físico* (sucesor si hubo 2 hijos)
+      // Actualizar la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toDelete: removed.getInfo(), // si tu renderer usa ID, cambia a removed.getId()
-        rotation: rotation ?? null,
-        // Si quisieras animar "copia de valor" cuando hay 2 hijos:
-        // toUpdateId: updated?.getId()
+        toDelete: [removed!.getId(), updated?.getId() ?? null],
+        avlTrace: trace
       }));
 
+      // Limpieza del error existente
       setError(null);
-    } catch (e: any) {
-      setError({ message: e.message, id: Date.now() });
+    } catch (error: any) {
+      setError({ message: error.message, id: Date.now() });
     }
-  };
+  }, [tree]);
 
-  /** Buscar un valor (solo camino/animación de búsqueda) */
-  const searchNode = (value: number) => {
+  // Operación para buscar un nodo en el árbol
+  const searchNode = useCallback((value: number) => {
     try {
-      const found = tree.esta(value);
-      if (!found) throw new Error("No fue posible encontrar el nodo.");
+      // Buscar el nodo en el árbol
+      const foundNode = tree.esta(value);
 
+      // Verificar su existencia
+      if (!foundNode) throw new Error("No fue posible encontrar el nodo.");
+
+      // Actualizar la query para informar de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toSearch: value,
-        // rotation se mantiene como está; no hay rotación en búsquedas
+        toSearch: value
       }));
 
+      // Limpieza del error existente
       setError(null);
-    } catch (e: any) {
-      setError({ message: e.message, id: Date.now() });
+    } catch (error: any) {
+      setError({ message: error.message, id: Date.now() });
     }
-  };
+  }, [tree]);
 
-  /* ─────────────────────────────── Recorridos ─────────────────────────────── */
-
-  const getPreOrder = () => {
+  // Operación para obtener el recorrido en preorden
+  const getPreOrder = useCallback(() => {
     try {
-      const pre = tree.preOrden();
-      if (pre.length === 0) {
-        throw new Error(
-          "No fue posible recorrer el árbol (El árbol se encuentra vacío)."
-        );
-      }
+      // Obtener el recorrido en preorden del árbol
+      const preorder = tree.preOrden();
+
+      // Verificar la existencia de nodos
+      if (preorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+      // Actualizar la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toGetPreOrder: pre.map((n) => ({ id: n.getId(), value: n.getInfo() })),
-        // rotation: no aplica en recorridos
+        toGetPreOrder: preorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
       }));
-      setError(null);
-    } catch (e: any) {
-      setError({ message: e.message, id: Date.now() });
-    }
-  };
 
-  const getInOrder = () => {
+      // Limpieza del error existente
+      setError(null);
+    } catch (error: any) {
+      setError({ message: error.message, id: Date.now() });
+    }
+  }, [tree]);
+
+  // Operación para obtener el recorrido en inorden
+  const getInOrder = useCallback(() => {
     try {
-      const ino = tree.inOrden();
-      if (ino.length === 0) {
-        throw new Error(
-          "No fue posible recorrer el árbol (El árbol se encuentra vacío)."
-        );
-      }
+      // Obtener el recorrido en inorden del árbol
+      const inorder = tree.inOrden();
+
+      // Verificar la existencia de nodos
+      if (inorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+      // Actualizar la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toGetInOrder: ino.map((n) => ({ id: n.getId(), value: n.getInfo() })),
+        toGetInOrder: inorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
       }));
-      setError(null);
-    } catch (e: any) {
-      setError({ message: e.message, id: Date.now() });
-    }
-  };
 
-  const getPostOrder = () => {
+      // Limpieza del error existente
+      setError(null);
+    } catch (error: any) {
+      setError({ message: error.message, id: Date.now() });
+    }
+  }, [tree]);
+
+  // Operación para obtener el recorrido en postorden
+  const getPostOrder = useCallback(() => {
     try {
-      const post = tree.postOrden();
-      if (post.length === 0) {
-        throw new Error(
-          "No fue posible recorrer el árbol (El árbol se encuentra vacío)."
-        );
-      }
+      // Obtener el recorrido en postorden del árbol
+      const postorder = tree.postOrden();
+
+      // Verificar la existencia de nodos
+      if (postorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+      // Actualizar la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toGetPostOrder: post.map((n) => ({
-          id: n.getId(),
-          value: n.getInfo(),
-        })),
+        toGetPostOrder: postorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
       }));
-      setError(null);
-    } catch (e: any) {
-      setError({ message: e.message, id: Date.now() });
-    }
-  };
 
-  const getLevelOrder = () => {
+      // Limpieza del error existente
+      setError(null);
+    } catch (error: any) {
+      setError({ message: error.message, id: Date.now() });
+    }
+  }, [tree]);
+
+  // Operación para obtener el recorrido por niveles
+  const getLevelOrder = useCallback(() => {
     try {
-      const lvl = tree.getNodosPorNiveles();
-      if (lvl.length === 0) {
-        throw new Error(
-          "No fue posible recorrer el árbol (El árbol se encuentra vacío)."
-        );
-      }
+      // Obtener el recorrido por niveles del árbol
+      const levelOrder = tree.getNodosPorNiveles();
+
+      // Verificar la existencia de nodos
+      if (levelOrder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
+
+      // Actualizar la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toGetLevelOrder: lvl.map((n) => ({
-          id: n.getId(),
-          value: n.getInfo(),
-        })),
+        toGetLevelOrder: levelOrder.map(node => ({ id: node.getId(), value: node.getInfo() }))
       }));
+
+      // Limpieza del error existente
       setError(null);
-    } catch (e: any) {
-      setError({ message: e.message, id: Date.now() });
+    } catch (error: any) {
+      setError({ message: error.message, id: Date.now() });
     }
-  };
+  }, [tree]);
 
-  /* ────────────────────────────── Limpieza ─────────────────────────────── */
+  // Operación para vaciar el árbol
+  const clearTree = useCallback(() => {
+    // Clonar el árbol para asegurar la inmutabilidad del estado
+    const cloned = tree.clonarAVL();
 
-  /** Vaciar por completo el árbol */
-  const clearTree = () => {
-    const cloned = tree.clonar();
+    // Vaciar el árbol
     cloned.vaciar();
+
+    // Actualizar el estado del árbol
     setTree(cloned);
 
+    // Actualizar la query a partir de la operación realizada
     setQuery((prev) => ({
       ...prev,
-      toClear: true,
-      rotation: null, // limpiar indicador de rotación
+      toClear: true
     }));
-  };
+  }, [tree]);
 
-  /** Resetear la query a su estado neutro (tras terminar animaciones) */
-  const resetQueryValues = () => {
+  // Función de restablecimiento de las queries del usuario
+  const resetQueryValues = useCallback(() => {
     setQuery({
       toInsert: null,
-      toDelete: null,
+      toDelete: [],
       toSearch: null,
       toGetPreOrder: [],
       toGetInOrder: [],
       toGetPostOrder: [],
       toGetLevelOrder: [],
       toClear: false,
-      rotation: null, // limpiar rotación
+      avlTrace: null
     });
-  };
+  }, []);
 
-  /* ──────────────────────────── Export del hook ───────────────────────────── */
+  // Objeto de operaciones estable
+  const operations = useMemo(() => ({
+    insertNode,
+    deleteNode,
+    searchNode,
+    getPreOrder,
+    getInOrder,
+    getPostOrder,
+    getLevelOrder,
+    clearTree,
+    resetQueryValues,
+  }), [
+    insertNode, deleteNode, searchNode,
+    getPreOrder, getInOrder, getPostOrder, getLevelOrder,
+    clearTree, resetQueryValues
+  ]);
 
   return {
-    tree, // instancia del árbol (para convertir a jerarquía y dibujar con bf/height)
-    query, // flags de operación + rotation
+    tree,
+    query,
     error,
-    operations: {
-      insertNode,
-      deleteNode,
-      searchNode,
-      getPreOrder,
-      getInOrder,
-      getPostOrder,
-      getLevelOrder,
-      clearTree,
-      resetQueryValues,
-    },
+    operations
   };
 }

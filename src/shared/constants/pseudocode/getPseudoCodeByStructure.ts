@@ -10,13 +10,13 @@ import { getColaPrioridadCode } from "./colaPrioridadCode";
 import { getTablaHashCode } from "./tablaHashCode";
 import { getArbolBinarioCode } from "./arbolBinarioCode";
 import { getArbolBinarioBusquedaCode } from "./arbolBinarioBusquedaCode";
-
 import { getArbolAVLCode } from "./arbolAVLCode";
 import { getArbolRNCode } from "./arbolRNCode";
 import { getArbolNarioCode } from "./arbolNarioCode";
 import { getArbol123Code } from "./arbol123Code";
 import { getArbolBCode } from "./arbolBCode";
 import { getArbolBPlusCode } from "./arbolBPlusCode";
+import { getArbolHeapCode } from "./arbolHeapCode";
 
 // Mapa de funciones para cargar operaciones según estructura
 const pseudoCodeLoaders: Record<string, () => OperationCode> = {
@@ -37,6 +37,7 @@ const pseudoCodeLoaders: Record<string, () => OperationCode> = {
   arbol_123: getArbol123Code,
   arbol_b: getArbolBCode,
   arbol_b_plus: getArbolBPlusCode,
+  arbol_heap: getArbolHeapCode,
 };
 
 // Devuelve el pseudocódigo correspondiente, o {} si no existe

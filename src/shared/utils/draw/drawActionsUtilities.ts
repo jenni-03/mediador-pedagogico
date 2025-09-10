@@ -5,27 +5,14 @@ import {
   ListNodeData,
   TraversalNodeType,
   TreeLinkData,
+  TreeTraversalAnimOptions,
 } from "../../../types";
 import {
   SVG_BINARY_TREE_VALUES,
   SVG_STYLE_VALUES,
 } from "../../constants/consts";
 import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
-import { HierarchyNode, easePolyInOut } from "d3";
-
-const waitEnd = (t: d3.Transition<any, any, any, any>) =>
-  new Promise<void>((resolve) => t.on("end", resolve).on("interrupt", resolve));
-
-type TraversalAnimOptions = {
-  /** "recolor" = comportamiento anterior; "preserve-fill" = NO tocar fill */
-  style?: "recolor" | "preserve-fill";
-  /** Color del resaltado (stroke/anillo) en modo preserve-fill */
-  strokeColor?: string;
-  /** Hacer un pequeño bounce de radio (solo visual) */
-  bounce?: boolean;
-  /** Mostrar anillo pulsante temporal */
-  pulse?: boolean;
-};
+import { type HierarchyNode, type Selection, easePolyInOut } from "d3";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
@@ -38,7 +25,7 @@ type TraversalAnimOptions = {
  * @param dims Dimensiones del elemento.
  */
 export function drawArrowIndicator(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   indicatorId: string,
   indicatorClass: string,
   nodePosition: { x: number; y: number } | null,
@@ -117,7 +104,7 @@ export function drawArrowIndicator(
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  */
 export function drawTreeNodes(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  g: Selection<SVGGElement, unknown, null, undefined>,
   nodes: HierarchyNode<HierarchyNodeData<number>>[],
   positions: Map<string, { x: number; y: number }>
 ) {
@@ -125,7 +112,7 @@ export function drawTreeNodes(
   g.selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.node")
     .data(nodes, (d) => d.data.id)
     .join(
-      (enter) => {
+      enter => {
         // Creación del grupo para cada nodo entrante
         const gEnter = enter
           .append("g")
@@ -159,7 +146,7 @@ export function drawTreeNodes(
 
         return gEnter;
       },
-      (update) => {
+      update => {
         // Guarda la posición actualizada para cada nodo presente en el DOM
         update.each((d) => {
           positions.set(d.data.id, { x: d.x!, y: d.y! });
@@ -172,13 +159,9 @@ export function drawTreeNodes(
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
           .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
 
-        //actualizar el valor visible del nodo
-        update
-          .select<SVGTextElement>(".node-value")
-          .text((d) => d.data.value ?? 0);
         return update;
       },
-      (exit) => exit
+      exit => exit
     );
 }
 
@@ -189,29 +172,27 @@ export function drawTreeNodes(
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  */
 export function drawTreeLinks(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  g: Selection<SVGGElement, unknown, null, undefined>,
   linksData: TreeLinkData[],
-  positions: Map<string, { x: number; y: number }>
+  positions: Map<string, { x: number, y: number }>,
 ) {
   // Data join para la creación de los enlaces entre nodos
   g.selectAll<SVGGElement, LinkData>("g.link")
-    .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}`)
+    .data(linksData, d => `link-${d.sourceId}-${d.targetId}`)
     .join(
-      (enter) => {
+      enter => {
         // Creación del grupo para cada nuevo enlace
-        const gLink = enter
-          .append("g")
+        const gLink = enter.append("g")
           .attr("class", "link")
           .attr("id", (d) => `link-${d.sourceId}-${d.targetId}`);
 
         // Path del enlace
-        gLink
-          .append("path")
+        gLink.append("path")
           .attr("class", `tree-link`)
           .attr("fill", "none")
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
           .attr("stroke-width", 1.5)
-          .attr("d", (d) => {
+          .attr("d", d => {
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
             const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
@@ -220,19 +201,9 @@ export function drawTreeLinks(
 
         return gLink;
       },
-      // 🔁 actualizar la ruta cuando cambian posiciones o rotan (AVL)
-      (update) => {
-        update.select<SVGPathElement>("path.tree-link").attr("d", (d) => {
-          const s = positions.get(d.sourceId)!;
-          const t = positions.get(d.targetId)!;
-          const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-          return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
-        });
-        return update;
-      },
-      // 🧹 eliminar enlaces obsoletos para evitar “fantasmas”
-      (exit) => exit.transition().duration(300).style("opacity", 0).remove()
-    );
+      update => update,
+      exit => exit
+    )
 }
 
 /**
@@ -243,7 +214,7 @@ export function drawTreeLinks(
  * @param dims Dimensiones del lienzo y sus elementos.
  */
 export function drawListNodes(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   listNodes: ListNodeData<number>[],
   positions: Map<string, { x: number; y: number }>,
   dims: {
@@ -262,7 +233,7 @@ export function drawListNodes(
     .selectAll<SVGGElement, ListNodeData<number>>("g.node")
     .data(listNodes, (d) => d.id)
     .join(
-      (enter) => {
+      enter => {
         // Creación del grupo para cada nodo entrante
         const gEnter = enter
           .append("g")
@@ -329,7 +300,7 @@ export function drawListNodes(
 
         return gEnter;
       },
-      (update) => {
+      update => {
         // Guarda la posición actualizada para cada nodo presente en el DOM
         update.each((d, i) => {
           const x = margin.left + i * nodeSpacing;
@@ -346,7 +317,7 @@ export function drawListNodes(
 
         return update;
       },
-      (exit) => exit
+      exit => exit
     );
 }
 
@@ -359,7 +330,7 @@ export function drawListNodes(
  * @param elementHeight Alto del nodo.
  */
 export function drawListLinks(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   linksData: LinkData[],
   positions: Map<string, { x: number; y: number }>,
   elementWidth: number,
@@ -370,7 +341,7 @@ export function drawListLinks(
     .selectAll<SVGGElement, LinkData>("g.link")
     .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`)
     .join(
-      (enter) => {
+      enter => {
         // Creación del grupo para cada nuevo enlace
         const gLink = enter
           .append("g")
@@ -389,17 +360,17 @@ export function drawListLinks(
             d.type === "next" || d.type === "prev"
               ? calculateLinkPath(d, positions, elementWidth, elementHeight)
               : calculateCircularLPath(
-                  d,
-                  positions,
-                  elementWidth,
-                  elementHeight
-                )
+                d,
+                positions,
+                elementWidth,
+                elementHeight
+              )
           );
 
         return gLink;
       },
-      (update) => update,
-      (exit) => exit
+      update => update,
+      exit => exit
     );
 }
 
@@ -410,7 +381,7 @@ export function drawListLinks(
  * @param opts Objeto de configuración que contiene el posicionamiento y desplazamiento de los elementos del árbol.
  */
 export function drawTraversalSequence(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  g: Selection<SVGGElement, unknown, null, undefined>,
   values: TraversalNodeType[],
   opts: {
     seqPositions: Map<string, { x: number; y: number }>;
@@ -426,7 +397,7 @@ export function drawTraversalSequence(
   g.selectAll<SVGGElement, TraversalNodeType>("text.seq")
     .data(values, (d) => d.id)
     .join(
-      (enter) => {
+      enter => {
         // Creación del grupo para cada nodo entrante
         const textEnter = enter
           .append("text")
@@ -450,7 +421,7 @@ export function drawTraversalSequence(
 
         return textEnter;
       },
-      (update) => {
+      update => {
         // Actualizar la posición y el valor del elemento
         update
           .attr("transform", (d, i) => {
@@ -467,7 +438,7 @@ export function drawTraversalSequence(
 
         return update;
       },
-      (exit) =>
+      exit =>
         exit
           .each((d) => {
             seqPositions.delete(d.id);
@@ -486,7 +457,7 @@ export function drawTraversalSequence(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export function animateHighlightNode(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodeId: string,
   rectValues: {
     highlightColor: string;
@@ -553,7 +524,7 @@ export function animateHighlightNode(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateClearList(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodePositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
   setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
@@ -597,8 +568,8 @@ export async function animateClearList(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateClearTree(
-  treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
-  seqG: d3.Selection<SVGGElement, unknown, null, undefined>,
+  treeG: Selection<SVGGElement, unknown, null, undefined>,
+  seqG: Selection<SVGGElement, unknown, null, undefined>,
   elementPositions: {
     nodePositions: Map<string, { x: number; y: number }>;
     seqPositions: Map<string, { x: number; y: number }>;
@@ -637,7 +608,7 @@ export async function animateClearTree(
   treeG.remove();
   seqG.remove();
 
-  // Liempiza de los mapas de posiciones
+  // Limpieza de los mapas de posiciones
   nodePositions.clear();
   seqPositions.clear();
 
@@ -657,7 +628,7 @@ export async function animateClearTree(
  * @returns Una promesa que se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
  */
 export async function repositionTreeNodes(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  g: Selection<SVGGElement, unknown, null, undefined>,
   nodes: HierarchyNode<HierarchyNodeData<number>>[],
   linksData: TreeLinkData[],
   nodePositions: Map<string, { x: number; y: number }>
@@ -697,7 +668,7 @@ export async function repositionTreeNodes(
     })
     .end();
 
-  return Promise.all([p1, p2]).then(() => {});
+  return Promise.all([p1, p2]).then(() => { });
 }
 
 /**
@@ -707,7 +678,7 @@ export async function repositionTreeNodes(
  * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
  */
 export async function highlightTreePath(
-  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  g: Selection<SVGGElement, unknown, null, undefined>,
   path: HierarchyNode<HierarchyNodeData<number>>[],
   highlightColor: string
 ) {
@@ -730,154 +701,103 @@ export async function highlightTreePath(
  * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
  * @param targetNodes Array de IDs de nodos que representan la ruta del recorrido.
+ * @param seqPositions Mapa de posiciones (x, y) de cada elemento de la secuencia de recorrido.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @param opts Opciones para la animación del recorrido.
  */
 export async function animateTreeTraversal(
-  treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
-  seqG: d3.Selection<SVGGElement, unknown, null, undefined>,
+  treeG: Selection<SVGGElement, unknown, null, undefined>,
+  seqG: Selection<SVGGElement, unknown, null, undefined>,
   targetNodes: TraversalNodeType[],
   seqPositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
   setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>,
-  opts: TraversalAnimOptions = {}
+  opts: TreeTraversalAnimOptions = {}
 ) {
   const {
-    style = "preserve-fill",
+    recolor = true,
     strokeColor = "#8aa0ff",
-    bounce = true,
-    pulse = true,
   } = opts;
 
-  // ⚠️ Antes reseteaba SIEMPRE el fill => rompía RB.
-  if (style === "recolor") {
+  // Restablecimiento del fondo original de los nodos
+  if (recolor) {
     treeG
       .selectAll(".node-container")
       .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
   }
 
-  // Asegura opacidad de la banda de secuencia
+  // Opacidad  original de la banda de secuencia
   seqG.style("opacity", 1);
 
-  setIsAnimating(true);
-
   for (const node of targetNodes) {
-    const id = node.id;
-    const circle = treeG.select<SVGCircleElement>(`g#${id} circle`);
-    const seqText = seqG.select<SVGTextElement>(`text#${id}`);
+    // Selección de los elementos del nodo
+    const circle = treeG.select<SVGCircleElement>(`g#${node.id} circle`);
+    const seqText = seqG.select<SVGTextElement>(`text#${node.id}`);
 
-    if (circle.empty()) continue;
+    // Modificación del borde del círculo
+    await circle
+      .transition()
+      .duration(250)
+      .attr("stroke", strokeColor)
+      .attr("stroke-width", 2)
+      .end();
 
-    // MODO A: comportamiento antiguo (recolor)
-    if (style === "recolor") {
-      await circle
-        .transition()
-        .duration(750)
-        .attr("fill", SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR)
-        .end();
+    // Creación del anillo de pulso
+    const pulseRing = circle
+      .select(function () {
+        // Selección del grupo g padre del círculo
+        return (this!.parentNode as SVGGElement) || this!;
+      })
+      .append("circle")
+      .attr("class", "pulse-ring")
+      .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2)
+      .attr("fill", "none")
+      .attr("stroke", strokeColor)
+      .attr("stroke-width", 2)
+      .style("opacity", 0.9);
 
-      if (bounce) {
-        await circle
-          .transition()
-          .duration(150)
-          .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.2)
-          .transition()
-          .duration(150)
-          .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-          .end();
-      }
+    // Animación de pulsación
+    await pulseRing
+      .transition()
+      .duration(500)
+      .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS + 12)
+      .style("opacity", 0)
+      .remove()
+      .end();
 
-      // mover texto de secuencia
-      await seqText
-        .transition()
-        .duration(800)
-        .attr("transform", () => {
-          const finalPos = seqPositions.get(id)!;
-          return `translate(${finalPos.x}, ${finalPos.y})`;
-        })
-        .end();
+    // Bounce del círculo
+    await circle
+      .transition()
+      .duration(150)
+      .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.12)
+      .transition()
+      .duration(150)
+      .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+      .end();
 
-      await circle
-        .transition()
-        .duration(750)
-        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-        .end();
-
-      continue;
-    }
-
-    // MODO B: preserve-fill (NO tocar fill) → glow + stroke + pulso
-    circle.interrupt();
-
-    // 1) encender glow / stroke
-    await waitEnd(
-      circle
-        .transition()
-        .duration(140)
-        .attr("filter", "url(#softGlow)")
-        .attr("stroke", strokeColor)
-        .attr("stroke-width", 2)
-    );
-
-    // 2) pulso opcional (un círculo temporal dentro del grupo del nodo)
-    if (pulse) {
-      const r0 = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-      const pulseRing = circle
-        .select(function () {
-          // agregamos un sibling en el mismo g del nodo
-          return (this!.parentNode as SVGGElement) || this!;
-        })
-        .append("circle")
-        .attr("class", "pulse-ring")
-        .attr("r", r0 + 2)
-        .attr("fill", "none")
-        .attr("stroke", strokeColor)
-        .attr("stroke-width", 2)
-        .style("opacity", 0.9);
-
-      await waitEnd(
-        pulseRing
-          .transition()
-          .duration(420)
-          .attr("r", r0 + 12)
-          .style("opacity", 0)
-          .remove()
-      );
-    }
-
-    // 3) pequeño bounce (sin tocar fill)
-    if (bounce) {
-      await circle
-        .transition()
-        .duration(150)
-        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.12)
-        .transition()
-        .duration(150)
-        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-        .end();
-    }
-
-    // 4) mover texto de secuencia a su posición final
+    // Movimiento del texto de secuencia a su posición final
     await seqText
       .transition()
       .duration(800)
       .attr("transform", () => {
-        const finalPos = seqPositions.get(id)!;
+        const finalPos = seqPositions.get(node.id)!;
         return `translate(${finalPos.x}, ${finalPos.y})`;
       })
       .end();
 
-    // 5) apagar glow / stroke
-    await waitEnd(
-      circle
-        .transition()
-        .duration(140)
-        .attr("filter", null)
-        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-    );
+    // Restablecimiento de bordes
+    await circle
+      .transition()
+      .duration(250)
+      .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+      .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+      .end();
   }
 
+  // Restablecimiento de los valores de las queries del usuario
   resetQueryValues();
+
+  // Finalización de la animación
   setIsAnimating(false);
 }

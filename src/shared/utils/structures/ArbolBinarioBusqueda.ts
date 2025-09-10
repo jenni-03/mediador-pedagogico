@@ -1,3 +1,5 @@
+// Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
+
 import { Comparator } from "../../../types";
 import { NodoBin } from "../nodes/NodoBin";
 import { defaultComparator } from "../treeUtils";
@@ -12,7 +14,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Constructor de la clase ArbolBinarioBusqueda.
      */
     constructor(
-        private compare: Comparator<T> = defaultComparator
+        protected compare: Comparator<T> = defaultComparator
     ) {
         super((a, b) => compare(a, b) === 0);
     }
@@ -35,18 +37,18 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
     /**
      * Método que elimina un nodo del árbol binario de búsqueda dado un valor especificado.
      * @param valor Valor del nodo a ser eliminado.
-     * @returns Objeto que contiene el nodo eliminado y la raíz del subárbol actualizado.
+     * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
      */
-    public eliminarABB(valor: T): { removed: NodoBin<T> | null, updated: NodoBin<T> | null } {
-        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol encuentra vacío (cantidad de nodos: 0).");
+    public override eliminar(valor: T): { removed: NodoBin<T>, updated: NodoBin<T> | null } {
+        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
 
-        const salida = { removed: null, updated: null };
-        this.setRaiz(this.eliminarABBrec(this.getRaiz(), valor, salida));
+        const salida: { removed: NodoBin<T> | null, updated: NodoBin<T> | null } = { removed: null, updated: null };
+        this.setRaiz(this.eliminarABB(this.getRaiz(), valor, salida));
 
         if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
 
         this.setTamanio(this.getTamanio() - 1);
-        return salida;
+        return { removed: salida.removed, updated: salida.updated };
     }
 
     /**
@@ -54,7 +56,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * @param valor Valor del elemento a buscar.
      * @returns Booleano que indica si el elemento fue encontrado o no. 
      */
-    public esta(valor: T): boolean {
+    public override esta(valor: T): boolean {
         return this.estaABB(this.getRaiz(), valor);
     }
 
@@ -62,7 +64,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que obtiene la raíz del árbol binario de búsqueda.
      * @returns Nodo raíz del árbol o null si está vacío.
      */
-    public getRaiz(): NodoBin<T> | null {
+    public override getRaiz(): NodoBin<T> | null {
         return super.getRaiz();
     }
 
@@ -70,7 +72,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que modifica la raíz del árbol binario de búsqueda.
      * @param raiz Nuevo nodo raíz del árbol binario de búsqueda.
      */
-    public setRaiz(raiz: NodoBin<T> | null) {
+    public override setRaiz(raiz: NodoBin<T> | null) {
         super.setRaiz(raiz);
     }
 
@@ -78,7 +80,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que obtiene todos los nodos hojas del árbol binario de búsqueda.
      * @returns Array de nodos que representan las hojas del árbol.
      */
-    public getHojas(): NodoBin<T>[] {
+    public override getHojas(): NodoBin<T>[] {
         return super.getHojas();
     }
 
@@ -86,7 +88,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que cuenta el número de nodos hoja del árbol binario de búsqueda.
      * @returns Número de nodos hoja del árbol.
      */
-    public contarHojas(): number {
+    public override contarHojas(): number {
         return super.contarHojas();
     }
 
@@ -94,7 +96,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que calcula el peso total (número de nodos) del árbol binario de búsqueda.
      * @returns Número total de nodos del árbol.
      */
-    public getPeso(): number {
+    public override getPeso(): number {
         return super.getPeso();
     }
 
@@ -102,14 +104,14 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que calcula la altura del árbol binario de búsqueda.
      * @returns Altura del árbol.
      */
-    public getAltura(): number {
+    public override getAltura(): number {
         return super.getAltura();
     }
 
     /**
      * Método que vacia el árbol binario de búsqueda.
      */
-    public vaciar(): void {
+    public override vaciar(): void {
         super.vaciar();
     }
 
@@ -117,7 +119,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que verifica si el árbol binario de búsqueda está vacío.
      * @returns True si se encuentra vacío, false en caso contrario.
      */
-    public esVacio(): boolean {
+    public override esVacio(): boolean {
         return super.esVacio()
     }
 
@@ -125,7 +127,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que realiza el recorrido in-orden del árbol binario de búsqueda.
      * @returns Array de nodos en secuencia in-orden.
      */
-    public inOrden(): NodoBin<T>[] {
+    public override inOrden(): NodoBin<T>[] {
         return super.inOrden();
     }
 
@@ -133,7 +135,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que realiza el recorrido pre-orden del árbol binario de búsqueda.
      * @returns Array de nodos en secuencia pre-orden.
      */
-    public preOrden(): NodoBin<T>[] {
+    public override preOrden(): NodoBin<T>[] {
         return super.preOrden();
     }
 
@@ -141,7 +143,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que realiza el recorrido post-orden del árbol binario de búsqueda.
      * @returns Array de nodos en secuencia post-orden.
      */
-    public postOrden(): NodoBin<T>[] {
+    public override postOrden(): NodoBin<T>[] {
         return super.postOrden();
     }
 
@@ -149,7 +151,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que realiza el recorrido por niveles del árbol binario de búsqueda.
      * @returns Array de nodos por niveles.
      */
-    public getNodosPorNiveles(): NodoBin<T>[] {
+    public override getNodosPorNiveles(): NodoBin<T>[] {
         return super.getNodosPorNiveles();
     }
 
@@ -157,7 +159,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * Método que convierte el árbol binario de búsqueda en una estructura jerárquica.
      * @returns Representación jerárquica del árbol o null si está vacío.
      */
-    public convertirEstructuraJerarquica() {
+    public override convertirEstructuraJerarquica() {
         return super.convertirEstructuraJerarquica();
     }
 
@@ -166,7 +168,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * @returns Retorna un nuevo árbol correspondiente a una copia profunda del árbol actual.
      */
     public clonarABB(): ArbolBinarioBusqueda<T> {
-        const nuevoArbol = new ArbolBinarioBusqueda<T>();
+        const nuevoArbol = new ArbolBinarioBusqueda<T>(this.compare);
         nuevoArbol.setRaiz(this.clonarABBrec(this.getRaiz()));
         nuevoArbol.setTamanio(this.getTamanio());
         return nuevoArbol;
@@ -205,7 +207,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * @param salida Objeto usado para guardar las referencias al nodo eliminado y actualizado.
      * @returns Nodo raíz del subárbol actualizado luego de la eliminación.
      */
-    private eliminarABBrec(
+    private eliminarABB(
         root: NodoBin<T> | null,
         valor: T,
         salida: { removed: NodoBin<T> | null, updated: NodoBin<T> | null }
@@ -214,9 +216,9 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
 
         const cmp = this.compare(valor, root.getInfo());
         if (cmp < 0) {
-            root.setIzq(this.eliminarABBrec(root.getIzq(), valor, salida));
+            root.setIzq(this.eliminarABB(root.getIzq(), valor, salida));
         } else if (cmp > 0) {
-            root.setDer(this.eliminarABBrec(root.getDer(), valor, salida));
+            root.setDer(this.eliminarABB(root.getDer(), valor, salida));
         } else {
             if (!root.getIzq()) {
                 salida.removed = root;
@@ -231,7 +233,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             const succ = this.minValorNodo(root.getDer()!);
             root.setInfo(succ.getInfo());
             salida.updated = root;
-            root.setDer(this.eliminarABBrec(root.getDer(), succ.getInfo(), salida));
+            root.setDer(this.eliminarABB(root.getDer(), succ.getInfo(), salida));
         }
 
         return root;

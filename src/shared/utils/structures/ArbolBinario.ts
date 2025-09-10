@@ -105,10 +105,10 @@ export class ArbolBinario<T> {
     /**
      * Método que elimina un nodo del árbol binario dado su info especificada.
      * @param info Información del nodo a eliminar.
-     * @returns Objeto que contiene el nodo eliminado y la raíz del subárbol actualizado.
+     * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
      */
-    public eliminar(info: T): { removed: NodoBin<T>, updated?: NodoBin<T> } {
-        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol encuentra vacío (cantidad de nodos: 0).");
+    public eliminar(info: T): { removed: NodoBin<T>, updated: NodoBin<T> | null } {
+        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
 
         if (this.equals(this.getRaiz()!.getInfo(), info)) {
             return this.eliminarRaiz();
@@ -129,7 +129,7 @@ export class ArbolBinario<T> {
         if (this.esHoja(nodo)) {
             this.reemplazarHijo(padre, nodo, null);
             this.tamanio--;
-            return { removed: nodo };
+            return { removed: nodo, updated: null };
         }
 
         // CASO 2 – un solo hijo
@@ -137,7 +137,7 @@ export class ArbolBinario<T> {
             const unico = izq ? izq : der;
             this.reemplazarHijo(padre, nodo, unico);
             this.tamanio--;
-            return { removed: nodo };
+            return { removed: nodo, updated: null };
         }
 
         // CASO 3 – dos hijos
@@ -316,7 +316,7 @@ export class ArbolBinario<T> {
      * @returns Retorna un nuevo árbol correspondiente a una copia profunda del árbol actual.
      */
     public clonar(): ArbolBinario<T> {
-        const nuevoArbol = new ArbolBinario<T>();
+        const nuevoArbol = new ArbolBinario<T>(this.equals);
         nuevoArbol.setRaiz(this.clonarAB(this.getRaiz()));
         nuevoArbol.tamanio = this.tamanio;
         return nuevoArbol;
@@ -349,6 +349,19 @@ export class ArbolBinario<T> {
      */
     protected setTamanio(tamanio: number) {
         this.tamanio = tamanio;
+    }
+
+    /**
+     * Método que crea un nodo marcador de posición para la visualización del árbol binario.
+     * @param parent Nodo padre para el que se crea el marcador de posición.
+     * @param side Especifica si el marcador de posición es para el hijo izquierdo o derecho.
+     * @returns Objeto `HierarchyNodeData<T>` que representa un nodo marcador de posición.
+     */
+    protected createPlaceholder(parent: NodoBin<T>, side: "left" | "right"): HierarchyNodeData<T> {
+        return {
+            id: `${parent.getId()}-ph${side === "left" ? "L" : "R"}`,
+            isPlaceholder: true
+        };
     }
 
     /**
@@ -527,20 +540,20 @@ export class ArbolBinario<T> {
      * Método que elimina el nodo raíz del árbol binario.
      * @returns El nodo raíz eliminado o null si el árbol se encontraba vacío.
      */
-    private eliminarRaiz(): { removed: NodoBin<T>, updated?: NodoBin<T> } {
+    private eliminarRaiz(): { removed: NodoBin<T>, updated: NodoBin<T> | null } {
         const r = this.raiz!;
         const izq = r.getIzq(), der = r.getDer();
 
         if (!izq && !der) {
             this.setRaiz(null);
             this.tamanio--;
-            return { removed: r };
+            return { removed: r, updated: null };
         }
 
         if (!izq || !der) {
             this.setRaiz(izq ? izq : der);
             this.tamanio--;
-            return { removed: r };
+            return { removed: r, updated: null };
         }
 
         let sucPadre = r, succ = der;
@@ -614,16 +627,4 @@ export class ArbolBinario<T> {
         }
     }
 
-    /**
-     * Método que crea un nodo marcador de posición para la visualización del árbol binario.
-     * @param parent Nodo padre para el que se crea el marcador de posición.
-     * @param side Especifica si el marcador de posición es para el hijo izquierdo o derecho.
-     * @returns Objeto `HierarchyNodeData<T>` que representa un nodo marcador de posición.
-     */
-    private createPlaceholder(parent: NodoBin<T>, side: "left" | "right"): HierarchyNodeData<T> {
-        return {
-            id: `${parent.getId()}-ph${side === "left" ? "L" : "R"}`,
-            isPlaceholder: true
-        };
-    }
 }

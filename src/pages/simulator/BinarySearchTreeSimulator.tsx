@@ -9,10 +9,10 @@ export function BinarySearchTreeSimulator() {
     // Instanciación del árbol binario
     const structure = useRef(new ArbolBinarioBusqueda<number>()).current;
 
-    // Llamada al hook useBinaryTree para gestionar el estado del árbol binario
+    // Llamada al hook useBinaryTree para gestionar el estado del árbol binario de búsqueda
     const { tree, query, error, operations } = useBinarySearchTree(structure);
 
-    // Desestructuración de las operaciones soportadas por el árbol binario
+    // Desestructuración de las operaciones soportadas por el árbol binario de búsqueda
     const {
         insertNode,
         deleteNode,
@@ -28,20 +28,35 @@ export function BinarySearchTreeSimulator() {
     // Conversión del árbol a una estructura jerárquica para su renderizado
     const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
+    // Acciones disponibles para el usuario
+    const actions = useMemo(
+        () => ({
+            insert: insertNode,
+            delete: deleteNode,
+            search: searchNode,
+            getPreOrder,
+            getInOrder,
+            getPostOrder,
+            getLevelOrder,
+            clean: clearTree,
+        }),
+        [
+            insertNode,
+            deleteNode,
+            searchNode,
+            getPreOrder,
+            getInOrder,
+            getPostOrder,
+            getLevelOrder,
+            clearTree,
+        ]
+    );
+
     return (
         <Simulator
             structureName={STRUCTURE_NAME.BINARY_SEARCH_TREE}
             structure={tree}
-            actions={{
-                insert: insertNode,
-                delete: deleteNode,
-                search: searchNode,
-                getPreOrder,
-                getInOrder,
-                getPostOrder,
-                getLevelOrder,
-                clean: clearTree,
-            }}
+            actions={actions}
             query={query}
             error={error}
         >

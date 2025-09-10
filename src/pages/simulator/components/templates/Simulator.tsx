@@ -87,7 +87,10 @@ export function Simulator<T extends string>({
       return s;
     };
 
-    const args = flatArgs.map(normalizeArg);
+    // const args = flatArgs.map(normalizeArg);
+    const args = (Array.isArray(flatArgs) ? flatArgs : [flatArgs]).map(
+      normalizeArg
+    );
 
     // 4) animación (como ya lo tenías)
     if (action !== "create" && action !== "clean") {

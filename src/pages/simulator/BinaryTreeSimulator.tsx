@@ -29,21 +29,37 @@ export function BinaryTreeSimulator() {
     // Conversión del árbol a una estructura jerárquica para su renderizado
     const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
+    // Acciones disponibles para el usuario
+    const actions = useMemo(
+        () => ({
+            insertLeft: insertLeftChild,
+            insertRight: insertRightChild,
+            delete: deleteNode,
+            search: searchNode,
+            getPreOrder,
+            getInOrder,
+            getPostOrder,
+            getLevelOrder,
+            clean: clearTree,
+        }),
+        [
+            insertLeftChild,
+            insertRightChild,
+            deleteNode,
+            searchNode,
+            getPreOrder,
+            getInOrder,
+            getPostOrder,
+            getLevelOrder,
+            clearTree,
+        ]
+    );
+
     return (
         <Simulator
             structureName={STRUCTURE_NAME.BINARY_TREE}
             structure={tree}
-            actions={{
-                insertLeft: insertLeftChild,
-                insertRight: insertRightChild,
-                delete: deleteNode,
-                search: searchNode,
-                getPreOrder,
-                getInOrder,
-                getPostOrder,
-                getLevelOrder,
-                clean: clearTree,
-            }}
+            actions={actions}
             query={query}
             error={error}
         >
