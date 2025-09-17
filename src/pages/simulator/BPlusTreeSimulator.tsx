@@ -18,9 +18,9 @@ export function BPlusTreeSimulator() {
     insert,
     delete: deleteOp,
     search,
-    range,       // ← correcto (no "getRange")
-    scanFrom,
-    getInOrder,  // ← añade estos dos
+    range, // propio de B+
+    scanFrom, // propio de B+
+    getInOrder,
     getLevelOrder,
     clean,
     resetQueryValues,
@@ -29,14 +29,14 @@ export function BPlusTreeSimulator() {
   const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
   return (
-    <Simulator<"arbol_b_plus"> 
-      structureName={STRUCTURE_NAME.TREE_BPLUS as "arbol_b_plus"} 
+    <Simulator<"arbol_b_plus">
+      structureName={STRUCTURE_NAME.TREE_BPLUS as "arbol_b_plus"}
       structure={tree}
       actions={{
         insert,
         delete: deleteOp,
         search,
-        range,          // ← nombre exacto según BaseStructureActions
+        range,
         scanFrom,
         getInOrder,
         getLevelOrder,

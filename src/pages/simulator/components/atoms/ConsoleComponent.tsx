@@ -385,7 +385,7 @@ export function ConsoleComponent({
       >
         {/* Banner sticky: recordatorio de prefijo */}
         {isCreated && (
-          <div className="sticky top-0 z-10 -mx-4 mb-2 px-4">
+          <div className="sticky -top-2 z-10 -mx-4 mb-2 px-4">
             <div className="flex items-center justify-center gap-2 rounded-md border border-white/10 bg-[#0B0B10]/80 px-3 py-1.5 backdrop-blur">
               <span className="text-[11px] uppercase tracking-widest text-white/50">
                 Objeto creado

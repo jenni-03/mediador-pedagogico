@@ -3,8 +3,13 @@ import { useRef, useState } from "react";
 import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
 import { ArbolBPlus } from "../../../../../shared/utils/structures/ArbolBPlus";
 
-type QueryBPlus = BaseQueryOperations<"arbol_bplus"> & {
+export type QueryBPlus = BaseQueryOperations<"arbol_bplus"> & {
+  /** Triggers “amigables” para el renderer */
   range?: { from: number; to: number };
+  scanFrom?: { start: number; limit: number };
+  /** Señal de flanco para getInOrder (no afecta la banda) */
+  inOrderTick?: number;
+  levelTick?: number;
 };
 
 /* ╔══════════════════════════════════════════════════════════════════════════╗
@@ -15,15 +20,10 @@ const dlog = (...a: any[]) => {
   if (DEBUG_BPLUS) console.log("[useBPlusTree]", ...a);
 };
 
-/* ╔══════════════════════════════════════════════════════════════════════════╗
-   ║                                 Helpers                                  ║
-   ╚══════════════════════════════════════════════════════════════════════════╝*/
-
-/** Filtra items inválidos en secuencias para la banda. */
+/* Helpers */
 const sanitizeSeq = (arr: TraversalNodeType[]) =>
   arr.filter((d): d is TraversalNodeType => !!d && typeof d.id === "string");
 
-/** Deja sólo una señal de secuencia activa (todas las demás en blanco). */
 function onlySeq<K extends keyof BaseQueryOperations<"arbol_bplus">>(
   key: K,
   payload: BaseQueryOperations<"arbol_bplus">[keyof BaseQueryOperations<"arbol_bplus">]
@@ -32,8 +32,8 @@ function onlySeq<K extends keyof BaseQueryOperations<"arbol_bplus">>(
     toInsert: null,
     toDelete: null,
     toSearch: null,
-    toGetInOrder: [],
-    toGetLevelOrder: [],
+    toGetInOrder: undefined, // ⬅️
+    toGetLevelOrder: undefined, // ⬅️
     toGetRange: [],
     toScanFrom: [],
     toClear: false,
@@ -42,72 +42,69 @@ function onlySeq<K extends keyof BaseQueryOperations<"arbol_bplus">>(
   } as BaseQueryOperations<"arbol_bplus">;
 }
 
-/** Convierte números a TraversalNodeType con ids estables para la banda. */
 const toTraversal = (vals: number[], prefix = "seq"): TraversalNodeType[] =>
   vals.map((v, i) => ({ id: `${prefix}-${v}-${i}`, value: v }));
 
-/** Obtiene un clon inmutable del árbol (requerido para React). */
 const cloneOrThrow = (t: ArbolBPlus<number, number>) => {
   const c = (t as any).clonar?.();
   if (!c) {
     throw new Error(
-      "ArbolBPlus.clonar() no está disponible. Agrega un método clonar() (igual que en ArbolB) para mantener inmutabilidad."
+      "ArbolBPlus.clonar() no está disponible. Agrega un método clonar()."
     );
   }
   return c as ArbolBPlus<number, number>;
 };
 
-/* ╔══════════════════════════════════════════════════════════════════════════╗
-   ║                               Hook principal                             ║
-   ╚══════════════════════════════════════════════════════════════════════════╝*/
+/* Hook principal */
 export function useBPlusTree(structure: ArbolBPlus<number, number>) {
-  // Estado fuente de verdad (árbol lógico) y errores
   const [tree, setTree] = useState(structure);
   const [error, setError] = useState<{ message: string; id: number } | null>(
     null
   );
 
-  // Señales que lee el renderer para animar
   const [query, setQuery] = useState<QueryBPlus>({
     toInsert: null,
     toDelete: null,
     toSearch: null,
-    toGetInOrder: [],
-    toGetLevelOrder: [],
+    toGetInOrder: undefined, // ⬅️
+    toGetLevelOrder: undefined, // ⬅️
     toGetRange: [],
     toScanFrom: [],
     toClear: false,
     bPlusFix: null,
     range: undefined,
+    scanFrom: undefined,
+    inOrderTick: undefined,
+    levelTick: undefined,
   });
 
-  // Operaciones diferidas (se aplican cuando la animación termina)
   const pendingInsertRef = useRef<number | null>(null);
   const pendingDeleteRef = useRef<number | null>(null);
   const pendingClearRef = useRef<boolean>(false);
 
-  /* ───────────── INSERT: muta primero, anima después ─────────────
-     Esto garantiza que el renderer encuentre la clave en su hoja real
-     y no caiga en el fallback (primera hoja a la izquierda). */
+  /* INSERT: muta primero, anima después */
   const insert = (value: number) => {
     dlog("insert(arg):", value);
     try {
       const next = cloneOrThrow(tree);
-      next.insertar(value); // ← mutación inmediata
-      setTree(next); // ← re-render con el árbol actualizado
-
-      // Señal para que el renderer haga el recorrido + pop/slot-grow
+      next.insertar(value);
+      setTree(next);
       setQuery((p) => ({
         ...p,
         toInsert: value,
         toDelete: null,
         toSearch: null,
-        toGetInOrder: [],
-        toGetLevelOrder: [],
+        toGetInOrder: undefined, // ⬅️
+        toGetLevelOrder: undefined, // ⬅️
         toGetRange: [],
         toScanFrom: [],
         toClear: false,
+        range: undefined,
+        scanFrom: undefined,
+        inOrderTick: undefined,
+        levelTick: undefined,
       }));
+
       setError(null);
     } catch (e: any) {
       dlog("insert(ERROR):", e?.message);
@@ -115,27 +112,30 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     }
   };
 
-  /* ─────────────────────────────── DELETE ────────────────────────────────
-     Siempre diferido para poder mostrar el camino + crumble antes de mutar. */
+  /* DELETE: diferido */
   const del = (value: number) => {
     dlog("delete(arg):", value);
     try {
-      // Si no existe, no dispares animación
       if (!tree.contiene?.(value)) {
         throw new Error("La clave no existe en el árbol.");
       }
       pendingDeleteRef.current = value;
       setQuery((p) => ({
         ...p,
-        toDelete: value,
-        toInsert: null,
+        toInsert: value,
+        toDelete: null,
         toSearch: null,
-        toGetInOrder: [],
-        toGetLevelOrder: [],
+        toGetInOrder: undefined, // ⬅️
+        toGetLevelOrder: undefined, // ⬅️
         toGetRange: [],
         toScanFrom: [],
         toClear: false,
+        range: undefined,
+        scanFrom: undefined,
+        inOrderTick: undefined,
+        levelTick: undefined,
       }));
+
       setError(null);
     } catch (e: any) {
       dlog("delete(ERROR):", e?.message);
@@ -143,8 +143,7 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     }
   };
 
-  /* ─────────────────────────────── SEARCH ────────────────────────────────
-     Sólo dispara la animación (no hay mutación).                           */
+  /* SEARCH: solo animación */
   const search = (value: number) => {
     dlog("search(arg):", value);
     try {
@@ -158,6 +157,10 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
         toGetLevelOrder: [],
         toGetRange: [],
         toScanFrom: [],
+        range: undefined,
+        scanFrom: undefined,
+        inOrderTick: undefined,
+        levelTick: undefined,
       }));
       setError(null);
     } catch (e: any) {
@@ -166,12 +169,19 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     }
   };
 
-  /* ───────────────────────────── Recorridos B+ ─────────────────────────── */
+  /* Recorridos */
   const getInOrder = () => {
     dlog("getInOrder()");
     try {
       const seq = tree.getInOrder();
-      setQuery(onlySeq("toGetInOrder", sanitizeSeq(seq)));
+      const now = Date.now();
+      setQuery((_prev) => ({
+        ...onlySeq("toGetInOrder", sanitizeSeq(seq)),
+        range: undefined,
+        scanFrom: undefined,
+        inOrderTick: now, // ← flanco INORDER
+        levelTick: undefined, // ← APAGA LEVEL
+      }));
       setError(null);
     } catch (e: any) {
       dlog("getInOrder(ERROR):", e?.message);
@@ -183,7 +193,14 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     dlog("getLevelOrder()");
     try {
       const seq = tree.getLevelOrder();
-      setQuery(onlySeq("toGetLevelOrder", sanitizeSeq(seq)));
+      const now = Date.now();
+      setQuery((_prev) => ({
+        ...onlySeq("toGetLevelOrder", sanitizeSeq(seq)),
+        range: undefined,
+        scanFrom: undefined,
+        inOrderTick: undefined, // ⬅️ apaga el otro flanco
+        levelTick: now, // ⬅️ flanco NUEVO
+      }));
       setError(null);
     } catch (e: any) {
       dlog("getLevelOrder(ERROR):", e?.message);
@@ -191,22 +208,19 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     }
   };
 
-  /* ─────────────────────────── Consultas secuenciales ──────────────────── */
-  /** Rango inclusivo [from, to] usando la cadena de hojas. */
+  /* Consultas secuenciales */
   const range = (from: number, to: number) => {
     dlog("range(arg):", from, to);
     try {
       const vals = tree.range(from, to);
       const seq = toTraversal(vals, "range");
       setQuery((_prev) => ({
-        // banda inferior con los resultados
         toGetInOrder: sanitizeSeq(seq),
-        toGetLevelOrder: [],
-
-        // 👇 TRIGGER correcto para el render
+        toGetLevelOrder: undefined, // ⬅️
+        // Triggers
         range: { from, to },
-
-        // apaga el resto de triggers
+        scanFrom: undefined,
+        // apaga otros
         toGetRange: [],
         toScanFrom: [],
         toInsert: null,
@@ -214,7 +228,10 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
         toSearch: null,
         toClear: false,
         bPlusFix: null,
+        inOrderTick: undefined,
+        levelTick: undefined,
       }));
+
       setError(null);
     } catch (e: any) {
       dlog("range(ERROR):", e?.message);
@@ -222,28 +239,27 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     }
   };
 
-  /** Escaneo secuencial desde `start` limitado por `limit` elementos. */
   const scanFrom = (start: number, limit: number) => {
     dlog("scanFrom(arg):", start, limit);
     try {
       const vals = tree.scanFrom(start, limit);
       const seq = toTraversal(vals, "scan");
-
       setQuery((_prev) => ({
-        // resultados para la banda inferior
         toGetInOrder: sanitizeSeq(seq),
-        toGetLevelOrder: [],
-
-        // 🔔 trigger de animación SCAN FROM (tupla)
+        toGetLevelOrder: undefined,
+        // Triggers
         toScanFrom: [start, limit],
-
-        // apaga otros triggers
+        scanFrom: { start, limit },
+        range: undefined,
+        // apaga otros
         toGetRange: [],
         toInsert: null,
         toDelete: null,
         toSearch: null,
         toClear: false,
         bPlusFix: null,
+        inOrderTick: undefined,
+        levelTick: undefined,
       }));
       setError(null);
     } catch (e: any) {
@@ -252,40 +268,36 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
     }
   };
 
-  /* ─────────────────────────── resetQueryValues() ─────────────────────────
-   Llamado por el renderer al terminar la animación para:
-   1) limpiar señales de animación
-   2) aplicar las mutaciones diferidas en orden: clear → delete → insert   */
+  /* resetQueryValues(): limpiar triggers + aplicar mutaciones diferidas */
   const resetQueryValues = () => {
     dlog("resetQueryValues()");
     setQuery((prev) => ({
       toInsert: null,
       toDelete: null,
       toSearch: null,
-      toGetInOrder: prev.toGetInOrder, // 👈 conserva la banda
-      toGetLevelOrder: [],
+      toGetInOrder: prev.toGetInOrder, // conserva banda
+      toGetLevelOrder: prev.toGetLevelOrder, // ⬅️ conserva si existiera
       toGetRange: [],
       toScanFrom: [],
       toClear: false,
       bPlusFix: null,
-      range: undefined, // 👈 apaga el trigger RANGE
+      range: undefined,
+      scanFrom: undefined,
+      inOrderTick: prev.inOrderTick,
+      levelTick: prev.levelTick,
     }));
 
-    // 2) aplicar mutaciones pendientes
     let nextTree: ArbolBPlus<number, number> = tree;
     let changed = false;
 
-    // a) CLEAR
     if (pendingClearRef.current) {
       nextTree = new ArbolBPlus<number, number>((a, b) => a - b, 2);
       pendingClearRef.current = false;
       changed = true;
     } else {
-      // si no hubo clear, clonamos el árbol actual para mutarlo de forma segura
       nextTree = cloneOrThrow(nextTree);
     }
 
-    // b) DELETE
     if (pendingDeleteRef.current != null) {
       try {
         nextTree.eliminar(pendingDeleteRef.current);
@@ -298,7 +310,6 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
       }
     }
 
-    // c) INSERT
     if (pendingInsertRef.current != null) {
       try {
         nextTree.insertar(pendingInsertRef.current);
@@ -311,12 +322,10 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
       }
     }
 
-    // 3) publicar el nuevo árbol si hubo cambios
     if (changed) setTree(nextTree);
   };
 
-  /* ───────────────────────────────── CLEAR ───────────────────────────────
-     Diferido: primero animas el “clear” visual y luego recreas el árbol.   */
+  /* CLEAR total */
   const clean = () => {
     dlog("clean()");
     pendingClearRef.current = true;
@@ -324,18 +333,19 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
       toInsert: null,
       toDelete: null,
       toSearch: null,
-      toGetInOrder: [],
-      toGetLevelOrder: [],
+      toGetInOrder: undefined, // ⬅️
+      toGetLevelOrder: undefined, // ⬅️
       toGetRange: [],
       toScanFrom: [],
-      toClear: true, // dispara la animación de limpiado
+      toClear: true,
       bPlusFix: null,
+      range: undefined,
+      scanFrom: undefined,
+      inOrderTick: undefined,
+      levelTick: undefined,
     });
   };
 
-  /* ╔══════════════════════════════════════════════════════════════════════╗
-     ║                                API                                  ║
-     ╚══════════════════════════════════════════════════════════════════════╝*/
   return {
     tree,
     query,
@@ -344,15 +354,12 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
       insert,
       delete: del,
       search,
-      // recorridos
       getInOrder,
       getLevelOrder,
-      // consultas propias de B+
       range,
       scanFrom,
-      // housekeeping
       clean,
-      resetQueryValues, // ← las animaciones DEBEN llamar a esto al terminar
+      resetQueryValues,
     },
   };
 }

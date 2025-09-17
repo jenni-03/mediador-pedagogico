@@ -1,9 +1,11 @@
-import { BaseQueryOperations, BPlusHierarchy } from "../../../../../types";
+// src/pages/simulator/components/estructures/arbolBPlus/BPlusTreeRender.tsx
+import { BPlusHierarchy } from "../../../../../types";
 import { useBPlusRender } from "../../../hooks/estructures/arbolBPlus/useBPlusRender";
+import type { QueryBPlus } from "../../../hooks/estructures/arbolBPlus/useBPlusTree";
 
 type Props = {
   tree: BPlusHierarchy | null;
-  query: BaseQueryOperations<"arbol_bplus">;
+  query: QueryBPlus;
   resetQueryValues: () => void;
 };
 

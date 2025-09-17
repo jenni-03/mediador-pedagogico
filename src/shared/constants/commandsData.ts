@@ -743,23 +743,23 @@ export const commandsData: Record<string, any> = {
         description:
           "Inserta una clave en el Árbol B+. Siempre se inserta en una hoja. Si la hoja se desborda, se divide (split) y se actualizan los separadores en los nodos internos; se mantienen los punteros hoja↔hoja.",
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong>
-               Si el objeto ya existe: <strong>arbolBPlus.insert(valor);</strong>`,
+               Si el objeto ya existe: <strong>arbolBP.insert(valor);</strong>`,
         ejemplo:
-          "<strong>insert(30);</strong> ó <strong>arbolBPlus.insert(30);</strong>",
+          "<strong>insert(30);</strong> ó <strong>arbolBP.insert(30);</strong>",
       },
       {
         title: "delete",
         description:
           "Elimina una clave desde su hoja. Si queda por debajo del mínimo, corrige con redistribución (préstamo) o fusión (merge) y actualiza los separadores internos. Puede contraerse la raíz si es necesario.",
-        estructura: "<strong>arbolBPlus.delete(valor);</strong>",
-        ejemplo: "<strong>arbolBPlus.delete(20);</strong>",
+        estructura: "<strong>arbolBP.delete(valor);</strong>",
+        ejemplo: "<strong>arbolBP.delete(20);</strong>",
       },
       {
         title: "search",
         description:
           "Busca una clave descendiendo por nodos internos (enrutadores) hasta la hoja y verifica su presencia. En B+ todas las claves reales viven en las hojas.",
-        estructura: "<strong>arbolBPlus.search(valor);</strong>",
-        ejemplo: "<strong>arbolBPlus.search(25);</strong>",
+        estructura: "<strong>arbolBP.search(valor);</strong>",
+        ejemplo: "<strong>arbolBP.search(25);</strong>",
       },
 
       /* ─────────────── Propios de B+ ─────────────── */
@@ -767,15 +767,15 @@ export const commandsData: Record<string, any> = {
         title: "range",
         description:
           "Devuelve todas las claves en el intervalo inclusivo [from, to]. Ubica la hoja de ‘from’ y recorre hojas contiguas mediante sus punteros nextLeaf hasta superar ‘to’.",
-        estructura: "<strong>arbolBPlus.range(from, to);</strong>",
-        ejemplo: "<strong>arbolBPlus.range(15, 42);</strong>",
+        estructura: "<strong>arbolBP.range(from, to);</strong>",
+        ejemplo: "<strong>arbolBP.range(15, 42);</strong>",
       },
       {
         title: "scanFrom",
         description:
           "Exploración secuencial hacia la derecha: comienza en ‘start’ (o en la siguiente clave mayor si ‘start’ no existe) y devuelve hasta ‘limit’ elementos recorriendo punteros de hojas.",
-        estructura: "<strong>arbolBPlus.scanFrom(start, limit);</strong>",
-        ejemplo: "<strong>arbolBPlus.scanFrom(30, 10);</strong>",
+        estructura: "<strong>arbolBP.scanFrom(start, limit);</strong>",
+        ejemplo: "<strong>arbolBP.scanFrom(30, 10);</strong>",
       },
 
       /* ─────────────── Recorridos útiles en UI ─────────────── */
@@ -783,15 +783,15 @@ export const commandsData: Record<string, any> = {
         title: "getInOrder",
         description:
           "Obtiene el recorrido inorden del Árbol B+. En la práctica, emite las claves hoja por hoja siguiendo los enlaces laterales (orden ascendente global).",
-        estructura: "<strong>arbolBPlus.getInOrder();</strong>",
-        ejemplo: "<strong>arbolBPlus.getInOrder();</strong>",
+        estructura: "<strong>arbolBP.getInOrder();</strong>",
+        ejemplo: "<strong>arbolBP.getInOrder();</strong>",
       },
       {
         title: "getLevelOrder",
         description:
           "Obtiene el recorrido por niveles (BFS) del Árbol B+ sobre la jerarquía (internos y hojas).",
-        estructura: "<strong>arbolBPlus.getLevelOrder();</strong>",
-        ejemplo: "<strong>arbolBPlus.getLevelOrder();</strong>",
+        estructura: "<strong>arbolBP.getLevelOrder();</strong>",
+        ejemplo: "<strong>arbolBP.getLevelOrder();</strong>",
       },
 
       /* ─────────────── Limpieza ─────────────── */
@@ -799,8 +799,8 @@ export const commandsData: Record<string, any> = {
         title: "clean",
         description:
           "Vacía por completo el Árbol B+ (reinicia hojas e internos).",
-        estructura: "<strong>arbolBPlus.clean();</strong>",
-        ejemplo: "<strong>arbolBPlus.clean();</strong>",
+        estructura: "<strong>arbolBP.clean();</strong>",
+        ejemplo: "<strong>arbolBP.clean();</strong>",
       },
     ],
   },

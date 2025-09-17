@@ -432,8 +432,8 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
                                 toScanFrom: [] | [start: number, limit: number];
 
                                 /** Secuencias para la banda inferior (resultado que se dibuja) */
-                                toGetInOrder: TraversalNodeType[] | [];
-                                toGetLevelOrder: TraversalNodeType[] | [];
+                                toGetInOrder: TraversalNodeType[] | undefined;
+                                toGetLevelOrder: TraversalNodeType[] | undefined;
 
                                 /** Limpieza */
                                 toClear: boolean;
