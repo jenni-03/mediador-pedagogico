@@ -617,73 +617,190 @@ export const commandsData: Record<string, any> = {
       },
     ],
   },
-  arbolb: {
+  arbol_123: {
     buttons: [
       {
         title: "insert",
-        description: "Insertar un nodo en el árbol B",
-        estructura: "nombreObjeto.insert(valor);",
-        ejemplo: "arbolB.insert(1);",
+        description:
+          "Inserta un valor en el Árbol 1-2-3 (ajustando nodos y promoviendo claves cuando sea necesario).",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
+               Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(30);</strong> ó <strong>arbol123.insert(30);</strong>",
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del árbol B",
+        description:
+          "Elimina un valor del Árbol 1-2-3 (fusionando o redistribuyendo nodos según el caso).",
         estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolB.delete(1);",
+        ejemplo: "arbol123.delete(20);",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el árbol B",
+        description: "Busca un valor en el Árbol 1-2-3.",
         estructura: "nombreObjeto.search(valor);",
-        ejemplo: "arbolB.search(1);",
+        ejemplo: "arbol123.search(25);",
       },
       {
-        title: "traverse",
-        description: "Recorrer el Árbol B en diferentes órdenes",
-        estructura: "nombreObjeto.traverse(nombreOrden);",
-        ejemplo:
-          "arbolB.traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getPreOrder();",
+        ejemplo: "arbol123.getPreOrder();",
+      },
+      {
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getInOrder();",
+        ejemplo: "arbol123.getInOrder();",
+      },
+      {
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getPostOrder();",
+        ejemplo: "arbol123.getPostOrder();",
+      },
+      {
+        title: "getLevelOrder",
+        description: "Obtiene el recorrido por niveles (BFS) del Árbol 1-2-3.",
+        estructura: "nombreObjeto.getLevelOrder();",
+        ejemplo: "arbol123.getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Borrar el árbol B",
+        description: "Vacía por completo el Árbol 1-2-3.",
         estructura: "nombreObjeto.clean();",
-        ejemplo: "arbolB.clean();",
+        ejemplo: "arbol123.clean();",
       },
     ],
   },
-  arbolbplus: {
+
+  arbol_b: {
     buttons: [
       {
         title: "insert",
-        description: "Insertar un nodo en el árbol B+",
-        estructura: "nombreObjeto.insert(valor);",
-        ejemplo: "arBPlus.insert(1);",
+        description:
+          "Inserta un valor en el Árbol B. Si un nodo se llena, se divide (split) y se promueve la clave media.",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong>
+               Si el objeto ya existe: <strong>arbolB.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(30);</strong> ó <strong>arbolB.insert(30);</strong>",
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del árbol B+",
-        estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arBPlus.delete(1);",
+        description:
+          "Elimina un valor del Árbol B. Corrige con redistribución (préstamo) o fusión (merge) si algún nodo queda con pocas claves.",
+        estructura: "<strong>arbolB.delete(valor);</strong>",
+        ejemplo: "<strong>arbolB.delete(20);</strong>",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el árbol B+",
-        estructura: "nombreObjeto.search(valor);",
-        ejemplo: "arBPlus.search(1);",
+        description:
+          "Busca un valor en el Árbol B descendiendo por los intervalos que determinan sus claves.",
+        estructura: "<strong>arbolB.search(valor);</strong>",
+        ejemplo: "<strong>arbolB.search(25);</strong>",
       },
       {
-        title: "traverse",
-        description: "Recorrer el Árbol B+ en diferentes órdenes",
-        estructura: "nombreObjeto.traverse(nombreOrden);",
-        ejemplo:
-          "arBPlus.traverse('inorder'); , traverse('preorder'); , traverse('postorder');",
+        title: "getPreOrder",
+        description:
+          "Obtiene el recorrido en preorden del Árbol B (claves del nodo, luego sus hijos de izquierda a derecha).",
+        estructura: "<strong>arbolB.getPreOrder();</strong>",
+        ejemplo: "<strong>arbolB.getPreOrder();</strong>",
+      },
+      {
+        title: "getInOrder",
+        description:
+          "Obtiene el recorrido en inorden del Árbol B (child[0], k0, child[1], k1, ..., child[m]).",
+        estructura: "<strong>arbolB.getInOrder();</strong>",
+        ejemplo: "<strong>arbolB.getInOrder();</strong>",
+      },
+      {
+        title: "getPostOrder",
+        description:
+          "Obtiene el recorrido en postorden del Árbol B (todos los hijos y al final las claves del nodo).",
+        estructura: "<strong>arbolB.getPostOrder();</strong>",
+        ejemplo: "<strong>arbolB.getPostOrder();</strong>",
+      },
+      {
+        title: "getLevelOrder",
+        description:
+          "Obtiene el recorrido por niveles (BFS) del Árbol B (se encolan nodos y se emiten sus claves en orden).",
+        estructura: "<strong>arbolB.getLevelOrder();</strong>",
+        ejemplo: "<strong>arbolB.getLevelOrder();</strong>",
       },
       {
         title: "clean",
-        description: "Borrar el árbol B+",
-        estructura: "nombreObjeto.clean();",
-        ejemplo: "arBPlus.clean();",
+        description: "Vacía por completo el Árbol B.",
+        estructura: "<strong>arbolB.clean();</strong>",
+        ejemplo: "<strong>arbolB.clean();</strong>",
+      },
+    ],
+  },
+
+  arbol_b_plus: {
+    buttons: [
+      {
+        title: "insert",
+        description:
+          "Inserta una clave en el Árbol B+. Siempre se inserta en una hoja. Si la hoja se desborda, se divide (split) y se actualizan los separadores en los nodos internos; se mantienen los punteros hoja↔hoja.",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong>
+               Si el objeto ya existe: <strong>arbolBP.insert(valor);</strong>`,
+        ejemplo:
+          "<strong>insert(30);</strong> ó <strong>arbolBP.insert(30);</strong>",
+      },
+      {
+        title: "delete",
+        description:
+          "Elimina una clave desde su hoja. Si queda por debajo del mínimo, corrige con redistribución (préstamo) o fusión (merge) y actualiza los separadores internos. Puede contraerse la raíz si es necesario.",
+        estructura: "<strong>arbolBP.delete(valor);</strong>",
+        ejemplo: "<strong>arbolBP.delete(20);</strong>",
+      },
+      {
+        title: "search",
+        description:
+          "Busca una clave descendiendo por nodos internos (enrutadores) hasta la hoja y verifica su presencia. En B+ todas las claves reales viven en las hojas.",
+        estructura: "<strong>arbolBP.search(valor);</strong>",
+        ejemplo: "<strong>arbolBP.search(25);</strong>",
+      },
+
+      /* ─────────────── Propios de B+ ─────────────── */
+      {
+        title: "range",
+        description:
+          "Devuelve todas las claves en el intervalo inclusivo [from, to]. Ubica la hoja de ‘from’ y recorre hojas contiguas mediante sus punteros nextLeaf hasta superar ‘to’.",
+        estructura: "<strong>arbolBP.range(from, to);</strong>",
+        ejemplo: "<strong>arbolBP.range(15, 42);</strong>",
+      },
+      {
+        title: "scanFrom",
+        description:
+          "Exploración secuencial hacia la derecha: comienza en ‘start’ (o en la siguiente clave mayor si ‘start’ no existe) y devuelve hasta ‘limit’ elementos recorriendo punteros de hojas.",
+        estructura: "<strong>arbolBP.scanFrom(start, limit);</strong>",
+        ejemplo: "<strong>arbolBP.scanFrom(30, 10);</strong>",
+      },
+
+      /* ─────────────── Recorridos útiles en UI ─────────────── */
+      {
+        title: "getInOrder",
+        description:
+          "Obtiene el recorrido inorden del Árbol B+. En la práctica, emite las claves hoja por hoja siguiendo los enlaces laterales (orden ascendente global).",
+        estructura: "<strong>arbolBP.getInOrder();</strong>",
+        ejemplo: "<strong>arbolBP.getInOrder();</strong>",
+      },
+      {
+        title: "getLevelOrder",
+        description:
+          "Obtiene el recorrido por niveles (BFS) del Árbol B+ sobre la jerarquía (internos y hojas).",
+        estructura: "<strong>arbolBP.getLevelOrder();</strong>",
+        ejemplo: "<strong>arbolBP.getLevelOrder();</strong>",
+      },
+
+      /* ─────────────── Limpieza ─────────────── */
+      {
+        title: "clean",
+        description:
+          "Vacía por completo el Árbol B+ (reinicia hojas e internos).",
+        estructura: "<strong>arbolBP.clean();</strong>",
+        ejemplo: "<strong>arbolBP.clean();</strong>",
       },
     ],
   },

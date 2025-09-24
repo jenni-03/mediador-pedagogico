@@ -22,6 +22,131 @@ export interface LinkedListInterface<T> {
   getTamanio(): number;
 }
 
+// Un nodo de jerarquía 2-3 SIEMPRE tiene:
+// - id: "n-<idNum>"
+// - idNum: presente
+// - value: number[] (todas las claves del nodo, en orden)
+// - children?: TwoThreeHierarchy[] (sin placeholders)
+export type TwoThreeHierarchy = {
+  id: string; // "n-<id>"
+  idNum: number; // requerido
+  value: number[]; // requerido
+  children?: TwoThreeHierarchy[];
+  // opcionalmente puedes conservar campos de HierarchyNodeData si los usas:
+  isPlaceholder?: boolean;
+  degree?: number;
+  order?: number;
+  meta?: { nIndex?: number };
+};
+export type BPlusQuery = BaseQueryOperations<"arbol_bplus">;
+
+// Conveniencia para las operaciones del simulador 2-3
+export type TwoThreeQuery = BaseQueryOperations<"arbol_123">;
+export type BQuery = BaseQueryOperations<"arbol_b">;
+
+// Un nodo de Árbol B para el renderer D3/SVG (similar a TwoThreeHierarchy, pero m-ario genérico).
+export type BHierarchy = {
+  id: string; // "n-<idNum>"
+  idNum: number; // requerido
+  keys: number[]; // claves del nodo en orden ascendente
+  children?: BHierarchy[]; // hijos reales (sin placeholders)
+
+  // Campos opcionales ya usados en tu ecosistema
+  isPlaceholder?: boolean;
+
+  // Metadatos útiles para tooltips/inspección
+  order?: number; // m (aridad máx del árbol, p.ej. 4 → B-tree de orden 4)
+  degree?: number; // número de hijos actuales
+  minKeys?: number; // t-1 si t=grado mínimo
+  maxKeys?: number; // m-1
+  meta?: { nIndex?: number };
+};
+
+/* ─────────────────────────── 2.1) Eventos de animación/fix-ups B ───────────────── */
+export type BSplitEvent = {
+  type: "split";
+  nodeId: string; // id del nodo que se parte
+  midKey: number; // clave separadora promovida
+  leftId?: string; // ids resultantes (si ya existen tras la operación)
+  rightId?: string;
+};
+
+export type BMergeEvent = {
+  type: "merge";
+  leftId: string; // nodo que absorbe
+  rightId: string; // hermano que se fusiona
+  sepKey: number; // separador que baja desde el padre
+};
+
+export type BRedistributeEvent = {
+  type: "redistribute";
+  fromId: string; // donante
+  toId: string; // receptor
+  viaKey: number; // separador ajustado en el padre
+  direction: "left" | "right";
+};
+
+/* ───────── Fix-ups B+: leaf links + split/merge diferenciados ───────── */
+export type BPlusSplitEvent = {
+  type: "splitLeaf" | "splitInternal";
+  nodeId: string; // nodo que se parte
+  midKey: number; // clave separadora (se duplica hacia arriba en B+)
+  leftId?: string;
+  rightId?: string;
+};
+
+export type BPlusMergeEvent = {
+  type: "mergeLeaf" | "mergeInternal";
+  leftId: string; // absorbe
+  rightId: string; // hermano fusionado
+  sepKey: number; // separador que se ajusta en el padre (se elimina/actualiza)
+};
+
+export type BPlusRedistributeEvent = {
+  type: "redistributeLeaf" | "redistributeInternal";
+  fromId: string; // donante
+  toId: string; // receptor
+  viaKey: number; // separador ajustado en el padre
+  direction: "left" | "right";
+};
+
+export type BPlusLeafLinkEvent = {
+  type: "linkLeaves";
+  leftLeafId: string;
+  rightLeafId: string;
+};
+
+export type BPlusFixLog = (
+  | BPlusSplitEvent
+  | BPlusMergeEvent
+  | BPlusRedistributeEvent
+  | BPlusLeafLinkEvent
+)[];
+
+export type BFixLog = (BSplitEvent | BMergeEvent | BRedistributeEvent)[];
+
+// Un nodo de Árbol B+ para el renderer D3/SVG.
+// En B+ todas las claves "reales" viven en hojas. Los internos solo enrutan.
+export type BPlusHierarchy = {
+  id: string; // "n-<idNum>"
+  idNum: number; // requerido
+  keys: number[]; // claves ordenadas asc
+  children?: BPlusHierarchy[]; // hijos reales (sin placeholders) solo si !isLeaf
+
+  // B+ específico
+  isLeaf: boolean; // ← diferenciador clave
+  nextLeafId?: string; // enlace lateral derecha (lista enlazada de hojas)
+  prevLeafId?: string; // enlace lateral izquierda (opcional)
+
+  // (Opcionales) Metadatos para tooltips/inspección
+  order?: number; // m (aridad máx del árbol)
+  degree?: number; // hijos actuales (internos) o #keys (hoja)
+  minKeys?: number; // t-1 si t = grado mínimo
+  maxKeys?: number; // m-1
+  isPlaceholder?: boolean;
+  meta?: { nIndex?: number };
+};
+
 export type ListRenderConfig = {
   showHeadIndicator: boolean;
   showTailIndicator: boolean;
@@ -253,7 +378,69 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
 
     /** Vaciar árbol completo */
     toClear: boolean;
-  }
+                        }
+                      : T extends "arbol_123" | "arbol_23"
+                        ? {
+                            /** Operaciones mutables */
+                            toInsert: number | null; // insert(x)
+                            toDelete: number | null; // delete(x)
+
+                            /** Consultas */
+                            toSearch: number | null; // search(x)
+
+                            /** Recorridos (nota: cada key del nodo se emite como elemento de la secuencia) */
+                            toGetPreOrder: TraversalNodeType[] | [];
+                            toGetInOrder: TraversalNodeType[] | [];
+                            toGetPostOrder: TraversalNodeType[] | [];
+                            toGetLevelOrder: TraversalNodeType[] | [];
+
+                            /** Limpieza */
+                            toClear: boolean; // clear()
+                          }
+                        : T extends "arbol_b"
+                          ? {
+                              /** Mutaciones */
+                              toInsert: number | null; // insert(x)
+                              toDelete: number | null; // delete(x)
+
+                              /** Consultas */
+                              toSearch: number | null; // search(x)
+
+                              /** Recorridos */
+                              toGetPreOrder: TraversalNodeType[] | [];
+                              toGetInOrder: TraversalNodeType[] | [];
+                              toGetPostOrder: TraversalNodeType[] | [];
+                              toGetLevelOrder: TraversalNodeType[] | [];
+
+                              /** Limpieza */
+                              toClear: boolean; // clear()
+
+                              /** (Opcional) registro de fix-ups para el renderer */
+                              bFix?: BFixLog | null;
+                            }
+                          : T extends "arbol_bplus"
+                            ? {
+                                /** Mutaciones */
+                                toInsert: number | null;
+                                toDelete: number | null;
+
+                                /** Consultas puntuales */
+                                toSearch: number | null;
+
+                                /** Parámetros para animar RANGE / SCAN FROM (solo args) */
+                                toGetRange: [] | [from: number, to: number];
+                                toScanFrom: [] | [start: number, limit: number];
+
+                                /** Secuencias para la banda inferior (resultado que se dibuja) */
+                                toGetInOrder: TraversalNodeType[] | undefined;
+                                toGetLevelOrder: TraversalNodeType[] | undefined;
+
+                                /** Limpieza */
+                                toClear: boolean;
+
+                                /** Fix-ups para el renderer (opcional) */
+                                bPlusFix?: BPlusFixLog | null;
+        }
   : T extends "arbol_heap"
   ? {
     toInsert: string | null;
@@ -264,7 +451,10 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
     toClear: boolean;
     swapPath: string[];
   }
-  : never; // Fallback para otros casos
+        : never; // Fallback para otros casos
+
+
+ // Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -380,23 +570,53 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
 
     search: (value: number) => void;
 
-    getPreOrder: () => void;
-    getPostOrder: () => void;
-    getLevelOrder: () => void;
+                        getPreOrder: () => void;
+                        getPostOrder: () => void;
+                        getLevelOrder: () => void;
 
-    clean: () => void;
-  }
-  : T extends "arbol_heap"
-  ? {
-    insert: (value: number) => void;
-    delete: (value: number) => void;
-    deleteRoot: () => void;
-    search: (value: number) => void;
-    peek: () => void;
-    getLevelOrder: () => void;
-    clean: () => void;
-  }
-  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+                        clean: () => void;
+                      }
+                    : T extends "arbol_123" | "arbol_23"
+                      ? {
+                          insert: (value: number) => void;
+                          delete: (value: number) => void;
+                          search: (value: number) => void;
+                          getPreOrder: () => void;
+                          getInOrder: () => void;
+                          getPostOrder: () => void;
+                          getLevelOrder: () => void;
+                          clean: () => void;
+                        }
+                      : T extends "arbol_b"
+                        ? {
+                            insert: (value: number) => void;
+                            delete: (value: number) => void;
+                            search: (value: number) => void;
+                            getPreOrder: () => void;
+                            getInOrder: () => void;
+                            getPostOrder: () => void;
+                            getLevelOrder: () => void;
+                            clean: () => void;
+                          }
+                        : T extends "arbol_b_plus"
+                          ? {
+                              insert: (value: number) => void;
+                              delete: (value: number) => void;
+                              search: (value: number) => void;
+
+                              // Propios de B+
+                              range: (from: number, to: number) => void;
+                              scanFrom: (start: number, limit: number) => void;
+
+                              // Recorridos
+                              getInOrder: () => void;
+                              getLevelOrder: () => void;
+
+                              clean: () => void;
+                            }
+                          : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+
+
 
 export type AnimationContextType = {
   isAnimating: boolean;

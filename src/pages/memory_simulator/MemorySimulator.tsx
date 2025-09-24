@@ -13,14 +13,11 @@ export function MemorySimulator() {
   const [consoleOutput, setConsoleOutput] = useState<string>("");
   const [isSuccess, setIsSuccess] = useState<boolean>(true);
   const [memoryState, setMemoryState] = useState<Record<string, any[]>>({});
-  // Por defecto se muestra el segmento "int"
   const [selectedSegment, setSelectedSegment] = useState<string>("int");
 
-  // Nueva versión de la función para detectar el tipo,
-  // sin requerir que empiece con "insert".
+  // Detecta el tipo a partir del primer token del comando
   const detectarTipoInsertado = (cmd: string): string | undefined => {
     const trimmed = cmd.trim();
-    // Extrae el primer token: ej. "int", "long", "double", etc.
     const match = trimmed.match(/^([a-zA-Z]+)(\[\])?/);
     if (match) {
       let tipo = match[1].toLowerCase();
@@ -35,7 +32,6 @@ export function MemorySimulator() {
     tipoInsertado?: string
   ) => {
     setMemoryState(newState);
-    // Si se detectó un tipo y hay datos en ese segmento, se actualiza el segmento seleccionado
     if (tipoInsertado && newState[tipoInsertado]?.length > 0) {
       setSelectedSegment(tipoInsertado);
     }
@@ -50,7 +46,6 @@ export function MemorySimulator() {
       } else {
         setConsoleOutput(resultado[1]);
         setIsSuccess(true);
-        // Detecta el tipo basándose en el primer token del comando
         const tipo = detectarTipoInsertado(command);
         updateMemoryState(resultado[2], tipo);
       }
@@ -60,38 +55,52 @@ export function MemorySimulator() {
     }
   };
 
-  // Simula que se presiona el botón "limpiar" al iniciar la página (para reiniciar el estado)
+  // Reinicia estado al cargar
   useEffect(() => {
     const limpiarBtn = document.querySelector('[data-tour="limpiar"]');
-    if (limpiarBtn instanceof HTMLElement) {
-      limpiarBtn.click();
-    }
+    if (limpiarBtn instanceof HTMLElement) limpiarBtn.click();
   }, []);
 
   return (
     <>
       <Header />
 
-      <div className="min-h-screen bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F] relative flex flex-col pb-64">
-        <TitleComponent />
+      {/* Layout de página: header (auto) · contenido (1fr) · bloque inferior (auto) */}
+      <div
+        className="
+          min-h-screen
+          bg-gradient-radial from-[#1A1A1A] to-[#0F0F0F]
+          grid grid-rows-[auto_minmax(0,1fr)_auto]
+          gap-6
+          pb-10
+        "
+      >
+        {/* Título (fila 1) */}
+        <div className="px-4 sm:px-10">
+          <TitleComponent />
+        </div>
 
-        <MemoryScreen
-          consolaRef={consolaRef}
-          memoryState={memoryState}
-          setMemoryState={updateMemoryState}
-          selectedSegment={selectedSegment}
-          setSelectedSegment={setSelectedSegment}
-        />
+        {/* Contenido central con altura disponible real (fila 2) */}
+        <div className="min-h-0 overflow-hidden">
+          <MemoryScreen
+            consolaRef={consolaRef}
+            memoryState={memoryState}
+            setMemoryState={updateMemoryState}
+            selectedSegment={selectedSegment}
+            setSelectedSegment={setSelectedSegment}
+          />
+        </div>
 
-        {/* Contenedor padre para la Consola y el Panel flotante */}
-        <div className="
-          flex flex-col sm:flex-row
-          items-stretch gap-4
-          px-4 sm:px-10 mt-6
-          h-auto sm:h-96
-        ">
+        {/* Consola + Panel (fila 3) */}
+        <div
+          className="
+            flex flex-col sm:flex-row
+            items-stretch gap-4
+            px-4 sm:px-10
+          "
+        >
           {/* Consola */}
-          <div className="w-full sm:w-1/2 h-full">
+          <div className="w-full sm:w-1/2">
             <ConsoleComponent
               onCommand={handleCommand}
               outputMessage={consoleOutput}
@@ -100,7 +109,7 @@ export function MemorySimulator() {
           </div>
 
           {/* Panel de comandos */}
-          <div className="w-full sm:w-1/2 h-full">
+          <div className="w-full sm:w-1/2">
             <FloatingCommandPanel />
           </div>
         </div>

@@ -20,6 +20,9 @@ const creatorCommands: Record<string, string[]> = {
   arbol_avl: ["insert"],
   arbol_rojinegro: ["insert"],
   arbol_nario: ["createRoot"],
+  arbol_123: ["insert"],
+  arbol_b: ["insert"],
+  arbol_b_plus: ["insert"],
   arbol_heap: ["insert"],
 };
 
