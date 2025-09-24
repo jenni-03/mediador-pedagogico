@@ -440,6 +440,12 @@ export type HierarchyNodeData<T> = {
   children?: HierarchyNodeData<T>[];
 };
 
+export type LinkPathFn = (
+  source: { x: number, y: number },
+  target: { x: number, y: number },
+  r: number
+) => string;
+
 export type TreeLinkData = {
   sourceId: string;
   targetId: string;
@@ -478,9 +484,11 @@ export type AvlFrame = {
   }[];
 }
 
+export type RBFrame = AvlFrame;
+
 export type RBAction =
-  | { kind: "recolor"; id: string; from: RBColor; to: RBColor; }
-  | { kind: "rotation"; tag: "L(p)" | "R(p)" | "R(w)" | "L(w)" | "R(g)" | "L(g)"; step: RotationStep };
+  | { kind: "recolor"; id: string; from: RBColor; to: RBColor; nodeBadge: string; }
+  | { kind: "rotation"; tag: "L(padre)" | "R(padre)" | "R(tío)" | "L(tío)" | "R(abuelo)" | "L(abuelo)"; step: RotationStep };
 
 export type RBTrace<T> = {
   actions: RBAction[];
@@ -491,6 +499,29 @@ export type RBTrace<T> = {
 };
 
 export type RBColor = "RED" | "BLACK";
+
+export type HintTarget =
+  | { type: "node"; id: string }
+  | { type: "link"; sourceId: string; targetId: string }
+
+export type HintContent = {
+  label: string;
+  value: string;
+}
+
+export type HintOptions = {
+  palette?: {
+    bg?: string; stroke?: string; label?: string; value?: string
+  };
+  size?: { width?: number; height?: number; radius?: number; scaleFrom?: number };
+  anchor?: {
+    side?: "left" | "right" | "above" | "below";
+    dx?: number; dy?: number;
+  };
+  typography?: {
+    labelFz?: string; valueFz?: string; labelFw?: number | string; valueFw?: number | string;
+  }
+}
 
 type TreeTraversalAnimOptions = {
   recolor?: boolean;

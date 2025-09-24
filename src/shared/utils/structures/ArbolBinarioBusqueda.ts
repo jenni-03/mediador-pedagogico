@@ -45,7 +45,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
         const salida: { removed: NodoBin<T> | null, updated: NodoBin<T> | null } = { removed: null, updated: null };
         this.setRaiz(this.eliminarABB(this.getRaiz(), valor, salida));
 
-        if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
+        if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
 
         this.setTamanio(this.getTamanio() - 1);
         return { removed: salida.removed, updated: salida.updated };

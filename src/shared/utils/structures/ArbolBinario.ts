@@ -115,7 +115,7 @@ export class ArbolBinario<T> {
         }
 
         const padre = this.getPadre(info);
-        if (!padre) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
+        if (!padre) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
 
         let nodo = padre.getIzq();
         if (!nodo || (nodo && !this.equals(nodo.getInfo(), info))) {

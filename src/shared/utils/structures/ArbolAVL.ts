@@ -58,7 +58,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     const salida: { removed: NodoAVL<T> | null, updated: NodoAVL<T> | null } = { removed: null, updated: null };
     this.setRaiz(this.eliminarAVL(this.getRaiz(), valor, salida, null));
 
-    if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
+    if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
 
     this.setTamanio(this.getTamanio() - 1);
     return { removed: salida.removed, updated: salida.updated };
@@ -421,7 +421,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que obtiene el nodo con menor valor del árbol binario AVL.
+   * Método que obtiene el nodo con menor valor del árbol AVL.
    * @param n Nodo raíz del árbol.
    * @returns Nodo más izquierdo del árbol.
    */
@@ -431,7 +431,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que transforma el árbol AVL en una estructura jerárquica.
+   * Método recursivo que transforma el árbol AVL en una estructura jerárquica.
    * @param root Nodo raíz del árbol AVL.
    * @returns Estructura jerárquica representando el árbol.
    */

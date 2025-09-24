@@ -22,7 +22,7 @@ export const STRUCTURE_NAME = {
     BINARY_SEARCH_TREE: 'arbol_binario_busqueda',
     AVL_TREE: "arbol_avl",
     RB_TREE: "arbol_rojinegro",
-    NARY_TREE : "arbol_nario"
+    NARY_TREE: "arbol_nario"
 } as const
 
 export const SVG_STYLE_VALUES = {
@@ -112,10 +112,12 @@ export const SVG_BINARY_TREE_VALUES = {
     ELEMENT_TEXT_WEIGHT: '600',
     ELEMENT_TEXT_SIZE: '16px',
     HIGHLIGHT_COLOR: "#D72638",
-    UPDATE_STROKE_COLOR: "#0066CC"
+    UPDATE_STROKE_COLOR: "#93c5fd"
 }
 
 export const SVG_AVL_TREE_VALUES = {
+    NODE_SPACING: 75,
+    LEVEL_SPACING: 95,
     PANEL_OFFSET_Y: SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2,
     CORNER: 7,
     LABEL_COLOR: "#9aa4b2",
@@ -133,6 +135,24 @@ export const SVG_AVL_TREE_VALUES = {
     ROW_H_VALUE: 11,
     EXTRA_W: 2
 }
+
+export const SVG_RB_TREE_VALUES = {
+    NODE_SPACING: 75,
+    LEVEL_SPACING: 95,
+    EXTRA_WIDTH: 70
+}
+
+export const RB_COLORS = {
+    RED: "#ff5a66",
+    RED_RING: "#ff9aa1",
+    BLACK: "#1f2430",
+    BLACK_RING: "#4b5365",
+    STROKE: "#95a1bf",
+    TEXT_NODE: "#ffffff",
+    HIGHLIGHT: "#a7e34b",
+    BADGE_GB: "#0f141d",
+    BADGE_STROKE: "#f4bf50",
+};
 
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {
     simple: {
