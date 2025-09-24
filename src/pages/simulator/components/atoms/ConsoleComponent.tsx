@@ -501,8 +501,8 @@ export function ConsoleComponent({
             data-tour="inputConsola"
             placeholder={
               isCreated
-                ? "Escribe tu comando… (p. ej. insertChild(1, 35))"
-                : "createRoot(10)"
+                ? "Escribe tu comando… (p. ej. insertChild(1, 35));"
+                : "create(10); (escribe un comando válido en la estructura actual)"
             }
           />
 
