@@ -29,7 +29,7 @@ export function Filters({ filter, setFilter }: NavBarProps) {
         />
       </div>
 
-      {/* Selector de tipo */}
+      {/* Select de tipo */}
       <div className="relative w-full sm:max-w-sm">
         <select
           value={filter.type}

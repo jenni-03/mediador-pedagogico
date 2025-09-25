@@ -20,6 +20,10 @@ const creatorCommands: Record<string, string[]> = {
   arbol_avl: ["insert"],
   arbol_rojinegro: ["insert"],
   arbol_nario: ["createRoot"],
+  arbol_123: ["insert"],
+  arbol_b: ["insert"],
+  arbol_b_plus: ["insert"],
+  arbol_heap: ["insert"],
 };
 
 const isCreatorCommand = (structureType: string, command: string): boolean => {
@@ -247,16 +251,24 @@ function splitArgsSafe(args: string): string[] {
       if (ch === "(") depth++;
       if (ch === ")" && depth > 0) depth--;
       if (ch === "," && depth === 0) {
-        const token = cur.trim();
-        if (token !== "") out.push(token);
+        // const token = cur.trim();
+        // if (token !== "") out.push(token);
+        // cur = "";
+        // continue;
+        // aquí ya no filtramos vacíos
+        out.push(cur.trim());
         cur = "";
         continue;
       }
     }
     cur += ch;
   }
-  const last = cur.trim();
-  if (last !== "") out.push(last);
+  // const last = cur.trim();
+  // if (last !== "") out.push(last);
+  // return out;
+  // último token
+  out.push(cur.trim());
+
   return out;
 }
 

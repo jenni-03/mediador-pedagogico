@@ -73,15 +73,6 @@ export function useRBTreeRender(
     return frames.map(frame => hierarchyFrom(frame, SVG_RB_TREE_VALUES.NODE_SPACING, SVG_RB_TREE_VALUES.LEVEL_SPACING));
   }, [query.rbTrace?.hierarchies.bst, query.rbTrace?.hierarchies.mids]);
 
-  console.log("Nodos actuales");
-  console.log(currentNodes);
-  console.log("Links actuales");
-  console.log(linksData);
-  console.log("Acciones");
-  console.log(query.rbTrace?.actions);
-  console.log("Jerarquias");
-  console.log(query.rbTrace?.hierarchies);
-
   // Renderizado base del árbol
   useEffect(() => {
     // Verificamos que la raiz no sea nula y que la referencia al SVG se haya establecido
