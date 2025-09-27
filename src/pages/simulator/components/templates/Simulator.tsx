@@ -1,162 +1,212 @@
+// src/pages/simulator/components/organisms/Simulator.tsx
+import { useState } from "react";
+import { Header } from "../molecules/Header";
 import { ConsoleComponent } from "../atoms/ConsoleComponent";
 import { DataStructureInfo } from "../atoms/DataStructureInfo";
 import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
-import { SimulatorProps } from "../../../../types";
-import { useRef, useState } from "react";
-import { commandsData } from "../../../../shared/constants/commandsData";
-import { operationsCode } from "../../../../shared/constants/pseudoCode";
-import { useAnimation } from "../../../../shared/hooks/useAnimation";
-import { Header } from "../molecules/Header";
-import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
 
+import { commandsData } from "../../../../shared/constants/commandsData";
+import { getPseudoCodeByStructure } from "../../../../shared/constants/pseudocode/getPseudoCodeByStructure";
+import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
+import { useAnimation } from "../../../../shared/hooks/useAnimation";
+import { SimulatorProps } from "../../../../types";
+
+/**
+ * Simulator
+ *  - Contenedor principal del simulador por estructura.
+ *  - Orquesta: vista de estructura, consola, comandos y pseudocódigo.
+ *  - No “encapsula” la consola con otro scroller: la propia consola gestiona su scroll.
+ */
 export function Simulator<T extends string>({
-    structureName,
-    structureType,
-    structure,
-    actions,
-    error,
-    children,
+  structureName, // clave usada en rutas/constantes (p.ej. "arbol_nario")
+  structureType, // nombre “humano” cuando aplique (opcional)
+  structure, // instancia de la estructura en memoria
+  actions, // funciones mutadoras de la estructura
+  error, // error proveniente del hook/render de la estructura
+  children, // SVG/canvas u otros elementos de la visualización
 }: SimulatorProps<T>) {
-    //temporal
-    // const structureN = "secuencia";
-    // Estado para el manejo de la visualización del código
-    const [executionCode, setExecutionCode] = useState<string[]>([]);
+  /* ─────────────────────────── Estado local ─────────────────────────── */
+  // Código de ejecución a mostrar a la derecha
+  const [executionCode, setExecutionCode] = useState<string[]>([]);
+  // Flag para mostrar/ocultar bloque de “asignación de memoria”
+  const [memoryCode, setMemoryCode] = useState(false);
 
-    // Estado para el manejo de la visualización de la asignación de memoria
-    const [memoryCode, setMemoryCode] = useState(false);
+  // Control de animaciones globales (evita que el input procese mientras anima)
+  const { setIsAnimating } = useAnimation();
 
-    // Estado para el manejo de la animación
-    const { setIsAnimating } = useAnimation();
+  /* ─────────────────────────── Derivados ─────────────────────────── */
+  // Título visible
+  const pageTitle = structureType || structureName;
+  // Selector para constantes (botones, etc.)
+  const dataSelector = structureName;
+  // Botones propios de la estructura (fallback a [])
+  const buttons = commandsData[dataSelector]?.buttons ?? [];
+  // Mapa de pseudocódigo para cada operación
+  const operationsCode = getPseudoCodeByStructure(pageTitle);
 
-    // Título de la página del simulador
-    const pageTitle = structureType ? structureType : structureName;
+  /* ─────────────────────────── Handler consola ─────────────────────────── */
+  const handleCommand = (command: string[], isValid: boolean) => {
+    // Si el parser dice que NO es válido, simplemente no ejecutamos nada.
+    if (!isValid) return;
 
-    // Elemento para la selección de los datos referentes a la estructura a mostrar
-    const dataSelector = structureName;
+    // 1) separar acción y argumentos crudos
+    const action = command[0];
+    const rawArgs = command.slice(1);
 
-    // Botones de comandos propios de la estructura
-    const buttons = commandsData[dataSelector].buttons;
+    // 2) aplanar si vino como único array: ['insertChild', [1,25,0]] -> [1,25,0]
+    const flatArgs =
+      rawArgs.length === 1 && Array.isArray(rawArgs[0]) ? rawArgs[0] : rawArgs;
 
-    // Pseudocódigo de las operaciones de la estructura
-    const operations_code = operationsCode[dataSelector];
-
-    // Referencia al elemento de consola
-    const consoleRef = useRef<HTMLDivElement>(null);
-
-    const handleCommand = (command: string[], isValid: boolean) => {
-        if (!isValid) {
-            if (consoleRef.current) {
-                requestAnimationFrame(() => {
-                    consoleRef.current!.scrollTop =
-                        consoleRef.current!.scrollHeight;
-                });
-            }
-            return;
-        }
-
-        // Separa el comando en acción y valores
-        const action = command[0];
-        const values = command.slice(1).map(Number);
-
-        if (action !== "create" && action !== "clean") {
-            setIsAnimating(true);
-        }
-
-        // Realiza la operación correspondiente según el comando
-        if (values.length === 2) {
-            (actions as any)?.[action]?.(values[0], values[1]); // Llama con dos parámetros
-        } else if (values.length === 1) {
-            (actions as any)?.[action]?.(values[0]); // Llama con un parámetro
-        } else {
-            (actions as any)?.[action]?.(); // Llama sin parámetros
-        }
-
-        // Actualiza el código de ejecución dependiendo del comando
-        setExecutionCode(
-            operations_code[action as keyof typeof operations_code]
-        );
-
-        // Informa los casos en los que se debe de mostrar la asignación de memoria
-        if (action === "create" || action === "push" || action === "enqueue") {
-            setMemoryCode(true);
-        } else {
-            setMemoryCode(false);
-        }
-
-        if (consoleRef.current) {
-            requestAnimationFrame(() => {
-                consoleRef.current!.scrollTop =
-                    consoleRef.current!.scrollHeight;
-            });
-        }
+    // 3) normalización prudente de tipos (booleans, null/undefined, números, strings)
+    const stripQuotes = (v: string) => v.replace(/^['"]|['"]$/g, "");
+    const isNumeric = (v: string) => /^-?\d+(\.\d+)?$/.test(v.trim());
+    const normalizeArg = (v: unknown) => {
+      if (typeof v !== "string") return v; // ya tipado: no tocar
+      const s = v.trim();
+      if (s === "true") return true;
+      if (s === "false") return false;
+      if (s === "null") return null;
+      if (s === "undefined") return undefined;
+      if (
+        (s.startsWith("'") && s.endsWith("'")) ||
+        (s.startsWith('"') && s.endsWith('"'))
+      ) {
+        return stripQuotes(s);
+      }
+      if (isNumeric(s)) return Number(s);
+      return s; // string sin tocar
     };
-
-    return (
-        <>
-            <Header />
-            <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
-                <div className="flex flex-col gap-6 w-full">
-                    {/* Título */}
-                    <h1
-                        data-tour="structure-title"
-                        className="text-2xl sm:text-4xl font-extrabold text-center uppercase tracking-wide bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] text-transparent bg-clip-text drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)] mt-2 mb-6"
-                    >
-                        {pageTitle.replace(/_/g, " ").toUpperCase()}{" "}
-                        <span className="text-[#D72638]">&lt;Integer&gt;</span>
-                    </h1>
-                    {/* Contenedor principal */}
-                    <div className="w-full bg-[#1A1A1F] border border-[#2E2E2E] rounded-2xl shadow-xl shadow-black/40 px-4 py-6">
-                        <div className="flex flex-col lg:flex-row gap-6 mb-6 overflow-hidden">
-                            {/* Estructura */}
-                            <div
-                                id="main-container"
-                                className="flex-[2] flex flex-col lg:flex-row lg:space-x-4 rounded-xl space-y-3 overflow-hidden"
-                            >
-                                <DataStructureInfo
-                                    structure={dataSelector}
-                                    structurePrueba={structure}
-                                    memoryAddress={memoryCode}
-                                >
-                                    {children}
-                                </DataStructureInfo>
-                            </div>
-                            {/* Código de ejecución */}
-                            <div className="w-full lg:w-[40%] flex flex-col">
-                                <span className="text-center font-semibold rounded-xl bg-[#1F1F22] text-[#E0E0E0] border border-[#2E2E2E] mb-3 px-3 py-1">
-                                    CÓDIGO DE EJECUCIÓN
-                                </span>
-                                <div
-                                    data-tour="execution-code"
-                                    className="flex-1 bg-[#1F1F22] rounded-xl p-4 max-h-[450px] overflow-auto border border-[#2E2E2E] scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
-                                >
-                                    <PseudoCodeRunner lines={executionCode} />
-                                </div>
-                            </div>
-                        </div>
-                        {/* Consola + comandos */}
-                        <div className="flex flex-col sm:flex-row gap-4 w-full">
-                            {/* Consola */}
-                            <div
-                                ref={consoleRef}
-                                className="flex-1 bg-[#101014] border border-[#2E2E2E] rounded-2xl px-4 py-2 max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent"
-                                data-tour="console"
-                            >
-                                <ConsoleComponent
-                                    structureType={dataSelector}
-                                    onCommand={handleCommand}
-                                    error={error}
-                                />
-                            </div>
-                            {/* Comandos */}
-                            <div className="sm:w-[40%]">
-                                <GroupCommandsComponent buttons={buttons} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <CustomTour tipo={pageTitle as TourType} />
-        </>
+    const args = (Array.isArray(flatArgs) ? flatArgs : [flatArgs]).map(
+      normalizeArg
     );
+
+    // 4) banderín de animación para operaciones que modifican la estructura
+    if (action !== "create" && action !== "clean") {
+      setIsAnimating(true);
+    }
+
+    // 5) ejecutar la acción con spread (...args) — soporta 0..n argumentos
+    const fn = (actions as any)?.[action];
+    if (typeof fn !== "function") {
+      console.warn(`[Simulator] Acción no encontrada: "${action}"`, {
+        disponibles: Object.keys(actions || {}),
+        command,
+      });
+    } else {
+      console.groupCollapsed(
+        `[Simulator] ${action}(${args.map((a) => JSON.stringify(a)).join(", ")})`
+      );
+      console.log("command:", command);
+      console.log("rawArgs:", rawArgs);
+      console.log("flatArgs:", flatArgs);
+      console.log("args(normalized):", args);
+      console.groupEnd();
+
+      try {
+        fn(...args);
+      } catch (e) {
+        console.error(`[Simulator] Error ejecutando "${action}"`, e);
+      }
+    }
+
+    // 6) actualizar pseudocódigo mostrado
+    setExecutionCode(
+      operationsCode[action as keyof typeof operationsCode] ?? []
+    );
+
+    // 7) decidir si mostramos panel de “asignación de memoria”
+    if (
+      action === "create" ||
+      action === "push" ||
+      action === "enqueue" ||
+      action === "insertFirst" ||
+      action === "insertLast" ||
+      action === "insertAt"
+    ) {
+      setMemoryCode(true);
+    } else {
+      setMemoryCode(false);
+    }
+  };
+
+  /* ─────────────────────────── Render ─────────────────────────── */
+  return (
+    <>
+      <Header />
+
+      {/* Lienzo general del simulador */}
+      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+        <div className="flex w-full flex-col gap-6">
+          {/* Título */}
+          <h1
+            data-tour="structure-title"
+            className="mt-2 mb-6 bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] bg-clip-text text-center text-2xl font-extrabold uppercase tracking-wide text-transparent sm:text-4xl drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)]"
+          >
+            {pageTitle.replace(/_/g, " ").toUpperCase()}{" "}
+            <span className="text-[#D72638]">&lt;Integer&gt;</span>
+          </h1>
+
+          {/* Card principal */}
+          <div className="w-full rounded-2xl border border-[#2E2E2E] bg-[#1A1A1F] px-4 py-6 shadow-xl shadow-black/40">
+            <div className="mb-6 flex flex-col gap-6 overflow-hidden lg:flex-row">
+              {/* Zona de Estructura */}
+              <div
+                id="main-container"
+                className="flex flex-[2] flex-col space-y-3 overflow-hidden rounded-xl lg:flex-row lg:space-x-4"
+              >
+                <DataStructureInfo
+                  structure={
+                    structureName === "lista_enlazada"
+                      ? (structureType as string)
+                      : structureName
+                  }
+                  structurePrueba={structure}
+                  memoryAddress={memoryCode}
+                >
+                  {children}
+                </DataStructureInfo>
+              </div>
+
+              {/* Pseudocódigo de ejecución */}
+              <div className="flex w-full flex-col lg:w-[40%]">
+                <span className="mb-3 rounded-xl border border-[#2E2E2E] bg-[#1F1F22] px-3 py-1 text-center font-semibold text-[#E0E0E0]">
+                  CÓDIGO DE EJECUCIÓN
+                </span>
+                <div
+                  data-tour="execution-code"
+                  className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D72638]/60 max-h-[450px] flex-1 overflow-auto rounded-xl border border-[#2E2E2E] bg-[#1F1F22] p-4"
+                >
+                  <PseudoCodeRunner lines={executionCode} />
+                </div>
+              </div>
+            </div>
+
+            {/* Consola + comandos */}
+            <div
+              className="flex w-full flex-col gap-4 sm:flex-row"
+            >
+              {/* Consola — SIN wrapper scrolleable: el componente se autogestiona */}
+              <ConsoleComponent
+                className="flex-1"
+                historyMaxHeight={180}
+                structureType={structureName} // usa la clave técnica para prefijos/reglas
+                onCommand={handleCommand}
+                error={error}
+                structurePrueba={structure}
+              />
+
+              {/* Botonera de comandos */}
+              <div className="sm:w-[40%]">
+                <GroupCommandsComponent buttons={buttons} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tour contextual */}
+      <CustomTour tipo={pageTitle as TourType} />
+    </>
+  );
 }

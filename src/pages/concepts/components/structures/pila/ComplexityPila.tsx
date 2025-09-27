@@ -2,77 +2,86 @@ import { complexityPila } from "../../../../../shared/constants/complexityStruct
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityPila() {
-    return (
-        <div className="py-4 px-10">
-            <h1 className="text-2xl font-extrabold text-white mb-1">
-                COSTO OPERACIONAL Y COMPLEJIDAD
-            </h1>
-            <h1 className="text-sm text-red-400 mb-3">Pila</h1>
-            <hr className="mt-2 mb-4 border-red-500 border-t-2" />
-            <div>
-                <h1 className="text-2xl font-bold text-red-500 mb-3">
-                    Análisis Algorítmico
-                </h1>
-            </div>
-            <div>
-                <div className="bg-[#1f1f1f] text-gray-300 text-sm leading-6 rounded-xl p-5 shadow-md border border-gray-700 mb-6">
-                    <p>
-                        Los análisis que se harán a continuación son para el
-                        peor de los casos Big(O) con la siguiente nomenclatura:
-                    </p>
-                    <ul className="list-disc list-inside ml-4">
-                        <li>KTE - Constante</li>
-                        <li>n - Tamaño de la estructura</li>
-                        <li>Número - Número de operaciones elementales</li>
-                    </ul>
-                    <p className="mt-2">
-                        Cada instrucción se revisa línea a línea
-                    </p>
-                    <p>
-                        Métodos de la misma clase que son llamados en otros
-                        métodos, tienen su hipervínculo.
-                    </p>
-                </div>
+  return (
+    <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="h-7 w-2 rounded bg-red-600"></div>
+        <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
+          Costo Operacional y Complejidad
+        </h1>
+      </div>
+      <span className="text-base text-red-400 ml-3 font-medium block mb-2">
+        Pila
+      </span>
+      <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
-                <div className="space-y-8">
-                    {complexityPila.map((method, index) => (
-                        <div
-                            key={index}
-                            className="border-b border-gray-700 pb-4"
-                        >
-                            <h2 className="text-xl font-semibold text-red-400 mb-2">
-                                {method.title}
-                            </h2>
-                            <div>
-                                <CodeAnalysis
-                                    code={method.javaCode}
-                                    operationalCost={method.operationalCost}
-                                    complexity={method.complexity}
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
+      {/* Análisis Algorítmico */}
+      <section className="mb-10">
+        <h2 className="text-2xl font-bold text-white mb-4">
+          Análisis Algorítmico
+        </h2>
 
-                <div className="mt-10 bg-[#1a1a1a] p-5 rounded-xl border border-gray-700 shadow-inner">
-                    <h2 className="text-xl font-bold text-red-500 mb-3">
-                        Conclusión
-                    </h2>
-                    <p className="text-gray-300 text-sm leading-6">
-                        En el análisis anterior se pudo observar que la
-                        estructura Pila obta en el mejor de los casos a ser
-                        constante y en el peor de los casos a ser lineal.
-                        Teniendo en cuenta que su comportamiento lineal es en
-                        base a{" "}
-                        <code className="bg-gray-800 px-1 rounded">
-                            this.tamanio
-                        </code>
-                        , esté mismo se puede considerar su{" "}
-                        <code className="bg-gray-800 px-1 rounded">n</code> para
-                        saber el coste operacional de cada algoritmo.
-                    </p>
-                </div>
-            </div>
+        <h3 className="text-lg font-bold mb-4 text-white">
+          Costo Operacional y Complejidad
+        </h3>
+
+        <div className="bg-[#18191a] p-4 text-gray-200 text-sm leading-6 rounded-md mb-6 border-l-4 border-red-500">
+          <p className="mb-2">
+            Los análisis que se presentan a continuación corresponden al{" "}
+            <strong>peor de los casos Big(O)</strong>, utilizando la siguiente
+            nomenclatura:
+          </p>
+          <ul className="list-disc list-inside ml-4 space-y-1">
+            <li>
+              <strong>KTE</strong> – Constante
+            </li>
+            <li>
+              <strong>n</strong> – Tamaño de la estructura
+            </li>
+            <li>
+              <strong>Número</strong> – Número de operaciones elementales
+            </li>
+          </ul>
+          <p className="mt-4">
+            Cada algoritmo es analizado línea por línea. Métodos de la misma
+            clase que se invocan dentro de otros métodos cuentan con
+            hipervínculos que permiten un análisis más detallado.
+          </p>
         </div>
-    );
+      </section>
+
+      {/* Renderizado dinámico de métodos */}
+      <section className="space-y-8">
+        {complexityPila.map((method, index) => (
+          <div key={index} className="border-b border-gray-700 pb-4">
+            <h3 className="text-xl font-semibold text-red-400 mb-3">
+              {method.title}
+            </h3>
+            <CodeAnalysis
+              code={method.javaCode}
+              operationalCost={method.operationalCost}
+              complexity={method.complexity}
+            />
+          </div>
+        ))}
+      </section>
+
+      {/* Conclusión */}
+      <section className="mt-6 bg-[#18191a] p-4 rounded-md border-l-4 border-red-500">
+        <h3 className="text-xl font-bold text-white mb-3">Conclusión</h3>
+        <p className="text-sm text-gray-300 leading-6">
+          Del análisis realizado se concluye que la estructura{" "}
+          <strong>Pila</strong> presenta una complejidad{" "}
+          <span className="text-green-400">constante</span> en la mayoría de sus
+          operaciones básicas como <b>push</b> y <b>pop</b>, ya que siempre
+          afectan únicamente al tope. Sin embargo, en algunos escenarios donde
+          se requiere recorrer la pila, el costo se vuelve{" "}
+          <span className="text-yellow-400">lineal</span> en función de{" "}
+          <code className="bg-gray-800 px-1 rounded">n</code>, el tamaño de la
+          estructura.
+        </p>
+      </section>
+    </div>
+  );
 }

@@ -1,254 +1,776 @@
+import { type HierarchyNode } from "d3";
 import { TYPE_FILTER } from "./shared/constants/consts";
-import { NodoS } from "./shared/utils/nodes/NodoS";
+import { type NodoS } from "./shared/utils/nodes/NodoS";
 
-export interface LinkedListInterface {
-    insertarAlInicio(valor: number): NodoS;
-    insertarAlFinal(valor: number): NodoS;
-    insertarEnPosicion(valor: number, posicion: number): NodoS;
-    eliminarAlInicio(): NodoS;
-    eliminarAlFinal(): NodoS;
-    eliminarEnPosicion(posicion: number): NodoS;
-    buscar(valor: number): boolean;
-    esVacia(): boolean;
-    vaciar(): void;
-    clonar(): this;
-    getArrayDeNodos(): ListNodeData[];
-    getTamanio(): number;
+export type RBRenderColor = "red" | "black";
+
+export interface LinkedListInterface<T> {
+  insertarAlInicio(valor: T): NodoS<T> | NodoD<T>;
+  insertarAlFinal(valor: T): NodoS<T> | NodoD<T>;
+  insertarEnPosicion(valor: T, posicion: number): NodoS<T> | NodoD<T>;
+  eliminarAlInicio(): NodoS<T> | NodoD<T>;
+  eliminarAlFinal(): NodoS<T> | NodoD<T>;
+  eliminarEnPosicion(posicion: number): NodoS<T> | NodoD<T>;
+  buscar(valor: T): boolean;
+  esVacia(): boolean;
+  vaciar(): void;
+  clonar(): this;
+  getArrayDeNodos(): ListNodeData[];
+  getTamanio(): number;
 }
 
+// Un nodo de jerarquía 2-3 SIEMPRE tiene:
+// - id: "n-<idNum>"
+// - idNum: presente
+// - value: number[] (todas las claves del nodo, en orden)
+// - children?: TwoThreeHierarchy[] (sin placeholders)
+export type TwoThreeHierarchy = {
+  id: string; // "n-<id>"
+  idNum: number; // requerido
+  value: number[]; // requerido
+  children?: TwoThreeHierarchy[];
+  // opcionalmente puedes conservar campos de HierarchyNodeData si los usas:
+  isPlaceholder?: boolean;
+  degree?: number;
+  order?: number;
+  meta?: { nIndex?: number };
+};
+export type BPlusQuery = BaseQueryOperations<"arbol_bplus">;
+
+// Conveniencia para las operaciones del simulador 2-3
+export type TwoThreeQuery = BaseQueryOperations<"arbol_123">;
+export type BQuery = BaseQueryOperations<"arbol_b">;
+
+// Un nodo de Árbol B para el renderer D3/SVG (similar a TwoThreeHierarchy, pero m-ario genérico).
+export type BHierarchy = {
+  id: string; // "n-<idNum>"
+  idNum: number; // requerido
+  keys: number[]; // claves del nodo en orden ascendente
+  children?: BHierarchy[]; // hijos reales (sin placeholders)
+
+  // Campos opcionales ya usados en tu ecosistema
+  isPlaceholder?: boolean;
+
+  // Metadatos útiles para tooltips/inspección
+  order?: number; // m (aridad máx del árbol, p.ej. 4 → B-tree de orden 4)
+  degree?: number; // número de hijos actuales
+  minKeys?: number; // t-1 si t=grado mínimo
+  maxKeys?: number; // m-1
+  meta?: { nIndex?: number };
+};
+
+/* ─────────────────────────── 2.1) Eventos de animación/fix-ups B ───────────────── */
+export type BSplitEvent = {
+  type: "split";
+  nodeId: string; // id del nodo que se parte
+  midKey: number; // clave separadora promovida
+  leftId?: string; // ids resultantes (si ya existen tras la operación)
+  rightId?: string;
+};
+
+export type BMergeEvent = {
+  type: "merge";
+  leftId: string; // nodo que absorbe
+  rightId: string; // hermano que se fusiona
+  sepKey: number; // separador que baja desde el padre
+};
+
+export type BRedistributeEvent = {
+  type: "redistribute";
+  fromId: string; // donante
+  toId: string; // receptor
+  viaKey: number; // separador ajustado en el padre
+  direction: "left" | "right";
+};
+
+/* ───────── Fix-ups B+: leaf links + split/merge diferenciados ───────── */
+export type BPlusSplitEvent = {
+  type: "splitLeaf" | "splitInternal";
+  nodeId: string; // nodo que se parte
+  midKey: number; // clave separadora (se duplica hacia arriba en B+)
+  leftId?: string;
+  rightId?: string;
+};
+
+export type BPlusMergeEvent = {
+  type: "mergeLeaf" | "mergeInternal";
+  leftId: string; // absorbe
+  rightId: string; // hermano fusionado
+  sepKey: number; // separador que se ajusta en el padre (se elimina/actualiza)
+};
+
+export type BPlusRedistributeEvent = {
+  type: "redistributeLeaf" | "redistributeInternal";
+  fromId: string; // donante
+  toId: string; // receptor
+  viaKey: number; // separador ajustado en el padre
+  direction: "left" | "right";
+};
+
+export type BPlusLeafLinkEvent = {
+  type: "linkLeaves";
+  leftLeafId: string;
+  rightLeafId: string;
+};
+
+export type BPlusFixLog = (
+  | BPlusSplitEvent
+  | BPlusMergeEvent
+  | BPlusRedistributeEvent
+  | BPlusLeafLinkEvent
+)[];
+
+export type BFixLog = (BSplitEvent | BMergeEvent | BRedistributeEvent)[];
+
+// Un nodo de Árbol B+ para el renderer D3/SVG.
+// En B+ todas las claves "reales" viven en hojas. Los internos solo enrutan.
+export type BPlusHierarchy = {
+  id: string; // "n-<idNum>"
+  idNum: number; // requerido
+  keys: number[]; // claves ordenadas asc
+  children?: BPlusHierarchy[]; // hijos reales (sin placeholders) solo si !isLeaf
+
+  // B+ específico
+  isLeaf: boolean; // ← diferenciador clave
+  nextLeafId?: string; // enlace lateral derecha (lista enlazada de hojas)
+  prevLeafId?: string; // enlace lateral izquierda (opcional)
+
+  // (Opcionales) Metadatos para tooltips/inspección
+  order?: number; // m (aridad máx del árbol)
+  degree?: number; // hijos actuales (internos) o #keys (hoja)
+  minKeys?: number; // t-1 si t = grado mínimo
+  maxKeys?: number; // m-1
+  isPlaceholder?: boolean;
+  meta?: { nIndex?: number };
+};
+
+export type ListRenderConfig = {
+  showHeadIndicator: boolean;
+  showTailIndicator: boolean;
+  showDoubleLinks: boolean;
+  showCircularLinks: boolean;
+  showNextCircularLink?: boolean;
+  showPrevCircularLink?: boolean;
+};
+
 export type CardListProps = {
-    data: CardData[];
-    filter: FilterState;
+  data: CardData[];
+  filter: FilterState;
 };
 
 export type NavBarProps = {
-    filter: FilterState;
-    setFilter: React.Dispatch<React.SetStateAction<FilterState>>;
+  filter: FilterState;
+  setFilter: React.Dispatch<React.SetStateAction<FilterState>>;
 };
 
 export type AnimatedButtonLinkProps = {
-    bgColor: string;
-    to: string;
-    text: string;
-    params: string;
+  bgColor: string;
+  to: string;
+  text: string;
+  params: string;
 };
 
 export type AnimatedButtonModalProps = {
-    bgColor: string;
-    text: string;
-    onClick?: () => void;
+  bgColor: string;
+  text: string;
+  onClick?: () => void;
 };
 
 export type SideBarProps = {
-    estructura: string;
-    isOpen: boolean;
-    setIsOpen: (open: boolean) => void;
+  estructura: string;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
 };
 
 export type SideBarItemProps = {
-    to: string;
-    params: string;
-    label: string;
+  to: string;
+  params: string;
+  label: string;
 };
 
 export type CommandProps = {
-    title: string;
-    description: string;
-    estructura: string;
-    ejemplo: string;
+  title: string;
+  description: string;
+  estructura: string;
+  ejemplo: string;
 };
 
 export type GroupCommandProps = {
-    buttons: CommandProps[];
+  buttons: CommandProps[];
 };
 
 export type CustomModalProps = {
-    title: string;
-    description: string;
-    structure: string;
-    example: string;
-    children: ReactNode;
-    onClose: () => void; // Función que se llama al cerrar el modal
+  title: string;
+  description: string;
+  structure: string;
+  example: string;
+  children: ReactNode;
+  onClose: () => void; // Función que se llama al cerrar el modal
 };
 
 export type SimulatorProps<T extends string> = {
-    structureName: T;
-    structureType?: string;
-    structure: unknown;
-    actions: BaseStructureActions<T>;
-    query: BaseQueryOperations;
-    error: { message: string; id: number } | null;
-    children: React.ReactNode;
+  structureName: T;
+  structureType?: string;
+  structure: unknown;
+  actions: BaseStructureActions<T>;
+  query: BaseQueryOperations;
+  error: { message: string; id: number } | null;
+  children: React.ReactNode;
 };
 
 export type FilterState = {
-    query: string;
-    type: FilterTypeValue;
+  query: string;
+  type: FilterTypeValue;
 };
 
 export type FilterTypeValue = (typeof TYPE_FILTER)[keyof typeof TYPE_FILTER];
 
 export interface CardData {
-    title: string;
-    id: number;
-    img: string;
-    type: string;
-    bgCard: string;
-    bgButton: string;
-    toConceptos: string;
-    toPracticar: string;
+  title: string;
+  id: number;
+  img: string;
+  type: string;
+  bgCard: string;
+  bgButton: string;
+  toConceptos: string;
+  toPracticar: string;
 }
 
 export type BaseQueryOperations<T extends string> = T extends "secuencia"
-    ? {
-          create: number | null;
-          toAdd: number | null;
-          toDelete: number | null;
-          toSearch: number | null;
-          toUpdate: [number, number] | [];
-      }
-    : T extends "cola"
-      ? {
-            toEnqueuedNode: string | null;
-            toDequeuedNode: string | null;
-            toGetFront: string | null;
-            toClear: boolean;
-        }
-      : T extends "tabla_hash"
-        ? {
-              create: (cap: number) => void;
-              set: (key: number, value: number) => void;
-              get: (key: number) => void;
-              delete: (key: number) => void;
-              clean: () => void;
-          }
-        : T extends "cola_de_prioridad"
-          ? {
-                toEnqueuedNode: string | null;
-                toDequeuedNode: string | null;
-                toGetFront: string | null;
-                toClear: boolean;
-            }
-          : T extends "pila"
-            ? {
-                  toPushNode: string | null;
-                  toPopNode: string | null;
-                  toGetTop: string | null;
-                  toClear: boolean;
-              }
-            : T extends "lista_enlazada"
-              ? {
-                    toAddFirst: string | null;
-                    toAddLast: string | null;
-                    toAddAt: [string, number] | [];
-                    toDeleteFirst: string | null;
-                    toDeleteLast: string | null;
-                    toDeleteAt: [string, number] | [];
-                    toSearch: number | null;
-                    toClear: boolean;
-                }
-              : never; // Fallback para otros casos
+  ? {
+    create: number | null;
+    toAdd: number | null;
+    toDelete: number | null;
+    toGet: number | null;
+    toSearch: number | null;
+    toUpdate: [number, number] | [];
+  }
+  : T extends "cola"
+  ? {
+    toEnqueuedNode: string | null;
+    toDequeuedNode: string | null;
+    toGetFront: string | null;
+    toClear: boolean;
+  }
+  : T extends "tabla_hash"
+  ? {
+    create: (cap: number) => void;
+    set: (key: number, value: number) => void;
+    get: (key: number) => void;
+    delete: (key: number) => void;
+    clean: () => void;
+  }
+  : T extends "cola_de_prioridad"
+  ? {
+    toEnqueuedNode: string | null;
+    toDequeuedNode: string | null;
+    toGetFront: string | null;
+    toClear: boolean;
+  }
+  : T extends "pila"
+  ? {
+    toPushNode: string | null;
+    toPopNode: string | null;
+    toGetTop: string | null;
+    toClear: boolean;
+  }
+  : T extends "lista_enlazada"
+  ? {
+    toAddFirst: string | null;
+    toAddLast: string | null;
+    toAddAt: [string, number] | [];
+    toDeleteFirst: string | null;
+    toDeleteLast: string | null;
+    toDeleteAt: [string, number] | [];
+    toSearch: number | null;
+    toClear: boolean;
+  }
+  : T extends "arbol_binario"
+  ? {
+    toInsertLeft: string | null;
+    toInsertRight: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+  }
+  : T extends "arbol_binario_busqueda"
+  ? {
+    toInsert: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+  }
+  : T extends "arbol_avl"
+  ? {
+    toInsert: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+    avlTrace: OperationTrace<number> | null;
+  }
+  : T extends "arbol_rojinegro"
+  ? {
+    toInsert: string | null;
+    toDelete: [string, string | null] | [];
+    toSearch: number | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+    rbTrace: RBTrace<number> | null;
+  }
+  : T extends "arbol_nario"
+  ? {
+    /** Crear raíz si está vacío */
+    toCreateRoot: number | null;
+
+    /** Insertar hijo: [parentId, value, index?]  ← parentId es string */
+    toInsertChild:
+    | []
+    | [parentId: string, value: number, index?: number];
+
+    /** Eliminar nodo/subárbol por id */
+    toDeleteNode: string | null;
+
+    /** Mover subárbol: [id, newParentId, index?]  ← ids son string */
+    toMoveNode:
+    | []
+    | [id: string, newParentId: string, index?: number];
+
+    /** Actualizar valor de un nodo: [id, newValue]  ← id es string */
+    toUpdateValue: [] | [id: string, newValue: number];
+
+    /** Buscar valor (por contenido) */
+    toSearch: number | null;
+
+    /** Recorridos */
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+
+    /** Vaciar árbol completo */
+    toClear: boolean;
+  }
+  : T extends "arbol_123" | "arbol_23"
+  ? {
+    /** Operaciones mutables */
+    toInsert: number | null; // insert(x)
+    toDelete: number | null; // delete(x)
+
+    /** Consultas */
+    toSearch: number | null; // search(x)
+
+    /** Recorridos (nota: cada key del nodo se emite como elemento de la secuencia) */
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+
+    /** Limpieza */
+    toClear: boolean; // clear()
+  }
+  : T extends "arbol_b"
+  ? {
+    /** Mutaciones */
+    toInsert: number | null; // insert(x)
+    toDelete: number | null; // delete(x)
+
+    /** Consultas */
+    toSearch: number | null; // search(x)
+
+    /** Recorridos */
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+
+    /** Limpieza */
+    toClear: boolean; // clear()
+
+    /** (Opcional) registro de fix-ups para el renderer */
+    bFix?: BFixLog | null;
+  }
+  : T extends "arbol_bplus"
+  ? {
+    /** Mutaciones */
+    toInsert: number | null;
+    toDelete: number | null;
+
+    /** Consultas puntuales */
+    toSearch: number | null;
+
+    /** Parámetros para animar RANGE / SCAN FROM (solo args) */
+    toGetRange: [] | [from: number, to: number];
+    toScanFrom: [] | [start: number, limit: number];
+
+    /** Secuencias para la banda inferior (resultado que se dibuja) */
+    toGetInOrder: TraversalNodeType[] | undefined;
+    toGetLevelOrder: TraversalNodeType[] | undefined;
+
+    /** Limpieza */
+    toClear: boolean;
+
+    /** Fix-ups para el renderer (opcional) */
+    bPlusFix?: BPlusFixLog | null;
+  }
+  : T extends "arbol_heap"
+  ? {
+    toInsert: string | null;
+    toDeleteRoot: [string, string | null] | [];
+    toSearch: number | null;
+    toPeek: number | null;
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+    swapPath: string[];
+  }
+  : never; // Fallback para otros casos
+
+
+// Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
-    ? {
-          create: (n: number) => void;
-          insertLast: (element: number) => void;
-          delete: (element: number) => void;
-          get: (element: number) => void;
-          clean: () => void;
-          set: (pos: number, element: number) => void;
-      }
-    : T extends "cola"
-      ? {
-            enqueue: (element: number) => void;
-            dequeue: () => void;
-            getFront: () => void;
-            clean: () => void;
-        }
-      : T extends "cola de prioridad"
-        ? {
-              enqueue: (element: number, priority: number) => void;
-              dequeue: () => void;
-              getFront: () => void;
-              clean: () => void;
-          }
-        : T extends "pila"
-          ? {
-                push: (element: number) => void;
-                pop: () => void;
-                getTop: () => void;
-                clean: () => void;
-            }
-          : T extends "lista_enlazada"
-            ? {
-                  insertFirst: (element: number) => void;
-                  insertLast: (element: number) => void;
-                  insertAt: (element: number, pos: number) => void;
-                  removeFirst: () => void;
-                  removeLast: () => void;
-                  removeAt: (pos: number) => void;
-                  search: (element: number) => void;
-                  clean: () => void;
-              }
-            : T extends "tabla_hash"
-              ? {
-                    create: (cap: number) => void;
-                    set: (key: number, value: number) => void;
-                    delete: (key: number) => void;
-                    get: (key: number) => void;
-                    clean: () => void;
-                }
-              : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+  ? {
+    create: (n: number) => void;
+    insertLast: (element: number) => void;
+    delete: (element: number) => void;
+    get: (pos: number) => void;
+    search: (element: number) => void;
+    clean: () => void;
+    set: (pos: number, element: number) => void;
+  }
+  : T extends "cola"
+  ? {
+    enqueue: (element: number) => void;
+    dequeue: () => void;
+    getFront: () => void;
+    clean: () => void;
+  }
+  : T extends "cola de prioridad"
+  ? {
+    enqueue: (element: number, priority: number) => void;
+    dequeue: () => void;
+    getFront: () => void;
+    clean: () => void;
+  }
+  : T extends "pila"
+  ? {
+    push: (element: number) => void;
+    pop: () => void;
+    getTop: () => void;
+    clean: () => void;
+  }
+  : T extends "lista_enlazada"
+  ? {
+    insertFirst: (element: number) => void;
+    insertLast: (element: number) => void;
+    insertAt: (element: number, pos: number) => void;
+    removeFirst: () => void;
+    removeLast: () => void;
+    removeAt: (pos: number) => void;
+    search: (element: number) => void;
+    clean: () => void;
+  }
+  : T extends "arbol_binario"
+  ? {
+    insertLeft: (parent: number, value: number) => void;
+    insertRight: (parent: number, value: number) => void;
+    delete: (nodeId: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_binario_busqueda"
+  ? {
+    insert: (value: number) => void;
+    delete: (nodeId: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_avl"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_rojinegro"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_heap"
+  ? {
+    insert: insertElement,
+    deleteRoot: deleteRoot,
+    search: searchElement,
+    peek: peekRoot,
+    getLevelOrder,
+    clean: clearHeap,
+  }
+  : T extends "arbol_nario"
+  ? {
+    /** Crea la raíz si el árbol está vacío */
+    createRoot: (value: number) => void;
+
+    /** parentId es NUMÉRICO aquí */
+    insertChild: (
+      parentId: number,
+      value: number,
+      index?: number
+    ) => void;
+
+    /** ids numéricos */
+    deleteNode: (id: number) => void;
+
+    moveNode: (
+      id: number,
+      newParentId: number,
+      index?: number
+    ) => void;
+
+    updateValue: (id: number, newValue: number) => void;
+
+    search: (value: number) => void;
+
+    getPreOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+
+    clean: () => void;
+  }
+  : T extends "arbol_123" | "arbol_23"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_b"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_b_plus"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+
+    // Propios de B+
+    range: (from: number, to: number) => void;
+    scanFrom: (start: number, limit: number) => void;
+
+    // Recorridos
+    getInOrder: () => void;
+    getLevelOrder: () => void;
+
+    clean: () => void;
+  }
+  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+
+
 
 export type AnimationContextType = {
-    isAnimating: boolean;
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
+  isAnimating: boolean;
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export type CodeAnalysisProps = {
-    code: string;
-    operationalCost: string[];
-    complexity: string;
+  code: string;
+  operationalCost: string[];
+  complexity: string;
 };
 
-export type ListNodeData = {
-    id: string;
-    value: number;
-    next: string | null;
-    memoryAddress: string;
+export type ListNodeData<T> = {
+  id: string;
+  value: T;
+  next: string | null;
+  prev?: string | null;
+  memoryAddress: string;
 };
 
 export type QueueNodeData = {
-    id: string;
-    value: number;
-    next: string | null;
-    memoryAddress: string;
+  id: string;
+  value: number;
+  next: string | null;
+  memoryAddress: string;
 };
 
-export type PriorityQueueNodeData = {
-    id: string;
-    value: number;
-    next: string | null;
-    memoryAddress: string;
-    priority: number;
+export type PriorityQueueNodeData = QueueNodeData & {
+  priority: number;
 };
 
 export type LinkData = {
-    sourceId: string;
-    targetId: string;
-    type: "next" | "prev";
+  sourceId: string;
+  targetId: string;
+  type: "next" | "prev" | "circular-next" | "circular-prev";
 };
 
 export type StackNodeData = {
-    id: string;
-    value: number;
-    next: string | null;
-    memoryAddress: string;
+  id: string;
+  value: number;
+  next: string | null;
+  memoryAddress: string;
 };
 
 export type IndicatorPositioningConfig = {
-    calculateTransform: (
-        nodePos: { x: number; y: number },
-        dims: { elementWidth: number; elementHeight: number }
-    ) => string;
+  calculateTransform: (
+    nodePos: { x: number; y: number },
+    dims: { elementWidth: number; elementHeight: number }
+  ) => string;
+};
+
+export type EqualityFn<T> = (a: T, b: T) => boolean;
+
+export type Comparator<T> = (a: T, b: T) => number;
+
+export type HierarchyNodeData<T> = {
+  id: string;
+  value?: T;
+  isPlaceholder?: boolean;
+  //(opcionales) para AVL
+  bf?: number; // balance factor
+  height?: number; // altura del nodo
+
+  // (opcional) para Árbol Roji-Negro
+  color?: RBRenderColor; // "red" | "black" si viene de RB
+
+  // N-ario (opcional)
+  degree?: number; // número de hijos del nodo (para tooltips/etiquetas)
+  order?: number; // aridad máxima del árbol/nodo (si quieres mostrarla)
+
+  idNum?: number; // id numérico original (opcional)
+  meta?: {
+    nIndex?: number; // para n-ario (posición del hijo)
+    // puedes añadir otros campos que uses visualmente
+  };
+  children?: HierarchyNodeData<T>[];
+};
+
+export type LinkPathFn = (
+  source: { x: number, y: number },
+  target: { x: number, y: number },
+  r: number
+) => string;
+
+export type TreeLinkData = {
+  sourceId: string;
+  targetId: string;
+};
+
+export type TraversalNodeType = {
+  id: string;
+  value: number;
+};
+
+export type RotationStep = {
+  type: "LL" | "RR" | "LR" | "RL";
+  zId: string; // Nodo desbalanceado (raíz del subárbol que rota)
+  yId: string; // Hijo de la rama pesada
+  xId?: string | null; // Nieto (solo LR/RL)
+  parentOfZId?: string | null; // Padre de Z
+  BId?: string | null; // LL/RR y.right (LL) o y.left (RR)
+  xLeftId?: string | null; // LR/RL x.left
+  xRightId?: string | null; // LR/RL x.right
+}
+
+export type OperationTrace<T> = {
+  rotations: RotationStep[];
+  hierarchies: {
+    pre: HierarchyNodeData<T> | null;
+    mids: HierarchyNodeData<T>[];
+  }
+}
+
+export type AvlFrame = {
+  root: HierarchyNode<HierarchyNodeData<number>>;
+  nodes: HierarchyNode<HierarchyNodeData<number>>[];
+  links: {
+    sourceId: string;
+    targetId: string;
+  }[];
+}
+
+export type RBFrame = AvlFrame;
+
+export type RBAction =
+  | { kind: "recolor"; id: string; from: RBColor; to: RBColor; nodeBadge: string; }
+  | { kind: "rotation"; tag: "L(padre)" | "R(padre)" | "R(tío)" | "L(tío)" | "R(abuelo)" | "L(abuelo)"; step: RotationStep };
+
+export type RBTrace<T> = {
+  actions: RBAction[];
+  hierarchies: {
+    bst: HierarchyNodeData<T> | null;
+    mids: HierarchyNodeData<T>[];
+  };
+};
+
+export type RBColor = "RED" | "BLACK";
+
+export type HintTarget =
+  | { type: "node"; id: string }
+  | { type: "link"; sourceId: string; targetId: string }
+
+export type HintContent = {
+  label: string;
+  value: string;
+}
+
+export type HintOptions = {
+  palette?: {
+    bg?: string; stroke?: string; label?: string; value?: string
+  };
+  size?: { width?: number; height?: number; radius?: number; scaleFrom?: number };
+  anchor?: {
+    side?: "left" | "right" | "above" | "below";
+    dx?: number; dy?: number;
+  };
+  typography?: {
+    labelFz?: string; valueFz?: string; labelFw?: number | string; valueFw?: number | string;
+  }
+}
+
+type TreeTraversalAnimOptions = {
+  recolor?: boolean;
+  strokeColor?: string;
 };

@@ -4,18 +4,27 @@ import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 export function ComplexityListaSimple() {
   return (
     <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen">
-      <h1 className="text-3xl font-extrabold text-white mb-1">
-        Costo Operacional y Complejidad
-      </h1>
-      <h2 className="text-sm text-red-400 mb-4">Lista Simple</h2>
-      <hr className="border-t-2 border-red-500 mb-6 w-full" />
+      <div className="flex items-center gap-3 mb-2">
+        <div className="h-7 w-2 rounded bg-red-600"></div>
+        <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
+          Costo Operacional y Complejidad
+        </h1>
+      </div>
+      <span className="text-base text-red-400 ml-3 font-medium block mb-2">
+        Lista Simple
+      </span>
+      <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
       <section className="mb-10">
-        <h2 className="text-2xl font-bold text-red-500 mb-4">
+        <h2 className="text-2xl font-bold text-white mb-4">
           Análisis Algorítmico
         </h2>
 
-        <div className="bg-[#1f1f1f] text-gray-300 text-sm leading-6 rounded-xl p-5 shadow-md border border-gray-700">
+        <h1 className="text-lg font-bold mb-4 text-white">
+          Costo Operacional y Complejidad
+        </h1>
+
+        <div className="bg-[#18191a] p-4 text-gray-200 text-sm leading-6 rounded-md mb-6 border-l-4 border-red-500">
           <p className="mb-2">
             Los análisis que se harán a continuación son para el peor de los
             casos
@@ -55,11 +64,11 @@ export function ComplexityListaSimple() {
         ))}
       </section>
 
-      <section className="mt-10 bg-[#1a1a1a] p-5 rounded-xl border border-gray-700 shadow-inner">
-        <h3 className="text-xl font-bold text-red-500 mb-3">Conclusión</h3>
+      <section className="mt-6 bg-[#18191a] p-4 rounded-md border-l-4 border-red-500">
+        <h3 className="text-xl font-bold text-white mb-3">Conclusión</h3>
         <p className="text-sm text-gray-300 leading-6">
           En el análisis anterior se pudo observar que la estructura{" "}
-          <strong>Secuencia</strong> opta en el mejor de los casos a ser{" "}
+          <strong>Lista Simple</strong> opta en el mejor de los casos a ser{" "}
           <span className="text-green-400">constante</span> y en el peor de los
           casos a ser <span className="text-yellow-400">lineal</span>. Teniendo
           en cuenta que su comportamiento lineal depende de{" "}

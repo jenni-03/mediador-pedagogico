@@ -1,137 +1,191 @@
+// Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
+
 import { NodoPrioridad } from "../nodes/NodoPrioridad";
 
-export class ColaDePrioridad {
+/**
+ * Clase que representa una Cola de Prioridad.
+ */
+export class ColaDePrioridad<T> {
+  // Nodo inicial de la cola.
+  private inicio: NodoPrioridad<T> | null;
 
-    private inicio: NodoPrioridad | null;
-    private tamanio: number;
-    private readonly MAX_TAMANIO = 10;
+  // Tamaño de la cola.
+  private tamanio: number;
 
-    constructor() {
-        this.inicio = null;
-        this.tamanio = 0;
+  // Tamaño simulado de cada nodo en bytes.
+  private tamanioNodo: number;
+
+  // Tamaño máximo permitido para la cola de prioridad.
+  private readonly MAX_TAMANIO = 15;
+
+  /**
+   * Constructor de la clase Cola de Prioridad.
+   */
+  constructor(tamanioNodo: number = 20) {
+    this.inicio = null;
+    this.tamanio = 0;
+    this.tamanioNodo = tamanioNodo;
+  }
+
+  /**
+   * Método que inserta un elemento en la posición correspondiente según su prioridad.
+   * @param valor Elemento a encolar.
+   * @param prioridad Prioridad del nodo (menor número = mayor prioridad).
+   * @returns Elemento insertado.
+   */
+  public encolar(valor: T, prioridad: number): NodoPrioridad<T> {
+    if (this.tamanio >= this.MAX_TAMANIO)
+      throw new Error(
+        `No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`
+      );
+
+    const nuevoNodo = new NodoPrioridad(valor, prioridad);
+
+    // Si está vacía o el nuevo nodo tiene mayor prioridad que el primero
+    if (this.esVacia() || prioridad < this.inicio!.getPrioridad()) {
+      nuevoNodo.setSiguiente(this.inicio);
+      this.inicio = nuevoNodo;
+    } else {
+      let actual = this.inicio!;
+
+      // Inserta el nuevo nodo después de los de igual prioridad, manteniendo orden de llegada.
+      while (
+        actual.getSiguiente() !== null &&
+        actual.getSiguiente()!.getPrioridad() <= prioridad
+      ) {
+        actual = actual.getSiguiente()!;
+      }
+
+      nuevoNodo.setSiguiente(actual.getSiguiente());
+      actual.setSiguiente(nuevoNodo);
     }
 
-    /**
-     * Inserta un nodo en la posición correspondiente según su prioridad.
-     * @param valor Valor del nodo
-     * @param prioridad Prioridad del nodo (menor número = mayor prioridad)
-     */
-    public encolar(valor: number, prioridad: number): NodoPrioridad {
-        if (this.tamanio >= this.MAX_TAMANIO) throw new Error("No se puede encolar: Límite de nodos alcanzado.");
-    
-        const nuevoNodo = new NodoPrioridad(valor, prioridad);
-    
-        // Si está vacía o el nuevo nodo tiene mayor prioridad que el primero
-        if (!this.inicio || prioridad < this.inicio.getPrioridad()) {
-            nuevoNodo.setSiguiente(this.inicio);
-            this.inicio = nuevoNodo;
-        } else {
-            let actual = this.inicio;
-    
-            // Inserta el nuevo nodo después de los de igual prioridad, manteniendo orden de llegada.
-            while (
-                actual.getSiguiente() !== null &&
-                actual.getSiguiente()!.getPrioridad() <= prioridad
-            ) {
-                actual = actual.getSiguiente()!;
-            }
-    
-            nuevoNodo.setSiguiente(actual.getSiguiente());
-            actual.setSiguiente(nuevoNodo);
+    this.tamanio++;
+    return nuevoNodo;
+  }
+
+  /**
+   * Método que elimina el elemento con mayor prioridad (inicio).
+   * @returns elemento decolado.
+   */
+  public decolar(): NodoPrioridad<T> {
+    if (this.esVacia())
+      throw new Error(
+        "No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0)."
+      );
+
+    const nodoAEliminar = this.inicio!;
+
+    if (this.inicio?.getSiguiente()) {
+      this.inicio = this.inicio.getSiguiente();
+    } else {
+      this.inicio = null;
+    }
+
+    this.tamanio--;
+    return nodoAEliminar;
+  }
+
+  /**
+   * Método que vacia la cola.
+   */
+  public vaciar(): void {
+    this.inicio = null;
+    this.tamanio = 0;
+  }
+
+  /**
+   * Método que obtiene el elemento inicial de la cola.
+   * @returns NodoPrioridad o null si la cola está vacía.
+   */
+  public getInicio(): NodoPrioridad<T> | null {
+    return this.inicio;
+  }
+
+  /**
+   * Método que devuelve el tamaño actual de la cola.
+   * @returns Número de elementos en la cola.
+   */
+  public getTamanio(): number {
+    return this.tamanio;
+  }
+
+  /**
+   * Método que retorna el tamaño en bytes de los nodos almacenados.
+   * @returns Tamaño en bytes de los nodos.
+   */
+  public getTamanioNodo(): number {
+    return this.tamanioNodo;
+  }
+
+  /**
+   * Método que verifica si la cola está vacía.
+   * @returns True si está vacía, false en caso contrario.
+   */
+  public esVacia(): boolean {
+    return this.inicio === null;
+  }
+
+  /**
+   * Método que transforma la cola en un array de nodos.
+   * @returns Array de nodos con la información de la cola.
+   */
+  public getArrayDeNodos() {
+    const arregloNodos = [];
+    let actual = this.inicio;
+
+    while (actual !== null) {
+      const nextNode = actual.getSiguiente();
+
+      arregloNodos.push({
+        id: actual.getId(),
+        value: actual.getValor(),
+        next: nextNode ? nextNode.getId() : null,
+        memoryAddress: actual.getDireccionMemoria(),
+        priority: actual.getPrioridad(),
+      });
+
+      actual = actual.getSiguiente();
+    }
+
+    return arregloNodos;
+  }
+
+  /**
+   * Método que clona la cola actual.
+   * @returns Nueva cola clonada.
+   */
+  public clonar() {
+    const clon = new (this.constructor as new () => this)();
+
+    if (this.esVacia()) {
+      return clon;
+    }
+
+    let actual = this.inicio;
+    let ultimoNodoClonado: NodoPrioridad<T> | null = null;
+
+    while (actual !== null) {
+      const nodoCopia = new NodoPrioridad(
+        actual.getValor(),
+        actual.getPrioridad(),
+        actual.getId(),
+        actual.getDireccionMemoria()
+      );
+
+      if (clon.inicio === null) {
+        clon.inicio = nodoCopia;
+      } else {
+        if (ultimoNodoClonado) {
+          ultimoNodoClonado.setSiguiente(nodoCopia);
         }
-    
-        this.tamanio++;
-    
-        return nuevoNodo; // 👈 Devuelve el nodo insertado
-    }
-    
+      }
 
-    /**
-     * Elimina y retorna el valor del nodo con mayor prioridad (inicio).
-     */
-    public decolar(): number | null {
-        if (!this.inicio) throw new Error("No se puede decolar: la cola está vacía.");
-
-        const valor = this.inicio.getValor();
-        this.inicio = this.inicio.getSiguiente();
-        this.tamanio--;
-        return valor;
+      ultimoNodoClonado = nodoCopia;
+      actual = actual.getSiguiente();
     }
 
-    /**
-     * Vacía la cola completamente.
-     */
-    public vaciar(): void {
-        this.inicio = null;
-        this.tamanio = 0;
-    }
-
-    /**
-     * Retorna los datos de los nodos como array (útil para visualización).
-     */
-    public getArrayDeNodos() {
-        const arregloNodos = [];
-        let actual = this.inicio;
-
-        while (actual !== null) {
-            arregloNodos.push({
-                id: actual.getId(),
-                value: actual.getValor(),
-                next: actual.getSiguiente() ? actual.getSiguiente()!.getId() : null,
-                memoryAddress: actual.getDireccionMemoria(),
-                priority: actual.getPrioridad(),
-                // size: actual.getTamanio(),
-            });
-
-            actual = actual.getSiguiente();
-        }
-
-        return arregloNodos;
-    }
-
-    public getInicio(): NodoPrioridad | null {
-        return this.inicio;
-    }
-
-    public getTamanio(): number {
-        return this.tamanio;
-    }
-
-    public esVacia(): boolean {
-        return this.tamanio === 0;
-    }
-
-    public clonar(): ColaDePrioridad {
-        const clon = new ColaDePrioridad();
-        let actual = this.inicio;
-    
-        while (actual !== null) {
-            const nodoCopia = new NodoPrioridad(
-                actual.getValor(),
-                actual.getPrioridad()
-            );
-    
-            // Si necesitas copiar manualmente otros campos como ID o dirección:
-            nodoCopia.setId(actual.getId());
-            nodoCopia.setDireccionMemoria(actual.getDireccionMemoria());
-            nodoCopia.setTamanio(actual.getTamanio());
-    
-            // Lógica para insertar al final sin alterar el orden ya que setSiguiente() no está expuesto
-            if (!clon.inicio) {
-                clon.inicio = nodoCopia;
-            } else {
-                let temp = clon.inicio;
-                while (temp.getSiguiente() !== null) {
-                    temp = temp.getSiguiente()!;
-                }
-                temp.setSiguiente(nodoCopia);
-            }
-    
-            clon.tamanio++;
-            actual = actual.getSiguiente();
-        }
-    
-        return clon;
-    }
-    
+    clon.tamanio = this.tamanio;
+    return clon;
+  }
 }

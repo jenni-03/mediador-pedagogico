@@ -7,111 +7,114 @@ import img6 from "../../../../../assets/images/operacion_secuencia_6.jpg";
 
 export function OperationSecuencia() {
   return (
-    <div className="py-6 px-8 sm:px-12 bg-[#0f0f0f] text-white leading-relaxed">
-      <h1 className="text-3xl font-extrabold text-white mb-1">OPERACIONES</h1>
-      <h2 className="text-base text-red-500 mb-3 font-semibold">Secuencia</h2>
-      <hr className="mt-2 mb-6 border-t-2 border-red-500" />
+    <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] max-w-5xl">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="h-7 w-2 rounded bg-red-600"></div>
+        <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
+          Operaciones · Secuencia
+        </h1>
+      </div>
+      <span className="text-base text-red-400 ml-3 font-medium block mb-2">
+        Estructura Lineal Estática
+      </span>
+      <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
       {/* Insertar */}
-      <div className="mb-10">
-        <h3 className="text-2xl font-bold text-red-500 mb-3">Insertar</h3>
-        <p className="text-gray-300 text-sm mb-4">
-          Para esta operación solo basta con indicar el dato que se desea
-          almacenar en la estructura y esta lo almacena consecutivamente en la
-          posición acorde a la cantidad de datos que posee, teniendo en cuenta
-          no desbordar la capacidad de la Secuencia.
-        </p>
-        <p className="text-sm text-gray-300 mb-3">
-          <span className="font-semibold text-white">
-            Ejemplo de insertar:{" "}
-          </span>
-          Tenemos la secuencia:
-        </p>
-        <img
-          src={img1}
-          alt="img 1"
-          className="rounded-xl mb-4 border border-gray-700"
-        />
-        <p className="text-sm text-gray-300 mb-3">
-          Se desea insertar el número{" "}
-          <span className="text-white font-semibold">25</span> a la secuencia.
-        </p>
-        <img
-          src={img2}
-          alt="img 2"
-          className="rounded-xl mb-4 border border-gray-700"
-        />
-        <p className="text-sm text-gray-300 mb-3">
-          Simplemente se agrega en el índice disponible (posición igual a
-          cantidad de elementos).
-        </p>
-        <img
-          src={img3}
-          alt="img 3"
-          className="rounded-xl border border-gray-700"
-        />
-      </div>
+      <section className="space-y-4 text-sm leading-6">
+        <h3 className="text-2xl font-bold text-white">Insertar Elemento</h3>
+        <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow mb-3">
+          <p>
+            Para insertar en una secuencia basta con indicar el dato que se
+            desea almacenar. Este se coloca consecutivamente en la siguiente
+            posición disponible, siempre que no se exceda la capacidad definida.
+          </p>
+        </div>
+
+        <h4 className="text-lg font-semibold text-red-400">Ejemplo</h4>
+        <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow space-y-3">
+          <p>Tenemos inicialmente la siguiente secuencia:</p>
+          <img
+            src={img1}
+            alt="secuencia inicial"
+            className="w-full max-w-md rounded-lg border border-gray-700 shadow mx-auto"
+          />
+          <p>
+            Se desea insertar el número <b className="text-white">25</b>:
+          </p>
+          <img
+            src={img2}
+            alt="secuencia insertando elemento"
+            className="w-full max-w-md rounded-lg border border-gray-700 shadow mx-auto"
+          />
+          <p>El nuevo elemento se agrega al final en el índice disponible:</p>
+          <img
+            src={img3}
+            alt="secuencia después de inserción"
+            className="w-full max-w-md rounded-lg border border-gray-700 shadow mx-auto"
+          />
+        </div>
+      </section>
 
       {/* Editar */}
-      <div className="mb-10">
-        <h3 className="text-2xl font-bold text-red-500 mb-3">Editar</h3>
-        <p className="text-gray-300 text-sm">
-          Para esta operación solo basta con indicar el nuevo dato y la posición
-          a editar. La estructura recorre los elementos hasta encontrar la
-          posición deseada y actualiza el valor, validando que la posición
-          exista y contenga un dato.
-        </p>
-      </div>
+      <section className="mt-10 text-sm leading-6 space-y-3">
+        <h3 className="text-2xl font-semibold text-red-400">Editar</h3>
+        <div className="bg-[#19191d] border-l-4 border-yellow-400 rounded-md p-4 shadow">
+          <p>
+            Para editar, se indica la posición y el nuevo dato. Se valida que la
+            posición exista y contenga un elemento, luego se actualiza el valor
+            sin alterar el orden de la secuencia.
+          </p>
+        </div>
+      </section>
 
       {/* Buscar */}
-      <div className="mb-10">
-        <h3 className="text-2xl font-bold text-red-500 mb-3">Buscar</h3>
-        <p className="text-gray-300 text-sm">
-          Se indica el dato que se desea buscar en la estructura. Esta recorre
-          sus elementos hasta encontrar la coincidencia, validando que el dato
-          exista dentro de la Secuencia.
-        </p>
-      </div>
+      <section className="mt-10 text-sm leading-6 space-y-3">
+        <h3 className="text-2xl font-semibold text-red-400">Buscar</h3>
+        <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow">
+          <p>
+            Para buscar, se indica el dato y la estructura recorre sus elementos
+            secuencialmente hasta encontrar la coincidencia o determinar que no
+            existe dentro de la secuencia.
+          </p>
+        </div>
+      </section>
 
       {/* Eliminar */}
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-red-500 mb-3">Eliminar</h3>
-        <p className="text-gray-300 text-sm mb-4">
-          Se indica el dato a eliminar, la estructura lo remueve y reorganiza
-          los elementos posteriores para no dejar espacios vacíos, manteniendo
-          la continuidad.
-        </p>
-        <p className="text-sm text-gray-300 mb-3">
-          <span className="font-semibold text-white">
-            Ejemplo de eliminar:{" "}
-          </span>
-          Se desea eliminar el número{" "}
-          <span className="text-white font-semibold">02</span>:
-        </p>
-        <img
-          src={img4}
-          alt="img 4"
-          className="rounded-xl mb-4 border border-gray-700"
-        />
-        <p className="text-sm text-gray-300 mb-3">
-          Al eliminarse el número, se produce un{" "}
-          <span className="text-white font-semibold">corrimiento</span> a la
-          izquierda.
-        </p>
-        <img
-          src={img5}
-          alt="img 5"
-          className="rounded-xl mb-4 border border-gray-700"
-        />
-        <p className="text-sm text-gray-300 mb-3">
-          La estructura finalmente queda así, sin espacios vacíos:
-        </p>
-        <img
-          src={img6}
-          alt="img 6"
-          className="rounded-xl border border-gray-700"
-        />
-      </div>
+      <section className="mt-10 text-sm leading-6 space-y-3">
+        <h3 className="text-2xl font-semibold text-red-400">Eliminar</h3>
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow">
+          <p>
+            Para eliminar, se indica el dato. Al eliminarlo, los elementos
+            posteriores se <b>corren a la izquierda</b> para no dejar espacios
+            vacíos, manteniendo la continuidad de la secuencia.
+          </p>
+        </div>
+
+        <h4 className="text-lg font-semibold text-red-400">Ejemplo</h4>
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow space-y-3">
+          <p>
+            Se desea eliminar el número <b className="text-white">02</b>:
+          </p>
+          <img
+            src={img4}
+            alt="secuencia antes de eliminar"
+            className="w-full max-w-md rounded-lg border border-gray-700 shadow mx-auto"
+          />
+          <p>Al eliminar, los elementos se reorganizan automáticamente:</p>
+          <img
+            src={img5}
+            alt="corrimiento después de eliminar"
+            className="w-full max-w-md rounded-lg border border-gray-700 shadow mx-auto"
+          />
+          <p>La estructura final queda así, sin espacios vacíos:</p>
+          <img
+            src={img6}
+            alt="secuencia final después de eliminar"
+            className="w-full max-w-md rounded-lg border border-gray-700 shadow mx-auto"
+          />
+        </div>
+      </section>
     </div>
   );
 }

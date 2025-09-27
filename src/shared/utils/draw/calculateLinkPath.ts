@@ -21,7 +21,7 @@ export const calculateLinkPath = (
     const offset = 3;
 
     // Offset vertical para separar los enlaces
-    const verticalOffset = link.type === 'prev' ? 3 : -3;
+    const verticalOffset = link.type === 'prev' ? 5 : -5;
 
     // Calculamos las coordenadas
     if (link.type === 'next') {
@@ -36,9 +36,68 @@ export const calculateLinkPath = (
         x1 = sourcePos.x - offset;
         y1 = sourcePos.y + nodeCenterY + verticalOffset;
         // Entra al borde derecho del nodo anterior
-        x2 = targetPos.x - offset;
+        x2 = targetPos.x + elementWidth + offset;
         y2 = targetPos.y + nodeCenterY + verticalOffset;
     }
 
     return `M${x1},${y1} L${x2},${y2}`;
+}
+
+export function calculateCircularLPath(
+    link: LinkData,
+    positions: Map<string, { x: number; y: number }>,
+    elementWidth: number,
+    elementHeight: number,
+): string {
+    const src = positions.get(link.sourceId);
+    const tgt = positions.get(link.targetId);
+    if (!src || !tgt) return "M0,0";
+
+    const isNext = link.type === "circular-next";
+    const halfH = elementHeight / 2;
+
+    // Puntos de salida/entrada
+    const offset = 3;
+    const verticalOffset = 5
+
+    // Coordenadas en y (separadas por offset)
+    const startY = src.y + halfH + (isNext ? -verticalOffset : verticalOffset);
+    const endY = tgt.y + halfH + (isNext ? -verticalOffset : verticalOffset);
+
+    // Coordenadas en x
+    const startX = isNext
+        ? src.x + elementWidth + offset // sale por la derecha
+        : src.x - offset                // sale por la izquierda
+    const endX = isNext
+        ? tgt.x - offset               // entra por la izquierda
+        : tgt.x + elementWidth + offset // entra por la derecha
+
+    // Separación horizontal y vertical
+    const lateralOff = 20;
+    const marginY = 55;
+
+    // Coordenadas para desplazamientos intermedios
+    const xA = startX + (isNext ? lateralOff : -lateralOff);
+    const xB = endX + (isNext ? -lateralOff : lateralOff);
+
+    // Elegimos el y “intermedio” según next o prev
+    const topY = Math.min(src.y, tgt.y) - marginY;
+    const bottomY = Math.max(src.y, tgt.y) + elementHeight + marginY;
+    const midY = isNext ? topY : bottomY;
+
+    // Construcción del path:
+    //  M: punto de salida
+    //  L1: desplazamiento horizontal
+    //  L2: subida / bajada al margen superior del nodo origen
+    //  L3: cruzar hasta la x de destino
+    //  L4: subida / bajada al centro del nodo destino
+    //  L5: desplazamiento horizontal final
+    return [
+        `M${startX},${startY}`,
+        `L${xA},${startY}`,
+        `L${xA},${midY}`,
+        `L${xB},${midY}`,
+        `L${xB},${endY}`,
+        `L${endX},${endY}`
+    ].join(" ");
 }

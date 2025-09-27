@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { BaseQueryOperations, LinkedListInterface } from "../../../../../types";
 
-export function useLinkedList<T extends LinkedListInterface>(structure: T) {
+export function useLinkedList<T extends LinkedListInterface<number>>(structure: T) {
     // Estado para manejar la lista
     const [list, setList] = useState(structure);
 

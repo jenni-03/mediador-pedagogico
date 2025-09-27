@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Cola } from "../../../../../shared/utils/structures/Cola";
 import { BaseQueryOperations } from "../../../../../types";
 
-export function useQueue(structure: Cola) {
+export function useQueue(structure: Cola<number>) {
     // Estado para manejar la cola
     const [queue, setQueue] = useState(structure);
 
@@ -24,10 +24,7 @@ export function useQueue(structure: Cola) {
             const clonedQueue = queue.clonar();
 
             // Encolar el nuevo elemento
-            clonedQueue.encolar(value);
-
-            // Obtener el nodo insertado para acceder a su ID
-            const finalNode = clonedQueue.getFin();
+            const insertedNode = clonedQueue.encolar(value);
 
             // Actualizar el estado de la cola
             setQueue(clonedQueue);
@@ -35,7 +32,7 @@ export function useQueue(structure: Cola) {
             // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toEnqueuedNode: finalNode ? finalNode.getId() : null
+                toEnqueuedNode: insertedNode.getId()
             }));
 
             // Limpieza del error existente
@@ -48,14 +45,11 @@ export function useQueue(structure: Cola) {
     // Operación de decolar
     const dequeueElement = () => {
         try {
-            // Obtener el nodo a ser eliminado para acceder a su ID
-            const nodeToDelete = queue.getInicio();
-
             // Clonar la cola para asegurar la inmutabilidad del estado
             const clonedQueue = queue.clonar();
 
-            // Decolamos el nodo
-            clonedQueue.decolar();
+            // Obtener el nodo a ser eliminado para acceder a su ID
+            const nodeToDelete = clonedQueue.decolar();
 
             // Actualizar el estado de la cola
             setQueue(clonedQueue);
@@ -63,7 +57,7 @@ export function useQueue(structure: Cola) {
             // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toDequeuedNode: nodeToDelete ? nodeToDelete.getId() : null
+                toDequeuedNode: nodeToDelete.getId()
             }));
 
             // Limpieza del error existente

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
 import { Pila } from "../../../../../shared/utils/structures/Pila";
 
-export function useStack(structure: Pila) {
+export function useStack(structure: Pila<number>) {
     // Estado para manejar la pila
     const [stack, setStack] = useState(structure);
 

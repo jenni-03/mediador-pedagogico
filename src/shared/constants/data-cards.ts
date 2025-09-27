@@ -30,7 +30,7 @@ export const data = [
         toPracticar: '/simulador/$estructura',
     },
     {
-        title: 'Lista Circular Simple',
+        title: 'Lista Circular Simplemente Enlazada',
         id: 4,
         img: '/assets/images/lista_simple.png',
         type: 'estructura_lineal',
@@ -40,7 +40,7 @@ export const data = [
         toPracticar: '/simulador/$estructura',
     },
     {
-        title: 'Lista Circular Doble Enlazada',
+        title: 'Lista Circular Doblemente Enlazada',
         id: 5,
         img: '/assets/images/lista_simple.png',
         type: 'estructura_lineal',

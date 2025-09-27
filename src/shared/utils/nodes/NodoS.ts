@@ -6,16 +6,16 @@ import { dynamicAddressGenerator } from "../memoryAllocator";
 /**
  * Clase que representa un Nodo Simple.
  */
-export class NodoS {
+export class NodoS<T> {
 
     // ID único del nodo.
     private id: string;
 
     // Información almacenada en el nodo.
-    private valor: number;
+    private valor: T;
 
     // Información del nodo siguiente.
-    private siguiente: NodoS | null;
+    private siguiente: NodoS<T> | null;
 
     // Dirección de memoria del nodo.
     private direccionMemoria: string;
@@ -26,18 +26,18 @@ export class NodoS {
      * @param id Identificador único del nodo (opcional).
      * @param direccion Dirección de memoria del nodo (opcional).
      */
-    constructor(valor: number, id?: string, direccion?: string) {
-        this.id = id ?? `node-${uuidv4()}`;
+    constructor(valor: T, id?: string, direccion?: string) {
         this.valor = valor;
-        this.siguiente = null;
+        this.id = id ?? `node-${uuidv4()}`;
         this.direccionMemoria = direccion ?? dynamicAddressGenerator.generateNextAddress();
+        this.siguiente = null;
     }
 
     /**
      * Método que obtiene la información almacenada en el nodo.
      * @returns Valor almacenado en el nodo.
      */
-    public getValor(): number {
+    public getValor(): T {
         return this.valor;
     }
 
@@ -45,7 +45,7 @@ export class NodoS {
      * Método que obtiene la referencia al nodo siguiente.
      * @returns Nodo siguiente o null según corresponda.
      */
-    public getSiguiente(): NodoS | null {
+    public getSiguiente(): NodoS<T> | null {
         return this.siguiente;
     }
 
@@ -69,7 +69,7 @@ export class NodoS {
      * Método que establece el valor del nodo.
      * @param valor Valor a establecer.
      */
-    public setValor(valor: number): void {
+    public setValor(valor: T): void {
         this.valor = valor;
     }
 
@@ -77,7 +77,7 @@ export class NodoS {
      * Método que establece la referencia al nodo siguiente.
      * @param nodo Nodo a establecer como siguiente.
      */
-    public setSiguiente(nodo: NodoS | null): void {
+    public setSiguiente(nodo: NodoS<T> | null): void {
         this.siguiente = nodo;
     }
 

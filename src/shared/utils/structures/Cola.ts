@@ -1,24 +1,26 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { linkedListToArray } from "../listUtils";
 import { NodoS } from "../nodes/NodoS";
 
 /**
  * Clase que representa una Cola utilizando nodos simples.
  */
-export class Cola {
+export class Cola<T> {
 
     // Nodo inicial de la cola.
-    private inicio: NodoS | null;
+    private inicio: NodoS<T> | null;
 
     // Nodo final de la cola.
-    private fin: NodoS | null;
+    private fin: NodoS<T> | null;
 
     // Tamaño de la cola.
     private tamanio: number;
 
-    // Tamaño simulado de cada elemento en bytes
+    // Tamaño simulado de cada nodo en bytes.
     private tamanioNodo: number;
+
+    // Tamaño máximo permitido para la cola.
+    private readonly MAX_TAMANIO = 15;
 
     /**
      * Constructor de la clase Cola.
@@ -36,8 +38,8 @@ export class Cola {
      * Método que encola un nuevo elemento en la cola.
      * @param valor Elemento a encolar.
      */
-    public encolar(valor: number): void {
-        if (this.tamanio >= 10) throw new Error("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: 10).");
+    public encolar(valor: T): NodoS<T> {
+        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
 
         const nuevoNodo = new NodoS(valor);
 
@@ -52,16 +54,17 @@ export class Cola {
         }
 
         this.tamanio++;
+        return nuevoNodo;
     }
 
     /**
      * Método que decola (remueve) el primer elemento de la cola.
-     * @returns Elemento removido o null si la cola está vacía.
+     * @returns Elemento decolado.
      */
-    public decolar(): number | null {
+    public decolar(): NodoS<T> {
         if (this.esVacia()) throw new Error("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");
 
-        const valorEliminado = this.inicio?.getValor() ?? null;
+        const nodoAEliminar = this.inicio!;
 
         if (this.inicio === this.fin) {
             this.inicio = null;
@@ -73,7 +76,7 @@ export class Cola {
         }
 
         this.tamanio--;
-        return valorEliminado;
+        return nodoAEliminar;
     }
 
     /**
@@ -86,34 +89,34 @@ export class Cola {
     }
 
     /**
-     * Método que obtiene el nodo inicial de la cola.
+     * Método que obtiene el elemento inicial de la cola.
      * @returns NodoS o null si la cola está vacía.
      */
-    public getInicio(): NodoS | null {
+    public getInicio(): NodoS<T> | null {
         return this.inicio;
     }
 
     /**
-     * Método que obtiene el valor del nodo inicial de la cola.
+     * Método que obtiene el valor del elemento inicial de la cola.
      * @returns Valor del nodo o null si la cola está vacía.
      */
-    public getInfoInicio(): number | null {
+    public getInfoInicio(): T | null {
         return this.inicio?.getValor() ?? null;
     }
 
     /**
-     * Método que obtiene el nodo final de la cola.
+     * Método que obtiene el elemento final de la cola.
      * @returns NodoS o null si la cola está vacía.
      */
-    public getFin(): NodoS | null {
+    public getFin(): NodoS<T> | null {
         return this.fin;
     }
 
     /**
-     * Método que obtiene el valor del nodo final de la cola.
+     * Método que obtiene el valor del elemento final de la cola.
      * @returns Valor del nodo o null si la cola está vacía.
      */
-    public getInfoFin(): number | null {
+    public getInfoFin(): T | null {
         return this.fin?.getValor() ?? null;
     }
 
@@ -129,7 +132,7 @@ export class Cola {
      * Método que retorna el tamaño en bytes de los nodos almacenados.
      * @returns Tamaño en bytes de los nodos.
      */
-    getTamanioNodo(): number {
+    public getTamanioNodo(): number {
         return this.tamanioNodo;
     }
 
@@ -146,7 +149,23 @@ export class Cola {
      * @returns Array de nodos con la información de la cola.
      */
     public getArrayDeNodos() {
-        return linkedListToArray(this.inicio);
+        const resultArray = [];
+        let currentNode = this.inicio;
+
+        while (currentNode !== null) {
+            const nextNode = currentNode.getSiguiente();
+
+            resultArray.push({
+                id: currentNode.getId(),
+                value: currentNode.getValor(),
+                next: nextNode ? nextNode.getId() : null,
+                memoryAddress: currentNode.getDireccionMemoria()
+            });
+
+            currentNode = nextNode;
+        }
+
+        return resultArray;
     }
 
     /**
@@ -154,14 +173,14 @@ export class Cola {
      * @returns Nueva cola clonada.
      */
     public clonar() {
-        const nuevaCola = new Cola();
+        const nuevaCola = new (this.constructor as new () => this)();
 
         if (this.esVacia()) {
             return nuevaCola;
         }
 
         let nodoActual = this.inicio;
-        let ultimoNodoClonado: NodoS | null = null;
+        let ultimoNodoClonado: NodoS<T> | null = null;
 
         while (nodoActual !== null) {
             const nuevoNodo = new NodoS(

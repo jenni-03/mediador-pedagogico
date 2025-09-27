@@ -1,74 +1,104 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { v4 as uuidv4 } from "uuid";
+import { doubleNodeAddressGenerator } from "../memoryAllocator";
+
 /**
- * Clase que representa un Nodo Doble
+ * Clase que representa un Nodo Doble.
  */
-export class NodoD {
+export class NodoD<T> {
 
-    // Información almacenada en el nodo
-    private valor: number;
+    // ID único del nodo.
+    private id: string;
 
-    // Información del nodo siguiente
-    private siguiente: NodoD | null;
+    // Información almacenada en el nodo.
+    private valor: T;
 
-    // Información del nodo anterior
-    private anterior: NodoD | null;
+    // Información del nodo siguiente.
+    private siguiente: NodoD<T> | null;
+
+    // Información del nodo anterior.
+    private anterior: NodoD<T> | null;
+
+    // Dirección de memoria del nodo.
+    private direccionMemoria: string;
 
     /**
-     * Constructor de la clase Nodo Doble
-     * @param valor Valor a almacenar en el nodo
+     * Constructor de la clase Nodo Doble.
+     * @param valor Valor a almacenar en el nodo.
+     * @param id Identificador único del nodo (opcional).
+     * @param direccion Dirección de memoria del nodo (opcional).
      */
-    constructor(valor: number) {
+    constructor(valor: T, id?: string, direccion?: string) {
         this.valor = valor;
+        this.id = id ?? `node-${uuidv4()}`;
+        this.direccionMemoria = direccion ?? doubleNodeAddressGenerator.generateNextAddress();
         this.siguiente = null;
         this.anterior = null;
     }
 
     /**
-     * Método encargado de obtener la información almacenada en el nodo
-     * @returns valor almacenado en el nodo
+     * Método que obtiene la información almacenada en el nodo.
+     * @returns valor almacenado en el nodo.
      */
-    public getValor(): number {
+    public getValor(): T {
         return this.valor;
     }
 
     /**
-     * Método encargado de obtener el nodo siguiente
-     * @returns nodo siguiente o null según corresponda
+     * Método que obtiene la referencia al nodo siguiente.
+     * @returns Nodo siguiente o null según corresponda.
      */
-    public getSiguiente(): NodoD | null {
+    public getSiguiente(): NodoD<T> | null {
         return this.siguiente;
     }
 
     /**
-     * Método encargado de obtener el nodo anterior
-     * @returns nodo anterior o null según corresponda
+     * Método que obtiene la referencia al nodo anterior.
+     * @returns Nodo anterior o null según corresponda.
      */
-    public getAnterior(): NodoD | null {
+    public getAnterior(): NodoD<T> | null {
         return this.anterior;
     }
 
     /**
-     * Método encargado de establecer el valor del nodo
-     * @param valor Valor a establecer
+     * Método que obtiene el ID del nodo.
+     * @returns ID del nodo.
      */
-    public setValor(valor: number): void {
+    public getId(): string {
+        return this.id;
+    }
+
+    /**
+     * Método que obtiene la dirección de memoria del nodo.
+     * @returns Dirección de memoria del nodo.
+     */
+    public getDireccionMemoria(): string {
+        return this.direccionMemoria;
+    }
+
+    /**
+     * Método que establece el valor del nodo.
+     * @param valor Valor a establecer.
+     */
+    public setValor(valor: T): void {
         this.valor = valor;
     }
 
     /**
-     * Método encargado de establecer el nodo siguiente
-     * @param nodo Nodo a establecer como siguiente
+     * Método que establece la referencia al nodo siguiente.
+     * @param nodo Nodo a establecer como siguiente.
      */
-    public setSiguiente(nodo: NodoD | null): void {
+    public setSiguiente(nodo: NodoD<T> | null): void {
         this.siguiente = nodo;
     }
 
     /**
-     * Método encargado de establecer el nodo anterior
-     * @param nodo Nodo a establecer como anterior
+     * Método que establece la referencia al nodo anterior.
+     * @param nodo Nodo a establecer como anterior.
      */
-    public setAnterior(nodo: NodoD | null): void {
+    public setAnterior(nodo: NodoD<T> | null): void {
         this.anterior = nodo;
     }
+
 }

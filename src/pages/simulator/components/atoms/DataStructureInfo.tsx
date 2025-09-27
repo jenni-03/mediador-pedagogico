@@ -19,11 +19,15 @@ export function DataStructureInfo({
     <div className="flex-[4] flex flex-col rounded-3xl p-5 bg-[#1F1F22] border border-[#2E2E2E] text-[#E0E0E0] max-h-[500px] overflow-x-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
       <div
         data-tour="structure-info"
-        className="flex flex-col md:flex-row gap-4 items-start justify-between"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start"
       >
         {/* Info lateral izquierda en cards */}
         <div
-          className="flex flex-col gap-4 w-full max-w-xs"
+          className={`grid gap-4 md:col-span-1 ${
+            info.length > 2
+              ? "md:[grid-template-columns:repeat(2,minmax(200px,1fr))]"
+              : "md:grid-cols-1"
+          }`}
           data-tour="info-cards"
         >
           {info.map(
@@ -37,7 +41,13 @@ export function DataStructureInfo({
                       ? structurePrueba.getTamanio()
                       : item.key === "Número de slots"
                         ? structurePrueba.vector.length
-                        : "N/A";
+                        : item.key === "Peso"
+                          ? structurePrueba.getPeso()
+                          : item.key === "Altura"
+                            ? structurePrueba.getAltura()
+                            : item.key === "Hojas"
+                              ? structurePrueba.contarHojas()
+                              : "N/A";
 
               return (
                 <InfoModal
@@ -45,9 +55,9 @@ export function DataStructureInfo({
                   title={item.key}
                   description={item.description}
                 >
-                  <div className="flex items-center justify-between bg-gradient-to-br from-[#2B2B2F] to-[#1F1F22] hover:from-[#35353A] hover:to-[#2A2A2E] transition-all p-4 rounded-2xl shadow-md border border-[#3A3A3A] cursor-pointer">
+                  <div className="flex items-center justify-between bg-gradient-to-br from-[#2B2B2F] to-[#1F1F22] hover:from-[#35353A] hover:to-[#2A2A2E] transition-all p-3 rounded-2xl shadow-md border border-[#3A3A3A] cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="text-2xl">
+                      <div className="text-xl">
                         {item.key === "Tamaño"
                           ? "📏"
                           : item.key === "Capacidad"
@@ -63,9 +73,6 @@ export function DataStructureInfo({
                         </h3>
                       </div>
                     </div>
-                    <span className=" ml-4 text-[#D72638] text-sm font-semibold">
-                      Ver más
-                    </span>
                   </div>
                 </InfoModal>
               );
@@ -74,7 +81,8 @@ export function DataStructureInfo({
         </div>
 
         {/* Visualización de memoria */}
-        <div className="flex-[2]" data-tour="memory-visualization">
+        {/* <div className="flex-[2]" data-tour="memory-visualization"> */}
+        <div className="md:col-span-2" data-tour="memory-visualization">
           {memoryAddress && (
             <MemoryAllocationVisualizer
               n={
@@ -84,7 +92,9 @@ export function DataStructureInfo({
               }
               direccionBase={1000}
               tamanioNodo={
-                structure === "tabla_hash" ? 4 : structurePrueba.tamanioNodo
+                structure === "tabla_hash"
+                  ? 4
+                  : structurePrueba.getTamanioNodo()
               }
               direcciones={
                 structure === "secuencia"

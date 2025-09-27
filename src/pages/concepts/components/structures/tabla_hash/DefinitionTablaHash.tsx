@@ -12,7 +12,7 @@ export function DefinitionTablaHash() {
       {/* Título principal */}
       <div className="flex items-center gap-3 mb-2">
         <div className="h-8 w-2 rounded-xl bg-gradient-to-b from-red-600 via-red-500 to-red-700 shadow-lg"></div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wide drop-shadow-lg">
+        <h1 className="text-3xl font-extrabold tracking-wide drop-shadow-lg">
           Tabla Hash
         </h1>
       </div>

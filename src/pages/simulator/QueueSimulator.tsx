@@ -8,7 +8,7 @@ import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
 
 export function QueueSimulator() {
     // Instanciación de la estructura Cola
-    const structure = useRef(new Cola()).current;
+    const structure = useRef(new Cola<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {

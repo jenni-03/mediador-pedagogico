@@ -1,6 +1,7 @@
 export function OperationArbolBinario() {
   return (
-    <div className="bg-[#101012] text-white min-h-screen py-8 px-3 sm:px-10 max-w-4xl mx-auto">
+    // <div className="text-white py-8 px-3 sm:px-10 max-w-4xl mx-auto">
+    <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="h-7 w-2 rounded bg-red-600"></div>
