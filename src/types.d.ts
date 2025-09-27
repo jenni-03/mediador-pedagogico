@@ -185,6 +185,49 @@ export type SideBarProps = {
   setIsOpen: (open: boolean) => void;
 };
 
+/* ───────────────────── Heap: jerarquía para renderer (opcional) ───────────────────── */
+export type HeapHierarchy = {
+  id: string; // ej. "heap-0", "heap-1"
+  idNum: number; // índice entero (level-order)
+  priority: number; // clave usada para comparar
+  value?: number; // dato asociado (si difiere de priority)
+  children?: HeapHierarchy[];
+  isPlaceholder?: boolean;
+  index?: number; // alias de idNum si te viene mejor
+  meta?: { nIndex?: number };
+};
+
+/* ───────────────────── Heap: eventos para animación / fix-ups ───────────────────── */
+export type HeapSwapEvent = {
+  type: "swap";
+  aId: string; // id del nodo A
+  bId: string; // id del nodo B
+};
+
+export type HeapReplaceRootEvent = {
+  type: "replaceRoot";
+  rootId: string; // id del root previo
+  withId: string; // id del último nodo que sube
+};
+
+export type HeapReplaceNodeEvent = {
+  type: "replaceNode";
+  targetId: string; // id del nodo a reemplazar (no raíz)
+  withId: string; // id del nodo que toma su lugar (típicamente el último)
+  parentId?: string; // opcional: útil si quieres reajustar un solo link
+};
+
+// Unión canónica:
+export type HeapFixEvent =
+  | HeapSwapEvent
+  | HeapReplaceRootEvent
+  | HeapReplaceNodeEvent;
+
+export type HeapFixLog = HeapFixEvent[];
+
+/* Conveniencia (igual que hiciste con B/B+) */
+export type HeapQuery = BaseQueryOperations<"arbol_heap">;
+
 export type SideBarItemProps = {
   to: string;
   params: string;
@@ -241,143 +284,143 @@ export interface CardData {
 
 export type BaseQueryOperations<T extends string> = T extends "secuencia"
   ? {
-    create: number | null;
-    toAdd: number | null;
-    toDelete: number | null;
-    toGet: number | null;
-    toSearch: number | null;
-    toUpdate: [number, number] | [];
-  }
+      create: number | null;
+      toAdd: number | null;
+      toDelete: number | null;
+      toGet: number | null;
+      toSearch: number | null;
+      toUpdate: [number, number] | [];
+    }
   : T extends "cola"
-  ? {
-    toEnqueuedNode: string | null;
-    toDequeuedNode: string | null;
-    toGetFront: string | null;
-    toClear: boolean;
-  }
-  : T extends "tabla_hash"
-  ? {
-    create: (cap: number) => void;
-    set: (key: number, value: number) => void;
-    get: (key: number) => void;
-    delete: (key: number) => void;
-    clean: () => void;
-  }
-  : T extends "cola_de_prioridad"
-  ? {
-    toEnqueuedNode: string | null;
-    toDequeuedNode: string | null;
-    toGetFront: string | null;
-    toClear: boolean;
-  }
-  : T extends "pila"
-  ? {
-    toPushNode: string | null;
-    toPopNode: string | null;
-    toGetTop: string | null;
-    toClear: boolean;
-  }
-  : T extends "lista_enlazada"
-  ? {
-    toAddFirst: string | null;
-    toAddLast: string | null;
-    toAddAt: [string, number] | [];
-    toDeleteFirst: string | null;
-    toDeleteLast: string | null;
-    toDeleteAt: [string, number] | [];
-    toSearch: number | null;
-    toClear: boolean;
-  }
-  : T extends "arbol_binario"
-  ? {
-    toInsertLeft: string | null;
-    toInsertRight: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
-    toClear: boolean;
-  }
-  : T extends "arbol_binario_busqueda"
-  ? {
-    toInsert: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
-    toClear: boolean;
-  }
-  : T extends "arbol_avl"
-  ? {
-    toInsert: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
-    toClear: boolean;
-    avlTrace: OperationTrace<number> | null;
-  }
-  : T extends "arbol_rojinegro" | "arbol_rb"
-  ? {
-    /* Operaciones mutables */
-    toInsert: number | null; // insert(x)
-    toDelete: number | null; // delete(x)
+    ? {
+        toEnqueuedNode: string | null;
+        toDequeuedNode: string | null;
+        toGetFront: string | null;
+        toClear: boolean;
+      }
+    : T extends "tabla_hash"
+      ? {
+          create: (cap: number) => void;
+          set: (key: number, value: number) => void;
+          get: (key: number) => void;
+          delete: (key: number) => void;
+          clean: () => void;
+        }
+      : T extends "cola_de_prioridad"
+        ? {
+            toEnqueuedNode: string | null;
+            toDequeuedNode: string | null;
+            toGetFront: string | null;
+            toClear: boolean;
+          }
+        : T extends "pila"
+          ? {
+              toPushNode: string | null;
+              toPopNode: string | null;
+              toGetTop: string | null;
+              toClear: boolean;
+            }
+          : T extends "lista_enlazada"
+            ? {
+                toAddFirst: string | null;
+                toAddLast: string | null;
+                toAddAt: [string, number] | [];
+                toDeleteFirst: string | null;
+                toDeleteLast: string | null;
+                toDeleteAt: [string, number] | [];
+                toSearch: number | null;
+                toClear: boolean;
+              }
+            : T extends "arbol_binario"
+              ? {
+                  toInsertLeft: string | null;
+                  toInsertRight: string | null;
+                  toDelete: [string, string | null] | [];
+                  toSearch: number | null;
+                  toGetPreOrder: TraversalNodeType[] | [];
+                  toGetInOrder: TraversalNodeType[] | [];
+                  toGetPostOrder: TraversalNodeType[] | [];
+                  toGetLevelOrder: TraversalNodeType[] | [];
+                  toClear: boolean;
+                }
+              : T extends "arbol_binario_busqueda"
+                ? {
+                    toInsert: string | null;
+                    toDelete: [string, string | null] | [];
+                    toSearch: number | null;
+                    toGetPreOrder: TraversalNodeType[] | [];
+                    toGetInOrder: TraversalNodeType[] | [];
+                    toGetPostOrder: TraversalNodeType[] | [];
+                    toGetLevelOrder: TraversalNodeType[] | [];
+                    toClear: boolean;
+                  }
+                : T extends "arbol_avl"
+                  ? {
+                      toInsert: string | null;
+                      toDelete: [string, string | null] | [];
+                      toSearch: number | null;
+                      toGetPreOrder: TraversalNodeType[] | [];
+                      toGetInOrder: TraversalNodeType[] | [];
+                      toGetPostOrder: TraversalNodeType[] | [];
+                      toGetLevelOrder: TraversalNodeType[] | [];
+                      toClear: boolean;
+                      avlTrace: OperationTrace<number> | null;
+                    }
+                  : T extends "arbol_rojinegro" | "arbol_rb"
+                    ? {
+                        /* Operaciones mutables */
+                        toInsert: number | null; // insert(x)
+                        toDelete: number | null; // delete(x)
 
-    /* Consultas */
-    toSearch: number | null; // search(x)
+                        /* Consultas */
+                        toSearch: number | null; // search(x)
 
-    /* Recorridos */
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+                        /* Recorridos */
+                        toGetPreOrder: TraversalNodeType[] | [];
+                        toGetInOrder: TraversalNodeType[] | [];
+                        toGetPostOrder: TraversalNodeType[] | [];
+                        toGetLevelOrder: TraversalNodeType[] | [];
 
-    /* Limpieza */
-    toClear: boolean; // clear()
+                        /* Limpieza */
+                        toClear: boolean; // clear()
 
-    /* Fix-ups RB detectados en la última operación (opcional) */
-    rbFix?: {
-      rotations: RbRotation[]; // p.ej. [{dir:"left", pivotId:"n3"}]
-      recolors: RbRecolor[]; // p.ej. [{id:"n1", to:"black"}, ...]
-    } | null;
-  }
-  : T extends "arbol_nario"
-  ? {
-    /** Crear raíz si está vacío */
-    toCreateRoot: number | null;
+                        /* Fix-ups RB detectados en la última operación (opcional) */
+                        rbFix?: {
+                          rotations: RbRotation[]; // p.ej. [{dir:"left", pivotId:"n3"}]
+                          recolors: RbRecolor[]; // p.ej. [{id:"n1", to:"black"}, ...]
+                        } | null;
+                      }
+                    : T extends "arbol_nario"
+                      ? {
+                          /** Crear raíz si está vacío */
+                          toCreateRoot: number | null;
 
-    /** Insertar hijo: [parentId, value, index?]  ← parentId es string */
-    toInsertChild:
-    | []
-    | [parentId: string, value: number, index?: number];
+                          /** Insertar hijo: [parentId, value, index?]  ← parentId es string */
+                          toInsertChild:
+                            | []
+                            | [parentId: string, value: number, index?: number];
 
-    /** Eliminar nodo/subárbol por id */
-    toDeleteNode: string | null;
+                          /** Eliminar nodo/subárbol por id */
+                          toDeleteNode: string | null;
 
-    /** Mover subárbol: [id, newParentId, index?]  ← ids son string */
-    toMoveNode:
-    | []
-    | [id: string, newParentId: string, index?: number];
+                          /** Mover subárbol: [id, newParentId, index?]  ← ids son string */
+                          toMoveNode:
+                            | []
+                            | [id: string, newParentId: string, index?: number];
 
-    /** Actualizar valor de un nodo: [id, newValue]  ← id es string */
-    toUpdateValue: [] | [id: string, newValue: number];
+                          /** Actualizar valor de un nodo: [id, newValue]  ← id es string */
+                          toUpdateValue: [] | [id: string, newValue: number];
 
-    /** Buscar valor (por contenido) */
-    toSearch: number | null;
+                          /** Buscar valor (por contenido) */
+                          toSearch: number | null;
 
-    /** Recorridos */
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+                          /** Recorridos */
+                          toGetPreOrder: TraversalNodeType[] | [];
+                          toGetPostOrder: TraversalNodeType[] | [];
+                          toGetLevelOrder: TraversalNodeType[] | [];
 
-    /** Vaciar árbol completo */
-    toClear: boolean;
+                          /** Vaciar árbol completo */
+                          toClear: boolean;
                         }
                       : T extends "arbol_123" | "arbol_23"
                         ? {
@@ -433,161 +476,179 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
 
                                 /** Secuencias para la banda inferior (resultado que se dibuja) */
                                 toGetInOrder: TraversalNodeType[] | undefined;
-                                toGetLevelOrder: TraversalNodeType[] | undefined;
+                                toGetLevelOrder:
+                                  | TraversalNodeType[]
+                                  | undefined;
 
                                 /** Limpieza */
                                 toClear: boolean;
 
                                 /** Fix-ups para el renderer (opcional) */
                                 bPlusFix?: BPlusFixLog | null;
-        }
-  : T extends "arbol_heap"
-  ? {
-    toInsert: string | null;
-    toDeleteRoot: [string, string | null] | [];
-    toSearch: number | null;
-    toPeek: number | null;
-    toGetLevelOrder: TraversalNodeType[] | [];
-    toClear: boolean;
-    swapPath: string[];
-  }
-        : never; // Fallback para otros casos
+                              }
+                            : T extends "arbol_heap"
+                              ? {
+                                  /* Mutaciones */
+                                  toInsert: number | null; // payload insertado
+                                  insertedId?: string | null; // id del nodo que terminó con el payload
 
+                                  /** Resultado de eliminar (root o cualquier nodo) */
+                                  toDelete: number | null; // valor objetivo solicitado (para logs/UI)
+                                  deletedId?: string | null; // id realmente eliminado (snapshot)
+                                  deletedValue?: number | null; // valor eliminado (snapshot)
+                                  deletedIsRoot?: boolean; // marcamos si el target era la raíz
+                                  updatedRootId?: string | null; // id de la nueva raíz (si quedó alguna)
 
- // Fallback para otros casos
+                                  /* Consultas */
+                                  toSearch: number | null; // valor buscado
+                                  /** Si hay duplicados, puedes devolver todos los ids encontrados: */
+                                  searchResultIds?: string[] | null;
+
+                                  /* Único recorrido “lógico” del heap */
+                                  toGetLevelOrder: TraversalNodeType[] | [];
+
+                                  /* Limpieza */
+                                  toClear: boolean;
+
+                                  /* Animación determinista (insert/delete) */
+                                  heapFix?: HeapFixLog | null; // replaceNode + swaps en orden
+                                }
+                              : never; // Fallback para otros casos
+
+// Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
-    create: (n: number) => void;
-    insertLast: (element: number) => void;
-    delete: (element: number) => void;
-    get: (pos: number) => void;
-    search: (element: number) => void;
-    clean: () => void;
-    set: (pos: number, element: number) => void;
-  }
+      create: (n: number) => void;
+      insertLast: (element: number) => void;
+      delete: (element: number) => void;
+      get: (pos: number) => void;
+      search: (element: number) => void;
+      clean: () => void;
+      set: (pos: number, element: number) => void;
+    }
   : T extends "cola"
-  ? {
-    enqueue: (element: number) => void;
-    dequeue: () => void;
-    getFront: () => void;
-    clean: () => void;
-  }
-  : T extends "cola de prioridad"
-  ? {
-    enqueue: (element: number, priority: number) => void;
-    dequeue: () => void;
-    getFront: () => void;
-    clean: () => void;
-  }
-  : T extends "pila"
-  ? {
-    push: (element: number) => void;
-    pop: () => void;
-    getTop: () => void;
-    clean: () => void;
-  }
-  : T extends "lista_enlazada"
-  ? {
-    insertFirst: (element: number) => void;
-    insertLast: (element: number) => void;
-    insertAt: (element: number, pos: number) => void;
-    removeFirst: () => void;
-    removeLast: () => void;
-    removeAt: (pos: number) => void;
-    search: (element: number) => void;
-    clean: () => void;
-  }
-  : T extends "arbol_binario"
-  ? {
-    insertLeft: (parent: number, value: number) => void;
-    insertRight: (parent: number, value: number) => void;
-    delete: (nodeId: number) => void;
-    search: (value: number) => void;
-    getPreOrder: () => void;
-    getInOrder: () => void;
-    getPostOrder: () => void;
-    getLevelOrder: () => void;
-    clean: () => void;
-  }
-  : T extends "arbol_binario_busqueda"
-  ? {
-    insert: (value: number) => void;
-    delete: (nodeId: number) => void;
-    search: (value: number) => void;
-    getPreOrder: () => void;
-    getInOrder: () => void;
-    getPostOrder: () => void;
-    getLevelOrder: () => void;
-    clean: () => void;
-  }
-  : T extends "arbol_avl"
-  ? {
-    insert: (value: number) => void;
-    delete: (value: number) => void;
-    search: (value: number) => void;
-    getPreOrder: () => void;
-    getInOrder: () => void;
-    getPostOrder: () => void;
-    getLevelOrder: () => void;
-    clean: () => void;
-  }
-  : T extends "arbol_rojinegro"
-  ? {
-    insert: (value: number) => void; // inserta y hace fix-up RB
-    delete: (value: number) => void; // elimina y hace fix-up RB
-    search: (value: number) => void; // búsqueda BST
+    ? {
+        enqueue: (element: number) => void;
+        dequeue: () => void;
+        getFront: () => void;
+        clean: () => void;
+      }
+    : T extends "cola de prioridad"
+      ? {
+          enqueue: (element: number, priority: number) => void;
+          dequeue: () => void;
+          getFront: () => void;
+          clean: () => void;
+        }
+      : T extends "pila"
+        ? {
+            push: (element: number) => void;
+            pop: () => void;
+            getTop: () => void;
+            clean: () => void;
+          }
+        : T extends "lista_enlazada"
+          ? {
+              insertFirst: (element: number) => void;
+              insertLast: (element: number) => void;
+              insertAt: (element: number, pos: number) => void;
+              removeFirst: () => void;
+              removeLast: () => void;
+              removeAt: (pos: number) => void;
+              search: (element: number) => void;
+              clean: () => void;
+            }
+          : T extends "arbol_binario"
+            ? {
+                insertLeft: (parent: number, value: number) => void;
+                insertRight: (parent: number, value: number) => void;
+                delete: (nodeId: number) => void;
+                search: (value: number) => void;
+                getPreOrder: () => void;
+                getInOrder: () => void;
+                getPostOrder: () => void;
+                getLevelOrder: () => void;
+                clean: () => void;
+              }
+            : T extends "arbol_binario_busqueda"
+              ? {
+                  insert: (value: number) => void;
+                  delete: (nodeId: number) => void;
+                  search: (value: number) => void;
+                  getPreOrder: () => void;
+                  getInOrder: () => void;
+                  getPostOrder: () => void;
+                  getLevelOrder: () => void;
+                  clean: () => void;
+                }
+              : T extends "arbol_avl"
+                ? {
+                    insert: (value: number) => void;
+                    delete: (value: number) => void;
+                    search: (value: number) => void;
+                    getPreOrder: () => void;
+                    getInOrder: () => void;
+                    getPostOrder: () => void;
+                    getLevelOrder: () => void;
+                    clean: () => void;
+                  }
+                : T extends "arbol_rojinegro"
+                  ? {
+                      insert: (value: number) => void; // inserta y hace fix-up RB
+                      delete: (value: number) => void; // elimina y hace fix-up RB
+                      search: (value: number) => void; // búsqueda BST
 
-    getPreOrder: () => void;
-    getInOrder: () => void;
-    getPostOrder: () => void;
-    getLevelOrder: () => void;
+                      getPreOrder: () => void;
+                      getInOrder: () => void;
+                      getPostOrder: () => void;
+                      getLevelOrder: () => void;
 
-    clean: () => void; // reset total
-  }
-  : T extends "arbol_nario"
-  ? {
-    /** Crea la raíz si el árbol está vacío */
-    createRoot: (value: number) => void;
+                      clean: () => void; // reset total
+                    }
+                  : T extends "arbol_heap"
+                    ? {
+                        insert: (value: number) => void;
 
-    /** parentId es NUMÉRICO aquí */
-    insertChild: (
-      parentId: number,
-      value: number,
-      index?: number
-    ) => void;
+                        // delete general: por valor (número) o por id (string)
+                        delete: (target: number | { id: string }) => void;
 
-    /** ids numéricos */
-    deleteNode: (id: number) => void;
-
-    moveNode: (
-      id: number,
-      newParentId: number,
-      index?: number
-    ) => void;
-
-    updateValue: (id: number, newValue: number) => void;
-
-    search: (value: number) => void;
-
-                        getPreOrder: () => void;
-                        getPostOrder: () => void;
+                        search: (value: number) => void;
                         getLevelOrder: () => void;
-
                         clean: () => void;
                       }
-                    : T extends "arbol_123" | "arbol_23"
+                    : T extends "arbol_nario"
                       ? {
-                          insert: (value: number) => void;
-                          delete: (value: number) => void;
+                          /** Crea la raíz si el árbol está vacío */
+                          createRoot: (value: number) => void;
+
+                          /** parentId es NUMÉRICO aquí */
+                          insertChild: (
+                            parentId: number,
+                            value: number,
+                            index?: number
+                          ) => void;
+
+                          /** ids numéricos */
+                          deleteNode: (id: number) => void;
+
+                          moveNode: (
+                            id: number,
+                            newParentId: number,
+                            index?: number
+                          ) => void;
+
+                          updateValue: (id: number, newValue: number) => void;
+
                           search: (value: number) => void;
+
                           getPreOrder: () => void;
-                          getInOrder: () => void;
                           getPostOrder: () => void;
                           getLevelOrder: () => void;
+
                           clean: () => void;
                         }
-                      : T extends "arbol_b"
+                      : T extends "arbol_123" | "arbol_23"
                         ? {
                             insert: (value: number) => void;
                             delete: (value: number) => void;
@@ -598,25 +659,37 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
                             getLevelOrder: () => void;
                             clean: () => void;
                           }
-                        : T extends "arbol_b_plus"
+                        : T extends "arbol_b"
                           ? {
                               insert: (value: number) => void;
                               delete: (value: number) => void;
                               search: (value: number) => void;
-
-                              // Propios de B+
-                              range: (from: number, to: number) => void;
-                              scanFrom: (start: number, limit: number) => void;
-
-                              // Recorridos
+                              getPreOrder: () => void;
                               getInOrder: () => void;
+                              getPostOrder: () => void;
                               getLevelOrder: () => void;
-
                               clean: () => void;
                             }
-                          : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+                          : T extends "arbol_b_plus"
+                            ? {
+                                insert: (value: number) => void;
+                                delete: (value: number) => void;
+                                search: (value: number) => void;
 
+                                // Propios de B+
+                                range: (from: number, to: number) => void;
+                                scanFrom: (
+                                  start: number,
+                                  limit: number
+                                ) => void;
 
+                                // Recorridos
+                                getInOrder: () => void;
+                                getLevelOrder: () => void;
+
+                                clean: () => void;
+                              }
+                            : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 export type AnimationContextType = {
   isAnimating: boolean;
@@ -714,15 +787,15 @@ export type RotationStep = {
   BId?: string | null; // LL/RR y.right (LL) o y.left (RR)
   xLeftId?: string | null; // LR/RL x.left
   xRightId?: string | null; // LR/RL x.right
-}
+};
 
 export type OperationTrace<T> = {
   rotations: RotationStep[];
   hierarchies: {
     pre: HierarchyNodeData<T> | null;
     mids: HierarchyNodeData<T>[];
-  }
-}
+  };
+};
 
 export type AvlFrame = {
   root: HierarchyNode<HierarchyNodeData<number>>;
@@ -731,7 +804,7 @@ export type AvlFrame = {
     sourceId: string;
     targetId: string;
   }[];
-}
+};
 
 type TreeTraversalAnimOptions = {
   recolor?: boolean;

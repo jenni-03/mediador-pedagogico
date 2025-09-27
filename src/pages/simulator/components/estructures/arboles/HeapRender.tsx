@@ -1,7 +1,8 @@
+// src/shared/components/estructures/HeapRender.tsx
 import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
-import { useHeapTreeRender } from "../../../hooks/estructures/arbolHeap/useHeapTreeRender";
+import { useHeapRender } from "../../../hooks/estructures/arbolHeap/useHeapRender";
 
-export function HeapTreeRender({
+export function HeapRender({
   tree,
   query,
   resetQueryValues,
@@ -10,11 +11,11 @@ export function HeapTreeRender({
   query: BaseQueryOperations<"arbol_heap">;
   resetQueryValues: () => void;
 }) {
-  const { svgRef } = useHeapTreeRender(tree, query, resetQueryValues);
+  const { svgRef } = useHeapRender(tree, query, resetQueryValues);
 
   return (
     <div>
-      <svg id={`heap-tree-svg`} ref={svgRef}></svg>
+      <svg id="heap-tree-svg" ref={svgRef} />
     </div>
   );
 }

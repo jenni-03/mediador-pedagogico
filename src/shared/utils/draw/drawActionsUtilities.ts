@@ -706,7 +706,7 @@ export async function highlightTreePath(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @param opts Opciones para la animación del recorrido.
  */
-export async function animateTreeTraversal(
+export async function   animateTreeTraversal(
   treeG: Selection<SVGGElement, unknown, null, undefined>,
   seqG: Selection<SVGGElement, unknown, null, undefined>,
   targetNodes: TraversalNodeType[],
