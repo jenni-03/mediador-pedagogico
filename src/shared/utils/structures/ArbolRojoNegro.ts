@@ -31,6 +31,15 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
       throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
     }
 
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
+    this.lastRbTrace = {
+      actions: [],
+      hierarchies: {
+        bst: null,
+        mids: []
+      }
+    }
+
     // z nace como rojo
     const z = new NodoRB<T>(valor, "RED");
 
@@ -83,6 +92,15 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
       );
     }
 
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
+    this.lastRbTrace = {
+      actions: [],
+      hierarchies: {
+        bst: null,
+        mids: []
+      }
+    }
+
     let removed: NodoRB<T> | null = null;
     let updated: NodoRB<T> | null = null;
 
@@ -127,16 +145,8 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
       if (y.getIzq()) y.getIzq()!.setPadre(y);
 
       // Conservar color de z (para no alterar altura negra aquí)
-      y.setColor(z.getColor());
+      this.recolor(y, z.getColor(), "Nodo");
     }
-
-    this.lastRbTrace = {
-      actions: [],
-      hierarchies: {
-        bst: this.convertirEstructuraJerarquica(), // frame base para el hook
-        mids: []
-      }
-    };
 
     // Reparación de infracciones
     if (yOriginalColor === "BLACK") {
@@ -288,7 +298,6 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
    */
   private insertFixup(z: NodoRB<T>) {
     while (this.isRed(z.getPadre())) {
-      this.ensureRBTraceInit();
       const p = z.getPadre()!;
       const g = p.getPadre()!;
 
@@ -303,6 +312,9 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
           this.recolor(g, "RED", "Abuelo");
           z = g;
         } else {
+          // Capturar el estado pre-rotación
+          this.ensureRBTraceInit();
+
           // Caso 2: triángulo → rotación izquierda en padre
           if (z === p.getDer()) {
             const step: RotationStep = {
@@ -342,6 +354,9 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
           this.recolor(g, "RED", "Abuelo");
           z = g;
         } else {
+          // Capturar el estado pre-rotación
+          this.ensureRBTraceInit();
+
           // Caso 2: triángulo → rotación derecha en padre
           if (z === p.getIzq()) {
             const step: RotationStep = {
@@ -394,6 +409,9 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
 
       // Caso A - Hermano rojo
       if (this.isRed(w)) {
+        // Capturar el estado pre-rotación
+        this.ensureRBTraceInit();
+
         this.recolor(w, "BLACK", "Tío");
         this.recolor(p, "RED", "Padre");
 
@@ -435,6 +453,9 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
         xParent = p.getPadre();
         continue;
       }
+
+      // Capturar el estado pre-rotación
+      this.ensureRBTraceInit();
 
       // Caso C/D
       if (xEsIzq) {
@@ -724,17 +745,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que permite inicializar la traza para el seguimiento del estado del árbol Rojo-Negro.
+   * Método que permite inicializar la traza del estado del árbol Rojo-Negro luego de una inserción o eliminación como BST.
    */
   private ensureRBTraceInit() {
-    if (!this.lastRbTrace) {
-      this.lastRbTrace = {
-        actions: [],
-        hierarchies: {
-          bst: this.convertirEstructuraJerarquica(),
-          mids: []
-        }
-      }
+    if (this.lastRbTrace && !this.lastRbTrace.hierarchies.bst) {
+      this.lastRbTrace.hierarchies.bst = this.convertirEstructuraJerarquica();
     }
   }
 

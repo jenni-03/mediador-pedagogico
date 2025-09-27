@@ -2,26 +2,18 @@ import { useEffect, useMemo, useRef } from "react";
 import {
   BaseQueryOperations,
   HierarchyNodeData,
-  TraversalNodeType,
   TreeLinkData,
 } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import {
   animateClearTree,
-  animateTreeTraversal,
-  drawTraversalSequence,
   drawTreeLinks,
   drawTreeNodes,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import {
-  animateDeleteNode,
-  animateInsertNode,
-  animateSearchNode,
-} from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { computeSvgTreeMetrics } from "../../../../../shared/utils/treeUtils";
-import { hierarchy, type HierarchyNode, select, tree } from "d3";
+import { hierarchy, select, tree } from "d3";
 import {
   animateExtractRoot,
   animateInsertHeapNode,

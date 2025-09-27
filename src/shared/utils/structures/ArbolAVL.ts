@@ -31,6 +31,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
     }
 
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
     this.lastAvlTrace = {
       rotations: [],
       hierarchies: { pre: null, mids: [] }
@@ -50,6 +51,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   public override eliminar(valor: T): { removed: NodoAVL<T>; updated: NodoAVL<T> | null } {
     if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
 
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
     this.lastAvlTrace = {
       rotations: [],
       hierarchies: { pre: null, mids: [] }
@@ -283,6 +285,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     if (bf === 2) {
       const y = nodo.getIzq()!;
 
+      // Capturar el estado pre-rotación
       if (this.lastAvlTrace && !this.lastAvlTrace.hierarchies.pre) {
         this.lastAvlTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
       }
@@ -334,6 +337,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     if (bf === -2) {
       const y = nodo.getDer()!;
 
+      // Capturar el estado pre-rotación
       if (this.lastAvlTrace && !this.lastAvlTrace.hierarchies.pre) {
         this.lastAvlTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
       }

@@ -185,6 +185,14 @@ export async function animateRBInsertNode(
   // Elevamos la capa de nodos
   nodesLayer.raise();
 
+  // Si el nodo a insertar es el primero (nodo raíz), restablecemos su color a rojo
+  if (!insertionData.parentId) {
+    const newNodeG = treeG.select<SVGGElement>(`g#${insertionData.newNodeId}`);
+    newNodeG.select<SVGCircleElement>("circle.node-ring").attr("stroke", "url(#rbRingRed)");
+    newNodeG.select<SVGCircleElement>("circle.node-container")
+      .attr("fill", RB_COLORS.RED);
+  }
+
   // Animación de inserción del elemento como BST
   await animateBSTInsertCore(
     treeG,
@@ -416,27 +424,6 @@ export async function animateRBDeleteNode(
 
   // Reposicionamiento de los nodos y enlaces del árbol
   await repositionRBTree(treeG, currentNodes, currentLinks, positions);
-
-  // Conservar el color del nodo reposicionado para no alterar la altura negra en este punto (si aplica)
-  if (nodeToReposition) {
-    await showTreeHint(
-      svg,
-      { type: "node", id: nodeToReposition.data.id },
-      { label: `Colorear`, value: nodeToDelete.data.color === "black" ? `Nodo->Negro` : `Nodo->Rojo` },
-      positions,
-      treeOffset,
-      {
-        size: { width: 78, height: 35, radius: 10 },
-        typography: { labelFz: "9.8px", valueFz: "10px", labelFw: 700, valueFw: 700 },
-        anchor: { side: "below", dx: 10, dy: -8 },
-        palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
-      }
-    );
-
-    // Recoloreo del nodo reposicionado
-    const repositionG = treeG.select<SVGGElement>(`g#${nodeToReposition.data.id}`);
-    await recolorRBNode(repositionG, nodeToDelete.data.color === "black" ? "BLACK" : "RED");
-  }
 
   // Aplicación de recolores y rotaciones
   let frameCount = 1;

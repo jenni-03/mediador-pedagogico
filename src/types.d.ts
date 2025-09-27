@@ -363,69 +363,69 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
 
     /** Vaciar árbol completo */
     toClear: boolean;
-                        }
-                      : T extends "arbol_123" | "arbol_23"
-                        ? {
-                            /** Operaciones mutables */
-                            toInsert: number | null; // insert(x)
-                            toDelete: number | null; // delete(x)
+  }
+  : T extends "arbol_123" | "arbol_23"
+  ? {
+    /** Operaciones mutables */
+    toInsert: number | null; // insert(x)
+    toDelete: number | null; // delete(x)
 
-                            /** Consultas */
-                            toSearch: number | null; // search(x)
+    /** Consultas */
+    toSearch: number | null; // search(x)
 
-                            /** Recorridos (nota: cada key del nodo se emite como elemento de la secuencia) */
-                            toGetPreOrder: TraversalNodeType[] | [];
-                            toGetInOrder: TraversalNodeType[] | [];
-                            toGetPostOrder: TraversalNodeType[] | [];
-                            toGetLevelOrder: TraversalNodeType[] | [];
+    /** Recorridos (nota: cada key del nodo se emite como elemento de la secuencia) */
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
 
-                            /** Limpieza */
-                            toClear: boolean; // clear()
-                          }
-                        : T extends "arbol_b"
-                          ? {
-                              /** Mutaciones */
-                              toInsert: number | null; // insert(x)
-                              toDelete: number | null; // delete(x)
+    /** Limpieza */
+    toClear: boolean; // clear()
+  }
+  : T extends "arbol_b"
+  ? {
+    /** Mutaciones */
+    toInsert: number | null; // insert(x)
+    toDelete: number | null; // delete(x)
 
-                              /** Consultas */
-                              toSearch: number | null; // search(x)
+    /** Consultas */
+    toSearch: number | null; // search(x)
 
-                              /** Recorridos */
-                              toGetPreOrder: TraversalNodeType[] | [];
-                              toGetInOrder: TraversalNodeType[] | [];
-                              toGetPostOrder: TraversalNodeType[] | [];
-                              toGetLevelOrder: TraversalNodeType[] | [];
+    /** Recorridos */
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
 
-                              /** Limpieza */
-                              toClear: boolean; // clear()
+    /** Limpieza */
+    toClear: boolean; // clear()
 
-                              /** (Opcional) registro de fix-ups para el renderer */
-                              bFix?: BFixLog | null;
-                            }
-                          : T extends "arbol_bplus"
-                            ? {
-                                /** Mutaciones */
-                                toInsert: number | null;
-                                toDelete: number | null;
+    /** (Opcional) registro de fix-ups para el renderer */
+    bFix?: BFixLog | null;
+  }
+  : T extends "arbol_bplus"
+  ? {
+    /** Mutaciones */
+    toInsert: number | null;
+    toDelete: number | null;
 
-                                /** Consultas puntuales */
-                                toSearch: number | null;
+    /** Consultas puntuales */
+    toSearch: number | null;
 
-                                /** Parámetros para animar RANGE / SCAN FROM (solo args) */
-                                toGetRange: [] | [from: number, to: number];
-                                toScanFrom: [] | [start: number, limit: number];
+    /** Parámetros para animar RANGE / SCAN FROM (solo args) */
+    toGetRange: [] | [from: number, to: number];
+    toScanFrom: [] | [start: number, limit: number];
 
-                                /** Secuencias para la banda inferior (resultado que se dibuja) */
-                                toGetInOrder: TraversalNodeType[] | undefined;
-                                toGetLevelOrder: TraversalNodeType[] | undefined;
+    /** Secuencias para la banda inferior (resultado que se dibuja) */
+    toGetInOrder: TraversalNodeType[] | undefined;
+    toGetLevelOrder: TraversalNodeType[] | undefined;
 
-                                /** Limpieza */
-                                toClear: boolean;
+    /** Limpieza */
+    toClear: boolean;
 
-                                /** Fix-ups para el renderer (opcional) */
-                                bPlusFix?: BPlusFixLog | null;
-        }
+    /** Fix-ups para el renderer (opcional) */
+    bPlusFix?: BPlusFixLog | null;
+  }
   : T extends "arbol_heap"
   ? {
     toInsert: string | null;
@@ -436,10 +436,10 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
     toClear: boolean;
     swapPath: string[];
   }
-        : never; // Fallback para otros casos
+  : never; // Fallback para otros casos
 
 
- // Fallback para otros casos
+// Fallback para otros casos
 
 export type BaseStructureActions<T extends string> = T extends "secuencia"
   ? {
@@ -519,16 +519,23 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
   }
   : T extends "arbol_rojinegro"
   ? {
-    insert: (value: number) => void; // inserta y hace fix-up RB
-    delete: (value: number) => void; // elimina y hace fix-up RB
-    search: (value: number) => void; // búsqueda BST
-
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
     getPreOrder: () => void;
     getInOrder: () => void;
     getPostOrder: () => void;
     getLevelOrder: () => void;
-
-    clean: () => void; // reset total
+    clean: () => void;
+  }
+  : T extends "arbol_heap"
+  ? {
+    insert: insertElement,
+    deleteRoot: deleteRoot,
+    search: searchElement,
+    peek: peekRoot,
+    getLevelOrder,
+    clean: clearHeap,
   }
   : T extends "arbol_nario"
   ? {
@@ -555,51 +562,51 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
 
     search: (value: number) => void;
 
-                        getPreOrder: () => void;
-                        getPostOrder: () => void;
-                        getLevelOrder: () => void;
+    getPreOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
 
-                        clean: () => void;
-                      }
-                    : T extends "arbol_123" | "arbol_23"
-                      ? {
-                          insert: (value: number) => void;
-                          delete: (value: number) => void;
-                          search: (value: number) => void;
-                          getPreOrder: () => void;
-                          getInOrder: () => void;
-                          getPostOrder: () => void;
-                          getLevelOrder: () => void;
-                          clean: () => void;
-                        }
-                      : T extends "arbol_b"
-                        ? {
-                            insert: (value: number) => void;
-                            delete: (value: number) => void;
-                            search: (value: number) => void;
-                            getPreOrder: () => void;
-                            getInOrder: () => void;
-                            getPostOrder: () => void;
-                            getLevelOrder: () => void;
-                            clean: () => void;
-                          }
-                        : T extends "arbol_b_plus"
-                          ? {
-                              insert: (value: number) => void;
-                              delete: (value: number) => void;
-                              search: (value: number) => void;
+    clean: () => void;
+  }
+  : T extends "arbol_123" | "arbol_23"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_b"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_b_plus"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
 
-                              // Propios de B+
-                              range: (from: number, to: number) => void;
-                              scanFrom: (start: number, limit: number) => void;
+    // Propios de B+
+    range: (from: number, to: number) => void;
+    scanFrom: (start: number, limit: number) => void;
 
-                              // Recorridos
-                              getInOrder: () => void;
-                              getLevelOrder: () => void;
+    // Recorridos
+    getInOrder: () => void;
+    getLevelOrder: () => void;
 
-                              clean: () => void;
-                            }
-                          : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
+    clean: () => void;
+  }
+  : Record<string, (...args: unknown[]) => void>; // Fallback para otros casos
 
 
 
