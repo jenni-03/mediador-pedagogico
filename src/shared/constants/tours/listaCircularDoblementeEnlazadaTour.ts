@@ -2,7 +2,13 @@ import { TourStep } from "../typesTour";
 
 export function getListaCircularDoblementeEnlazadaTour(): TourStep[] {
   return [
-    // insertFirst
+    {
+      type: "info",
+      description:
+        "🔁 Flujo correcto: el **primer** `insertFirst(...)` **crea el objeto `le`**. Desde entonces **todas** las operaciones deben ir con el prefijo **`le.`**. Tras `le.clean()`, vuelve a ejecutar `insertFirst(...)` (sin prefijo) para **recrear `le`** y continúa con `le.`",
+    },
+
+    /* ─────────── Creación del objeto (primer insertFirst SIN prefijo) ─────────── */
     {
       id: "inputConsola",
       text: "insertFirst(10);",
@@ -10,164 +16,164 @@ export function getListaCircularDoblementeEnlazadaTour(): TourStep[] {
     },
     {
       id: "console",
-      description: `🧠 Este comando inserta el valor **10** al inicio de la lista circular doblemente enlazada.`,
+      description:
+        "🧠 Este primer `insertFirst(10)` **crea la lista circular doblemente enlazada** y su referencia se guarda en **`le`**. A partir de aquí usa **`le.`** en cada comando.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🔄 Como es el primer nodo, sus punteros anterior y siguiente apuntan a sí mismo, cerrando el ciclo.`,
+      description:
+        "🔄 Como es el primer nodo, sus punteros **prev** y **next** apuntan a sí mismo cerrando el ciclo.",
       type: "element",
     },
 
+    /* ─────────── Operaciones usando el prefijo `le.` ─────────── */
     // insertLast
     {
       id: "inputConsola",
-      text: "insertLast(20);",
+      text: "le.insertLast(20);",
       type: "write",
     },
     {
       id: "console",
-      description: `📌 Este comando añade el valor **20** al final de la lista.`,
+      description:
+        "📌 Añade **20** al final de la lista (manteniendo la circularidad).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🔁 Ahora **10** apunta a **20**, y **20** apunta a **10**. Ambos tienen referencias dobles, cerrando el ciclo.`,
+      description:
+        "🔁 Queda **10 ⇄ 20** y ambos mantienen el ciclo: `10.prev = 20`, `20.next = 10`.",
       type: "element",
     },
 
     // insertAt
     {
       id: "inputConsola",
-      text: "insertAt(15, 1);",
+      text: "le.insertAt(15, 1);",
       type: "write",
     },
     {
       id: "console",
-      description: `🧩 Inserta el valor **15** en la posición **1**, entre **10** y **20**.`,
+      description:
+        "🧩 Inserta **15** en la **posición 1** entre **10** y **20**, ajustando **prev/next** correctamente.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🔗 El nodo **15** fue insertado entre los otros dos. Las referencias dobles se ajustaron correctamente.`,
+      description:
+        "🔗 Queda **10 ⇄ 15 ⇄ 20** y `20.next = 10` para cerrar el ciclo.",
       type: "element",
     },
 
     // removeFirst
     {
       id: "inputConsola",
-      text: "removeFirst();",
+      text: "le.removeFirst();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧹 Elimina el primer nodo de la lista circular doble.`,
+      description:
+        "🧹 Elimina el **primer nodo** (actualiza cabeza y enlaces del último).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🧼 El nodo **10** fue eliminado. **15** pasa a ser el nuevo inicio del ciclo.`,
+      description:
+        "🧼 Se removió **10**. La nueva cabeza es **15**: **15 ⇄ 20** (circular).",
       type: "element",
     },
 
     // removeLast
     {
       id: "inputConsola",
-      text: "removeLast();",
+      text: "le.removeLast();",
       type: "write",
     },
     {
       id: "console",
-      description: `🗑️ Elimina el último nodo, actualizando el puntero anterior del nuevo final.`,
+      description:
+        "🗑️ Elimina el **último nodo** (se actualiza la cola y sus referencias).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🚮 El nodo **20** ha sido removido. Solo queda **15**, que apunta a sí mismo.`,
+      description:
+        "🚮 Se removió **20**. Queda un único nodo **15** que se enlaza consigo mismo en **prev** y **next**.",
       type: "element",
     },
 
     // removeAt
     {
       id: "inputConsola",
-      text: "removeAt(0);",
+      text: "le.removeAt(0);",
       type: "write",
     },
     {
       id: "console",
-      description: `❌ Elimina el nodo en la posición **0**, en este caso **15**.`,
+      description: "❌ Elimina el nodo en la **posición 0** (valor **15**).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `💥 Todos los nodos han sido eliminados. La lista está vacía.`,
+      description:
+        "💥 Todos los nodos han sido eliminados. La lista está **vacía**.",
       type: "element",
     },
 
     // search
     {
       id: "inputConsola",
-      text: "search(10);",
+      text: "le.search(10);",
       type: "write",
     },
     {
       id: "console",
-      description: `🔍 Busca el valor **10** recorriendo la lista circularmente.`,
+      description:
+        "🔍 Busca el valor **10** recorriendo la lista de forma circular (o reporta vacío).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🧐 Como la lista está vacía, no se encontró ningún nodo con valor **10**.`,
+      description:
+        "🧐 La lista está vacía, por lo que **no se encontró** ningún nodo con valor **10**.",
       type: "element",
     },
 
+    /* ─────────── Limpieza y recordatorio de recreación ─────────── */
     // clean
     {
       id: "inputConsola",
-      text: "clean();",
+      text: "le.clean();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧽 Este comando elimina todos los nodos y reinicia la lista a su estado vacío.`,
+      description:
+        "🧽 Elimina todos los nodos y reinicia la lista a su estado vacío. `le` queda sin elementos.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🪣 ¡Todo limpio! Tu lista circular doblemente enlazada está lista para comenzar desde cero.`,
+      description:
+        "🪣 ¡Todo limpio! Para **volver a usar** la estructura, ejecuta nuevamente **`insertFirst(...)`** (sin prefijo) para **recrear `le`** y continúa con **`le.`** en cada comando.",
       type: "element",
+    },
+
+    // Cierre
+    {
+      type: "info",
+      description:
+        "🎯 Resumen: primer `insertFirst(...)` crea `le`; luego todo con `le.`; tras `le.clean()` repite la creación con `insertFirst(...)` y sigue usando `le.`",
     },
   ];
 }

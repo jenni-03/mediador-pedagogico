@@ -2,16 +2,21 @@ import { TourStep } from "../typesTour";
 
 export function getArbolAVLTour(): TourStep[] {
   return [
-    // Introducción
+    // Introducción + flujo correcto
     {
       type: "info",
       description:
-        "🌲 Un **Árbol AVL** es un árbol binario de búsqueda **auto-balanceado**. Tras cada inserción/eliminación mantiene el **factor de balance (bf)** de cada nodo en {−1, 0, 1}. Si se desbalancea, aplica **rotaciones** automáticamente.",
+        "🌲 Un **Árbol AVL** es un ABB **auto-balanceado**: tras cada operación mantiene el **factor de balance (bf)** en {−1, 0, 1}. Si se desbalancea, aplica rotaciones **LL**, **RR**, **LR** o **RL** automáticamente.",
     },
     {
       type: "info",
       description:
-        "🧠 En el canvas verás etiquetas como **bf** (balance factor) y **h** (altura). Cuando bf sale del rango, el AVL se reequilibra con rotaciones **LL**, **RR**, **LR** o **RL**.",
+        "🧭 Flujo de uso: el **primer** `insert(valor)` **crea el objeto `arbolA`**. Desde entonces **todo** debe ir con el prefijo **`arbolA.`**. Tras `arbolA.clean()`, vuelve a ejecutar `insert(...)` (sin prefijo) para **recrear `arbolA`** y continúa con `arbolA.`",
+    },
+    {
+      type: "info",
+      description:
+        "🧠 En el canvas verás **bf** (balance factor) y **h** (altura). Cuando bf sale del rango, el AVL se reequilibra con la rotación correspondiente.",
     },
 
     // =============== DEMO ROTACIONES ===============
@@ -26,37 +31,41 @@ export function getArbolAVLTour(): TourStep[] {
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **30** como raíz.",
+      description:
+        "➕ Este primer `insert(30)` **crea** el AVL y su referencia queda en **`arbolA`**.",
     },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(20);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **20** a la izquierda de 30.",
+      description: "➕ Insertamos **20** (izquierda de 30).",
     },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(10);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(10);", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "➕ Insertamos **10** a la izquierda de 20. El nodo 30 queda desbalanceado (LL).",
+        "➕ Insertamos **10** (izquierda de 20). **30** queda desbalanceado (LL).",
     },
     { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
       description:
-        "🔁 Se aplica **rotación a la derecha** sobre 30. La nueva raíz pasa a ser **20** (con 10 como izq. y 30 como der.).",
+        "🔁 Rotación **a la derecha** sobre 30. Nueva raíz **20** (10 como izq., 30 como der.).",
     },
 
     // Limpieza
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolA.clean();", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "🧼 Limpiamos para el siguiente caso.",
+      description:
+        "🧼 AVL limpio. Para continuar, **recrea `arbolA`** con un nuevo `insert(...)` sin prefijo.",
     },
     { id: "inputConsola", type: "enter" },
 
@@ -70,37 +79,40 @@ export function getArbolAVLTour(): TourStep[] {
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **30** como raíz.",
+      description: "➕ `insert(30)` **recrea `arbolA`** con 30 como raíz.",
     },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(40);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(40);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **40** a la derecha de 30.",
+      description: "➕ Insertamos **40** (derecha de 30).",
     },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(50);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(50);", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "➕ Insertamos **50** a la derecha de 40. 30 se desbalancea (RR).",
+        "➕ Insertamos **50** (derecha de 40). **30** se desbalancea (RR).",
     },
     { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
       description:
-        "🔁 Se aplica **rotación a la izquierda** sobre 30. La nueva raíz pasa a ser **40** (30 a la izq., 50 a la der.).",
+        "🔁 Rotación **a la izquierda** sobre 30. Nueva raíz **40** (30 a la izq., 50 a la der.).",
     },
 
     // Limpieza
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolA.clean();", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "🧼 Limpiamos para el siguiente caso.",
+      description:
+        "🧼 Limpiamos para el siguiente caso. Recuerda recrear con `insert(...)` sin prefijo.",
     },
     { id: "inputConsola", type: "enter" },
 
@@ -108,39 +120,42 @@ export function getArbolAVLTour(): TourStep[] {
     {
       type: "info",
       description:
-        "🧪 **Caso LR** (hijo izquierdo derecho-pesado) → rotación doble: **izquierda en el hijo**, luego **derecha en el padre**.",
+        "🧪 **Caso LR** (hijo izquierdo derecho-pesado) → rotación **izquierda en el hijo** y luego **derecha en el padre**.",
     },
     { id: "inputConsola", text: "insert(30);", type: "write" },
     { id: "console", type: "element", description: "➕ Raíz **30**." },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(10);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(10);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **10** (izq. de 30).",
+      description: "➕ Insertamos **10** (izquierda de 30).",
     },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(20);", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "➕ Insertamos **20** (der. de 10). Se produce un **LR** en 30.",
+        "➕ Insertamos **20** (derecha de 10). Se produce **LR** en 30.",
     },
     { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
       description:
-        "🔁 Rotación doble **LR**: primero **izquierda en 10**, luego **derecha en 30**. La raíz queda en **20**.",
+        "🔁 Rotación doble **LR**: primero **izquierda en 10**, luego **derecha en 30**. Raíz final **20**.",
     },
 
     // Limpieza
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolA.clean();", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "🧼 Limpiamos para el siguiente caso.",
+      description:
+        "🧼 Limpiamos para el último caso. Recrea con `insert(...)` sin prefijo.",
     },
     { id: "inputConsola", type: "enter" },
 
@@ -148,39 +163,42 @@ export function getArbolAVLTour(): TourStep[] {
     {
       type: "info",
       description:
-        "🧪 **Caso RL** (hijo derecho izquierdo-pesado) → rotación doble: **derecha en el hijo**, luego **izquierda en el padre**.",
+        "🧪 **Caso RL** (hijo derecho izquierdo-pesado) → rotación **derecha en el hijo** y luego **izquierda en el padre**.",
     },
     { id: "inputConsola", text: "insert(30);", type: "write" },
     { id: "console", type: "element", description: "➕ Raíz **30**." },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(50);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(50);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **50** (der. de 30).",
+      description: "➕ Insertamos **50** (derecha de 30).",
     },
     { id: "inputConsola", type: "enter" },
-    { id: "inputConsola", text: "insert(40);", type: "write" },
+
+    { id: "inputConsola", text: "arbolA.insert(40);", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "➕ Insertamos **40** (izq. de 50). Se produce un **RL** en 30.",
+        "➕ Insertamos **40** (izquierda de 50). Se produce **RL** en 30.",
     },
     { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
       description:
-        "🔁 Rotación doble **RL**: primero **derecha en 50**, luego **izquierda en 30**. La raíz queda en **40**.",
+        "🔁 Rotación doble **RL**: primero **derecha en 50**, luego **izquierda en 30**. Raíz final **40**.",
     },
 
     // Limpieza para construir árbol final
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolA.clean();", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "🧼 Limpiamos para construir un AVL más completo.",
+      description:
+        "🧼 Limpiamos para construir un AVL más completo. Recrea con `insert(...)` sin prefijo.",
     },
     { id: "inputConsola", type: "enter" },
 
@@ -188,33 +206,33 @@ export function getArbolAVLTour(): TourStep[] {
     {
       type: "info",
       description:
-        "🏗️ Ahora construiremos un AVL equilibrado con varias inserciones (rebalances automáticos si son necesarios).",
+        "🏗️ Construyamos un AVL equilibrado con varias inserciones (el AVL se reequilibra automáticamente cuando haga falta).",
     },
     { id: "inputConsola", text: "insert(31);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **31** (raíz).",
+      description: "➕ `insert(31)` **recrea `arbolA`** (raíz).",
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(20);", type: "write" },
+    { id: "inputConsola", text: "arbolA.insert(20);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **20** (izq. de 31).",
+      description: "➕ Insertamos **20** (subárbol izquierdo).",
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(40);", type: "write" },
+    { id: "inputConsola", text: "arbolA.insert(40);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **40** (der. de 31).",
+      description: "➕ Insertamos **40** (subárbol derecho).",
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(10);", type: "write" },
+    { id: "inputConsola", text: "arbolA.insert(10);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -222,7 +240,7 @@ export function getArbolAVLTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(30);", type: "write" },
+    { id: "inputConsola", text: "arbolA.insert(30);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -231,11 +249,11 @@ export function getArbolAVLTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "insert(41);", type: "write" },
+    { id: "inputConsola", text: "arbolA.insert(41);", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "➕ Insertamos **41** (der. de 40). Árbol equilibrado.",
+      description: "➕ Insertamos **41** (derecha de 40). Árbol equilibrado.",
     },
     { id: "inputConsola", type: "enter" },
     {
@@ -246,7 +264,7 @@ export function getArbolAVLTour(): TourStep[] {
     },
 
     // =============== SEARCH + DELETE (con rebalanceo) ===============
-    { id: "inputConsola", text: "search(30);", type: "write" },
+    { id: "inputConsola", text: "arbolA.search(30);", type: "write" },
     {
       id: "console",
       type: "element",
@@ -259,23 +277,23 @@ export function getArbolAVLTour(): TourStep[] {
       description: "✅ El nodo **30** se resalta si existe.",
     },
 
-    { id: "inputConsola", text: "delete(20);", type: "write" },
+    { id: "inputConsola", text: "arbolA.delete(20);", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "🗑️ Eliminamos **20**. El AVL reorganiza sus enlaces y **rebalancea** si fuera necesario.",
+        "🗑️ Eliminamos **20**. El AVL reorganiza enlaces y **rebalancea** si es necesario.",
     },
     { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
       description:
-        "🔁 Tras la eliminación, observa cómo **bf** vuelve a estar en {−1, 0, 1}.",
+        "🔁 Tras la eliminación, observa cómo **bf** vuelve al rango {−1, 0, 1}.",
     },
 
     // =============== RECORRIDOS ===============
-    { id: "inputConsola", text: "getPreOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolA.getPreOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -283,16 +301,16 @@ export function getArbolAVLTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getInOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolA.getInOrder();", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "🔄 **Inorden**: izquierda → nodo → derecha (ordena los valores).",
+        "🔄 **Inorden**: izquierda → nodo → derecha (devuelve los valores **ordenados**).",
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getPostOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolA.getPostOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -300,7 +318,7 @@ export function getArbolAVLTour(): TourStep[] {
     },
     { id: "inputConsola", type: "enter" },
 
-    { id: "inputConsola", text: "getLevelOrder();", type: "write" },
+    { id: "inputConsola", text: "arbolA.getLevelOrder();", type: "write" },
     {
       id: "console",
       type: "element",
@@ -310,11 +328,12 @@ export function getArbolAVLTour(): TourStep[] {
     { id: "inputConsola", type: "enter" },
 
     // =============== CLEAN ===============
-    { id: "inputConsola", text: "clean();", type: "write" },
+    { id: "inputConsola", text: "arbolA.clean();", type: "write" },
     {
       id: "console",
       type: "element",
-      description: "🧽 Limpiamos el árbol AVL por completo.",
+      description:
+        "🧽 Limpiamos el árbol AVL por completo. Para recrearlo, ejecuta **`insert(valor)`** (sin prefijo) y continúa con **`arbolA.`**",
     },
     { id: "inputConsola", type: "enter" },
     {

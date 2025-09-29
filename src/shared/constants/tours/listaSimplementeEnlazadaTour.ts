@@ -3,13 +3,18 @@ import { TourStep } from "../typesTour";
 export function getListaSimplementeEnlazadaTour(): TourStep[] {
   return [
     {
-      id: "console",
+      type: "info",
       description:
-        "🧪 Usaremos esta consola para ejecutar comandos en la **Lista Simplemente Enlazada**. Aquí ocurre toda la magia 🪄.",
-      type: "element",
+        "🧪 Usaremos la consola para ejecutar comandos en la **Lista Simplemente Enlazada**. Importante: el **primer** `insertFirst(...)` **crea el objeto `le`**. Desde ese punto, **todos** los comandos deben empezar por **`le.`**. Si limpias la lista con `le.clean()`, **vuelve a ejecutar** `insertFirst(...)` para recrear `le` y continúa con `le.`",
     },
 
-    // insertFirst
+    /* ─────────── Creación del objeto (primer insertFirst SIN prefijo) ─────────── */
+    {
+      id: "console",
+      description:
+        "🧪 Esta es la consola donde escribiremos los comandos de la **Lista Simplemente Enlazada**.",
+      type: "element",
+    },
     {
       id: "inputConsola",
       text: "insertFirst(5);",
@@ -18,63 +23,55 @@ export function getListaSimplementeEnlazadaTour(): TourStep[] {
     {
       id: "console",
       description:
-        "🧠 Este comando inserta el número **5** al **inicio de la lista**. Es ideal para construir desde la cabeza.",
+        "🧠 Este primer `insertFirst(5)` **crea la lista** y su referencia se guarda en el objeto **`le`**. A partir de ahora usa **`le.`** en cada comando.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "🎨 Aquí ves el nodo recién insertado. En una lista simplemente enlazada, cada nodo apunta al siguiente formando una cadena.",
+        "🎨 Se muestra el nodo inicial (valor **5**). En una lista simplemente enlazada, cada nodo apunta al siguiente formando una cadena.",
       type: "element",
     },
 
+    /* ─────────── Operaciones usando el prefijo `le.` ─────────── */
     // insertLast
     {
       id: "inputConsola",
-      text: "insertLast(10);",
+      text: "le.insertLast(10);",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🔚 Este comando añade un nuevo nodo con valor **10** al **final de la lista**.",
+        "🔚 Añade un nodo con valor **10** al **final** de la lista.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "🧵 Ahora el primer nodo apunta al segundo. ¡Has creado una cadena de nodos enlazados!",
+        "🧵 El primer nodo ahora apunta al segundo. ¡La cadena crece!",
       type: "element",
     },
 
     // insertAt
     {
       id: "inputConsola",
-      text: "insertAt(7, 1);",
+      text: "le.insertAt(7, 1);",
       type: "write",
     },
     {
       id: "console",
       description:
-        "📌 Con este comando insertamos el número **7** en la **posición 1**, desplazando los elementos hacia la derecha.",
+        "📌 Inserta el número **7** en la **posición 1**, reajustando punteros.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "🔄 Fíjate cómo se reordenan los punteros para enlazar correctamente los nodos.",
+        "🔄 Observa cómo se reordenan los enlaces para mantener la integridad de la cadena.",
       type: "element",
     },
 
@@ -82,99 +79,84 @@ export function getListaSimplementeEnlazadaTour(): TourStep[] {
     {
       id: "memory-visualization",
       description:
-        "🧠 En esta sección se simula cómo se almacenan los nodos en memoria. Esto ayuda a entender la dinámica de las referencias.",
+        "🧠 Aquí se simula cómo se almacenan los nodos en memoria y cómo las referencias conectan la estructura.",
       type: "element",
     },
 
     // search
     {
       id: "inputConsola",
-      text: "search(10);",
+      text: "le.search(10);",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🔍 Este comando busca el valor **10** dentro de la lista. El nodo será resaltado si se encuentra.",
+        "🔍 Busca el valor **10** dentro de la lista. Si existe, se resaltará su nodo.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description:
-        "🔎 Se ha resaltado el nodo **10**, indicando que fue encontrado correctamente.",
+      description: "🔎 El nodo **10** fue encontrado y resaltado.",
       type: "element",
     },
 
     // removeFirst
     {
       id: "inputConsola",
-      text: "removeFirst();",
+      text: "le.removeFirst();",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🚫 Aquí eliminamos el **primer nodo** de la lista. El nodo cabeza se actualiza automáticamente.",
+        "🚫 Elimina el **primer nodo**. La cabeza se actualiza automáticamente.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "❌ El nodo con valor **5** fue eliminado. Ahora **7** es el nuevo primer nodo.",
+        "❌ El nodo con valor **5** fue eliminado. **7** es la nueva cabeza.",
       type: "element",
     },
 
     // removeLast
     {
       id: "inputConsola",
-      text: "removeLast();",
+      text: "le.removeLast();",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🧹 Elimina el **último nodo** de la lista. Se recorre hasta encontrar el penúltimo para actualizar su referencia.",
+        "🧹 Elimina el **último nodo**. Se localiza el penúltimo para actualizar su referencia.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description:
-        "🧼 El nodo **10** ha sido eliminado. Solo queda **7** en la lista.",
+      description: "🧼 El nodo **10** fue eliminado. Permanece **7**.",
       type: "element",
     },
 
     // removeAt
     {
       id: "inputConsola",
-      text: "removeAt(0);",
+      text: "le.removeAt(0);",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🎯 Elimina el nodo en la **posición indicada**, en este caso el nodo con valor **7**.",
+        "🎯 Elimina el nodo en la **posición 0**; en este caso, el nodo **7**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description:
-        "💀 El nodo **7** fue eliminado. La lista está vacía nuevamente.",
+      description: "💀 El nodo **7** fue eliminado. La lista ha quedado vacía.",
       type: "element",
     },
 
@@ -182,31 +164,36 @@ export function getListaSimplementeEnlazadaTour(): TourStep[] {
     {
       id: "info-cards",
       description:
-        "📦 Aquí puedes observar el **tamaño actual de la lista**. Este se actualiza automáticamente tras cada operación.",
+        "📦 Aquí ves el **tamaño actual** de la lista. Se actualiza en cada operación.",
       type: "element",
     },
 
+    /* ─────────── Limpieza y recordatorio de recreación ─────────── */
     // clean
     {
       id: "inputConsola",
-      text: "clean();",
+      text: "le.clean();",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🗑️ Este comando borra completamente la lista, liberando todos los nodos.",
+        "🗑️ Limpia por completo la lista, liberando todos los nodos.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "🌑 Y así, la lista queda vacía. ¡Listo para empezar de nuevo con una estructura limpia!",
+        "🌑 La lista queda vacía. Para **volver a usarla**, ejecuta **`insertFirst(...)`** (sin prefijo) para **recrear `le`** y después continúa con **`le.`** en cada comando.",
       type: "element",
+    },
+
+    /* ─────────── Cierre ─────────── */
+    {
+      type: "info",
+      description:
+        "🎯 ¡Listo! Ya dominas las operaciones clave de una **Lista Simplemente Enlazada** usando el flujo correcto: primer `insertFirst(...)` crea `le`; luego, todo con `le.`; tras `le.clean()`, repite `insertFirst(...)` y continúa.",
     },
   ];
 }
