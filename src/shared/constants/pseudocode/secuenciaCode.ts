@@ -32,19 +32,26 @@ export const getSecuenciaCode = (): OperationCode => ({
   ],
   get: [
     `/**
- * Método que permite obtener un elemento dentro de la secuecia dada su posición.
+ * Método que permite obtener un elemento dentro de la secuencia dada su posición.
  * post: Se ha retornado el elemento de la secuencia en la posición especificada.
  * @param i es de tipo integer y corresponde a la posición del elemento en la secuencia.
- * @return un tipo T correspondiente al valor del elemento.
+ * @return un tipo T correspondiente al valor del elemento, o null si la posición es inválida.
  */`,
-    `public T get(int i){`,
-    `    if (i < 0 || i > this.cant) {`,
-    `        System.err.println("Indíce fuera de rango!");`,
+    `public T get(int i) {`,
+    `    if (this.cant == 0) {`,
+    `        System.err.println("La secuencia está vacía (tamaño actual: 0), debe crear la secuencia primero.");`,
+    `        return null;`,
+    `    }`,
+    `    if (i < 0 || i >= this.cant) {`,
+    `        System.err.println("Posición inválida: se intentó acceder a la posición " + i + `,
+    `            ", pero el rango válido es de 0 a " + (this.cant - 1) + `,
+    `            ", ya que su tamaño es " + this.getTamanio() + ".");`,
     `        return null;`,
     `    }`,
     `    return this.vector[i];`,
     `}`,
   ],
+
   set: [
     `/**
  * Método que permite cambiar un elemento de la secuencia en la posición indicada por otro.

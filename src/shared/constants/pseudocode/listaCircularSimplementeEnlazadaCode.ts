@@ -1,182 +1,208 @@
 import { OperationCode } from "./typesPseudoCode";
 
 export const getListaCircularSimplementeEnlazadaCode = (): OperationCode => ({
- insertFirst: [
-            `/**
- * Método que permite insertar un nodo al inicio de la lista.
- * post: Se insertó un nuevo nodo al inicio de la lista.
- * @param info es de tipo T y corresponde a la información a almacenar en la lista.
+  insertFirst: [
+    `/**
+ * Método que inserta un nuevo elemento al inicio de la lista circular simple.
+ * @param valor Elemento a insertar.
+ * @return Nodo inicial insertado.
  */`,
-            `public void insertarAlInicio(T info){`,
-            `    NodoD<T>nuevoNodo = new NodoD(info);`,
-            `    if (this.esVacia()) {`,
-            `        this.cabeza = nuevoNodo;`,
-            `        nuevoNodo.setSig(nuevoNodo);`,
-            `        nuevoNodo.setAnt(nuevoNodo);`,
-            `    } else {`,
-            `        NodoD<T>utlimoNodo = this.cabeza.getAnt();`,
-            `        nuevoNodo.setSig(this.cabeza);`,
-            `        nuevoNodo.setAnt(ultimoNodo);`,
-            `        this.cabeza.setAnt(nuevoNodo);`,
-            `        ultimoNodo.setSig(nuevoNodo);`,
-            `        this.cabeza = nuevoNodo;`,
-            `    }`,
-            `    this.tamanio++;`,
-            `}`
-        ],
-        insertLast: [
-            `/**
- * Método que permite insertar un nodo al final de la lista.
- * post: Se insertó un nuevo nodo al final de la lista.
- * @param info es de tipo T y corresponde la información a almacenar en la lista. 
+    `public NodoS<T> insertarAlInicio(T valor) {`,
+    `    if (this.tamanio >= this.MAX_TAMANIO)`,
+    `        throw new RuntimeException("No fue posible insertar el nodo al inicio: Cantidad de nodos máxima alcanzada (tamaño máximo: " + this.MAX_TAMANIO + ").");`,
+    ``,
+    `    NodoS<T> nuevoNodo = new NodoS<>(valor);`,
+    ``,
+    `    if (this.esVacia()) {`,
+    `        this.cabeza = nuevoNodo;`,
+    `        this.cola = nuevoNodo;`,
+    `        nuevoNodo.setSiguiente(nuevoNodo);`,
+    `    } else {`,
+    `        nuevoNodo.setSiguiente(this.cabeza);`,
+    `        this.cola.setSiguiente(nuevoNodo);`,
+    `        this.cabeza = nuevoNodo;`,
+    `    }`,
+    ``,
+    `    this.tamanio++;`,
+    `    return nuevoNodo;`,
+    `}`,
+  ],
+
+  insertLast: [
+    `/**
+ * Método que inserta un nuevo elemento al final de la lista circular simple.
+ * @param valor Elemento a insertar.
+ * @return Nodo final insertado.
  */`,
-            `public void insertarAlFinal(T info){`,
-            `    NodoD<T>nuevoNodo = new NodoD(info);`,
-            `    if (this.esVacia()) {`,
-            `        this.cabeza = nuevoNodo;`,
-            `        nuevoNodo.setSig(nuevoNodo);`,
-            `        nuevoNodo.setAnt(nuevoNodo);`,
-            `    } else {`,
-            `        NodoD<T>utlimoNodo = this.cabeza.getAnt();`,
-            `        ultimoNodo.setSig(nuevoNodo);`,
-            `        this.cabeza.setAnt(nuevoNodo);`,
-            `        nuevoNodo.setSig(this.cabeza);`,
-            `        nuevoNodo.setAnt(ultimoNodo);`,
-            `    }`,
-            `    this.tamanio++;`,
-            `}`
-        ],
-        insertAt: [
-            `/**
- * Método que permite insertar un nodo en una posición especifica de la lista.
- * post: Se insertó un nuevo nodo en la posición especificada.
- * @param info es de tipo T y corresponde a la información a almacenar en la lista.
- * @param pos es de tipo integer y corresponde a la posición de inserción.
+    `public NodoS<T> insertarAlFinal(T valor) {`,
+    `    if (this.tamanio >= this.MAX_TAMANIO)`,
+    `        throw new RuntimeException("No fue posible insertar el nodo al final: Cantidad de nodos máxima alcanzada (tamaño máximo: " + this.MAX_TAMANIO + ").");`,
+    ``,
+    `    NodoS<T> nuevoNodo = new NodoS<>(valor);`,
+    ``,
+    `    if (this.esVacia()) {`,
+    `        this.cabeza = nuevoNodo;`,
+    `        this.cola = nuevoNodo;`,
+    `        nuevoNodo.setSiguiente(nuevoNodo);`,
+    `    } else {`,
+    `        this.cola.setSiguiente(nuevoNodo);`,
+    `        nuevoNodo.setSiguiente(this.cabeza);`,
+    `        this.cola = nuevoNodo;`,
+    `    }`,
+    ``,
+    `    this.tamanio++;`,
+    `    return nuevoNodo;`,
+    `}`,
+  ],
+
+  insertAt: [
+    `/**
+ * Método que inserta un nuevo elemento en una posición específica de la lista circular simple.
+ * @param valor Elemento a insertar.
+ * @param posicion Posición en la que se desea insertar el elemento.
+ * @return Nodo insertado en la posición especificada.
  */`,
-            `public void insertarEnPosicion(T info, int pos){`,
-            `    if (pos < 0 || pos > this.tamanio) {`,
-            `        System.err.println("Posición de inserción no válida!");`,
-            `        return;`,
-            `    }`,
-            `    if (pos == 0) {`,
-            `        this.insertarAlInicio(info);`,
-            `    }`,
-            `    if (pos == this.tamanio) {`,
-            `        this.insertarAlFinal(info);`,
-            `    }`,
-            `    NodoD<T>nuevoNodo = new NodoD(info);`,
-            `    NodoD<T>nodoAnt = this.getPos(pos - 1);`,
-            `    nuevoNodo.setSig(nodoAnt.getSig());`,
-            `    nuevoNodo.setAnt(nodoAnt);`,
-            `    nodoAnt.getSig().setAnt(nuevoNodo);`,
-            `    nodoAnt.setSig(nuevoNodo);`,
-            `    this.tamanio++;`,
-            `}`
-        ],
-        removeFirst: [
-            `/**
- * Método que permite remover el nodo inicial de la lista.
- * post: Se eliminó el nodo inicial de la lista.
+    `public NodoS<T> insertarEnPosicion(T valor, int posicion) {`,
+    `    if (posicion < 0 || posicion > this.tamanio)`,
+    `        throw new RuntimeException("No fue posible insertar el nodo en la posición especificada: La posición " + posicion + " no existe dentro de la Lista Simple.");`,
+    ``,
+    `    if (this.tamanio >= this.MAX_TAMANIO)`,
+    `        throw new RuntimeException("No fue posible insertar el nodo en la posición especificada: Cantidad de nodos máxima alcanzada (tamaño máximo: " + this.MAX_TAMANIO + ").");`,
+    ``,
+    `    if (posicion == 0)`,
+    `        return this.insertarAlInicio(valor);`,
+    ``,
+    `    if (posicion == this.tamanio)`,
+    `        return this.insertarAlFinal(valor);`,
+    ``,
+    `    NodoS<T> nuevoNodo = new NodoS<>(valor);`,
+    `    NodoS<T> nodoAnt = this.getPos(posicion - 1);`,
+    ``,
+    `    nuevoNodo.setSiguiente(nodoAnt.getSiguiente());`,
+    `    nodoAnt.setSiguiente(nuevoNodo);`,
+    ``,
+    `    this.tamanio++;`,
+    `    return nuevoNodo;`,
+    `}`,
+  ],
+
+  removeFirst: [
+    `/**
+ * Método que elimina el primer nodo de la lista circular simple.
+ * @return Nodo inicial eliminado.
  */`,
-            `public void removerAlInicio(){`,
-            `    if (this.esVacia()) {`,
-            `        System.err.println("Lista vacía!");`,
-            `        return;`,
-            `    }`,
-            `    if (this.cabeza.getSig() == this.cabeza) {`,
-            `        this.cabeza = null;`,
-            `    } else {`,
-            `        NodoD<T>newHead = this.cabeza.getSig();`,
-            `        NodoD<T>tail = this.cabeza.getAnt();`,
-            `        this.cabeza.setSig(null);`,
-            `        this.cabeza.setAnt(null);`,
-            `        tail.setSig(newHead);`,
-            `        newHead.setAnt(tail);`,
-            `        this.cabeza = newHead;`,
-            `    }`,
-            `    this.tamanio--;`,
-            `}`
-        ],
-        removeLast: [
-            `/**
- * Método que permite remover el nodo final de la lista.
- * post: Se eliminó el nodo final de la lista.
- */`,
-            `public void removerAlFinal(){`,
-            `    if (this.esVacia()) {`,
-            `        System.err.println("Lista vacía!");`,
-            `        return;`,
-            `    }`,
-            `    NodoD<T>ultimo = this.cabeza.getAnt();`,
-            `    if (this.cabeza == ultimo) {`,
-            `        this.cabeza = null;`,
-            `    } else {`,
-            `        NodoD<T>nuevoUltimo = ultimo.getAnt();`,
-            `        nuevoUltimo.setSig(this.cabeza);`,
-            `        this.cabeza.setAnt(nuevoUltimo);`,
-            `        ultimo.setSig(null);`,
-            `        ultimo.setAnt(null);`,
-            `    }`,
-            `    this.tamanio--;`,
-            `}`
-        ],
-        removeAt: [
-            `/**
- * Método que permite eliminar un nodo dada su posición.
- * post: Se eliminó el nodo en la posicion especificada.
- * @param pos es de tipo integer y corresponde a la posición del nodo a eliminar.
- */`,
-            `public void removerEnPosición(int pos){`,
-            `    if (this.esVacia()) {`,
-            `        System.err.println("Lista vacía!");`,
-            `        return;`,
-            `    }`,
-            `    if (pos < 0 || pos >= this.tamanio) {`,
-            `        System.err.println("Posición de eliminación no válida!");`,
-            `        return;`,
-            `    }`,
-            `    if (pos == 0) {`,
-            `        this.removerAlInicio();`,
-            `    }`,
-            `    if (pos == this.tamanio - 1) {`,
-            `        this.removerAlFinal();`,
-            `    }`,
-            `    NodoD<T>nodoEliminado = this.getPos(pos);`,
-            `    nodoEliminado.getAnt().setSig(nodoEliminado.getSig());`,
-            `    nodoEliminado.getSig().setAnt(nodoEliminado.getAnt());`,
-            `    this.tamanio--;`,
-            `}`
-        ],
-        search: [
-            `/**
- * Método que permite buscar un elemento especifico en la lista.
- * post: Se retornó un booleano que indica si el elemento especificado fue encontrado en la lista.
- * @param elem es de tipo T y corresponde al elemento a buscar.
- * @return True o false si el elemento fue encontrado.
- */`,
-            `public boolean search(T elem) {`,
-            `    if (this.esVacia()) {`,
-            `        return false;`,
-            `    }`,
-            `    NodoD<T> nodoActual = this.cabeza;`,
-            `    do {`,
-            `        if (nodoActual.getValor().equals(elem)) {`,
-            `            return true;`,
-            `        }`,
-            `        nodoActual = nodoActual.getSig();`,
-            `    }`,
-            `    while(nodoActual != this.cabeza);`,
-            `    return false;`,
-            `}`,
-        ],
-        clean: [
-            `/**
- * Método que permite eliminar todos los nodos de la lista.
- * post: Se eliminó todos los nodos en la lista.
- */`,
-            `public void vaciar(){`,
-            `    this.cabeza = null;`,
-            `    this.tamanio = 0;`,
-            `}`
-        ]
+    `public NodoS<T> eliminarAlInicio() {`,
+    `    if (this.esVacia())`,
+    `        throw new RuntimeException("No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).");`,
+    ``,
+    `    NodoS<T> nodoEliminado = this.cabeza;`,
+    ``,
+    `    if (this.cabeza == this.cola) {`,
+    `        this.cabeza = null;`,
+    `        this.cola = null;`,
+    `    } else {`,
+    `        this.cabeza = this.cabeza.getSiguiente();`,
+    `        this.cola.setSiguiente(this.cabeza);`,
+    `    }`,
+    ``,
+    `    this.tamanio--;`,
+    `    return nodoEliminado;`,
+    `}`,
+  ],
+  removeLast: [
+    "/**",
+    " * Método que elimina el último nodo de la lista circular simple.",
+    " * @return Nodo final eliminado.",
+    " */",
+    "public NodoS<T> eliminarAlFinal() {",
+    "  if (this.esVacia())",
+    "    throw new RuntimeException(",
+    '      "No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0)."',
+    "    );",
+    "",
+    "  NodoS<T> nodoEliminado;",
+    "",
+    "  if (this.cabeza == this.cola) {",
+    "    nodoEliminado = this.cabeza;",
+    "    this.cabeza = null;",
+    "    this.cola = null;",
+    "  } else {",
+    "    nodoEliminado = this.cola;",
+    "    NodoS<T> nodoAnt = this.getPos(this.tamanio - 2);",
+    "    nodoAnt.setSiguiente(this.cabeza);",
+    "    this.cola = nodoAnt;",
+    "  }",
+    "",
+    "  this.tamanio--;",
+    "  return nodoEliminado;",
+    "}",
+  ],
+
+  removeAt: [
+    "/**",
+    " * Método que elimina un nodo en una posición especifica de la lista circular simple.",
+    " * @param posicion Posición del nodo a eliminar.",
+    " * @return Nodo eliminado.",
+    " */",
+    "public NodoS<T> eliminarEnPosicion(int posicion) {",
+    "  if (this.esVacia())",
+    "    throw new RuntimeException(",
+    '      "No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0)."',
+    "    );",
+    "",
+    "  if (posicion < 0 || posicion >= this.tamanio) {",
+    "    throw new RuntimeException(",
+    '      "No fue posible eliminar el nodo en la posición especificada: La posición " + posicion + " no existe dentro de la Lista Simple."',
+    "    );",
+    "  }",
+    "",
+    "  if (posicion == 0) {",
+    "    return this.eliminarAlInicio();",
+    "  }",
+    "",
+    "  if (posicion == this.tamanio - 1) {",
+    "    return this.eliminarAlFinal();",
+    "  }",
+    "",
+    "  NodoS<T> nodoAnt = this.getPos(posicion - 1);",
+    "  NodoS<T> nodoEliminado = nodoAnt.getSiguiente();",
+    "",
+    "  nodoAnt.setSiguiente(nodoEliminado.getSiguiente());",
+    "",
+    "  this.tamanio--;",
+    "  return nodoEliminado;",
+    "}",
+  ],
+
+  search: [
+    "/**",
+    " * Método que busca un nodo en la lista circular simple.",
+    " * @param valor Valor a buscar.",
+    " * @return true si se encuentra el nodo, false en caso contrario.",
+    " */",
+    "public boolean buscar(T valor) {",
+    "  if (this.esVacia()) return false;",
+    "",
+    "  NodoS<T> nodoActual = this.cabeza;",
+    "",
+    "  do {",
+    "    if (this.equals(nodoActual.getValor(), valor)) return true;",
+    "    nodoActual = nodoActual.getSiguiente();",
+    "  } while (nodoActual != this.cabeza);",
+    "",
+    "  return false;",
+    "}",
+  ],
+
+  clean: [
+    "/**",
+    " * Método que permite eliminar todos los nodos de la lista circular simple.",
+    " * post: Se eliminaron todos los nodos en la lista.",
+    " */",
+    "public void vaciar() {",
+    "  this.cabeza = null;",
+    "  this.cola = null;",
+    "  this.tamanio = 0;",
+    "}",
+  ],
 });
