@@ -8,18 +8,18 @@ export const TYPE_FILTER = {
 } as const;
 
 export const STRUCTURE_NAME = {
-  SEQUENCE: "secuencia",
-  QUEUE: "cola",
-  PRIORITY_QUEUE: "cola de prioridad",
-  STACK: "pila",
-  LINKED_LIST: "lista_enlazada",
-  SIMPLE_LINKED_LIST: "lista_simplemente_enlazada",
-  DOUBLY_LINKED_LIST: "lista_doblemente_enlazada",
-  CIRCULAR_DOUBLY_LINKED_LIST: "lista_circular_doblemente_enlazada",
-  CIRCULAR_SIMPLE_LINKED_LIST: "lista_circular_simplemente_enlazada",
-  HASHTABLE: "tabla_hash",
-  BINARY_TREE: "arbol_binario",
-  BINARY_SEARCH_TREE: "arbol_binario_busqueda",
+  SEQUENCE: 'secuencia',
+  QUEUE: 'cola',
+  PRIORITY_QUEUE: 'cola de prioridad',
+  STACK: 'pila',
+  LINKED_LIST: 'lista_enlazada',
+  SIMPLE_LINKED_LIST: 'lista_simplemente_enlazada',
+  DOUBLY_LINKED_LIST: 'lista_doblemente_enlazada',
+  CIRCULAR_DOUBLY_LINKED_LIST: 'lista_circular_doblemente_enlazada',
+  CIRCULAR_SIMPLE_LINKED_LIST: 'lista_circular_simplemente_enlazada',
+  HASHTABLE: 'tabla_hash',
+  BINARY_TREE: 'arbol_binario',
+  BINARY_SEARCH_TREE: 'arbol_binario_busqueda',
   AVL_TREE: "arbol_avl",
   RB_TREE: "arbol_rojinegro",
   NARY_TREE: "arbol_nario",
@@ -27,7 +27,7 @@ export const STRUCTURE_NAME = {
   TREE_B: "arbol_b",
   TREE_BPLUS: "arbol_b_plus",
   HEAP_TREE: "arbol_heap",
-} as const;
+} as const
 
 export const SVG_STYLE_VALUES = {
   MEMORY_TEXT_COLOR: "#A0FFDA",
@@ -113,13 +113,15 @@ export const SVG_BINARY_TREE_VALUES = {
   LEVEL_SPACING: 85,
   SEQUENCE_PADDING: 35,
   SEQUENCE_HEIGHT: 25,
-  ELEMENT_TEXT_WEIGHT: "600",
-  ELEMENT_TEXT_SIZE: "16px",
+  ELEMENT_TEXT_WEIGHT: '600',
+  ELEMENT_TEXT_SIZE: '16px',
   HIGHLIGHT_COLOR: "#D72638",
-  UPDATE_STROKE_COLOR: "#0066CC",
-};
+  UPDATE_STROKE_COLOR: "#93c5fd"
+}
 
 export const SVG_AVL_TREE_VALUES = {
+  NODE_SPACING: 75,
+  LEVEL_SPACING: 95,
   PANEL_OFFSET_Y: SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2,
   CORNER: 7,
   LABEL_COLOR: "#9aa4b2",
@@ -136,6 +138,24 @@ export const SVG_AVL_TREE_VALUES = {
   ROW_H_LABEL: 7,
   ROW_H_VALUE: 11,
   EXTRA_W: 2,
+};
+
+export const SVG_RB_TREE_VALUES = {
+  NODE_SPACING: 75,
+  LEVEL_SPACING: 95,
+  EXTRA_WIDTH: 70
+}
+
+export const RB_COLORS = {
+  RED: "#ff5a66",
+  RED_RING: "#ff9aa1",
+  BLACK: "#1f2430",
+  BLACK_RING: "#4b5365",
+  STROKE: "#95a1bf",
+  TEXT_NODE: "#ffffff",
+  HIGHLIGHT: "#a7e34b",
+  BADGE_GB: "#0f141d",
+  BADGE_STROKE: "#f4bf50",
 };
 
 export const LIST_RENDER_CONFIGS: Record<string, ListRenderConfig> = {

@@ -1,6 +1,6 @@
 import type { HierarchyNode, Selection } from "d3";
 import { HierarchyNodeData, TreeLinkData } from "../../../types";
-import { repositionTreeNodes } from "./drawActionsUtilities";
+import { repositionTree } from "./drawActionsUtilities";
 import {
   SVG_STYLE_VALUES,
   SVG_BINARY_TREE_VALUES,
@@ -28,7 +28,7 @@ export async function animateInsertHeapNode(
   newNodeGroup.style("opacity", 0);
 
   // Reposicionar antes de animar
-  await repositionTreeNodes(treeG, nodesData, linksData, positions);
+  await repositionTree(treeG, nodesData, linksData, positions);
 
   // Mostrar el nuevo nodo en su posición inicial (última hoja)
   await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
@@ -110,7 +110,7 @@ export async function animateExtractRoot(
   positions.delete(nodeToDelete.data.id);
 
   // 3. Reposicionar estructura (heap sigue siendo completo)
-  await repositionTreeNodes(
+  await repositionTree(
     treeG,
     remainingNodesData,
     remainingLinksData,

@@ -251,16 +251,24 @@ function splitArgsSafe(args: string): string[] {
       if (ch === "(") depth++;
       if (ch === ")" && depth > 0) depth--;
       if (ch === "," && depth === 0) {
-        const token = cur.trim();
-        if (token !== "") out.push(token);
+        // const token = cur.trim();
+        // if (token !== "") out.push(token);
+        // cur = "";
+        // continue;
+        // aquí ya no filtramos vacíos
+        out.push(cur.trim());
         cur = "";
         continue;
       }
     }
     cur += ch;
   }
-  const last = cur.trim();
-  if (last !== "") out.push(last);
+  // const last = cur.trim();
+  // if (last !== "") out.push(last);
+  // return out;
+  // último token
+  out.push(cur.trim());
+
   return out;
 }
 

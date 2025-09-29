@@ -45,7 +45,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
         const salida: { removed: NodoBin<T> | null, updated: NodoBin<T> | null } = { removed: null, updated: null };
         this.setRaiz(this.eliminarABB(this.getRaiz(), valor, salida));
 
-        if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
+        if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
 
         this.setTamanio(this.getTamanio() - 1);
         return { removed: salida.removed, updated: salida.updated };
@@ -269,7 +269,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que clona un árbol binario iniciando desde el nodo raíz dado.
+     * Método recursivo que clona un árbol binario de búsqueda iniciando desde el nodo raíz dado.
      * @param root Nodo raíz del árbol BST a clonar.
      * @returns Nuevo subárbol clonado con raíz en el nodo dado.
      */

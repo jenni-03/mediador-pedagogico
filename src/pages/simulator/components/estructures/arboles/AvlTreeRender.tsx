@@ -18,5 +18,3 @@ export function AvlTreeRender({
         </div>
     );
 }
-
-export default AvlTreeRender;

@@ -1,6 +1,5 @@
 import { extent, hierarchy, type HierarchyNode, tree } from "d3";
 import { HierarchyNodeData } from "../../types";
-import { SVG_BINARY_TREE_VALUES } from "../constants/consts";
 
 export function defaultComparator<T>(a: T, b: T): number {
     if (a === b) return 0;
@@ -39,13 +38,25 @@ export function defaultComparator<T>(a: T, b: T): number {
     throw new Error("Tipo no comparable por defecto. Proporcione un comparador para este tipo.");
 }
 
+/**
+ * Función que calcula las métricas necesarias para definir el tamaño del SVG que contendrá el árbol y la secuencia de recorrido.
+ * @param currentNodes Nodos actuales del árbol.
+ * @param prevNodes Nodos previos del árbol.
+ * @param margin Márgenes a aplicar alrededor del árbol y la secuencia.
+ * @param sequenceCount Número de elementos en la secuencia.
+ * @param sequencePadding Espaciado entre elementos de la secuencia.
+ * @param sequenceHeight Altura de cada elemento de la secuencia.
+ * @param extraTreeWidth Ancho extra a añadir al árbol.
+ * @returns Objeto que contiene las métricas calculadas del árbol para el SVG.
+ */
 export function computeSvgTreeMetrics(
     currentNodes: HierarchyNode<HierarchyNodeData<number>>[],
     prevNodes: HierarchyNode<HierarchyNodeData<number>>[],
     margin: { left: number; right: number; top: number; bottom: number },
     sequenceCount: number,
     sequencePadding: number,
-    sequenceHeight: number
+    sequenceHeight: number,
+    extraTreeWidth: number = 0
 ) {
     // Valores minimos y máximos del árbol en cada eje
     const [minX, maxX] = extent([...prevNodes, ...currentNodes], d => d.x);
@@ -60,8 +71,8 @@ export function computeSvgTreeMetrics(
     const seqWidth = seqContent + margin.left + margin.right;
 
     // Ancho y alto del lienzo (en base a la extensión total del árbol)
-    const width = Math.max(treeWidth, seqWidth);
-    const height = treeHeight;
+    const width = Math.max(treeWidth, seqWidth) + extraTreeWidth;
+    const height = treeHeight + sequencePadding + sequenceHeight;
 
     // Desplazamientos iniciales para los contenedores (evita que partes queden fuera si las coordenadas son negativas)
     const treeOffset = { x: margin.left - minX!, y: margin.top - minY! };
@@ -72,20 +83,60 @@ export function computeSvgTreeMetrics(
 
     return {
         width,
-        height: height + sequencePadding + sequenceHeight,
+        height,
         treeOffset,
         seqOffset
     }
 }
 
-export const hierarchyFrom = (data: HierarchyNodeData<number>) => {
+/**
+ * Función que genera una jerarquía a partir de los datos proporcionados.
+ * @param data Datos de entrada para construir la jerarquía.
+ * @param node_spacing Distancia entre nodos en el mismo nivel.
+ * @param level_spacing Distancia entre niveles de nodos.
+ * @returns Objeto que contiene la raíz de la jerarquía, los nodos y los enlaces.
+ */
+export const hierarchyFrom = (data: HierarchyNodeData<number>, node_spacing: number, level_spacing: number) => {
     const h = hierarchy(data);
     tree<HierarchyNodeData<number>>()
-        .nodeSize([SVG_BINARY_TREE_VALUES.NODE_SPACING, SVG_BINARY_TREE_VALUES.LEVEL_SPACING + 15])(h);
+        .nodeSize([node_spacing, level_spacing])(h);
     const nodes = h.descendants().filter(d => !d.data.isPlaceholder);
     const links = h.links().reduce<{ sourceId: string, targetId: string }[]>((acc, l) => {
         if (!l.target.data.isPlaceholder) acc.push({ sourceId: l.source.data.id, targetId: l.target.data.id });
         return acc;
     }, []);
     return { root: h, nodes, links };
+}
+
+/**
+ * Función que genera una ruta SVG para una curva entre 2 puntos.
+ * @param s Coordenadas del punto de partida.
+ * @param t Coordenadas del punto de destino.
+ * @param r Radio vertical utilizado para desplazar las posiciones de inicio y fin.
+ * @returns Cadena de ruta SVG que representa la línea curva.
+ */
+export function curvedPath(
+    s: { x: number; y: number },
+    t: { x: number; y: number },
+    r: number
+) {
+    const y1 = s.y + r;
+    const y2 = t.y - r;
+    const midY = (y1 + y2) / 2;
+    return `M${s.x},${y1} C ${s.x},${midY} ${t.x},${midY} ${t.x},${y2}`;
+}
+
+/**
+ * Función que genera una ruta SVG para una línea recta entre 2 puntos con un desplazamiento vertical.
+ * @param s Coordenadas del punto de partida.
+ * @param t Coordenadas del punto de destino.
+ * @param r Desplazamiento vertical a aplicar a las coordenadas de inicio y fin.
+ * @returns Cadena de ruta SVG que representa la línea recta.
+ */
+export function straightPath(
+    s: { x: number; y: number },
+    t: { x: number; y: number },
+    r: number
+) {
+    return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
 }

@@ -5,6 +5,7 @@ import { FilterState } from "../../types";
 import { data } from "../../shared/constants/data-cards";
 import { Welcome } from "./components/Welcome";
 import { Filters } from "./components/Filters";
+import { Introduction } from "./components/Introduction";
 
 export function Home() {
   const [filter, setFilter] = useState<FilterState>({
@@ -30,6 +31,7 @@ export function Home() {
     <div className="bg-[#0f0f0f] min-h-screen text-white">
       <NavBar />
       <Welcome />
+      <Introduction></Introduction>
       <Filters filter={filter} setFilter={setFilter} />
       <CardList data={data} filter={filter} />
 

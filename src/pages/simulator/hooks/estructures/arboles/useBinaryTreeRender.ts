@@ -116,11 +116,20 @@ export function useBinaryTreeRender(
             `translate(${seqOffset.x}, ${seqOffset.y})`
         );
 
+        // Capas internas para nodos y enlaces
+        let linksLayer = treeG.select<SVGGElement>("g.links-layer");
+        if (linksLayer.empty()) linksLayer = treeG.append("g").attr("class", "links-layer");
+
+        let nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+        if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("class", "nodes-layer");
+
         // Renderizado de los nodos del árbol
-        drawTreeNodes(treeG, currentNodes, nodePositions);
+        drawTreeNodes(nodesLayer, currentNodes, nodePositions);
 
         // Renderizado de los enlaces entre nodos
-        drawTreeLinks(treeG, linksData, nodePositions);
+        drawTreeLinks(linksLayer, linksData, nodePositions);
+
+        nodesLayer.raise();
     }, [root, currentNodes, treeOffset, seqOffset, prevRoot, linksData]);
 
     // Efecto para manejar la inserción de nuevos nodos
@@ -161,9 +170,9 @@ export function useBinaryTreeRender(
                 parentId: parentNode?.data.id ?? null,
                 nodesData: currentNodes,
                 linksData,
+                positions: nodePositions,
                 pathToParent
             },
-            nodePositions,
             resetQueryValues,
             setIsAnimating
         );
@@ -208,9 +217,9 @@ export function useBinaryTreeRender(
                 nodeToDelete,
                 nodeToUpdate,
                 remainingNodesData: currentNodes,
-                remainingLinksData: linksData
+                remainingLinksData: linksData,
+                positions: nodePositions
             },
-            nodePositions,
             resetQueryValues,
             setIsAnimating
         );

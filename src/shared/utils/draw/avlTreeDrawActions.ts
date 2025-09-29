@@ -1,15 +1,16 @@
 import type { HierarchyNode, Selection } from "d3";
 import { AvlFrame, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../types";
-import { drawTreeLinks, drawTreeNodes, highlightTreePath, repositionTreeNodes } from "./drawActionsUtilities";
-import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES } from "../../constants/consts";
-import { animateLeafOrSingleChild, animateTwoChildren } from "./BinaryTreeDrawActions";
+import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
+import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { animateBSTInsertCore, animateEspecialBSTsRotation, animateLeafOrSingleChild, animateTwoChildren, highlightBinaryTreePath } from "./BinaryTreeDrawActions";
+import type { Dispatch, SetStateAction } from "react";
+import { straightPath } from "../treeUtils";
 
 /**
  * Función encargada de animar la inserción de un nuevo nodo en el árbol AVL.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
- * @param treeOffset Objeto con los offsets (x, y) del árbol dentro del SVG.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
  * @param insertionData Objeto con información del árbol necesaria para la animación.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
@@ -21,16 +22,17 @@ export async function animateAVLTreeInsert(
         parentId: string | null;
         nodesData: HierarchyNode<HierarchyNodeData<number>>[];
         linksData: TreeLinkData[];
+        positions: Map<string, { x: number, y: number }>;
         pathToParent: HierarchyNode<HierarchyNodeData<number>>[];
-        rotations: RotationStep[],
+        preRotationFrame: AvlFrame | null;
+        rotations: RotationStep[];
         frames: AvlFrame[];
     },
-    positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Elementos del árbol requeridos para la animación 
-    const { newNodeId, parentId, nodesData, linksData, pathToParent, rotations, frames } = insertionData;
+    const { nodesData, linksData, positions, preRotationFrame, rotations, frames } = insertionData;
 
     // Grupo contenedor de nodos y enlaces del árbol
     const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -42,95 +44,77 @@ export async function animateAVLTreeInsert(
     const linksLayer = treeG.select<SVGGElement>("g.links-layer");
     const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
 
-    // Renderizado del árbol previo a cualquier rotación
-    drawTreeNodes(nodesLayer, nodesData, positions);
-    drawTreeLinks(linksLayer, linksData, positions);
+    // Definimos los nodos a usar durante la inserción (dependiendo si hay rotación o no)
+    const currentNodes = preRotationFrame ? preRotationFrame.nodes : nodesData;
+    const currentLinks = preRotationFrame ? preRotationFrame.links : linksData;
+
+    // Renderizado del estado del árbol previo a cualquier rotación (si aplica)
+    if (preRotationFrame) {
+        drawTreeNodes(nodesLayer, currentNodes, positions);
+        drawTreeLinks(linksLayer, currentLinks, positions);
+    }
 
     // Renderizado de métricas para los nodos del árbol
-    buildAvlMetricsBadge(nodesLayer, nodesData);
+    buildAvlMetricsBadge(nodesLayer, currentNodes);
 
     // Elevamos la capa de nodos
     nodesLayer.raise();
 
-    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-    seqG.style("opacity", 0);
+    // Animación de inserción del elemento como BST
+    await animateBSTInsertCore(
+        treeG,
+        seqG,
+        {
+            newNodeId: insertionData.newNodeId,
+            parentId: insertionData.parentId,
+            nodesData: currentNodes,
+            linksData: currentLinks,
+            pathToParent: insertionData.pathToParent,
+            positions: positions
+        },
+        {
+            reposition: repositionAVLTree,
+            appearNode: appearAVLTreeNode,
+            highlight: highlightBinaryTreePath,
+            highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR
+        }
+    );
 
-    // Grupo del lienzo correspondiente al nuevo nodo
-    const newNodeGroup = treeG.select<SVGGElement>(`g#${newNodeId}`);
-
-    // Estado inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
-
-    if (parentId) {
-        // Grupo del lienzo correspondiente al enlace del nodo padre que apunta al nuevo nodo
-        const newNodeLinkGroup = treeG.select<SVGGElement>(
-            `g#link-${parentId}-${newNodeId}`
-        );
-
-        // Estado visual inicial del enlace
-        newNodeLinkGroup.select("path.tree-link").style("opacity", 0);
-
-        // Reposicionamiento de los nodos y enlaces del árbol
-        await repositionTreeNodes(treeG, nodesData, linksData, positions);
-
-        // Animación de recorrido desde el nodo raíz hasta el nodo padre del nuevo nodo
-        await highlightTreePath(treeG, pathToParent, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
-
-        // Aparición del nuevo nodo
-        await newNodeGroup
+    // Restablecimiento del color original del padre del nuevo nodo (si aplica)
+    if (insertionData.parentId) {
+        await treeG.select<SVGGElement>(`g#${insertionData.parentId} circle.node-container`)
             .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-
-        // Establecimiento del enlace del nodo padre al nuevo nodo
-        await newNodeLinkGroup
-            .select("path.tree-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-    } else {
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
+            .duration(800)
+            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
             .end();
     }
 
     // Actualización de las métricas para los nodos del árbol
-    updateAvlMetricsBadge(nodesLayer, nodesData);
-
-    // Definición de las rotaciones a aplicar.
-    const rotationsSteps: Array<{ tag: string; stepInfo: RotationStep }> = [];
-    for (const r of rotations) {
-        if (r.type === "LL") {
-            rotationsSteps.push({ tag: "LL", stepInfo: r });
-        } else if (r.type === "RR") {
-            rotationsSteps.push({ tag: "RR", stepInfo: r });
-        } else if (r.type === "LR") {
-            // 1) rotIzq(y)
-            rotationsSteps.push({ tag: "L(y)", stepInfo: r });
-            // 2) rotDer(z)
-            rotationsSteps.push({ tag: "R(z)", stepInfo: r });
-        } else /* RL */ {
-            // 1) rotDer(y)
-            rotationsSteps.push({ tag: "R(y)", stepInfo: r });
-            // 2) rotIzq(z)
-            rotationsSteps.push({ tag: "L(z)", stepInfo: r });
-        }
-    }
+    updateAvlMetricsBadge(nodesLayer, currentNodes);
 
     // Aplicación de rotaciones
+    let rotationIndex = 0;
+    let framesPerDoubleRotation = 0;
     for (let i = 1; i < frames.length; i++) {
+        // Iniciamos desde el segundo frame debido a que el primero corresponde al frame pre-rotación
         const { nodes, links } = frames[i];
-        const rotation = rotationsSteps[i - 1];
+        const rotation = rotations[rotationIndex];
 
         // Mostrar badge de rotación segun la rotación a aplicar
-        if (rotation.tag === "LL" || rotation.tag === "RR" || rotation.tag === "R(z)" || rotation.tag === "L(z)") {
-            await showRotationHint(svg, { type: rotation.tag, pivotId: rotation.stepInfo.zId }, positions, treeOffset);
-        } else {
-            await showRotationHint(svg, { type: rotation.tag, pivotId: rotation.stepInfo.yId }, positions, treeOffset);
+        if (framesPerDoubleRotation < 1) {
+            await showTreeHint(
+                svg,
+                { type: "node", id: rotation.zId },
+                { label: "Rotación", value: rotation.type },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 50, height: 35, radius: 10 },
+                    typography: { labelFz: "10px", valueFz: "12px", labelFw: 900, valueFw: 900 },
+                    anchor: { side: "right", dx: 0.5, dy: -10 },
+                    palette: { stroke: "#ff6b6b" }
+                }
+            );
         }
 
         // Renderizar los nuevos enlaces
@@ -139,28 +123,30 @@ export async function animateAVLTreeInsert(
         // Actualizar la posición de los nodos según el estado actual
         drawTreeNodes(nodesLayer, nodes, positions);
 
-        if (rotation.tag === "LL" || rotation.tag === "RR") {
-            // Animación para rotación simple
-            await animateRotation(
+        if (rotation.type === "LL" || rotation.type === "RR") {
+            // Animación para rotación simple (RR/LL)
+            await animateEspecialBSTsRotation(
                 treeG,
-                rotation.stepInfo.parentOfZId ?? null,
-                rotation.stepInfo.zId,
-                rotation.stepInfo.yId,
-                rotation.stepInfo.BId ?? null,
+                rotation.parentOfZId ?? null,
+                rotation.zId,
+                rotation.yId,
+                rotation.BId ?? null,
+                repositionAVLTree,
                 {
                     nodes,
                     links,
                     positions
                 }
             );
-        } else if (rotation.tag === "L(y)" || rotation.tag === "R(y)") {
-            // Animación para primer paso de rotación doble LR/RL
-            await animateRotation(
+        } else if (framesPerDoubleRotation < 1) {
+            // Animación para primer paso de rotación doble (LR/RL)
+            await animateEspecialBSTsRotation(
                 treeG,
-                rotation.stepInfo.zId,
-                rotation.stepInfo.yId,
-                rotation.stepInfo.xId!,
-                rotation.tag === "L(y)" ? rotation.stepInfo.xLeftId ?? null : rotation.stepInfo.xRightId ?? null,
+                rotation.zId,
+                rotation.yId,
+                rotation.xId!,
+                rotation.type === "LR" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
+                repositionAVLTree,
                 {
                     nodes,
                     links,
@@ -168,13 +154,14 @@ export async function animateAVLTreeInsert(
                 }
             );
         } else {
-            // Animación para segundo paso de rotación compuesta LR/RL
-            await animateRotation(
+            // Animación para segundo paso de rotación compuesta (LR/RL)
+            await animateEspecialBSTsRotation(
                 treeG,
-                rotation.stepInfo.parentOfZId ?? null,
-                rotation.stepInfo.zId,
-                rotation.stepInfo.xId!,
-                rotation.tag === "L(z)" ? rotation.stepInfo.xLeftId ?? null : rotation.stepInfo.xRightId ?? null,
+                rotation.parentOfZId ?? null,
+                rotation.zId,
+                rotation.xId!,
+                rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
+                repositionAVLTree,
                 {
                     nodes,
                     links,
@@ -185,6 +172,17 @@ export async function animateAVLTreeInsert(
 
         // Actualización de las métricas para los nodos del árbol
         updateAvlMetricsBadge(nodesLayer, nodes);
+
+        // Cálculo del indice para la siguiente rotación
+        if (rotation.type === "RL" || rotation.type === "LR") {
+            framesPerDoubleRotation += 1;
+            if (framesPerDoubleRotation === 2) {
+                framesPerDoubleRotation = 0;
+                rotationIndex += 1;
+            }
+        } else {
+            rotationIndex += 1;
+        }
     }
 
     // Restablecimiento de los valores de las queries del usuario
@@ -195,11 +193,10 @@ export async function animateAVLTreeInsert(
 }
 
 /**
- * Función encargada de animar la eliminación de un nodo dentor del árbol AVL.
+ * Función encargada de animar la eliminación de un nodo especifico en el árbol AVL.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
- * @param treeOffset Objeto con los offsets (x, y) del árbol dentro del SVG.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
  * @param deletionData Objeto con información del árbol necesaria para la animación.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
@@ -212,15 +209,26 @@ export async function animateAVLTreeDelete(
         nodeToUpdate: HierarchyNode<HierarchyNodeData<number>> | null;
         remainingNodesData: HierarchyNode<HierarchyNodeData<number>>[];
         remainingLinksData: TreeLinkData[];
-        rotations: RotationStep[],
+        positions: Map<string, { x: number, y: number }>
+        preRotationFrame: AvlFrame | null;
+        rotations: RotationStep[];
         frames: AvlFrame[];
     },
-    positions: Map<string, { x: number, y: number }>,
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Elementos del árbol requeridos para la animación 
-    const { nodeToDelete, prevRootNode, remainingNodesData, remainingLinksData, nodeToUpdate, rotations, frames } = deletionData;
+    const {
+        nodeToDelete,
+        prevRootNode,
+        remainingNodesData,
+        remainingLinksData,
+        positions,
+        nodeToUpdate,
+        preRotationFrame,
+        rotations,
+        frames
+    } = deletionData;
 
     // Grupo contenedor de nodos y enlaces del árbol
     const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -231,6 +239,16 @@ export async function animateAVLTreeDelete(
     // Capas de nodos y enlaces
     const linksLayer = treeG.select<SVGGElement>("g.links-layer");
     const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+
+    // Definimos los nodos a usar durante la eliminación (dependiendo si hay rotación o no)
+    const currentNodes = preRotationFrame ? preRotationFrame.nodes : remainingNodesData;
+    const currentLinks = preRotationFrame ? preRotationFrame.links : remainingLinksData;
+
+    // Renderizado del estado previo del árbol a cualquier rotación (si aplica)
+    if (preRotationFrame) {
+        drawTreeNodes(nodesLayer, currentNodes, positions);
+        drawTreeLinks(linksLayer, currentLinks, positions);
+    }
 
     // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
     seqG.style("opacity", 0);
@@ -247,8 +265,23 @@ export async function animateAVLTreeDelete(
             treeG,
             nodeToDelete,
             parentNode ? parentNode.data.id : null,
-            pathToParent
+            pathToParent,
+            {
+                deleteNode: defaultDeleteTreeNode,
+                highlightNodePath: highlightBinaryTreePath,
+                highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR,
+                buildPath: straightPath
+            }
         );
+
+        // Restablecimiento del color original del padre del nodo a eliminar (si aplica)
+        if (parentNode) {
+            await treeG.select<SVGGElement>(`g#${parentNode.data.id} circle.node-container`)
+                .transition()
+                .duration(800)
+                .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                .end();
+        }
     } else {
         // Ruta desde el nodo raiz hasta el nodo a actualizar
         const pathToUpdateNode = prevRootNode.path(nodeToUpdate);
@@ -262,53 +295,52 @@ export async function animateAVLTreeDelete(
             nodeToDelete,
             nodeToUpdate,
             pathToUpdateNode,
-            pathToRemovalNode
+            pathToRemovalNode,
+            {
+                highlightNodePath: highlightBinaryTreePath
+            }
         );
+
+        // Restablecimiento del color original del nodo actualizado
+        await treeG.select<SVGGElement>(`g#${nodeToUpdate.data.id} circle.node-container`)
+            .transition()
+            .duration(800)
+            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+            .end();
     }
 
     // Limpiamos el registro del nodo eliminado
     positions.delete(nodeToDelete.data.id);
 
-    // Renderizado del árbol previo
-    drawTreeNodes(nodesLayer, remainingNodesData, positions);
-    drawTreeLinks(linksLayer, remainingLinksData, positions);
-
     // Actualización de las métricas para los nodos del árbol
-    updateAvlMetricsBadge(nodesLayer, remainingNodesData);
+    updateAvlMetricsBadge(nodesLayer, currentNodes);
 
     // Reposicionamiento de los nodos y enlaces del árbol
-    await repositionTreeNodes(treeG, remainingNodesData, remainingLinksData, positions);
-
-    // Definición de las rotaciones a aplicar.
-    const rotationsSteps: Array<{ tag: string; stepInfo: RotationStep }> = [];
-    for (const r of rotations) {
-        if (r.type === "LL") {
-            rotationsSteps.push({ tag: "LL", stepInfo: r });
-        } else if (r.type === "RR") {
-            rotationsSteps.push({ tag: "RR", stepInfo: r });
-        } else if (r.type === "LR") {
-            // 1) rotIzq(y)
-            rotationsSteps.push({ tag: "L(y)", stepInfo: r });
-            // 2) rotDer(z)
-            rotationsSteps.push({ tag: "R(z)", stepInfo: r });
-        } else /* RL */ {
-            // 1) rotDer(y)
-            rotationsSteps.push({ tag: "R(y)", stepInfo: r });
-            // 2) rotIzq(z)
-            rotationsSteps.push({ tag: "L(z)", stepInfo: r });
-        }
-    }
+    await repositionAVLTree(treeG, currentNodes, currentLinks, positions);
 
     // Aplicación de rotaciones
+    let rotationIndex = 0;
+    let framesPerDoubleRotation = 0;
     for (let i = 1; i < frames.length; i++) {
+        // Iniciamos desde el segundo frame debido a que el primero corresponde al frame pre-rotación
         const { nodes, links } = frames[i];
-        const rotation = rotationsSteps[i - 1];
+        const rotation = rotations[rotationIndex];
 
         // Mostrar badge de rotación segun la rotación a aplicar
-        if (rotation.tag === "LL" || rotation.tag === "RR" || rotation.tag === "R(z)" || rotation.tag === "L(z)") {
-            showRotationHint(svg, { type: rotation.tag, pivotId: rotation.stepInfo.zId }, positions, treeOffset);
-        } else {
-            showRotationHint(svg, { type: rotation.tag, pivotId: rotation.stepInfo.yId }, positions, treeOffset);
+        if (framesPerDoubleRotation < 1) {
+            await showTreeHint(
+                svg,
+                { type: "node", id: rotation.zId },
+                { label: "Rotación", value: rotation.type },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 50, height: 35, radius: 10 },
+                    typography: { labelFz: "10px", valueFz: "12px", labelFw: 900, valueFw: 900 },
+                    anchor: { side: "right", dx: 0.5, dy: -10 },
+                    palette: { stroke: "#ff6b6b" }
+                }
+            );
         }
 
         // Renderizar los nuevos enlaces
@@ -317,30 +349,30 @@ export async function animateAVLTreeDelete(
         // Actualizar la posición de los nodos según el estado actual
         drawTreeNodes(nodesLayer, nodes, positions);
 
-        if (rotation.tag === "LL" || rotation.tag === "RR") {
-
-            // Animación para rotación simple
-            await animateRotation(
+        if (rotation.type === "LL" || rotation.type === "RR") {
+            // Animación para rotación simple (RR/LL)
+            await animateEspecialBSTsRotation(
                 treeG,
-                rotation.stepInfo.parentOfZId ?? null,
-                rotation.stepInfo.zId,
-                rotation.stepInfo.yId,
-                rotation.stepInfo.BId ?? null,
+                rotation.parentOfZId ?? null,
+                rotation.zId,
+                rotation.yId,
+                rotation.BId ?? null,
+                repositionAVLTree,
                 {
                     nodes,
                     links,
                     positions
                 }
             );
-        } else if (rotation.tag === "L(y)" || rotation.tag === "R(y)") {
-
-            // Animación para primer paso de rotación doble LR/RL
-            await animateRotation(
+        } else if (framesPerDoubleRotation < 1) {
+            // Animación para primer paso de rotación doble (LR/RL)
+            await animateEspecialBSTsRotation(
                 treeG,
-                rotation.stepInfo.zId,
-                rotation.stepInfo.yId,
-                rotation.stepInfo.xId!,
-                rotation.tag === "L(y)" ? rotation.stepInfo.xLeftId ?? null : rotation.stepInfo.xRightId ?? null,
+                rotation.zId,
+                rotation.yId,
+                rotation.xId!,
+                rotation.type === "LR" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
+                repositionAVLTree,
                 {
                     nodes,
                     links,
@@ -348,14 +380,14 @@ export async function animateAVLTreeDelete(
                 }
             );
         } else {
-
-            // Animación para segundo paso de rotación compuesta LR/RL
-            await animateRotation(
+            // Animación para segundo paso de rotación compuesta (LR/RL)
+            await animateEspecialBSTsRotation(
                 treeG,
-                rotation.stepInfo.parentOfZId ?? null,
-                rotation.stepInfo.zId,
-                rotation.stepInfo.xId!,
-                rotation.tag === "L(z)" ? rotation.stepInfo.xLeftId ?? null : rotation.stepInfo.xRightId ?? null,
+                rotation.parentOfZId ?? null,
+                rotation.zId,
+                rotation.xId!,
+                rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
+                repositionAVLTree,
                 {
                     nodes,
                     links,
@@ -366,6 +398,17 @@ export async function animateAVLTreeDelete(
 
         // Actualización de las métricas para los nodos del árbol
         updateAvlMetricsBadge(nodesLayer, nodes);
+
+        // Cálculo del indice para la siguiente rotación
+        if (rotation.type === "RL" || rotation.type === "LR") {
+            framesPerDoubleRotation += 1;
+            if (framesPerDoubleRotation === 2) {
+                framesPerDoubleRotation = 0;
+                rotationIndex += 1;
+            }
+        } else {
+            rotationIndex += 1;
+        }
     }
 
     // Restablecimiento de los valores de las queries del usuario
@@ -373,187 +416,6 @@ export async function animateAVLTreeDelete(
 
     // Finalización de la animación
     setIsAnimating(false);
-}
-
-/**
- * Función encargada de animar la rotación de nodos y enlaces del árbol AVL.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param parentOfUnbalanced ID del nodo padre del nodo desbalanceado (o null si no hay).
- * @param unbalancedNode ID del nodo desbalanceado (el nodo donde ocurre la rotación).
- * @param sonOfUnbalanced ID del nodo hijo involucrado en la rotación.
- * @param rotationNode ID del nodo del subárbol afectado por la rotación (o null si no hay).
- */
-async function animateRotation(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    parentOfUnbalanced: string | null,
-    unbalancedNode: string,
-    sonOfUnbalanced: string,
-    rotationNode: string | null,
-    repositionData: {
-        nodes: HierarchyNode<HierarchyNodeData<number>>[];
-        links: TreeLinkData[];
-        positions: Map<string, { x: number, y: number }>;
-    }
-) {
-    // Obtenemos los datos de reposicionamiento
-    const { nodes, links, positions } = repositionData;
-
-    // Fade out del nuevo enlace entre p y y (si p)
-    if (parentOfUnbalanced) {
-        treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced}`)
-            .select("path.tree-link")
-            .style("opacity", 0);
-    }
-
-    // Fade out del nuevo enlace entre y y z
-    treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode}`)
-        .select("path.tree-link")
-        .style("opacity", 0);
-
-    // Fade out del nuevo enlace entre z y B (si B)
-    if (rotationNode) {
-        treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode}`)
-            .select("path.tree-link")
-            .style("opacity", 0);
-    }
-
-    // Eliminar enlace previo entre p y z (si p)
-    if (parentOfUnbalanced) {
-        await treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${unbalancedNode}`)
-            .transition()
-            .duration(800)
-            .style("opacity", 0)
-            .remove()
-            .end();
-    }
-
-    // Eliminar enlace previo entre z y y
-    await treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${sonOfUnbalanced}`)
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .remove()
-        .end();
-
-    // Eliminar enlace previo entre y y B (si B)
-    if (rotationNode) {
-        await treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${rotationNode}`)
-            .transition()
-            .duration(800)
-            .style("opacity", 0)
-            .remove()
-            .end();
-    }
-
-    // Reposicionamiento de los nodos y enlaces del árbol
-    await repositionTreeNodes(treeG, nodes, links, positions);
-
-    // Fade in del nuevo enlace entre p y y (si p)
-    if (parentOfUnbalanced) {
-        await treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced}`)
-            .select("path.tree-link")
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
-    }
-
-    // Fade in del nuevo enlace entre y y z
-    await treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode}`)
-        .select("path.tree-link")
-        .transition()
-        .duration(800)
-        .style("opacity", 1)
-        .end();
-
-    // Fade in del nuevo enlace entre z y B (si B)
-    if (rotationNode) {
-        await treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode}`)
-            .select("path.tree-link")
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
-    }
-
-}
-
-/**
- * Función encargada de mostrar un indicador visual para el tipo de rotación
- * @param svg Selección D3 del elemento SVG donde se renderizará el elemento.
- * @param rotation Objeto que contiene información sobre la rotación a realizar.
- * @param nodePositions Mapa que relaciona los IDs de los nodos con sus posiciones en el SVG.
- * @param treeOffset Objeto con los offsets (x, y) del árbol dentro del SVG.
- */
-export async function showRotationHint(
-    svg: Selection<SVGSVGElement, unknown, null, undefined>,
-    rotation: { type: string; pivotId: string; },
-    nodePositions: Map<string, { x: number; y: number }>,
-    treeOffset: { x: number; y: number }
-) {
-    // Capa overlay
-    let overlay = svg.select<SVGGElement>("g.overlay-top");
-    if (overlay.empty()) overlay = svg.append("g").attr("class", "overlay-top");
-    overlay.selectAll("g.avl-rotation-hint").remove();
-
-    // Asegura que el overlay quede arriba de todo
-    overlay.raise();
-
-    // Constantes visuales
-    const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-    const CHIP_W = 50, CHIP_H = 34, CHIP_R = 10;
-    const BG = "#1b2330", STK = "#ff6b6b", TXT1 = "#f4a6a6", TXT2 = "#ffd5d5";
-    const LABEL_FZ = 10, LABEL_FW = 600, KIND_FZ = 13, KIND_FW = 800;
-
-    // Posición base del pivote
-    const pivot = nodePositions.get(rotation.pivotId);
-    if (!pivot) return;
-
-    // Lado preferido (a la izq para LL/LR, a la der para RR/RL)
-    const SIDE_OFFSET = r + 13;
-
-    // const cy = treeOffset.y + pivot.y - UP_OFFSET;
-    const cx = treeOffset.x + pivot.x + SIDE_OFFSET;
-    const cy = treeOffset.y + pivot.y - 10;
-
-    // grupo contenedor del badge
-    const g = overlay.append("g")
-        .attr("class", "avl-rotation-hint")
-        .attr("transform", `translate(${cx}, ${cy}) scale(0.92)`)
-        .style("opacity", 0);
-
-    // Fondo
-    g.append("rect")
-        .attr("x", -CHIP_W / 2).attr("y", -CHIP_H / 2)
-        .attr("width", CHIP_W).attr("height", CHIP_H)
-        .attr("rx", CHIP_R).attr("ry", CHIP_R)
-        .attr("fill", BG).attr("stroke", STK).attr("stroke-width", 1);
-
-    // Textos (centrados dentro del chip de tamaño fijo)
-    const textG = g.append("g").attr("class", "txt");
-    textG.append("text")
-        .attr("text-anchor", "middle").attr("y", -4)
-        .style("font-size", `${LABEL_FZ}px`).style("font-weight", LABEL_FW)
-        .attr("fill", TXT1).text("rotación");
-
-    textG.append("text")
-        .attr("text-anchor", "middle").attr("y", 12)
-        .style("font-size", `${KIND_FZ}px`).style("font-weight", KIND_FW)
-        .attr("fill", TXT2).text(rotation.type);
-
-    // Animación: pop-in y fade-out
-    await g.transition()
-        .duration(500)
-        .style("opacity", 1)
-        .attr("transform", `translate(${cx}, ${cy}) scale(1)`)
-        .end();
-
-    await g.transition()
-        .delay(1200)
-        .duration(250)
-        .style("opacity", 0)
-        .remove()
-        .end();
 }
 
 /**
@@ -702,6 +564,44 @@ export function updateAvlMetricsBadge(
 
     panels.select<SVGTextElement>("text.val-h")
         .text(d => d.data.height ?? 0);
+}
+
+/**
+ * Función encargada de reubicar los nodos y ajustar los enlaces de conexión de un árbol AVL.
+ * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
+ * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
+ * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @returns Una promesa que se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
+ */
+async function repositionAVLTree(
+    g: Selection<SVGGElement, unknown, null, undefined>,
+    nodes: HierarchyNode<HierarchyNodeData<number>>[],
+    linksData: TreeLinkData[],
+    positions: Map<string, { x: number; y: number }>
+) {
+    return repositionTree(g, nodes, linksData, positions, straightPath);
+}
+
+/**
+ * Función encargada de animar la aparición del nodo de un árbol AVL.
+ * @param nodeGroup Selección D3 del elemento de grupo SVG que representa el nodo del árbol. 
+ */
+async function appearAVLTreeNode(
+    nodeGroup: Selection<SVGGElement, unknown, null, undefined>
+) {
+    // Selección del panel de métricas del nodo actual
+    const panel = nodeGroup.select<SVGGElement>(`g.avl-panel`).style("opacity", 0);
+
+    // Animación de aparición del nodo
+    await defaultAppearTreeNode(nodeGroup);
+
+    // Aparición del panel de métricas
+    await panel
+        .transition()
+        .duration(500)
+        .style("opacity", 1)
+        .end();
 }
 
 // Función para determinar el color del valor del factor de equilibrio del nodo

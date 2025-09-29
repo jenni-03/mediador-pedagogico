@@ -1,101 +1,114 @@
-// src/shared/utils/nodes/NodoRB.ts
-// Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
-
 import { v4 as uuidv4 } from "uuid";
 import { NodoBin } from "./NodoBin";
-
-/** Colores admitidos por el árbol Roji-Negro */
-export type RBColor = "RED" | "BLACK";
+import { RBColor } from "../../../types";
 
 /**
- * Nodo Roji-Negro.
- * - Extiende NodoBin (id, info, izq/der) y añade:
- *   • color (RED/BLACK)
- *   • puntero a padre
- * - Incluye helpers tipados para hijos (get/setIzqRB/DerRB) y
- *   helpers de color (isRed/isBlack/setRed/setBlack).
+ * Clase que representa un Nodo Rojo-Negro.
  */
 export class NodoRB<T> extends NodoBin<T> {
+
   private color: RBColor;
+
   private padre: NodoRB<T> | null;
 
   /**
-   * @param info  Información del nodo
-   * @param id    Id único (opcional)
+   * Constructor de la clase Nodo Rojo-Negro.
+   * @param info Información a almacenar en el nodo.
    * @param color Color inicial (por convención, los nuevos se crean ROJOS)
+   * @param id Identificador único del nodo (opcional).
    */
-  constructor(info: T, id?: string, color: RBColor = "RED") {
+  constructor(info: T, color: RBColor = "RED", id?: string) {
     super(info, id ?? `node-${uuidv4()}`);
     this.color = color;
     this.padre = null;
   }
 
-  /* ───────────── Color ───────────── */
+  /**
+   * Método que obtiene la información almacenada en el nodo Rojo-Negro.
+   * @returns Info almacenada en el nodo Rojo-Negro.
+   */
+  public override getInfo(): T {
+    return super.getInfo();
+  }
 
+  /**
+   * Método que obtiene la referencia al hijo izquierdo del nodo Rojo-Negro.
+   * @returns Hijo izquierdo o null según corresponda.
+   */
+  public override getIzq(): NodoRB<T> | null {
+    return super.getIzq() as NodoRB<T> | null;
+  }
+
+  /**
+   * Método que obtiene la referencia al hijo derecho del nodo Rojo-Negro.
+   * @returns Hijo derecho o null según corresponda.
+   */
+  public override getDer(): NodoRB<T> | null {
+    return super.getDer() as NodoRB<T> | null;
+  }
+
+  /**
+   * Método que obtiene el Id del nodo Rojo-Negro.
+   * @returns Id del nodo Rojo-Negro.
+   */
+  public override getId(): string {
+    return super.getId();
+  }
+
+  /**
+   * Método que obtiene el color del nodo Rojo-Negro.
+   * @returns Color del nodo.
+   */
   public getColor(): RBColor {
     return this.color;
   }
 
-  public setColor(c: RBColor): void {
-    this.color = c;
-  }
-
-  public isRed(): boolean {
-    return this.color === "RED";
-  }
-
-  public isBlack(): boolean {
-    return this.color === "BLACK";
-  }
-
-  public setRed(): void {
-    this.color = "RED";
-  }
-
-  public setBlack(): void {
-    this.color = "BLACK";
-  }
-
-  /* ───────────── Padre ───────────── */
-
+  /**
+   * Método que obtiene el padre del nodo Rojo-Negro.
+   * @returns Padre del nodo o null si no tiene.
+   */
   public getPadre(): NodoRB<T> | null {
     return this.padre;
   }
 
-  public setPadre(p: NodoRB<T> | null): void {
-    this.padre = p;
-  }
-
-  /* ───────── Helpers tipados para hijos (RB) ───────── */
-
-  public getIzqRB(): NodoRB<T> | null {
-    const n = this.getIzq();
-    return n instanceof NodoRB ? n : (n as unknown as NodoRB<T> | null);
-  }
-
-  public getDerRB(): NodoRB<T> | null {
-    const n = this.getDer();
-    return n instanceof NodoRB ? n : (n as unknown as NodoRB<T> | null);
+  /**
+   * Método que modifica la información almacenada en el nodo Rojo-Negro.
+   * @param info Nueva info a almacenar.
+   */
+  public override setInfo(info: T): void {
+    super.setInfo(info);
   }
 
   /**
-   * Setters tipados que además actualizan el padre del hijo (si no es null).
-   * Nota: La lógica del árbol (rotaciones/transplantes) puede volver a fijar
-   * el padre explícitamente; esto es idempotente y no causa problemas.
+   * Método que modifica la referencia al hijo izquierdo del nodo Rojo-Negro.
+   * @param nodo Nodo a establecer como hijo izquierdo.
    */
-  public setIzqRB(hijo: NodoRB<T> | null): void {
-    super.setIzq(hijo);
-    if (hijo) hijo.setPadre(this);
+  public override setIzq(nodo: NodoRB<T> | null): void {
+    super.setIzq(nodo);
   }
 
-  public setDerRB(hijo: NodoRB<T> | null): void {
-    super.setDer(hijo);
-    if (hijo) hijo.setPadre(this);
+  /**
+   * Método que modifica la referencia al hijo derecho del nodo Rojo-Negro.
+   * @param nodo Nodo a establecer como hijo derecho.
+   */
+  public override setDer(nodo: NodoRB<T> | null): void {
+    super.setDer(nodo);
   }
 
-  /* ───────── Type guard ───────── */
-
-  public static esRB<N>(n: NodoBin<N> | null): n is NodoRB<N> {
-    return n instanceof NodoRB;
+  /**
+   * Método que modifica el color del nodo Rojo-Negro.
+   * @param c Nuevo color del nodo.
+   */
+  public setColor(c: RBColor): void {
+    this.color = c;
   }
+
+  /**
+   * Método que modifica el padre del nodo Rojo-Negro.
+   * @param padre Nuevo padre del nodo.
+   */
+  public setPadre(padre: NodoRB<T> | null): void {
+    this.padre = padre;
+  }
+
 }

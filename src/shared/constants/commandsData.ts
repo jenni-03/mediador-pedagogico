@@ -540,10 +540,8 @@ export const commandsData: Record<string, any> = {
       {
         title: "createRoot",
         description: "Crea la raíz del árbol N-ario si aún no existe.",
-        estructura: `Si el objeto no ha sido instanciado: <strong>createRoot(valor);</strong> 
-               Si el objeto ya existe: <strong>nombreObjeto.createRoot(valor);</strong>`,
-        ejemplo:
-          "<strong>createRoot(10);</strong> ó <strong>nario.createRoot(10);</strong>",
+        estructura: `createRoot(valor);`,
+        ejemplo: "createRoot(10);",
       },
       {
         title: "insertChild",
@@ -551,13 +549,13 @@ export const commandsData: Record<string, any> = {
           "Inserta un hijo bajo un padre (por id). Opcionalmente puedes indicar la posición 'index' (0-based) para fijar su lugar entre los hijos.",
         estructura: "nombreObjeto.insertChild(parentId, valor, index?);",
         ejemplo:
-          'nario.insertChild("node-a", 25);  // al final\nnario.insertChild("node-a", 30, 0);  // en posición 0',
+          '<strong>arbolNario.insertChild("1", 25);</strong>  // al final <strong>arbolNario.insertChild("1", 30, 0);</strong>  // en posición 0',
       },
       {
         title: "deleteNode",
         description: "Elimina un nodo (y todo su subárbol) por id.",
         estructura: "nombreObjeto.deleteNode(id);",
-        ejemplo: 'nario.deleteNode("node-b");',
+        ejemplo: 'arbolNario.deleteNode("2");',
       },
       {
         title: "moveNode",
@@ -565,44 +563,44 @@ export const commandsData: Record<string, any> = {
           "Mueve un subárbol a otro padre (por id). Usa 'index' opcional para colocar el nodo en una posición específica entre los hijos del nuevo padre.",
         estructura: "nombreObjeto.moveNode(id, newParentId, index?);",
         ejemplo:
-          'nario.moveNode("node-c", "node-a");\nnario.moveNode("node-c", "node-a", 1);',
+          '<strong>arbolNario.moveNode("1", "3");</strong> ó <strong>arbolNario.moveNode("1", "3", 1);</strong>',
       },
       {
         title: "updateValue",
         description: "Actualiza el valor almacenado en un nodo por su id.",
         estructura: "nombreObjeto.updateValue(id, nuevoValor);",
-        ejemplo: 'nario.updateValue("node-d", 42);',
+        ejemplo: 'arbolNario.updateValue("4", 42);',
       },
       {
         title: "search",
         description:
           "Busca el primer nodo cuyo valor coincida (BFS). Resalta el camino encontrado.",
         estructura: "nombreObjeto.search(valor);",
-        ejemplo: "nario.search(42);",
+        ejemplo: "arbolNario.search(42);",
       },
       {
         title: "getPreOrder",
         description: "Obtiene el recorrido en preorden (nodo → hijos).",
         estructura: "nombreObjeto.getPreOrder();",
-        ejemplo: "nario.getPreOrder();",
+        ejemplo: "arbolNario.getPreOrder();",
       },
       {
         title: "getPostOrder",
         description: "Obtiene el recorrido en postorden (hijos → nodo).",
         estructura: "nombreObjeto.getPostOrder();",
-        ejemplo: "nario.getPostOrder();",
+        ejemplo: "arbolNario.getPostOrder();",
       },
       {
         title: "getLevelOrder",
         description: "Obtiene el recorrido por niveles (BFS).",
         estructura: "nombreObjeto.getLevelOrder();",
-        ejemplo: "nario.getLevelOrder();",
+        ejemplo: "arbolNario.getLevelOrder();",
       },
       {
         title: "clean",
         description: "Vacía por completo el árbol N-ario.",
         estructura: "nombreObjeto.clean();",
-        ejemplo: "nario.clean();",
+        ejemplo: "arbolNario.clean();",
       },
     ],
   },

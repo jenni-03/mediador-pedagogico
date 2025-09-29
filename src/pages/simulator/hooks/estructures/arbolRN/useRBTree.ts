@@ -1,16 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
-import { type ArbolAVL } from "../../../../../shared/utils/structures/ArbolAVL";
+import { type ArbolRojoNegro } from "../../../../../shared/utils/structures/ArbolRojoNegro";
 
-export function useAVLTree(structure: ArbolAVL<number>) {
-  // Estado para manejar el árbol AVL
+export function useRBTree(structure: ArbolRojoNegro<number>) {
+  // Estado para manejar el árbol RB
   const [tree, setTree] = useState(structure);
 
-  // Estado para manejar el error
-  const [error, setError] = useState<{ message: string, id: number } | null>(null);
+  // Estado de error para la consola
+  const [error, setError] = useState<{ message: string; id: number } | null>(
+    null
+  );
 
   // Estado de la "query" que usan los renderers/animaciones
-  const [query, setQuery] = useState<BaseQueryOperations<"arbol_avl">>({
+  const [query, setQuery] = useState<BaseQueryOperations<"arbol_rojinegro">>({
     toInsert: null,
     toDelete: [],
     toSearch: null,
@@ -19,20 +21,20 @@ export function useAVLTree(structure: ArbolAVL<number>) {
     toGetPostOrder: [],
     toGetLevelOrder: [],
     toClear: false,
-    avlTrace: null
+    rbTrace: null
   });
 
   // Operación de inserción
   const insertNode = useCallback((value: number) => {
     try {
       // Clonar el árbol para garantizar la inmutabilidad del estado
-      const cloned = tree.clonarAVL();
+      const cloned = tree.clonarRB();
 
       // Insertar el nuevo nodo
       const inserted = cloned.insertar(value);
 
-      // Obtener la traza de rotaciones
-      const trace = cloned.consumeLastAvlTrace();
+      // Obtener la traza de recoloreos y rotaciones
+      const trace = cloned.consumeLastRbTrace();
 
       // Actualizar el estado del árbol
       setTree(cloned);
@@ -41,7 +43,7 @@ export function useAVLTree(structure: ArbolAVL<number>) {
       setQuery((prev) => ({
         ...prev,
         toInsert: inserted.getId(),
-        avlTrace: trace
+        rbTrace: trace
       }));
 
       // Limpieza del error existente
@@ -55,13 +57,13 @@ export function useAVLTree(structure: ArbolAVL<number>) {
   const deleteNode = useCallback((value: number) => {
     try {
       // Clonar el árbol para asegurar la inmutabilidad del estado
-      const cloned = tree.clonarAVL();
+      const cloned = tree.clonarRB();
 
       // Obtener el nodo a ser eliminado para acceder a su ID
       const { removed, updated } = cloned.eliminar(value);
 
-      // Obtener la traza de rotaciones
-      const trace = cloned.consumeLastAvlTrace();
+      // Obtener la traza de recoloreos y rotaciones
+      const trace = cloned.consumeLastRbTrace();
 
       // Actualizar el estado del árbol
       setTree(cloned);
@@ -70,7 +72,7 @@ export function useAVLTree(structure: ArbolAVL<number>) {
       setQuery((prev) => ({
         ...prev,
         toDelete: [removed!.getId(), updated?.getId() ?? null],
-        avlTrace: trace
+        rbTrace: trace
       }));
 
       // Limpieza del error existente
@@ -193,7 +195,7 @@ export function useAVLTree(structure: ArbolAVL<number>) {
   // Operación para vaciar el árbol
   const clearTree = useCallback(() => {
     // Clonar el árbol para asegurar la inmutabilidad del estado
-    const cloned = tree.clonarAVL();
+    const cloned = tree.clonarRB();
 
     // Vaciar el árbol
     cloned.vaciar();
@@ -219,11 +221,10 @@ export function useAVLTree(structure: ArbolAVL<number>) {
       toGetPostOrder: [],
       toGetLevelOrder: [],
       toClear: false,
-      avlTrace: null
+      rbTrace: null
     });
   }, []);
 
-  // Objeto de operaciones estable
   const operations = useMemo(() => ({
     insertNode,
     deleteNode,

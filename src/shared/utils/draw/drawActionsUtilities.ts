@@ -1,7 +1,12 @@
+import type { Dispatch, SetStateAction } from "react";
 import {
   HierarchyNodeData,
+  HintContent,
+  HintOptions,
+  HintTarget,
   IndicatorPositioningConfig,
   LinkData,
+  LinkPathFn,
   ListNodeData,
   TraversalNodeType,
   TreeLinkData,
@@ -13,6 +18,7 @@ import {
 } from "../../constants/consts";
 import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 import { type HierarchyNode, type Selection, easePolyInOut } from "d3";
+import { straightPath } from "../treeUtils";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
@@ -470,7 +476,7 @@ export function animateHighlightNode(
     textFontWeight: string;
   },
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Estilos para contenedor y texto del nodo
   const { highlightColor, rectStrokeColor, rectStrokeWidth } = rectValues;
@@ -527,7 +533,7 @@ export async function animateClearList(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodePositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Animación de salida de los enlaces
   await svg
@@ -575,7 +581,7 @@ export async function animateClearTree(
     seqPositions: Map<string, { x: number; y: number }>;
   },
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Obtenemos los mapas de posiciones de los elementos
   const { nodePositions, seqPositions } = elementPositions;
@@ -624,14 +630,16 @@ export async function animateClearTree(
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
- * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param buildPath Función para construir el SVG path del enlace entre 2 posiciones.
  * @returns Una promesa que se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
  */
-export async function repositionTreeNodes(
+export async function repositionTree(
   g: Selection<SVGGElement, unknown, null, undefined>,
   nodes: HierarchyNode<HierarchyNodeData<number>>[],
   linksData: TreeLinkData[],
-  nodePositions: Map<string, { x: number; y: number }>
+  positions: Map<string, { x: number; y: number }>,
+  buildPath: LinkPathFn = straightPath
 ) {
   // Selección de nodos a desplazar (re-vinculación de datos)
   const nodesToMove = g
@@ -644,7 +652,7 @@ export async function repositionTreeNodes(
     .duration(1000)
     .ease(easePolyInOut)
     .attr("transform", (d) => {
-      const finalPos = nodePositions.get(d.data.id)!;
+      const finalPos = positions.get(d.data.id)!;
       return `translate(${finalPos.x}, ${finalPos.y})`;
     })
     .end();
@@ -661,39 +669,14 @@ export async function repositionTreeNodes(
     .duration(1000)
     .ease(easePolyInOut)
     .attr("d", (d) => {
-      const s = nodePositions.get(d.sourceId)!;
-      const t = nodePositions.get(d.targetId)!;
+      const s = positions.get(d.sourceId)!;
+      const t = positions.get(d.targetId)!;
       const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-      return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
+      return buildPath(s, t, r);
     })
     .end();
 
   return Promise.all([p1, p2]).then(() => { });
-}
-
-/**
- * Función encargada de resaltar cada nodo del árbol a lo largo de un camino dado.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param path Array de nodos jerárquicos que representan el camino a resaltar.
- * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
- */
-export async function highlightTreePath(
-  g: Selection<SVGGElement, unknown, null, undefined>,
-  path: HierarchyNode<HierarchyNodeData<number>>[],
-  highlightColor: string
-) {
-  for (const node of path) {
-    // Selección del grupo del nodo actual
-    const nodeGroup = g.select<SVGGElement>(`g#${node.data.id}`);
-
-    // Resaltado del nodo actual
-    await nodeGroup
-      .select("circle")
-      .transition()
-      .duration(1000)
-      .attr("fill", highlightColor)
-      .end();
-  }
 }
 
 /**
@@ -712,7 +695,7 @@ export async function   animateTreeTraversal(
   targetNodes: TraversalNodeType[],
   seqPositions: Map<string, { x: number; y: number }>,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>,
   opts: TreeTraversalAnimOptions = {}
 ) {
   const {
@@ -732,11 +715,15 @@ export async function   animateTreeTraversal(
 
   for (const node of targetNodes) {
     // Selección de los elementos del nodo
-    const circle = treeG.select<SVGCircleElement>(`g#${node.id} circle`);
+    const nodeCircle = treeG.select<SVGCircleElement>(`g#${node.id} circle.node-container`);
     const seqText = seqG.select<SVGTextElement>(`text#${node.id}`);
 
+    // Color y tamaño original del borde del círculo contenedor del nodo
+    const orig_color = nodeCircle.attr("stroke");
+    const orig_stroke_width = nodeCircle.attr("stroke-width");
+
     // Modificación del borde del círculo
-    await circle
+    await nodeCircle
       .transition()
       .duration(250)
       .attr("stroke", strokeColor)
@@ -744,7 +731,7 @@ export async function   animateTreeTraversal(
       .end();
 
     // Creación del anillo de pulso
-    const pulseRing = circle
+    const pulseRing = nodeCircle
       .select(function () {
         // Selección del grupo g padre del círculo
         return (this!.parentNode as SVGGElement) || this!;
@@ -767,7 +754,7 @@ export async function   animateTreeTraversal(
       .end();
 
     // Bounce del círculo
-    await circle
+    await nodeCircle
       .transition()
       .duration(150)
       .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.12)
@@ -787,11 +774,11 @@ export async function   animateTreeTraversal(
       .end();
 
     // Restablecimiento de bordes
-    await circle
+    await nodeCircle
       .transition()
       .duration(250)
-      .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-      .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+      .attr("stroke", orig_color)
+      .attr("stroke-width", orig_stroke_width)
       .end();
   }
 
@@ -800,4 +787,159 @@ export async function   animateTreeTraversal(
 
   // Finalización de la animación
   setIsAnimating(false);
+}
+
+/**
+ * Función encargada de mostrar un indicador visual en la visualización de un árbol anclado a un nodo o borde.
+ * @param svg Selección D3 del elemento SVG donde se renderizará el indicador.
+ * @param target El nodo o borde de destino al que se va a anclar el indicador.
+ * @param content Contenido a mostrar en el indicador.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param opts Objeto para configuración de estilos del indcador.
+ */
+export async function showTreeHint(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  target: HintTarget,
+  content: HintContent,
+  positions: Map<string, { x: number; y: number }>,
+  treeOffset: { x: number; y: number },
+  opts: HintOptions = {}
+) {
+  // Valores por defecto
+  const palette = {
+    bg: "#1b2330", stroke: "#ff6b6b", label: "#f4a6a6", value: "#ffd5d5",
+    ...(opts.palette ?? {})
+  };
+  const size = {
+    width: 50, height: 34, radius: 10, scaleFrom: 0.92,
+    ...(opts.size ?? {})
+  };
+  const anchor = {
+    side: "right" as const, dx: 0, dy: -10,
+    ...(opts.anchor ?? {})
+  };
+  const typography = {
+    labelFz: "9px",
+    valueFz: "11px",
+    labelFw: 600,
+    valueFw: 800,
+    ...(opts.typography ?? {})
+  };
+
+  // Capa overlay
+  let overlay = svg.select<SVGGElement>("g.overlay-top");
+  if (overlay.empty()) overlay = svg.append("g").attr("class", "overlay-top");
+  overlay.raise();
+
+  // Posicionamiento del ancla
+  const anchorXY = (() => {
+    if (target.type === "node") {
+      const p = positions.get(target.id);
+      if (!p) return null;
+      return { x: treeOffset.x + p.x, y: treeOffset.y + p.y };
+    } else {
+      const s = positions.get(target.sourceId), t = positions.get(target.targetId);
+      if (!s || !t) return;
+      return { x: treeOffset.x + (s.x + t.x) / 2, y: treeOffset.y + (s.y + t.y) / 2 };
+    }
+  })();
+  if (!anchorXY) return;
+
+  // Aplicación de offset por lado
+  const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
+  const sideOffset =
+    anchor.side === "left" ? -r - 13 :
+      anchor.side === "right" ? +r + 13 :
+        0;
+
+  const cx = anchorXY.x + (anchor.side === "left" || anchor.side === "right" ? sideOffset : 0) + (anchor.dx ?? 0);
+  const cy = anchorXY.y + (anchor.side === "above" ? -(r + 13) : anchor.side === "below" ? +(r + 13) : 0) + (anchor.dy ?? 0);
+
+  // Grupo contenedor del badge
+  const g = overlay.append("g")
+    .attr("class", "tree-hint")
+    .attr("transform", `translate(${cx}, ${cy}) scale(0.92)`)
+    .style("opacity", 0);
+
+  // Fondo
+  g.append("rect")
+    .attr("x", -size.width / 2).attr("y", -size.height / 2)
+    .attr("width", size.width).attr("height", size.height)
+    .attr("rx", size.radius).attr("ry", size.radius)
+    .attr("fill", palette.bg).attr("stroke", palette.stroke).attr("stroke-width", 1);
+
+  // Textos (centrados dentro del chip de tamaño fijo)
+  const textG = g.append("g").attr("class", "txt");
+  textG.append("text")
+    .attr("text-anchor", "middle").attr("y", -4)
+    .style("font-size", `${typography.labelFz}`).style("font-weight", `${typography.labelFw}`)
+    .attr("fill", palette.label).text(content.label);
+
+  textG.append("text")
+    .attr("text-anchor", "middle").attr("y", 12)
+    .style("font-size", `${typography.valueFz}`).style("font-weight", `${typography.valueFw}`)
+    .attr("fill", palette.value).text(content.value);
+
+  // Animación: pop-in y fade-out
+  await g.transition()
+    .duration(500)
+    .style("opacity", 1)
+    .attr("transform", `translate(${cx}, ${cy}) scale(1)`)
+    .end();
+
+  await g.transition()
+    .delay(1000)
+    .duration(800)
+    .style("opacity", 0)
+    .remove()
+    .end();
+}
+
+/**
+ * Función encargada de animar la aparición de un nodo especifico de un árbol.
+ * @param newNodeGroup Selección D3 del elemento de grupo SVG que representa el nodo del árbol.
+ */
+export async function defaultAppearTreeNode(
+  nodeGroup: Selection<SVGGElement, unknown, null, undefined>
+) {
+  // Selección de los elementos del nodo y configuración inicial
+  nodeGroup
+    .style("opacity", 1);
+  const circle = nodeGroup.select<SVGCircleElement>("circle.node-container").attr("r", 0);
+  const text = nodeGroup.select<SVGTextElement>("text.node-value").style("opacity", 0);
+
+  // Animaciones de entrada
+  const p1 = circle.transition().duration(750)
+    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.15)
+    .transition().duration(750)
+    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS).end();
+  const p2 = text.transition().duration(650).style("opacity", 1).end();
+
+  await Promise.all([p1, p2]);
+}
+
+/**
+ * Función encargada de animar la salida de un nodo especifico de un árbol.
+ * @param newNodeGroup Selección D3 del elemento de grupo SVG que representa el nodo del árbol.
+ */
+export async function defaultDeleteTreeNode(
+  nodeGroup: Selection<SVGGElement, unknown, null, undefined>
+) {
+  // Selección de los elementos del nodo
+  const circle = nodeGroup.select<SVGCircleElement>("circle.node-container");
+  const value = nodeGroup.select<SVGCircleElement>("text.node-value");
+
+  // Animaciones de salida
+  const p1 = circle.transition().duration(750)
+    .attr("r", 0).end();
+
+  const p2 = value.transition().duration(500)
+    .style("opacity", 0).end();
+
+  await Promise.all([p1, p2]);
+
+  // Eliminación del grupo del DOM
+  await nodeGroup.transition().duration(500)
+    .style("opacity", 0).remove().end();
 }

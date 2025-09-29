@@ -1,111 +1,108 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { EqualityFn, HierarchyNodeData } from "../../../types";
-import { Cola } from "./Cola";
+import { Comparator, HierarchyNodeData, RBColor, RBTrace, RotationStep } from "../../../types";
 import { NodoRB } from "../nodes/NodoRB";
+import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
+import { defaultComparator } from "../treeUtils";
 
 /**
- * Colores de un nodo Roji-Negro
+ * Clase que representa el funcionamiento de un árbol Rojo-Negro.
  */
-type RBColor = "RED" | "BLACK";
+export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
 
-/**
- * Árbol Roji-Negro (BST balanceado por color).
- * Reglas:
- *  - Cada nodo es rojo o negro
- *  - La raíz es negra
- *  - Las hojas nulas son negras
- *  - Un nodo rojo no tiene hijos rojos
- *  - Todo camino de un nodo a sus hojas nulas tiene el mismo número de nodos negros
- */
-export class ArbolRojoNegro<T> {
-  // Raíz del árbol
-  private raiz: NodoRB<T> | null;
-
-  // Número de nodos
-  private tamanio: number;
-
-  // Límite para el simulador
-  private readonly MAX_NODOS = 30;
+  private lastRbTrace: RBTrace<T> | null = null;
 
   /**
-   * @param equals  Función de igualdad (para mensajes/utilidades). Por defecto a===b.
-   * @param compare Función de comparación total (BST): <0 a<b, 0 a=b, >0 a>b.
+   * Constructor de la clase ArbolRojoNegro.
    */
   constructor(
-    private equals: EqualityFn<T> = (a, b) => a === b,
-    private compare: (a: T, b: T) => number = defaultCompare
+    compare: Comparator<T> = defaultComparator
   ) {
-    this.raiz = null;
-    this.tamanio = 0;
+    super(compare);
   }
 
-  /* ─────────────────────────────── API Pública ─────────────────────────────── */
-
-  /** Inserta un valor (BST) y corrige propiedades Roji-Negro. */
-  public insertar(valor: T): NodoRB<T> {
-    if (this.tamanio >= this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
-      );
-    }
-    if (this.esta(valor)) {
-      throw new Error(
-        `No fue posible insertar el nodo: El elemento ya existe en el árbol.`
-      );
+  /**
+   * Método que inserta un nuevo nodo en el árbol Rojo-Negro.
+   * @param valor Elemento a insertar.
+   * @returns Nodo insertado.
+   */
+  public override insertar(valor: T): NodoRB<T> {
+    if (super.getTamanio() >= this.MAX_NODOS) {
+      throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
     }
 
-    const z = new NodoRB<T>(valor); // por convención, entra ROJO
-    z.setColor("RED");
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
+    this.lastRbTrace = {
+      actions: [],
+      hierarchies: {
+        bst: null,
+        mids: []
+      }
+    }
 
-    // Inserción BST estándar (con punteros a padre)
+    // z nace como rojo
+    const z = new NodoRB<T>(valor, "RED");
+
+    // Inserción BST estándar
     let y: NodoRB<T> | null = null; // padre
-    let x: NodoRB<T> | null = this.raiz;
+    let x: NodoRB<T> | null = this.getRaiz(); // cursor
 
-    while (x) {
+    while (x !== null) {
       y = x;
-      if (this.compare(z.getInfo(), x.getInfo()) < 0) {
-        x = x.getIzq() as NodoRB<T> | null;
+      const cmp = this.compare(valor, x.getInfo());
+      if (cmp < 0) {
+        x = x.getIzq();
+      } else if (cmp > 0) {
+        x = x.getDer();
       } else {
-        x = x.getDer() as NodoRB<T> | null;
+        throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
       }
     }
 
     z.setPadre(y);
+
     if (!y) {
-      // el árbol estaba vacío
-      this.raiz = z;
+      // Árbol vacío
+      this.setRaiz(z);
     } else if (this.compare(z.getInfo(), y.getInfo()) < 0) {
       y.setIzq(z);
     } else {
       y.setDer(z);
     }
 
-    // Fix-up Roji-Negro
+    // Reparación de infracciones
     this.insertFixup(z);
-    this.raiz!.setColor("BLACK"); // regla raíz negra
-
-    this.tamanio++;
-
-    // ✅ Valida invariantes tras insertar
-    this.assertRB();
+    this.setTamanio(this.getTamanio() + 1);
 
     return z;
   }
 
-  /** Elimina un valor (BST) y corrige propiedades Roji-Negro. */
-  public eliminar(valor: T): { removed: NodoRB<T> } {
-    if (this.esVacio()) {
-      throw new Error(
-        "No fue posible eliminar el nodo: El árbol encuentra vacío (cantidad de nodos: 0)."
-      );
-    }
-    const z = this.get(valor);
+  /**
+   * Método que elimina un nodo especifico del árbol Rojo-Negro.
+   * @param valor Elemento a eliminar.
+   * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
+   */
+  public override eliminar(valor: T): { removed: NodoRB<T>; updated: NodoRB<T> | null } {
+    if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
+
+    const z = this.buscarRN(valor);
     if (!z) {
       throw new Error(
-        "No fue posible eliminar el nodo: El elemento no existe en el árbol Roji-Negro."
+        "No fue posible eliminar el nodo: El elemento no existe en el árbol."
       );
     }
+
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
+    this.lastRbTrace = {
+      actions: [],
+      hierarchies: {
+        bst: null,
+        mids: []
+      }
+    }
+
+    let removed: NodoRB<T> | null = null;
+    let updated: NodoRB<T> | null = null;
 
     // Estándar CLRS: y es el nodo que se elimina físicamente
     let y: NodoRB<T> = z;
@@ -113,148 +110,453 @@ export class ArbolRojoNegro<T> {
     let x: NodoRB<T> | null = null;
     let xParent: NodoRB<T> | null = null;
 
-    if (!z.getIzq()) {
-      x = z.getDer() as NodoRB<T> | null;
+    if (z.getIzq() === null) {
+      // Caso 0 o 1 hijo (solo derecho)
+      removed = z;
+      x = z.getDer();
       xParent = z.getPadre();
-      this.transplant(z, z.getDer() as NodoRB<T> | null);
-    } else if (!z.getDer()) {
-      x = z.getIzq() as NodoRB<T> | null;
+      this.transplant(z, x);
+    } else if (z.getDer() === null) {
+      // Caso 1 hijo (solo izquierdo)
+      removed = z;
+      x = z.getIzq();
       xParent = z.getPadre();
-      this.transplant(z, z.getIzq() as NodoRB<T> | null);
+      this.transplant(z, x);
     } else {
-      y = this.minNodo(z.getDer() as NodoRB<T>);
+      // Caso 2 hijos
+      removed = z;
+      y = this.minNodo(z.getDer()!);
+      updated = y;
+
       yOriginalColor = y.getColor();
-      x = y.getDer() as NodoRB<T> | null;
+      x = y.getDer();
 
       if (y.getPadre() === z) {
         xParent = y;
       } else {
-        this.transplant(y, y.getDer() as NodoRB<T> | null);
-        y.setDer(z.getDer() as NodoRB<T>);
-        (y.getDer() as NodoRB<T>).setPadre(y);
+        this.transplant(y, y.getDer());
+        y.setDer(z.getDer());
+        if (y.getDer()) y.getDer()!.setPadre(y);
+        xParent = y.getPadre();
       }
 
       this.transplant(z, y);
-      y.setIzq(z.getIzq() as NodoRB<T>);
-      (y.getIzq() as NodoRB<T>).setPadre(y);
-      y.setColor(z.getColor());
+      y.setIzq(z.getIzq());
+      if (y.getIzq()) y.getIzq()!.setPadre(y);
+
+      // Conservar color de z (para no alterar altura negra aquí)
+      this.recolor(y, z.getColor(), "Nodo");
     }
 
+    // Reparación de infracciones
     if (yOriginalColor === "BLACK") {
       this.deleteFixup(x, xParent);
     }
+    this.setTamanio(this.getTamanio() - 1);
 
-    // Garantiza raíz negra por si acaso
-    if (this.raiz) this.raiz.setColor("BLACK");
-
-    this.tamanio--;
-
-    // ✅ Valida invariantes tras eliminar
-    this.assertRB();
-
-    return { removed: z };
+    return { removed: removed!, updated };
   }
 
-  /** Verifica si existe el valor en el árbol. */
-  public esta(valor: T): boolean {
-    return this.get(valor) !== null;
+  /**
+   * Método que verifica la existencia de un elemento dentro del árbol Rojo-Negro.
+   * @param valor Valor del elemento a buscar.
+   * @returns Booleano que indica si el elemento fue encontrado o no. 
+   */
+  public override esta(valor: T): boolean {
+    return this.buscarRN(valor) !== null;
   }
 
-  /** Vacía el árbol. */
-  public vaciar(): void {
-    this.raiz = null;
-    this.tamanio = 0;
+  /**
+   * Método que obtiene la raíz del árbol Rojo-Negro.
+   * @returns Nodo raíz del árbol o null si está vacío.
+  */
+  public override getRaiz(): NodoRB<T> | null {
+    return super.getRaiz() as NodoRB<T> | null;
   }
 
-  /** True si no hay nodos. */
-  public esVacio(): boolean {
-    return this.raiz === null;
+  /**
+   * Método que modifica la raíz del árbol Rojo-Negro.
+   * @param raiz Nuevo nodo raíz del árbol Rojo-Negro.
+   */
+  public override setRaiz(raiz: NodoRB<T> | null): void {
+    super.setRaiz(raiz);
+    if (this.getRaiz()) this.getRaiz()?.setPadre(null);
   }
 
-  /** Altura del árbol (para métricas generales – no se usa en balanceo). */
-  public getAltura(): number {
-    return this.alturaAux(this.raiz);
+  /**
+   * Método que obtiene todos los nodos hojas del árbol Rojo-Negro.
+   * @returns Array de nodos que representan las hojas del árbol.
+   */
+  public override getHojas(): NodoRB<T>[] {
+    return super.getHojas() as NodoRB<T>[];
   }
 
-  /** Número de nodos. */
-  public getPeso(): number {
-    return this.tamanio;
+  /**
+   * Método que cuenta el número de nodos hoja del árbol Rojo-Negro.
+   * @returns Número de nodos hoja del árbol.
+   */
+  public override contarHojas(): number {
+    return super.contarHojas();
   }
 
-  /** Obtiene la raíz. */
-  public getRaiz(): NodoRB<T> | null {
-    return this.raiz;
+  /**
+   * Método que calcula el peso total (número de nodos) del árbol Rojo-Negro.
+   * @returns Número total de nodos del árbol.
+   */
+  public override getPeso(): number {
+    return super.getPeso();
   }
 
-  /** Asigna la raíz. */
-  public setRaiz(raiz: NodoRB<T> | null): void {
-    this.raiz = raiz;
-    if (this.raiz) this.raiz.setPadre(null);
+  /**
+   * Método que calcula la altura del árbol Rojo-Negro.
+   * @returns Altura del árbol.
+   */
+  public override getAltura(): number {
+    return super.getAltura();
   }
 
-  /** Conversión a estructura jerárquica para renderer (incluye color). */
-  public convertirEstructuraJerarquica(): HierarchyNodeData<T> | null {
+  /**
+   * Método que vacia el árbol Rojo-Negro.
+   */
+  public override vaciar(): void {
+    super.vaciar();
+  }
+
+  /**
+   * Método que verifica si el árbol Rojo-Negro está vacío.
+   * @returns True si se encuentra vacío, false en caso contrario.
+   */
+  public override esVacio(): boolean {
+    return super.esVacio();
+  }
+
+  /**
+   * Método que realiza el recorrido in-orden del árbol Rojo-Negro.
+   * @returns Array de nodos en secuencia in-orden.
+   */
+  public override inOrden(): NodoRB<T>[] {
+    return super.inOrden() as NodoRB<T>[];
+  }
+
+  /**
+   * Método que realiza el recorrido pre-orden del árbol Rojo-Negro.
+   * @returns Array de nodos en secuencia pre-orden.
+   */
+  public override preOrden(): NodoRB<T>[] {
+    return super.preOrden() as NodoRB<T>[];
+  }
+
+  /**
+   * Método que realiza el recorrido post-orden del árbol Rojo-Negro.
+   * @returns Array de nodos en secuencia post-orden.
+   */
+  public override postOrden(): NodoRB<T>[] {
+    return super.postOrden() as NodoRB<T>[];
+  }
+
+  /**
+   * Método que realiza el recorrido por niveles del árbol Rojo-Negro.
+   * @returns Array de nodos por niveles.
+   */
+  public override getNodosPorNiveles(): NodoRB<T>[] {
+    return super.getNodosPorNiveles() as NodoRB<T>[];
+  }
+
+  /**
+   * Método que convierte el árbol Rojo-Negro en una estructura jerárquica.
+   * @returns Representación jerárquica del árbol o null si está vacío.
+   */
+  public override convertirEstructuraJerarquica(): HierarchyNodeData<T> | null {
     if (this.esVacio()) return null;
-    return this.toHierarchy(this.raiz!);
+    return this.toRBHierarchy(this.getRaiz()!);
   }
 
-  /** Clona profundamente el árbol (incluye colores y relaciones). */
-  public clonar(): ArbolRojoNegro<T> {
-    const nuevo = new ArbolRojoNegro<T>(this.equals, this.compare);
-    nuevo.setRaiz(this.clonarNodo(this.raiz, null));
-    nuevo.tamanio = this.tamanio;
-    return nuevo;
+  /**
+   * Método que crea una copia profunda del árbol Rojo-Negro.
+   * @returns Retorna un nuevo árbol correspondiente a una copia profunda del árbol actual.
+   */
+  public clonarRB(): ArbolRojoNegro<T> {
+    const nuevoArbol = new ArbolRojoNegro<T>(this.compare);
+    nuevoArbol.setRaiz(this.clonarRBrec(this.getRaiz()));
+    nuevoArbol.setTamanio(this.getTamanio());
+    return nuevoArbol;
   }
 
-  /** Devuelve el nodo con cierto valor, o null si no existe. */
-  public get(valor: T): NodoRB<T> | null {
-    let cur = this.raiz;
-    while (cur) {
-      const cmp = this.compare(valor, cur.getInfo());
-      if (cmp === 0) return cur;
-      cur =
-        cmp < 0
-          ? (cur.getIzq() as NodoRB<T> | null)
-          : (cur.getDer() as NodoRB<T> | null);
+  /**
+   * Método que consume la última traza de operación del árbol Rojo-Negro.
+   * @returns La última traza de operación o null si no hay ninguna.
+   */
+  public consumeLastRbTrace(): RBTrace<T> | null {
+    const t = this.lastRbTrace;
+    this.lastRbTrace = null;
+    return t;
+  }
+
+  /**
+   * Método que corrige las infracciones en el árbol producto producidas por la inserción.
+   * @param z Nodo que se acaba de insertar.
+   */
+  private insertFixup(z: NodoRB<T>) {
+    while (this.isRed(z.getPadre())) {
+      const p = z.getPadre()!;
+      const g = p.getPadre()!;
+
+      // Padre es hijo izquierdo de abuelo
+      if (p === g.getIzq()) {
+        const y = g.getDer();
+
+        if (this.isRed(y)) {
+          // Caso 1: Tío rojo → recolorear
+          this.recolor(p, "BLACK", "Padre");
+          this.recolor(y, "BLACK", "Tío");
+          this.recolor(g, "RED", "Abuelo");
+          z = g;
+        } else {
+          // Capturar el estado pre-rotación
+          this.ensureRBTraceInit();
+
+          // Caso 2: triángulo → rotación izquierda en padre
+          if (z === p.getDer()) {
+            const step: RotationStep = {
+              type: "LR",
+              zId: p.getId(),
+              yId: z.getId(),
+              parentOfZId: p.getPadre()?.getId() ?? null,
+              BId: z.getIzq()?.getId() ?? null
+            }
+            this.lastRbTrace?.actions.push({ kind: "rotation", tag: "L(padre)", step });
+            z = p;
+            this.rotacionIzquierda(z);
+            this.pushMid();
+          }
+          // Caso 3: línea → rotación derecha en abuelo
+          this.recolor(z.getPadre()!, "BLACK", "Padre");
+          this.recolor(g, "RED", "Abuelo");
+
+          const step2: RotationStep = {
+            type: "LL",
+            zId: g.getId(),
+            yId: g.getIzq()!.getId(),
+            parentOfZId: g.getPadre()?.getId() ?? null,
+            BId: g.getIzq()?.getDer()?.getId() ?? null
+          }
+          this.lastRbTrace?.actions.push({ kind: "rotation", tag: "R(abuelo)", step: step2 });
+          this.rotacionDerecha(g);
+          this.pushMid();
+        }
+      } else {
+        // simétrico (padre es hijo derecho del abuelo)
+        const y = g.getIzq();
+
+        if (this.isRed(y)) {
+          this.recolor(p, "BLACK", "Padre");
+          this.recolor(y, "BLACK", "Tío");
+          this.recolor(g, "RED", "Abuelo");
+          z = g;
+        } else {
+          // Capturar el estado pre-rotación
+          this.ensureRBTraceInit();
+
+          // Caso 2: triángulo → rotación derecha en padre
+          if (z === p.getIzq()) {
+            const step: RotationStep = {
+              type: "RL",
+              zId: p.getId(),
+              yId: z.getId(),
+              parentOfZId: p.getPadre()?.getId() ?? null,
+              BId: z.getDer()?.getId() ?? null
+            }
+            this.lastRbTrace?.actions.push({ kind: "rotation", tag: "R(padre)", step });
+            z = p;
+            this.rotacionDerecha(z);
+            this.pushMid();
+          }
+          // Caso 3: línea → rotación izquierda en abuelo
+          this.recolor(z.getPadre()!, "BLACK", "Padre");
+          this.recolor(g, "RED", "Abuelo");
+
+          const step2: RotationStep = {
+            type: "RR",
+            zId: g.getId(),
+            yId: g.getDer()!.getId(),
+            parentOfZId: g.getPadre()?.getId() ?? null,
+            BId: g.getDer()?.getIzq()?.getId() ?? null
+          }
+          this.lastRbTrace?.actions.push({ kind: "rotation", tag: "L(abuelo)", step: step2 });
+          this.rotacionIzquierda(g);
+          this.pushMid();
+        }
+      }
     }
-    return null;
+    const root = this.getRaiz();
+    if (root && root.getColor() !== "BLACK") {
+      this.recolor(root, "BLACK", "Raíz");
+    }
   }
 
-  /* ──────────────── API pública extra (útil en UI/depuración) ─────────────── */
+  /**
+   * Método que corrige las infracciones en el árbol Rojo-Negro producto de la eliminación del nodo.
+   * @param x Nodo que reemplaza al nodo eliminado (puede ser nulo).
+   * @param parent Padre del nodo x (puede ser nulo).
+   */
+  private deleteFixup(x: NodoRB<T> | null, xParent: NodoRB<T> | null): void {
+    while (x !== this.getRaiz() && this.isBlack(x)) {
+      const p = x !== null ? x.getPadre() : xParent;
+      if (!p) break;
 
-  /** Dispara manualmente el validador (lanza Error si hay violación). */
-  public validar(): void {
-    this.assertRB();
+      const xEsIzq = p.getIzq() === x;
+      let w = xEsIzq ? p.getDer() : p.getIzq();
+
+      // Caso A - Hermano rojo
+      if (this.isRed(w)) {
+        // Capturar el estado pre-rotación
+        this.ensureRBTraceInit();
+
+        this.recolor(w, "BLACK", "Tío");
+        this.recolor(p, "RED", "Padre");
+
+        if (xEsIzq) {
+          const step: RotationStep = {
+            type: "RR",
+            zId: p.getId(),
+            yId: w!.getId(),
+            parentOfZId: p.getPadre()?.getId() ?? null,
+            BId: w!.getIzq()?.getId() ?? null
+          }
+          this.lastRbTrace?.actions.push({ kind: "rotation", tag: "L(padre)", step });
+          this.rotacionIzquierda(p);
+        } else {
+          const step: RotationStep = {
+            type: "LL",
+            zId: p.getId(),
+            yId: w!.getId(),
+            parentOfZId: p.getPadre()?.getId() ?? null,
+            BId: w!.getDer()?.getId() ?? null
+          }
+          this.lastRbTrace?.actions.push({ kind: "rotation", tag: "R(padre)", step });
+          this.rotacionDerecha(p);
+        }
+        this.pushMid();
+
+        const nuevoP = (x !== null) ? x.getPadre() : xParent!;
+        xParent = nuevoP;
+        w = xEsIzq ? nuevoP!.getDer() : nuevoP!.getIzq();
+      }
+
+      const wLeft = w ? w.getIzq() : null;
+      const wRight = w ? w.getDer() : null;
+
+      // Caso B - w negro con hijos negros
+      if (this.isBlack(wLeft) && this.isBlack(wRight)) {
+        if (w) this.recolor(w, "RED", "Tío");
+        x = p;
+        xParent = p.getPadre();
+        continue;
+      }
+
+      // Capturar el estado pre-rotación
+      this.ensureRBTraceInit();
+
+      // Caso C/D
+      if (xEsIzq) {
+        // Lado izquierdo: cercano = w.left, lejano = w.right
+        // Caso C - cercano rojo, lejano negro
+        if (this.isBlack(wRight)) {
+          if (wLeft) this.recolor(wLeft, "BLACK", "PrimoCer");
+          if (w) this.recolor(w, "RED", "Tío");
+          if (w) {
+            const step: RotationStep = {
+              type: "RL",
+              zId: w.getId(),
+              yId: w!.getIzq()!.getId(),
+              parentOfZId: w.getPadre()?.getId() ?? null,
+              BId: w!.getIzq()!.getDer()?.getId() ?? null
+            }
+            this.lastRbTrace?.actions.push({ kind: "rotation", tag: "R(tío)", step });
+            this.rotacionDerecha(w);
+            this.pushMid();
+          }
+          const nuevoP = x !== null ? x.getPadre() : xParent!;
+          xParent = nuevoP;
+          w = nuevoP!.getDer();
+        }
+
+        // Caso D - Lejano rojo
+        if (w) this.recolor(w, this.colorOf(p), "Tío");
+        this.recolor(p, "BLACK", "Padre");
+        if (w && w.getDer()) this.recolor(w.getDer(), "BLACK", "PrimoLej");
+
+        const step: RotationStep = {
+          type: "RR",
+          zId: p.getId(),
+          yId: w!.getId(),
+          parentOfZId: p.getPadre()?.getId() ?? null,
+          BId: w!.getIzq()?.getId() ?? null
+        }
+        this.lastRbTrace?.actions.push({ kind: "rotation", tag: "L(padre)", step });
+        this.rotacionIzquierda(p);
+        this.pushMid();
+      } else {
+        // Espejo: x es hijo derecho
+        // cercano = w.right, lejano = w.left
+        if (this.isBlack(wLeft)) {
+          if (wRight) this.recolor(wRight, "BLACK", "PrimoCer");
+          if (w) this.recolor(w, "RED", "Tío");
+          if (w) {
+            const step: RotationStep = {
+              type: "LR",
+              zId: w.getId(),
+              yId: w!.getDer()!.getId(),
+              parentOfZId: w.getPadre()?.getId() ?? null,
+              BId: w!.getDer()!.getIzq()?.getId() ?? null
+            }
+            this.lastRbTrace?.actions.push({ kind: "rotation", tag: "L(tío)", step });
+            this.rotacionIzquierda(w);
+            this.pushMid();
+          }
+          const nuevoP = (x !== null) ? x.getPadre() : xParent!;
+          xParent = nuevoP;
+          w = nuevoP!.getIzq();
+        }
+
+        if (w) this.recolor(w, this.colorOf(p), "Tío");
+        this.recolor(p, "BLACK", "Padre");
+        if (w && w.getIzq()) this.recolor(w.getIzq(), "BLACK", "PrimoLej");
+
+        const step: RotationStep = {
+          type: "LL",
+          zId: p.getId(),
+          yId: w!.getId(),
+          parentOfZId: p.getPadre()?.getId() ?? null,
+          BId: w!.getDer()?.getId() ?? null
+        }
+        this.lastRbTrace?.actions.push({ kind: "rotation", tag: "R(padre)", step });
+        this.rotacionDerecha(p);
+        this.pushMid();
+      }
+
+      x = this.getRaiz();
+      xParent = null;
+    }
+
+    this.recolor(x, "BLACK", "Nodo");
   }
 
-  /** Tamaño actual del árbol (alias explícito para tarjetas). */
-  public getTamanio(): number {
-    return this.tamanio;
-  }
-
-  /** Cantidad de nodos hoja. */
-  public contarHojas(): number {
-    return this.contarHojasAux(this.raiz);
-  }
-
-  /** Devuelve un arreglo con todos los nodos hoja. */
-  public getHojas(): NodoRB<T>[] {
-    const hojas: NodoRB<T>[] = [];
-    this.getArrayHojas(this.raiz, hojas);
-    return hojas;
-  }
-
-  /* ────────────────────────── Rotaciones ────────────────────────── */
-
+  /**
+   * Método que realiza una rotación izquierda en el nodo Rojo-Negro dado.
+   * @param x Nodo raíz del subárbol a rotar.
+   */
   private rotacionIzquierda(x: NodoRB<T>): void {
-    const y = x.getDer() as NodoRB<T>;
-    x.setDer(y.getIzq() as NodoRB<T> | null);
-    if (y.getIzq()) (y.getIzq() as NodoRB<T>).setPadre(x);
+    const y = x.getDer();
+    if (!y) return;
+
+    const T2 = y.getIzq();
+    x.setDer(T2);
+    if (T2 !== null) T2.setPadre(x);
 
     y.setPadre(x.getPadre());
-
-    if (!x.getPadre()) {
-      this.raiz = y;
+    if (x.getPadre() === null) {
+      this.setRaiz(y);
     } else if (x === x.getPadre()!.getIzq()) {
       x.getPadre()!.setIzq(y);
     } else {
@@ -265,278 +567,111 @@ export class ArbolRojoNegro<T> {
     x.setPadre(y);
   }
 
-  private rotacionDerecha(y: NodoRB<T>): void {
-    const x = y.getIzq() as NodoRB<T>;
-    y.setIzq(x.getDer() as NodoRB<T> | null);
-    if (x.getDer()) (x.getDer() as NodoRB<T>).setPadre(y);
+  /**
+   * Método que realiza una rotación derecha en el nodo Rojo-Negro dado.
+   * @param x Nodo raíz del subárbol a rotar.
+   */
+  private rotacionDerecha(x: NodoRB<T>): void {
+    const y = x.getIzq();
+    if (!y) return;
 
-    x.setPadre(y.getPadre());
+    const T2 = y.getDer();
+    x.setIzq(T2);
+    if (T2 !== null) T2.setPadre(x);
 
-    if (!y.getPadre()) {
-      this.raiz = x;
-    } else if (y === y.getPadre()!.getIzq()) {
-      y.getPadre()!.setIzq(x);
+    y.setPadre(x.getPadre());
+    if (x.getPadre() === null) {
+      this.setRaiz(y);
+    } else if (x === x.getPadre()!.getDer()) {
+      x.getPadre()!.setDer(y);
     } else {
-      y.getPadre()!.setDer(x);
+      x.getPadre()!.setIzq(y);
     }
 
-    x.setDer(y);
-    y.setPadre(x);
-  }
-
-  /* ───────────────────────── Fixups (CLRS) ───────────────────────── */
-
-  private insertFixup(z: NodoRB<T>) {
-    // Mientras el padre de z sea ROJO, hay violación "dos rojos consecutivos"
-    while (z.getPadre() && this.colorOf(z.getPadre()) === "RED") {
-      const p = z.getPadre()!;
-      const g = p.getPadre()!; // abuelo siempre existe si el padre es rojo
-
-      if (p === g.getIzq()) {
-        const u = g.getDer() as NodoRB<T> | null; // tío
-        if (this.colorOf(u) === "RED") {
-          // Caso 1: tío rojo → recolorear
-          p.setColor("BLACK");
-          (u as NodoRB<T>).setColor("BLACK");
-          g.setColor("RED");
-          z = g;
-        } else {
-          if (z === p.getDer()) {
-            // Caso 2: triángulo → rotación izquierda en padre
-            z = p;
-            this.rotacionIzquierda(z);
-          }
-          // Caso 3: línea → rotación derecha en abuelo
-          z.getPadre()!.setColor("BLACK");
-          g.setColor("RED");
-          this.rotacionDerecha(g);
-        }
-      } else {
-        // simétrico (padre es hijo derecho del abuelo)
-        const u = g.getIzq() as NodoRB<T> | null;
-        if (this.colorOf(u) === "RED") {
-          p.setColor("BLACK");
-          (u as NodoRB<T>).setColor("BLACK");
-          g.setColor("RED");
-          z = g;
-        } else {
-          if (z === p.getIzq()) {
-            z = p;
-            this.rotacionDerecha(z);
-          }
-          z.getPadre()!.setColor("BLACK");
-          g.setColor("RED");
-          this.rotacionIzquierda(g);
-        }
-      }
-    }
+    y.setDer(x);
+    x.setPadre(y);
   }
 
   /**
-   * Fix-up de eliminación.
-   * x: nodo que "hereda" el doble negro (puede ser null -> hoja nula negra)
-   * parent: padre actual de x (porque x puede ser null)
+   * Método que busca un nodo con el valor especificado en el árbol Rojo-Negro.
+   * @param valor Valor del elemento a buscar en el árbol.
+   * @returns Nodo que contiene el elemento si fue encontrado o null en caso contrario.
    */
-  private deleteFixup(x: NodoRB<T> | null, parent: NodoRB<T> | null): void {
-    // Mientras x no sea la raíz y x sea negro
-    while (x !== this.raiz && this.colorOf(x) === "BLACK") {
-      if (x === (parent?.getIzq() as NodoRB<T> | null)) {
-        let w = parent?.getDer() as NodoRB<T> | null; // hermano
-        if (this.colorOf(w) === "RED") {
-          w!.setColor("BLACK");
-          parent!.setColor("RED");
-          this.rotacionIzquierda(parent!);
-          w = parent?.getDer() as NodoRB<T> | null;
-        }
-        if (
-          this.colorOf(w?.getIzq() as NodoRB<T> | null) === "BLACK" &&
-          this.colorOf(w?.getDer() as NodoRB<T> | null) === "BLACK"
-        ) {
-          w!.setColor("RED");
-          x = parent;
-          parent = x?.getPadre() ?? null;
-        } else {
-          if (this.colorOf(w?.getDer() as NodoRB<T> | null) === "BLACK") {
-            (w?.getIzq() as NodoRB<T>)?.setColor("BLACK");
-            w!.setColor("RED");
-            this.rotacionDerecha(w!);
-            w = parent?.getDer() as NodoRB<T> | null;
-          }
-          w!.setColor(parent!.getColor());
-          parent!.setColor("BLACK");
-          (w?.getDer() as NodoRB<T>)?.setColor("BLACK");
-          this.rotacionIzquierda(parent!);
-          x = this.raiz;
-          parent = null;
-        }
-      } else {
-        // simétrico (x es hijo derecho)
-        let w = parent?.getIzq() as NodoRB<T> | null;
-        if (this.colorOf(w) === "RED") {
-          w!.setColor("BLACK");
-          parent!.setColor("RED");
-          this.rotacionDerecha(parent!);
-          w = parent?.getIzq() as NodoRB<T> | null;
-        }
-        if (
-          this.colorOf(w?.getIzq() as NodoRB<T> | null) === "BLACK" &&
-          this.colorOf(w?.getDer() as NodoRB<T> | null) === "BLACK"
-        ) {
-          w!.setColor("RED");
-          x = parent;
-          parent = x?.getPadre() ?? null;
-        } else {
-          if (this.colorOf(w?.getIzq() as NodoRB<T> | null) === "BLACK") {
-            (w?.getDer() as NodoRB<T>)?.setColor("BLACK");
-            w!.setColor("RED");
-            this.rotacionIzquierda(w!);
-            w = parent?.getIzq() as NodoRB<T> | null;
-          }
-          w!.setColor(parent!.getColor());
-          parent!.setColor("BLACK");
-          (w?.getIzq() as NodoRB<T>)?.setColor("BLACK");
-          this.rotacionDerecha(parent!);
-          x = this.raiz;
-          parent = null;
-        }
-      }
+  private buscarRN(valor: T): NodoRB<T> | null {
+    let x = this.getRaiz();
+    while (x) {
+      const cmp = this.compare(valor, x.getInfo());
+      if (cmp === 0) return x;
+      x =
+        cmp < 0
+          ? (x.getIzq() as NodoRB<T> | null)
+          : (x.getDer() as NodoRB<T> | null);
     }
-    if (x) x.setColor("BLACK");
-    if (this.raiz) this.raiz.setColor("BLACK");
+    return null;
   }
 
-  /* ──────────────────────────── Validador de invariantes ─────────────────────────── */
-
-  /** Lanza Error si alguna invariante del árbol rojinegro se rompe. */
-  private assertRB(): void {
-    if (!this.raiz) return;
-
-    // (1) Raíz negra
-    if (this.raiz.getColor() !== "BLACK") {
-      throw new Error("RB violation: la raíz no es negra");
-    }
-
-    // (2) Punteros padre-hijo coherentes y no hay rojo-rojo
-    const check = (n: NodoRB<T> | null) => {
-      if (!n) return;
-      const L = n.getIzq() as NodoRB<T> | null;
-      const R = n.getDer() as NodoRB<T> | null;
-
-      if (L && L.getPadre() !== n) {
-        throw new Error(
-          `RB violation: puntero padre incorrecto (izq) en ${n.getInfo()}`
-        );
-      }
-      if (R && R.getPadre() !== n) {
-        throw new Error(
-          `RB violation: puntero padre incorrecto (der) en ${n.getInfo()}`
-        );
-      }
-
-      if (n.getColor() === "RED") {
-        if ((L && L.getColor() === "RED") || (R && R.getColor() === "RED")) {
-          throw new Error(`RB violation: rojo-rojo en nodo ${n.getInfo()}`);
-        }
-      }
-      check(L);
-      check(R);
-    };
-    check(this.raiz);
-
-    // (3) Misma altura negra en todos los caminos
-    const blackHeight = (n: NodoRB<T> | null): number => {
-      if (!n) return 1; // NIL cuenta como negro
-      const L = blackHeight(n.getIzq() as NodoRB<T> | null);
-      const R = blackHeight(n.getDer() as NodoRB<T> | null);
-      if (L !== R) {
-        throw new Error(
-          `RB violation: black height desigual en nodo ${n.getInfo()} (L=${L}, R=${R})`
-        );
-      }
-      return L + (n.getColor() === "BLACK" ? 1 : 0);
-    };
-    blackHeight(this.raiz);
-
-    // (4) Orden BST estricto (sin duplicados, in-order creciente)
-    const arr = this.inOrden().map((n) => n.getInfo());
-    for (let i = 1; i < arr.length; i++) {
-      if (this.compare(arr[i - 1], arr[i]) >= 0) {
-        throw new Error("BST violation: in-order no estricto");
-      }
-    }
-  }
-
-  /* ──────────────────────────── Utilidades ─────────────────────────── */
-
-  private colorOf(n: NodoRB<T> | null): RBColor {
-    return n ? n.getColor() : "BLACK"; // nulo se considera negro
-  }
-
-  /** Reemplaza subárbol en u por v (manteniendo padres/raíz). */
+  /**
+   * Método que reemplaza el subárbol enraizado al nodo u con el subárbol enraizado al nodo v.
+   * @param u Nodo a ser reemplazado en el árbol.
+   * @param v Nodo para reemplazar u.
+   */
   private transplant(u: NodoRB<T>, v: NodoRB<T> | null): void {
-    if (!u.getPadre()) {
-      this.raiz = v;
-    } else if (u === u.getPadre()!.getIzq()) {
-      u.getPadre()!.setIzq(v);
+    const up = u.getPadre();
+    if (up === null) {
+      this.setRaiz(v);
+      if (v) v.setPadre(null);
+    } else if (up.getIzq() === u) {
+      up.setIzq(v);
     } else {
-      u.getPadre()!.setDer(v);
+      up.setDer(v);
     }
-    if (v) v.setPadre(u.getPadre());
+    if (v) v.setPadre(up);
   }
 
-  /** Mínimo del subárbol (extrema izquierda). */
-  private minNodo(root: NodoRB<T>): NodoRB<T> {
-    let cur: NodoRB<T> = root;
-    while (cur.getIzq() !== null) cur = cur.getIzq() as NodoRB<T>;
-    return cur;
+  /**
+   * Método que permite modificar el color de un nodo Rojo-Negro.
+   * @param node Nodo Rojo-Negro a recolorear.
+   * @param to Nuevo color a asignar para el nodo.
+   * @param nodeBadge Credencial o placa del nodo a recolorear.
+   */
+  private recolor(node: NodoRB<T> | null, to: RBColor, nodeBadge: string): void {
+    if (!node) return;
+    const from = node.getColor();
+    this.lastRbTrace?.actions.push({ kind: "recolor", id: node.getId(), from, to, nodeBadge });
+    node.setColor(to);
   }
 
-  private alturaAux(root: NodoRB<T> | null): number {
-    if (!root) return 0;
-    const hi = this.alturaAux(root.getIzq() as NodoRB<T> | null);
-    const hd = this.alturaAux(root.getDer() as NodoRB<T> | null);
-    return 1 + Math.max(hi, hd);
+  /**
+   * Método que agrega la estructura jerárquica actual al seguimiento de cambios.
+   */
+  private pushMid(): void {
+    if (!this.lastRbTrace) return;
+    this.lastRbTrace.hierarchies.mids.push(
+      this.convertirEstructuraJerarquica() as HierarchyNodeData<T>
+    );
   }
 
-  /* ─────────────── Helpers privados para tarjetas ─────────────── */
-
-  private contarHojasAux(root: NodoRB<T> | null): number {
-    if (!root) return 0;
-    const izq = root.getIzq() as NodoRB<T> | null;
-    const der = root.getDer() as NodoRB<T> | null;
-    if (!izq && !der) return 1;
-    return this.contarHojasAux(izq) + this.contarHojasAux(der);
-  }
-
-  private getArrayHojas(root: NodoRB<T> | null, hojas: NodoRB<T>[]): void {
-    if (!root) return;
-    const izq = root.getIzq() as NodoRB<T> | null;
-    const der = root.getDer() as NodoRB<T> | null;
-    if (!izq && !der) {
-      hojas.push(root);
-    } else {
-      this.getArrayHojas(izq, hojas);
-      this.getArrayHojas(der, hojas);
-    }
-  }
-
-  /* ─────────────── Conversión a Jerarquía para la Visualización ───────────── */
-
-  private toHierarchy(root: NodoRB<T>): HierarchyNodeData<T> {
+  /**
+   * Método recursivo que transforma el árbol Rojo-Negro en una estructura jerárquica.
+   * @param root Nodo raíz del árbol Rojo-Negro.
+   * @returns Estructura jerárquica representando el árbol.
+   */
+  private toRBHierarchy(root: NodoRB<T>): HierarchyNodeData<T> {
     const left = root.getIzq()
-      ? this.toHierarchy(root.getIzq() as NodoRB<T>)
+      ? this.toRBHierarchy(root.getIzq() as NodoRB<T>)
       : null;
     const right = root.getDer()
-      ? this.toHierarchy(root.getDer() as NodoRB<T>)
+      ? this.toRBHierarchy(root.getDer() as NodoRB<T>)
       : null;
 
     let children: HierarchyNodeData<T>[] | undefined;
+
     if (left && right) {
       children = [left, right];
     } else if (left && !right) {
-      children = [left, this.createPlaceholder(root, "right")];
+      children = [left, super.createPlaceholder(root, "right")];
     } else if (!left && right) {
-      children = [this.createPlaceholder(root, "left"), right];
+      children = [super.createPlaceholder(root, "left"), right];
     } else {
       children = undefined;
     }
@@ -544,96 +679,78 @@ export class ArbolRojoNegro<T> {
     return {
       id: root.getId(),
       value: root.getInfo(),
-      children,
-      // 👇 añade el color para que el renderer pinte el nodo
       color: root.getColor() === "RED" ? "red" : "black",
+      children
     };
   }
 
-  private createPlaceholder(
-    parent: NodoRB<T>,
-    side: "left" | "right"
-  ): HierarchyNodeData<T> {
-    return {
-      id: `${parent.getId()}-ph${side === "left" ? "L" : "R"}`,
-      isPlaceholder: true,
-    };
+  /**
+   * Método recursivo que clona un árbol Rojo-Negro iniciando desde el nodo raíz dado.
+   * @param root Nodo raíz del árbol Rojo-Negro a clonar.
+   * @returns Nuevo subárbol clonado con raíz en el nodo dado.
+   */
+  private clonarRBrec(root: NodoRB<T> | null): NodoRB<T> | null {
+    if (root === null) return null;
+
+    const clon = new NodoRB<T>(root.getInfo(), root.getColor(), root.getId());
+
+    const clonIzq = this.clonarRBrec(root.getIzq());
+    const clonDer = this.clonarRBrec(root.getDer());
+
+    clon.setIzq(clonIzq);
+    clon.setDer(clonDer);
+
+    if (clonIzq) clonIzq.setPadre(clon);
+    if (clonDer) clonDer.setPadre(clon);
+
+    return clon;
   }
 
-  /* ─────────────────────────────── Clonado ──────────────────────────────── */
-
-  private clonarNodo(
-    root: NodoRB<T> | null,
-    padre: NodoRB<T> | null
-  ): NodoRB<T> | null {
-    if (!root) return null;
-    const nuevo = new NodoRB<T>(root.getInfo(), root.getId());
-    nuevo.setColor(root.getColor());
-    nuevo.setPadre(padre);
-    nuevo.setIzq(this.clonarNodo(root.getIzq() as NodoRB<T> | null, nuevo));
-    nuevo.setDer(this.clonarNodo(root.getDer() as NodoRB<T> | null, nuevo));
-    return nuevo;
+  /**
+   * Método que devuelve el color del nodo Rojo-Negro dado.
+   * @param n Nodo cuyo color se va a determinar.
+   * @returns Color del nodo.
+   */
+  private colorOf(n: NodoRB<T> | null): RBColor {
+    return n ? n.getColor() : "BLACK"; // nulo se considera negro
   }
 
-  /* ───────────────────────────── Recorridos ──────────────────────────────── */
-
-  public inOrden(): NodoRB<T>[] {
-    const out: NodoRB<T>[] = [];
-    const dfs = (r: NodoRB<T> | null) => {
-      if (!r) return;
-      dfs(r.getIzq() as NodoRB<T> | null);
-      out.push(r);
-      dfs(r.getDer() as NodoRB<T> | null);
-    };
-    dfs(this.raiz);
-    return out;
+  /**
+   * Método que determina si el nodo dado es rojo.
+   * @param n Nodo a verificar.
+   * @returns Booleano que indica si el nodo es de color rojo o no.
+   */
+  private isRed(n: NodoRB<T> | null): boolean {
+    return n !== null && n.getColor() === "RED";
   }
 
-  public preOrden(): NodoRB<T>[] {
-    const out: NodoRB<T>[] = [];
-    const dfs = (r: NodoRB<T> | null) => {
-      if (!r) return;
-      out.push(r);
-      dfs(r.getIzq() as NodoRB<T> | null);
-      dfs(r.getDer() as NodoRB<T> | null);
-    };
-    dfs(this.raiz);
-    return out;
+  /**
+   * Método que determina si el nodo dado es negro.
+   * @param n Nodo a verificar
+   * @returns Booleano que indica si el nodo es de color negro o no.
+   */
+  private isBlack(n: NodoRB<T> | null): boolean {
+    return n === null || n.getColor() === "BLACK";
   }
 
-  public postOrden(): NodoRB<T>[] {
-    const out: NodoRB<T>[] = [];
-    const dfs = (r: NodoRB<T> | null) => {
-      if (!r) return;
-      dfs(r.getIzq() as NodoRB<T> | null);
-      dfs(r.getDer() as NodoRB<T> | null);
-      out.push(r);
-    };
-    dfs(this.raiz);
-    return out;
+  /**
+   * Método que retorna el nodo con menor valor del subárbol enraizado en el nodo dado.
+   * @param root Nodo raíz del subárbol a buscar.
+   * @returns Nodo más izquierdo del subárbol.
+   */
+  private minNodo(root: NodoRB<T>): NodoRB<T> {
+    let cur: NodoRB<T> = root;
+    while (cur.getIzq() !== null) cur = cur.getIzq() as NodoRB<T>;
+    return cur;
   }
 
-  /** Recorrido por niveles (BFS) para el renderer. */
-  public getNodosPorNiveles(): NodoRB<T>[] {
-    const nodos: NodoRB<T>[] = [];
-    if (!this.esVacio()) {
-      const cola = new Cola<NodoRB<T>>();
-      cola.encolar(this.raiz!);
-      while (!cola.esVacia()) {
-        const x = cola.decolar().getValor();
-        nodos.push(x);
-        if (x.getIzq()) cola.encolar(x.getIzq() as NodoRB<T>);
-        if (x.getDer()) cola.encolar(x.getDer() as NodoRB<T>);
-      }
+  /**
+   * Método que permite inicializar la traza del estado del árbol Rojo-Negro luego de una inserción o eliminación como BST.
+   */
+  private ensureRBTraceInit() {
+    if (this.lastRbTrace && !this.lastRbTrace.hierarchies.bst) {
+      this.lastRbTrace.hierarchies.bst = this.convertirEstructuraJerarquica();
     }
-    return nodos;
   }
-}
 
-/* ──────────────────────────── Utilidades locales ─────────────────────────── */
-
-function defaultCompare(a: any, b: any): number {
-  if (typeof a === "number" && typeof b === "number") return a - b;
-  if (typeof a === "string" && typeof b === "string") return a.localeCompare(b);
-  return `${a}`.localeCompare(`${b}`);
 }

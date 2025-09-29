@@ -24,7 +24,9 @@ export function DataStructureInfo({
         {/* Info lateral izquierda en cards */}
         <div
           className={`grid gap-4 md:col-span-1 ${
-            info.length > 2 ? "md:grid-cols-2" : "md:grid-cols-1"
+            info.length > 2
+              ? "md:[grid-template-columns:repeat(2,minmax(200px,1fr))]"
+              : "md:grid-cols-1"
           }`}
           data-tour="info-cards"
         >
@@ -71,9 +73,6 @@ export function DataStructureInfo({
                         </h3>
                       </div>
                     </div>
-                    {/* <span className=" ml-4 text-[#D72638] text-sm font-semibold">
-                      Ver más
-                    </span> */}
                   </div>
                 </InfoModal>
               );

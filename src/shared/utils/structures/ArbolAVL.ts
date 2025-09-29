@@ -31,6 +31,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
     }
 
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
     this.lastAvlTrace = {
       rotations: [],
       hierarchies: { pre: null, mids: [] }
@@ -50,6 +51,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   public override eliminar(valor: T): { removed: NodoAVL<T>; updated: NodoAVL<T> | null } {
     if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
 
+    // Inicializar la traza de seguimiento del estado del árbol durante la operación
     this.lastAvlTrace = {
       rotations: [],
       hierarchies: { pre: null, mids: [] }
@@ -58,7 +60,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     const salida: { removed: NodoAVL<T> | null, updated: NodoAVL<T> | null } = { removed: null, updated: null };
     this.setRaiz(this.eliminarAVL(this.getRaiz(), valor, salida, null));
 
-    if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol binario.");
+    if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
 
     this.setTamanio(this.getTamanio() - 1);
     return { removed: salida.removed, updated: salida.updated };
@@ -283,6 +285,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     if (bf === 2) {
       const y = nodo.getIzq()!;
 
+      // Capturar el estado pre-rotación
       if (this.lastAvlTrace && !this.lastAvlTrace.hierarchies.pre) {
         this.lastAvlTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
       }
@@ -334,6 +337,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     if (bf === -2) {
       const y = nodo.getDer()!;
 
+      // Capturar el estado pre-rotación
       if (this.lastAvlTrace && !this.lastAvlTrace.hierarchies.pre) {
         this.lastAvlTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
       }
@@ -421,7 +425,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que obtiene el nodo con menor valor del árbol binario AVL.
+   * Método que obtiene el nodo con menor valor del árbol AVL.
    * @param n Nodo raíz del árbol.
    * @returns Nodo más izquierdo del árbol.
    */
@@ -431,7 +435,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que transforma el árbol AVL en una estructura jerárquica.
+   * Método recursivo que transforma el árbol AVL en una estructura jerárquica.
    * @param root Nodo raíz del árbol AVL.
    * @returns Estructura jerárquica representando el árbol.
    */
@@ -461,8 +465,8 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método recursivo que clona un árbol binario iniciando desde el nodo raíz dado.
-   * @param root Nodo raíz del árbol BST a clonar.
+   * Método recursivo que clona un árbol AVL iniciando desde el nodo raíz dado.
+   * @param root Nodo raíz del árbol AVL a clonar.
    * @returns Nuevo subárbol clonado con raíz en el nodo dado.
    */
   private clonarAVLrec(root: NodoAVL<T> | null): NodoAVL<T> | null {

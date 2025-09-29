@@ -8,7 +8,7 @@ import { ListaCircularSimple } from "../../shared/utils/structures/ListaCircular
 
 export function SimpleCircularListSimulator() {
     // Instanciación de la Lista Circular Simple
-    const structure = useRef(new ListaCircularSimple()).current;
+    const structure = useRef(new ListaCircularSimple<number>()).current;
 
     // Efecto para reiniciar el asignador de memoria al cargar el componente
     useEffect(() => {
@@ -34,7 +34,7 @@ export function SimpleCircularListSimulator() {
     return (
         <Simulator
             structureName={STRUCTURE_NAME.LINKED_LIST}
-            structureType={STRUCTURE_NAME.SIMPLE_CIRCULAR_LIST}
+            structureType={STRUCTURE_NAME.CIRCULAR_SIMPLE_LINKED_LIST}
             structure={list}
             actions={{
                 insertFirst: addElementFirst,

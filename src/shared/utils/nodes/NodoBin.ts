@@ -23,7 +23,6 @@ export class NodoBin<T> {
      * Constructor de la clase Nodo Binario.
      * @param info Información a almacenar en el nodo.
      * @param id Identificador único del nodo (opcional).
-     * @param direccion Dirección de memoria del nodo (opcional).
      */
     constructor(info: T, id?: string) {
         this.info = info;

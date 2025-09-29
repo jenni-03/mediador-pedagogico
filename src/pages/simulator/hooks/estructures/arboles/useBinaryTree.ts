@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations } from "../../../../../types";
-import { ArbolBinario } from "../../../../../shared/utils/structures/ArbolBinario";
+import { type ArbolBinario } from "../../../../../shared/utils/structures/ArbolBinario";
 
 export function useBinaryTree(structure: ArbolBinario<number>) {
     // Estado para manejar el árbol binario
