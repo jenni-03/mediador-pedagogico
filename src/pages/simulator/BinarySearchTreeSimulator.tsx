@@ -6,65 +6,65 @@ import { useBinarySearchTree } from "./hooks/estructures/arboles/useBinarySearch
 import { BinarySearchTreeRender } from "./components/estructures/arboles/BinarySearchTreeRender";
 
 export function BinarySearchTreeSimulator() {
-    // Instanciación del árbol binario
-    const structure = useRef(new ArbolBinarioBusqueda<number>()).current;
+  // Instanciación del árbol binario
+  const structure = useRef(new ArbolBinarioBusqueda<number>()).current;
 
-    // Llamada al hook useBinaryTree para gestionar el estado del árbol binario de búsqueda
-    const { tree, query, error, operations } = useBinarySearchTree(structure);
+  // Llamada al hook useBinaryTree para gestionar el estado del árbol binario de búsqueda
+  const { tree, query, error, operations } = useBinarySearchTree(structure);
 
-    // Desestructuración de las operaciones soportadas por el árbol binario de búsqueda
-    const {
-        insertNode,
-        deleteNode,
-        searchNode,
-        getPreOrder,
-        getInOrder,
-        getPostOrder,
-        getLevelOrder,
-        clearTree,
-        resetQueryValues,
-    } = operations;
+  // Desestructuración de las operaciones soportadas por el árbol binario de búsqueda
+  const {
+    insertNode,
+    deleteNode,
+    searchNode,
+    getPreOrder,
+    getInOrder,
+    getPostOrder,
+    getLevelOrder,
+    clearTree,
+    resetQueryValues,
+  } = operations;
 
-    // Conversión del árbol a una estructura jerárquica para su renderizado
-    const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
+  // Conversión del árbol a una estructura jerárquica para su renderizado
+  const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
-    // Acciones disponibles para el usuario
-    const actions = useMemo(
-        () => ({
-            insert: insertNode,
-            delete: deleteNode,
-            search: searchNode,
-            getPreOrder,
-            getInOrder,
-            getPostOrder,
-            getLevelOrder,
-            clean: clearTree,
-        }),
-        [
-            insertNode,
-            deleteNode,
-            searchNode,
-            getPreOrder,
-            getInOrder,
-            getPostOrder,
-            getLevelOrder,
-            clearTree,
-        ]
-    );
+  // Acciones disponibles para el usuario
+  const actions = useMemo(
+    () => ({
+      insert: insertNode,
+      delete: deleteNode,
+      search: searchNode,
+      getPreOrder,
+      getInOrder,
+      getPostOrder,
+      getLevelOrder,
+      clean: clearTree,
+    }),
+    [
+      insertNode,
+      deleteNode,
+      searchNode,
+      getPreOrder,
+      getInOrder,
+      getPostOrder,
+      getLevelOrder,
+      clearTree,
+    ]
+  );
 
-    return (
-        <Simulator
-            structureName={STRUCTURE_NAME.BINARY_SEARCH_TREE}
-            structure={tree}
-            actions={actions}
-            query={query}
-            error={error}
-        >
-            <BinarySearchTreeRender
-                tree={hData}
-                query={query}
-                resetQueryValues={resetQueryValues}
-            />
-        </Simulator>
-    );
+  return (
+    <Simulator
+      structureName={STRUCTURE_NAME.BINARY_SEARCH_TREE}
+      structure={tree}
+      actions={actions}
+      query={query}
+      error={error}
+    >
+      <BinarySearchTreeRender
+        tree={hData}
+        query={query}
+        resetQueryValues={resetQueryValues}
+      />
+    </Simulator>
+  );
 }

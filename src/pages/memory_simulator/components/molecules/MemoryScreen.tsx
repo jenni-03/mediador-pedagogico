@@ -220,6 +220,7 @@ export function MemoryScreen({
   );
 }
 
+
 /* ───────── UI Atómicas ───────── */
 function Chip({
   label,
