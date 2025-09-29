@@ -105,6 +105,13 @@ export type StackNodeData = {
   memoryAddress: string;
 };
 
+export type IndicatorPositioningConfig = {
+  calculateTransform: (
+    nodePos: { x: number; y: number },
+    dims: { elementWidth: number; elementHeight: number }
+  ) => string;
+};
+
 /* ───────────── Árboles 2-3 / B / B+ (renderer) ───────────── */
 
 export type TwoThreeHierarchy = {
