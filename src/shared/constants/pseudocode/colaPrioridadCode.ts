@@ -1,66 +1,76 @@
 import { OperationCode } from "./typesPseudoCode";
 
 export const getColaPrioridadCode = (): OperationCode => ({
-enqueue: [
-            `/**
- * Método que permite agregar un elemento a la cola según su prioridad.
- * post: Se insertó un nuevo elemento a la cola.
- * @param info es de tipo T y corresponde a la informacion a encolar.
- * @param p es de tipo entero y corresponde a la prioridad del nuevo elemento. 
- */`,
-            `public void enColar(T info, int p){`,
-            `    NodoP<T> nuevoNodo = new NodoP<T>(info, p);`,
-            `    if (this.esVacia() || p < this.inicio.getPrioridad()) {`,
-            `        nuevoNodo.setSig(this.incio);`,
-            `        this.inicio = nuevoNodo;`,
-            `    } else {`,
-            `        NodoP<T> actual = this.inicio;`,
-            `        while (actual.getSig() != null && actual.getSig().getPrioridad() <= p) {`,
-            `               actual = actual.getSig();`,
-            `        }`,
-            `        nuevoNodo.setSig(actual.getSig());`,
-            `        actual.setSig(nuevoNodo);`,
-            `    }`,
-            `}`
-        ],
-        dequeue: [
-            `/**
- * Método que permite retirar el elemento con mayor prioridad en la cola (inicio).
- * post: Se retiró el elemento con mayor prioridad en la cola.
- * @return un tipo T correspondiente a la informacion del nodo retirado.
- */`,
-            `public T deColar(){`,
-            `    if(this.esVacia())`,
-            `        return null;`,
-            `    NodoP<T> x = this.inicio;`,
-            `    if(this.inicio.getSig()) {`,
-            `       this.inicio = this.inicio.getSig();`,
-            `    }`,
-            `    else {`,
-            `       this.inicio = null;`,
-            `    }`,
-            `    this.tamanio--;`,
-            `    return x.getInfo();`,
-            `}`
-        ],
-        getFront: [
-            `/**
- * Método que permite obtener el elemento inicial de la cola.
- * post: Se obtuvó el elemento inicial de la cola.
- * @return El elemento inicial de la cola.
- */`,
-            `protected NodoP<T> getInicio(){`,
-            `    return this.inicio;`,
-            `}`
-        ],
-        clean: [
-            `/**
- * Método que permite eliminar todos los elementos que contiene la cola. 
- * post: Se eliminó todos los elementos que se encontraban en la cola.
- */`,
-            `public void vaciar(){`,
-            `    this.inicio = null;`,
-            `    this.tamanio=0;`,
-            `}`
-        ]
+  enqueue: [
+    "/**",
+    " * Método que inserta un elemento en la posición correspondiente según su prioridad.",
+    " * @param valor Elemento a encolar.",
+    " * @param prioridad Prioridad del nodo (menor número = mayor prioridad).",
+    " * @return Elemento insertado.",
+    " */",
+    "public NodoPrioridad<T> encolar(T valor, int prioridad) {",
+    "  if (this.tamanio >= this.MAX_TAMANIO)",
+    '    throw new RuntimeException("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: " + this.MAX_TAMANIO + ").");',
+    "",
+    "  NodoPrioridad<T> nuevoNodo = new NodoPrioridad<>(valor, prioridad);",
+    "",
+    "  if (this.esVacia() || prioridad < this.inicio.getPrioridad()) {",
+    "    nuevoNodo.setSiguiente(this.inicio);",
+    "    this.inicio = nuevoNodo;",
+    "  } else {",
+    "    NodoPrioridad<T> actual = this.inicio;",
+    "    while (actual.getSiguiente() != null && actual.getSiguiente().getPrioridad() <= prioridad) {",
+    "      actual = actual.getSiguiente();",
+    "    }",
+    "    nuevoNodo.setSiguiente(actual.getSiguiente());",
+    "    actual.setSiguiente(nuevoNodo);",
+    "  }",
+    "",
+    "  this.tamanio++;",
+    "  return nuevoNodo;",
+    "}",
+  ],
+
+  dequeue: [
+    "/**",
+    " * Método que elimina el elemento con mayor prioridad (inicio).",
+    " * @return Elemento decolado.",
+    " */",
+    "public NodoPrioridad<T> decolar() {",
+    "  if (this.esVacia())",
+    '    throw new RuntimeException("No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0).");',
+    "",
+    "  NodoPrioridad<T> nodoAEliminar = this.inicio;",
+    "",
+    "  if (this.inicio.getSiguiente() != null) {",
+    "    this.inicio = this.inicio.getSiguiente();",
+    "  } else {",
+    "    this.inicio = null;",
+    "  }",
+    "",
+    "  this.tamanio--;",
+    "  return nodoAEliminar;",
+    "}",
+  ],
+
+  clean: [
+    "/**",
+    " * Método que vacía la cola.",
+    " * post: La cola quedó vacía.",
+    " */",
+    "public void vaciar() {",
+    "  this.inicio = null;",
+    "  this.tamanio = 0;",
+    "}",
+  ],
+
+  getFront: [
+    "/**",
+    " * Método que obtiene el elemento inicial de la cola.",
+    " * @return NodoPrioridad o null si la cola está vacía.",
+    " */",
+    "public NodoPrioridad<T> getInicio() {",
+    "  return this.inicio;",
+    "}",
+  ],
 });
