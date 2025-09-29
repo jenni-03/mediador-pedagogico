@@ -2,17 +2,19 @@ import { TourStep } from "../typesTour";
 
 export function getArbolBinarioTour(): TourStep[] {
   return [
-    // INTRODUCCIÓN
+    // INTRODUCCIÓN + FLUJO
     {
       type: "info",
-      description: `🌳 El **árbol binario** es una estructura jerárquica donde cada nodo puede tener como máximo **dos hijos**: uno izquierdo y uno derecho.\n\nSirve para organizar datos de forma que facilita operaciones como búsquedas, inserciones y recorridos.`,
+      description:
+        "🌳 Un **árbol binario** tiene a lo sumo dos hijos por nodo (izquierdo y derecho). Útil para búsquedas, inserciones y recorridos.",
     },
     {
       type: "info",
-      description: `🧩 En este simulador, puedes insertar nodos, eliminarlos, buscar valores, y visualizar distintos recorridos: preorden, inorden, postorden y por niveles.`,
+      description:
+        "⚠️ Flujo correcto: el **primer** `insertLeft(padre, valor)` **crea el objeto `arbolBi`** (para la raíz se ignora el padre). Desde entonces **todas** las operaciones deben ir con el prefijo **`arbolBi.`**. Tras `arbolBi.clean()`, vuelve a ejecutar `insertLeft(...)` (sin prefijo) para **recrear `arbolBi`** y continúa con `arbolBi.`",
     },
 
-    // CREAR RAÍZ
+    /* ─────────── Creación del objeto (primer insertLeft SIN prefijo) ─────────── */
     {
       id: "inputConsola",
       text: "insertLeft(0, 1);",
@@ -20,219 +22,185 @@ export function getArbolBinarioTour(): TourStep[] {
     },
     {
       id: "console",
-      description: `🌱 \`insertLeft(0, 1)\` crea el primer nodo del árbol con valor **1** como raíz (se ignora el padre).`,
+      description:
+        "🌱 `insertLeft(0, 1)` **crea la raíz** con valor **1** (se ignora el padre) y su referencia queda en **`arbolBi`**. A partir de aquí usa **`arbolBi.`** en cada comando.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
-    // INSERTAR HIJOS DE 1
+    /* ─────────── Operaciones usando el prefijo `arbolBi.` ─────────── */
+    // HIJOS DE 1
     {
       id: "inputConsola",
-      text: "insertLeft(1, 4);",
+      text: "arbolBi.insertLeft(1, 4);",
       type: "write",
     },
     {
       id: "console",
-      description: `🌿 \`insertLeft(1, 4)\` agrega un nodo con valor **4** como hijo izquierdo de **1**.`,
+      description: "🌿 Inserta **4** como **hijo izquierdo** de **1**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
     {
       id: "inputConsola",
-      text: "insertRight(1, 5);",
+      text: "arbolBi.insertRight(1, 5);",
       type: "write",
     },
     {
       id: "console",
-      description: `🌿 \`insertRight(1, 5)\` agrega un nodo con valor **5** como hijo derecho de **1**.`,
+      description: "🌿 Inserta **5** como **hijo derecho** de **1**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
-    // INSERTAR HIJOS DE 5
+    // HIJOS DE 5
     {
       id: "inputConsola",
-      text: "insertLeft(5, 6);",
+      text: "arbolBi.insertLeft(5, 6);",
       type: "write",
     },
     {
       id: "console",
-      description: `🌿 \`insertLeft(5, 6)\` inserta un nodo **6** como hijo izquierdo de **5**.`,
+      description: "🌿 Inserta **6** como hijo **izquierdo** de **5**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
     {
       id: "inputConsola",
-      text: "insertRight(5, 2);",
+      text: "arbolBi.insertRight(5, 2);",
       type: "write",
     },
     {
       id: "console",
-      description: `🌿 \`insertRight(5, 2)\` inserta un nodo **2** como hijo derecho de **5**.`,
+      description: "🌿 Inserta **2** como hijo **derecho** de **5**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
-    // INSERTAR HIJO DE 2
+    // HIJO DE 2
     {
       id: "inputConsola",
-      text: "insertLeft(2, 56);",
+      text: "arbolBi.insertLeft(2, 56);",
       type: "write",
     },
     {
       id: "console",
-      description: `🌿 \`insertLeft(2, 56)\` inserta un nodo **56** como hijo izquierdo de **2**.`,
+      description: "🌿 Inserta **56** como hijo **izquierdo** de **2**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
     {
       id: "main-canvas",
-      description: `🌳 ¡Perfecto! Ya tienes un árbol con múltiples niveles. Observa la estructura formada.`,
+      description:
+        "🌳 ¡Perfecto! Ya tienes un árbol con múltiples niveles. Observa la estructura formada.",
       type: "element",
     },
 
     // SEARCH
     {
       id: "inputConsola",
-      text: "search(56);",
+      text: "arbolBi.search(56);",
       type: "write",
     },
     {
       id: "console",
-      description: `🔍 \`search(56)\` busca si el nodo con valor 56 existe en el árbol.`,
+      description: "🔍 Busca si existe un nodo con valor **56** en el árbol.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🔎 El nodo 56 fue encontrado en el recorrido.`,
+      description: "🔎 El nodo **56** fue encontrado en el recorrido.",
       type: "element",
     },
 
     // DELETE
     {
       id: "inputConsola",
-      text: "delete(4);",
+      text: "arbolBi.delete(4);",
       type: "write",
     },
     {
       id: "console",
-      description: `🗑️ \`delete(4)\` elimina el nodo con valor 4 si existe.`,
+      description: "🗑️ Elimina el nodo con valor **4** si existe.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🧹 El nodo 4 fue eliminado correctamente.`,
+      description: "🧹 El nodo **4** fue eliminado correctamente.",
       type: "element",
     },
 
     // RECORRIDOS
     {
       id: "inputConsola",
-      text: "getPreOrder();",
+      text: "arbolBi.getPreOrder();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧭 \`getPreOrder()\`: nodo → izquierda → derecha.`,
+      description: "🧭 **Preorden**: nodo → izquierda → derecha.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
     {
       id: "inputConsola",
-      text: "getInOrder();",
+      text: "arbolBi.getInOrder();",
       type: "write",
     },
     {
       id: "console",
-      description: `🔄 \`getInOrder()\`: izquierda → nodo → derecha.`,
+      description: "🔄 **Inorden**: izquierda → nodo → derecha.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
     {
       id: "inputConsola",
-      text: "getPostOrder();",
+      text: "arbolBi.getPostOrder();",
       type: "write",
     },
     {
       id: "console",
-      description: `🔁 \`getPostOrder()\`: izquierda → derecha → nodo.`,
+      description: "🔁 **Postorden**: izquierda → derecha → nodo.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
     {
       id: "inputConsola",
-      text: "getLevelOrder();",
+      text: "arbolBi.getLevelOrder();",
       type: "write",
     },
     {
       id: "console",
-      description: `📶 \`getLevelOrder()\`: recorre por niveles, de izquierda a derecha.`,
+      description:
+        "📶 **Por niveles**: recorre de izquierda a derecha por nivel.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
 
-    // CLEAN
+    /* ─────────── Limpieza y recordatorio de recreación ─────────── */
     {
       id: "inputConsola",
-      text: "clean();",
+      text: "arbolBi.clean();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧼 \`clean()\` borra por completo el árbol binario.`,
+      description: "🧼 `clean()` borra por completo el árbol binario.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
-      description: `🫙 El árbol fue eliminado. Puedes comenzar de nuevo.`,
+      description:
+        "🫙 El árbol fue eliminado. Para **volver a usarlo**, ejecuta nuevamente **`insertLeft(padre, valor)`** (sin prefijo) para **recrear `arbolBi`** y luego continúa con **`arbolBi.`** en cada comando.",
       type: "element",
     },
   ];

@@ -2,7 +2,13 @@ import { TourStep } from "../typesTour";
 
 export function getListaDoblementeEnlazadaTour(): TourStep[] {
   return [
-    // insertFirst
+    {
+      type: "info",
+      description:
+        "🔧 Flujo correcto: el **primer** `insertFirst(...)` **crea el objeto `le`**. Desde ese punto, **todas** las operaciones deben usar el prefijo **`le.`**. Si limpias con `le.clean()`, vuelve a ejecutar `insertFirst(...)` (sin prefijo) para **recrear `le`** y continúa con `le.`",
+    },
+
+    /* ─────────── Creación del objeto (primer insertFirst SIN prefijo) ─────────── */
     {
       id: "inputConsola",
       text: "insertFirst(10);",
@@ -10,165 +16,165 @@ export function getListaDoblementeEnlazadaTour(): TourStep[] {
     },
     {
       id: "console",
-      description: `📌 Este comando inserta el valor **10** al inicio de la lista.`,
+      description:
+        "📌 Este primer `insertFirst(10)` **crea la lista** y su referencia queda en **`le`**. A partir de ahora, usa **`le.`** en cada comando.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `👀 Observa cómo el nodo **10** aparece como el primero (y único) de la lista.`,
+      description:
+        "👀 Aparece el nodo **10** como cabeza y cola (lista de un solo elemento). En listas doblemente enlazadas cada nodo tiene **prev** y **next**.",
     },
 
+    /* ─────────── Operaciones usando el prefijo `le.` ─────────── */
     // insertLast
     {
       id: "inputConsola",
-      text: "insertLast(20);",
+      text: "le.insertLast(20);",
       type: "write",
     },
     {
       id: "console",
-      description: `📌 Este comando agrega el valor **20** al final de la lista.`,
+      description: "📌 Agrega **20** al final de la lista.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `🔗 Ahora hay dos nodos: **10** apunta hacia **20**, y **20** apunta hacia atrás a **10**.`,
+      description:
+        "🔗 Ahora hay dos nodos: **10 ⇄ 20** (ambos enlaces quedan consistentes).",
     },
 
     // insertAt
     {
       id: "inputConsola",
-      text: "insertAt(15, 1);",
+      text: "le.insertAt(15, 1);",
       type: "write",
     },
     {
       id: "console",
-      description: `📌 Inserta el valor **15** en la posición **1**, entre **10** y **20**.`,
+      description:
+        "📌 Inserta **15** en la **posición 1**, entre **10** y **20**, ajustando **prev/next**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `📐 El nodo **15** se ha insertado en el medio, conservando enlaces dobles entre todos los nodos.`,
+      description: "📐 Queda **10 ⇄ 15 ⇄ 20** con enlaces dobles correctos.",
     },
 
     // removeFirst
     {
       id: "inputConsola",
-      text: "removeFirst();",
+      text: "le.removeFirst();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧹 Este comando elimina el primer nodo.`,
+      description: "🧹 Elimina el **primer nodo** de la lista.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `⛔ El nodo **10** ha sido eliminado. **15** ahora es el nuevo primero.`,
+      description: "⛔ Se eliminó **10**. La nueva cabeza es **15**.",
     },
 
     // removeLast
     {
       id: "inputConsola",
-      text: "removeLast();",
+      text: "le.removeLast();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧹 Elimina el último nodo de la lista.`,
+      description:
+        "🧹 Elimina el **último nodo** (se actualiza la cola y su `next = null`).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `🗑️ El nodo **20** ha sido eliminado. La lista contiene solo **15**.`,
+      description: "🗑️ Se eliminó **20**. La lista contiene solo **15**.",
     },
 
     // removeAt
     {
       id: "inputConsola",
-      text: "removeAt(0);",
+      text: "le.removeAt(0);",
       type: "write",
     },
     {
       id: "console",
-      description: `❌ Elimina el nodo en la posición **0**.`,
+      description: "❌ Elimina el nodo en la **posición 0** (valor **15**).",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `🧨 El nodo **15** fue removido. La lista está ahora vacía.`,
+      description: "🧨 Se removió **15**. La lista está vacía.",
     },
 
     // search
     {
       id: "inputConsola",
-      text: "search(20);",
+      text: "le.search(20);",
       type: "write",
     },
     {
       id: "console",
-      description: `🔍 Busca si el valor **20** existe en la lista.`,
+      description: "🔍 Busca el valor **20** en la lista.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `🔎 El sistema buscó el valor **20**, pero la lista está vacía.`,
+      description:
+        "🔎 Se intentó buscar **20**, pero la lista actual está vacía.",
     },
 
+    // info-cards (tamaño)
+    {
+      id: "info-cards",
+      type: "element",
+      description:
+        "📦 Observa el **tamaño** y las referencias de **cabeza/cola**. Se actualizan automáticamente en cada operación.",
+    },
+
+    /* ─────────── Limpieza y recordatorio de recreación ─────────── */
     // clean
     {
       id: "inputConsola",
-      text: "clean();",
+      text: "le.clean();",
       type: "write",
     },
     {
       id: "console",
-      description: `🧼 Limpia toda la lista.`,
+      description:
+        "🧼 Limpia toda la lista liberando todos los nodos. `le` queda sin elementos.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       type: "element",
-      description: `🧽 Todo ha sido borrado. Tu lista doblemente enlazada está limpia y lista para comenzar de nuevo.`,
+      description:
+        "🧽 Todo ha sido borrado. Para **volver a usar** la lista, ejecuta nuevamente **`insertFirst(...)`** (sin prefijo) para **recrear `le`** y luego continúa con **`le.`** en cada comando.",
     },
 
+    // Cierre
+    {
+      type: "info",
+      description:
+        "🎯 Resumen: primer `insertFirst(...)` crea `le`; después todo con `le.`; tras `le.clean()` repite la creación con `insertFirst(...)` y sigue usando `le.`",
+    },
   ];
 }
