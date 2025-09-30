@@ -703,8 +703,10 @@ export type TraversalNodeType = {
   value: number;
 };
 
+export type RotationType = "LL" | "RR" | "LR" | "RL"
+
 export type RotationStep = {
-  type: "LL" | "RR" | "LR" | "RL";
+  type: RotationType;
   zId: string; // Nodo desbalanceado (raíz del subárbol que rota)
   yId: string; // Hijo de la rama pesada
   xId?: string | null; // Nieto (solo LR/RL)
@@ -735,7 +737,7 @@ export type RBFrame = AvlFrame;
 
 export type RBAction =
   | { kind: "recolor"; id: string; from: RBColor; to: RBColor; nodeBadge: string; }
-  | { kind: "rotation"; tag: "L(padre)" | "R(padre)" | "R(tío)" | "L(tío)" | "R(abuelo)" | "L(abuelo)"; step: RotationStep };
+  | { kind: "rotation"; tag: RbRotationTag; step: RotationStep };
 
 export type RBTrace<T> = {
   actions: RBAction[];
@@ -745,7 +747,21 @@ export type RBTrace<T> = {
   };
 };
 
+export type RbRotationTag = "L(padre)" | "R(padre)" | "R(tío)" | "L(tío)" | "R(abuelo)" | "L(abuelo)";
+
 export type RBColor = "RED" | "BLACK";
+
+export type SplayRotationTag = "Zig" | "Zig-Zig" | "Zig-Zag";
+
+export type SplayRotation = { tag: SplayRotationTag; rotation: RotationStep; rotationOrder: "first" | "second" };
+
+export type SplayTrace<T> = {
+  rotations: SplayRotation[];
+  hierarchies: {
+    bst: HierarchyNodeData<T> | null;
+    mids: HierarchyNodeData<T>[];
+  };
+};
 
 export type HintTarget =
   | { type: "node"; id: string }

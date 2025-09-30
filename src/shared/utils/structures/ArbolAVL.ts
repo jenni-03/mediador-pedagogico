@@ -24,7 +24,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   /**
    * Método que inserta un nuevo nodo en el árbol AVL.
    * @param valor Elemento a insertar.
-   * @returns Nodo insertado.
+   * @returns Nodo AVL recién insertado.
    */
   public override insertar(valor: T): NodoAVL<T> {
     if (super.getTamanio() >= this.MAX_NODOS) {
@@ -44,9 +44,11 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que elimina un nodo del árbol AVL.
+   * Método que elimina un nodo especifico del árbol AVL.
    * @param valor Elemento a eliminar.
-   * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
+   * @returns Objeto que contiene:
+   *   - `removed`: Nodo eliminado físicamente del árbol.
+   *   - `updated`: Nodo que actualizó su valor por el del nodo eliminado.
    */
   public override eliminar(valor: T): { removed: NodoAVL<T>; updated: NodoAVL<T> | null } {
     if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
@@ -67,8 +69,8 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que verifica la existencia de un elemento dentro del árbol AVL.
-   * @param valor Valor del elemento a buscar.
+   * Método que determina la existencia de un elemento dentro del árbol AVL.
+   * @param valor Elemento a buscar en el árbol AVL.
    * @returns Booleano que indica si el elemento fue encontrado o no. 
    */
   public override esta(valor: T): boolean {
@@ -139,7 +141,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que realiza el recorrido in-orden del árbol AVL.
+   * Método que retorna un array de nodos resultante del recorrido in-orden del árbol AVL.
    * @returns Array de nodos en secuencia in-orden.
    */
   public override inOrden(): NodoAVL<T>[] {
@@ -147,7 +149,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que realiza el recorrido pre-orden del árbol AVL.
+   * Método que retorna un array de nodos resultante del recorrido pre-orden del árbol AVL.
    * @returns Array de nodos en secuencia pre-orden.
    */
   public override preOrden(): NodoAVL<T>[] {
@@ -155,7 +157,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que realiza el recorrido post-orden del árbol AVL.
+   * Método que retorna un array de nodos resultante del recorrido post-orden del árbol AVL.
    * @returns Array de nodos en secuencia post-orden.
    */
   public override postOrden(): NodoAVL<T>[] {
@@ -163,7 +165,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que realiza el recorrido por niveles del árbol AVL.
+   * Método que retorna un array de nodos resultante del recorrido por niveles del árbol AVL.
    * @returns Array de nodos por niveles.
    */
   public override getNodosPorNiveles(): NodoAVL<T>[] {
@@ -191,8 +193,8 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que consume la última traza de operación del árbol AVL.
-   * @returns La última traza de operación o null si no hay ninguna.
+   * Método que consume y limpia la última traza del árbol AVL registrada.
+   * @returns Última traza del árbol o null si no existe.
    */
   public consumeLastAvlTrace(): OperationTrace<T> | null {
     const t = this.lastAvlTrace;
@@ -201,12 +203,13 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método recursivo que inserta un nuevo nodo en el árbol AVL.
-   * @param root Nodo raíz del subárbol actual.
+   * Método recursivo que inserta un nuevo nodo en el árbol AVL manteniendo su propiedad de balance.
+   * Luego de la inserción, los pesos de los nodos se actualizan y el árbol es rebalanceado si es necesario.
+   * @param root Nodo raíz actual del subárbol donde se insertará el elemento.
    * @param valor Elemento a insertar.
-   * @param salida Objeto usado para guardar la referencia al nodo insertado.
-   * @param parent Nodo padre del nodo actual (usado para trazas).
-   * @returns Nodo raíz del subárbol actualizado luego de la inserción.
+   * @param salida Objeto usado para retornar el nodo recién insertado.
+   * @param parent Nodo padre de del nodo actual.
+   * @returns Nuevo nodo raíz del subárbol luego de la inserción y posible rebalanceo.
    */
   private insertarAVL(root: NodoAVL<T> | null, valor: T, salida: { inserted: NodoAVL<T> | null }, parent: NodoAVL<T> | null): NodoAVL<T> {
     if (root === null) {
@@ -215,6 +218,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       return nuevo;
     }
 
+    // Inserción BST estándar
     const cmp = this.compare(valor, root.getInfo());
     if (cmp < 0) {
       root.setIzq(this.insertarAVL(root.getIzq(), valor, salida, root));
@@ -224,18 +228,20 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
     }
 
+    // Actualizar las alturas de los nodos.
     root.recomputarAltura();
 
+    // Corregir desbalanceos
     return this.rebalancear(root, parent);
   }
 
   /**
-   * Método recursivo que elimina un nodo con el valor especificado del árbol AVL.
-   * @param root Nodo raíz del subárbol actual que se esta procesando.
-   * @param valor Valor del nodo a ser eliminado.
-   * @param salida Objeto usado para guardar las referencias al nodo eliminado y actualizado.
-   * @param parent Nodo padre del nodo actual (usado para trazas).
-   * @returns Nodo raíz del subárbol actualizado luego de la eliminación.
+   * Método recursivo que elimina un nodo especifico del árbol AVL, rebalanceando el árbol si es necesario.
+   * @param root Nodo raíz del subárbol actual.
+   * @param valor Elemento a eliminar.
+   * @param salida Objeto para almacenar las referencias del nodo eliminado y actualizado.
+   * @param parent Nodo padre del subárbol actual.
+   * @returns Nueva raíz del subárbol luego de la eliminación y posible rebalanceo.
    */
   private eliminarAVL(
     root: NodoAVL<T> | null,
@@ -245,6 +251,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   ): NodoAVL<T> | null {
     if (!root) return null;
 
+    // Eliminación BST estándar
     const cmp = this.compare(valor, root.getInfo());
     if (cmp < 0) {
       root.setIzq(this.eliminarAVL(root.getIzq(), valor, salida, root));
@@ -267,16 +274,26 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       root.setDer(this.eliminarAVL(root.getDer(), succ.getInfo(), salida, root));
     }
 
+    // Actualizar las alturas de los nodos
     root.recomputarAltura();
 
+    // Corregir desbalanceos
     return this.rebalancear(root, parent);
   }
 
   /**
-   * Método que rebalancea un nodo AVL si se ha vuelto desequilibrado después de una inserción o eliminación.
+   * Método que rebalancea un árbol AVL si se detecta un desbalance, aplicando
+   * las rotaciones AVL apropiadas para restaurar el balance. Maneja 4 casos:
+   * 
+   * - Rotación Left-Left (LL)
+   * - Rotación Left-Right (LR)
+   * - Rotación Right-Right (RR)
+   * - Rotación Right-Left (RL)
+   *
+   * Durante cada caso, captura estados pre- y post-rotación para propositos de seguimiento y visualización.
    * @param nodo Nodo AVL a rebalancear.
-   * @param parent Nodo padre del nodo a rebalancear.
-   * @returns Nodo raíz del subárbol después del rebalanceo.
+   * @param parent Padre del nodo o null si el nodo es la raíz.
+   * @returns Nueva raíz del subárbol después del rebalanceo.
    */
   private rebalancear(nodo: NodoAVL<T>, parent: NodoAVL<T> | null): NodoAVL<T> {
     const bf = nodo.getBalance();
@@ -294,6 +311,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
         // -------- LR: rotarIzq(y) -> rotarDer(nodo)
         const x = y.getDer()!;
 
+        // Capturar info de la rotación a aplicar
         this.lastAvlTrace?.rotations.push({
           type: "LR",
           zId: nodo.getId(),
@@ -304,18 +322,20 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
           xRightId: x.getDer()?.getId() ?? null
         });
 
+        // Rotación y Captura del estado posterior
         nodo.setIzq(this.rotacionIzquierda(y));
-
-        this.pushMid();
+        this.pushAvlRotationHierarchy();
 
         const newRoot = this.rotacionDerecha(nodo);
 
         this.reattachAfterRotation(parent, nodo, newRoot);
-        this.pushMid();
+        this.pushAvlRotationHierarchy();
 
         return newRoot;
       } else {
         // -------- Ll: rotarDer(nodo)
+
+        // Capturar info de la rotación a aplicar
         this.lastAvlTrace?.rotations.push({
           type: "LL",
           zId: nodo.getId(),
@@ -326,8 +346,9 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
         const newRoot = this.rotacionDerecha(nodo);
 
+        // Rotación y Captura del estado posterior
         this.reattachAfterRotation(parent, nodo, newRoot);
-        this.pushMid();
+        this.pushAvlRotationHierarchy();
 
         return newRoot;
       }
@@ -346,6 +367,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
         // -------- RL: rotarDer(y) -> rotarIzq(nodo)
         const x = y.getIzq()!;
 
+        // Capturar info de la rotación a aplicar
         this.lastAvlTrace?.rotations.push({
           type: "RL",
           zId: nodo.getId(),
@@ -356,18 +378,20 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
           xRightId: x.getDer()?.getId() ?? null
         });
 
+        // Rotación y Captura del estado posterior
         nodo.setDer(this.rotacionDerecha(y));
-
-        this.pushMid();
+        this.pushAvlRotationHierarchy();
 
         const newRoot = this.rotacionIzquierda(nodo);
 
         this.reattachAfterRotation(parent, nodo, newRoot);
-        this.pushMid();
+        this.pushAvlRotationHierarchy();
 
         return newRoot;
       } else {
         // -------- RR: rotarDer(nodo)
+
+        // Capturar info de la rotación a aplicar
         this.lastAvlTrace?.rotations.push({
           type: "RR",
           zId: nodo.getId(),
@@ -378,8 +402,9 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
         const newRoot = this.rotacionIzquierda(nodo);
 
+        // Rotación y Captura del estado posterior
         this.reattachAfterRotation(parent, nodo, newRoot);
-        this.pushMid();
+        this.pushAvlRotationHierarchy();
 
         return newRoot;
       }
@@ -425,9 +450,9 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que obtiene el nodo con menor valor del árbol AVL.
-   * @param n Nodo raíz del árbol.
-   * @returns Nodo más izquierdo del árbol.
+   * Método que recorre los hijos izquierdos del subárbol dado hasta encontrar el nodo más a la izquierda.
+   * @param root Nodo raíz del subárbol a buscar.
+   * @returns Nodo con el mínimo valor del subárbol.
    */
   private minNodo(n: NodoAVL<T>): NodoAVL<T> {
     while (n.getIzq()) n = n.getIzq()!;
@@ -435,9 +460,10 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método recursivo que transforma el árbol AVL en una estructura jerárquica.
+   * Método recursivo que convierte un nodo del árbol AVL en una estructura de datos jerárquica
+   * adecuada para visualización o procesamiento posterior.
    * @param root Nodo raíz del árbol AVL.
-   * @returns Estructura jerárquica representando el árbol.
+   * @returns Objeto que representa la estructura jerárquica del árbol AVL.
    */
   private toAVLHierarchy(root: NodoAVL<T>): HierarchyNodeData<T> {
     const left = root.getIzq() ? this.toAVLHierarchy(root.getIzq()!) : null;
@@ -466,8 +492,8 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
   /**
    * Método recursivo que clona un árbol AVL iniciando desde el nodo raíz dado.
-   * @param root Nodo raíz del árbol AVL a clonar.
-   * @returns Nuevo subárbol clonado con raíz en el nodo dado.
+   * @param root Nodo raíz del subárbol a clonar.
+   * @returns Una nueva instancia `NodoAVL<T>` que es una clonación profunda del subárbol.
    */
   private clonarAVLrec(root: NodoAVL<T> | null): NodoAVL<T> | null {
     if (root === null) return null;
@@ -497,9 +523,9 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que agrega la estructura jerárquica actual al seguimiento de cambios.
+   * Método que agrega la estructura jerárquica actual a la traza de seguimiento del estado del árbol.
    */
-  private pushMid(): void {
+  private pushAvlRotationHierarchy(): void {
     if (!this.lastAvlTrace) return;
     this.lastAvlTrace.hierarchies.mids.push(
       this.convertirEstructuraJerarquica() as HierarchyNodeData<T>
