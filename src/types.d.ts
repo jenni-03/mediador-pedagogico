@@ -332,6 +332,18 @@ export type BaseQueryOperations<T extends string> = T extends "secuencia"
     toClear: boolean;
     rbTrace: RBTrace<number> | null;
   }
+  : T extends "arbol_splay"
+  ? {
+    toInsert: { targetNodeId: string, inserted: boolean } | null;
+    toDelete: { nodeId: string, removed: boolean, maxLeftId: string | null } | null;
+    toSearch: { nodeId: string; found: boolean; } | null;
+    toGetPreOrder: TraversalNodeType[] | [];
+    toGetInOrder: TraversalNodeType[] | [];
+    toGetPostOrder: TraversalNodeType[] | [];
+    toGetLevelOrder: TraversalNodeType[] | [];
+    toClear: boolean;
+    splayTrace: SplayTrace<number> | null;
+  }
   : T extends "arbol_nario"
   ? {
     /** Crear raíz si está vacío */
@@ -518,6 +530,17 @@ export type BaseStructureActions<T extends string> = T extends "secuencia"
     clean: () => void;
   }
   : T extends "arbol_rojinegro"
+  ? {
+    insert: (value: number) => void;
+    delete: (value: number) => void;
+    search: (value: number) => void;
+    getPreOrder: () => void;
+    getInOrder: () => void;
+    getPostOrder: () => void;
+    getLevelOrder: () => void;
+    clean: () => void;
+  }
+  : T extends "arbol_splay"
   ? {
     insert: (value: number) => void;
     delete: (value: number) => void;

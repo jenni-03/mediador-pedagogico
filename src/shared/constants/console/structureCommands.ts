@@ -9,9 +9,10 @@ export const structureCommands: Record<string, string[]> = {
   arbol_binario_busqueda: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_avl: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_rojinegro: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
+  arbol_splay: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_nario: ["createRoot", "insertChild", "deleteNode", "moveNode", "updateValue", "search", "getPreOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_123: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_b: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
-  arbol_b_plus: ["insert", "delete", "search","range","scanFrom", "getInOrder", "getLevelOrder", "clean"],
+  arbol_b_plus: ["insert", "delete", "search", "range", "scanFrom", "getInOrder", "getLevelOrder", "clean"],
   arbol_heap: ["insert", "delete", "deleteR", "search", "peek", "getLevelOrder", "clean"],
 };

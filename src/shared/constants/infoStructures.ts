@@ -87,12 +87,12 @@ export const infoStructures: Record<string, any> = {
     info: [
       {
         key: "Peso",
-        description: "Número total de nodos en el árbol binario.",
+        description: "Número total de nodos en el árbol.",
       },
       {
         key: "Altura",
         description:
-          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario.",
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
       },
       {
         key: "Hojas",
@@ -105,12 +105,12 @@ export const infoStructures: Record<string, any> = {
     info: [
       {
         key: "Peso",
-        description: "Número total de nodos en el árbol binario.",
+        description: "Número total de nodos en el árbol.",
       },
       {
         key: "Altura",
         description:
-          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol binario.",
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
       },
       {
         key: "Hojas",
@@ -119,7 +119,6 @@ export const infoStructures: Record<string, any> = {
       },
     ],
   },
-
   arbol_avl: {
     info: [
       {
@@ -138,7 +137,6 @@ export const infoStructures: Record<string, any> = {
       },
     ],
   },
-
   arbol_rojinegro: {
     info: [
       {
@@ -157,11 +155,24 @@ export const infoStructures: Record<string, any> = {
       },
     ],
   },
-
-  splay: {
-    info: ["Peso", "Altura"],
+  arbol_splay: {
+    info: [
+      {
+        key: "Peso",
+        description: "Número total de nodos en el árbol.",
+      },
+      {
+        key: "Altura",
+        description:
+          "Camino o distancia desde la raíz hasta el nodo hoja más profundo del árbol.",
+      },
+      {
+        key: "Hojas",
+        description:
+          "Nodo terminal en la estructura del árbol que no posee descendientes.",
+      },
+    ],
   },
-
   arbol_heap: {
     info: [
       {

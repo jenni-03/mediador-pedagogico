@@ -359,7 +359,7 @@ export const commandsData: Record<string, any> = {
     buttons: [
       {
         title: "insert",
-        description: "Inserta un valor en el AVL (con rebalanceo automático).",
+        description: "Inserta un nodo dentro del árbol AVL (con rebalanceo automático).",
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
         ejemplo:
@@ -367,54 +367,53 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "delete",
-        description: "Elimina un valor del AVL (con rebalanceo automático).",
+        description: "Elimina un nodo del árbol AVL (con rebalanceo automático).",
         estructura: "nombreObjeto.delete(valor);",
         ejemplo: "arbolA.delete(20);",
       },
       {
         title: "search",
-        description: "Busca un valor en el AVL.",
+        description: "Busca un nodo dentro del árbol AVL.",
         estructura: "nombreObjeto.search(valor);",
         ejemplo: "arbolA.search(25);",
       },
       {
         title: "getPreOrder",
-        description: "Obtiene el recorrido en preorden del AVL.",
+        description: "Obtiene el recorrido en preorden del árbol AVL.",
         estructura: "nombreObjeto.getPreOrder();",
         ejemplo: "arbolA.getPreOrder();",
       },
       {
         title: "getInOrder",
-        description: "Obtiene el recorrido en inorden del AVL.",
+        description: "Obtiene el recorrido en inorden del árbol AVL.",
         estructura: "nombreObjeto.getInOrder();",
         ejemplo: "arbolA.getInOrder();",
       },
       {
         title: "getPostOrder",
-        description: "Obtiene el recorrido en postorden del AVL.",
+        description: "Obtiene el recorrido en postorden del árbol AVL.",
         estructura: "nombreObjeto.getPostOrder();",
         ejemplo: "arbolA.getPostOrder();",
       },
       {
         title: "getLevelOrder",
-        description: "Obtiene el recorrido por niveles (BFS) del AVL.",
+        description: "Obtiene el recorrido por niveles (BFS) del árbol AVL.",
         estructura: "nombreObjeto.getLevelOrder();",
         ejemplo: "arbolA.getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Vacia el árbol AVL.",
+        description: "Borra el árbol AVL.",
         estructura: "nombreObjeto.clean();",
         ejemplo: "arbolA.clean();",
       },
     ],
   },
-
   arbol_rojinegro: {
     buttons: [
       {
         title: "insert",
-        description: "Insertar un nodo en el árbol Rojo-Negro",
+        description: "Inserta un nodo en el árbol Rojo-Negro (con restauración de propiedades automática)",
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
         ejemplo:
@@ -422,84 +421,98 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del árbol Rojo-Negro",
+        description: "Elimina un nodo del árbol Rojo-Negro (con restauración de propiedades automática)",
         estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolRN.delete(1);",
+        ejemplo: "arbolRN.delete(55);",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el árbol Rojo-Negro",
+        description: "Busca un nodo dentro del árbol Rojo-Negro",
         estructura: "nombreObjeto.search(valor);",
-        ejemplo: "arbolRN.search(1);",
-      },
-      {
-        title: "clean",
-        description: "Borrar el árbol Rojo-Negro",
-        estructura: "nombreObjeto.clean();",
-        ejemplo: "arbolRN.clean();",
+        ejemplo: "arbolRN.search(15);",
       },
       {
         title: "getPreOrder",
-        description: "Obtiene el recorrido en preorden del árbol RojiNegro.",
+        description: "Obtiene el recorrido en preorden del árbol Rojo-Negro.",
         estructura: "nombreObjeto.getPreOrder();",
         ejemplo: "arbolRN.getPreOrder();",
       },
       {
         title: "getInOrder",
-        description: "Obtiene el recorrido en inorden del árbol RojiNegro.",
+        description: "Obtiene el recorrido en inorden del árbol Rojo-Negro.",
         estructura: "nombreObjeto.getInOrder();",
         ejemplo: "arbolRN.getInOrder();",
       },
       {
         title: "getPostOrder",
-        description: "Obtiene el recorrido en postorden del árbol RojiNegro.",
+        description: "Obtiene el recorrido en postorden del árbol Rojo-Negro.",
         estructura: "nombreObjeto.getPostOrder();",
         ejemplo: "arbolRN.getPostOrder();",
       },
       {
         title: "getLevelOrder",
         description:
-          "Obtiene el recorrido por niveles (BFS) del árbol RojiNegro.",
+          "Obtiene el recorrido por niveles (BFS) del árbol Rojo-Negro.",
         estructura: "nombreObjeto.getLevelOrder();",
         ejemplo: "arbolRN.getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Vacia el árbol AVL.",
+        description: "Borra el árbol Rojo-Negro.",
         estructura: "nombreObjeto.clean();",
         ejemplo: "arbolRN.clean();",
       },
     ],
   },
-  splay: {
+  arbol_splay: {
     buttons: [
       {
         title: "insert",
-        description: "Insertar un nodo en el árbol Splay",
-        estructura: "nombreObjeto.insert(valor);",
-        ejemplo: "arbolS.insert(1);",
+        description: "Inserta un nodo en el árbol Splay (con splay automático)",
+        estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
+               Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
+        ejemplo: "arbolS.insert(40);",
       },
       {
         title: "delete",
-        description: "Eliminar un nodo del árbol Splay",
+        description: "Elimina un nodo del árbol Splay (con splay automático)",
         estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolS.delete(1);",
+        ejemplo: "arbolS.delete(45);",
       },
       {
         title: "search",
-        description: "Buscar un nodo en el árbol Splay",
+        description: "Busca un nodo dentro del árbol Splay (con splay automático)",
         estructura: "nombreObjeto.search(valor);",
-        ejemplo: "arbolS.search(1);",
+        ejemplo: "arbolS.search(35);",
       },
       {
-        title: "splay",
-        description: "Realizar la operación Splay",
-        estructura: "nombreObjeto.splay(valor);",
-        ejemplo: "arbolS.splay(1);",
+        title: "getPreOrder",
+        description: "Obtiene el recorrido en preorden del árbol Splay.",
+        estructura: "nombreObjeto.getPreOrder();",
+        ejemplo: "arbolS.getPreOrder();",
+      },
+      {
+        title: "getInOrder",
+        description: "Obtiene el recorrido en inorden del árbol Splay.",
+        estructura: "nombreObjeto.getInOrder();",
+        ejemplo: "arbolS.getInOrder();",
+      },
+      {
+        title: "getPostOrder",
+        description: "Obtiene el recorrido en postorden del árbol Splay.",
+        estructura: "nombreObjeto.getPostOrder();",
+        ejemplo: "arbolS.getPostOrder();",
+      },
+      {
+        title: "getLevelOrder",
+        description:
+          "Obtiene el recorrido por niveles (BFS) del árbol Splay.",
+        estructura: "nombreObjeto.getLevelOrder();",
+        ejemplo: "arbolS.getLevelOrder();",
       },
       {
         title: "clean",
-        description: "Borrar el árbol Splay",
+        description: "Borra el árbol Splay",
         estructura: "nombreObjeto.clean();",
         ejemplo: "arbolS.clean();",
       },
