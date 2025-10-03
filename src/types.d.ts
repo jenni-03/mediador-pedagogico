@@ -776,6 +776,8 @@ export type RBColor = "RED" | "BLACK";
 
 export type SplayRotationTag = "Zig" | "Zig-Zig" | "Zig-Zag";
 
+export type SplayFrame = AvlFrame;
+
 export type SplayRotation = { tag: SplayRotationTag; rotation: RotationStep; rotationOrder: "first" | "second" };
 
 export type SplayTrace<T> = {

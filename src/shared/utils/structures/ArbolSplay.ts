@@ -59,6 +59,8 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
         // Actualizar padre del nuevo nodo
         const nuevo = new NodoSplay<T>(valor);
+        nuevo.setPadre(p);
+
         if (!p) {
             this.setRaiz(nuevo);
         } else if (this.compare(valor, p.getInfo()) < 0) {

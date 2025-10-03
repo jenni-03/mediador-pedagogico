@@ -147,6 +147,12 @@ export const SVG_RB_TREE_VALUES = {
   EXTRA_WIDTH: 70
 }
 
+export const SVG_SPLAY_TREE_VALUES = {
+  NODE_SPACING: 75,
+  LEVEL_SPACING: 95,
+  EXTRA_WIDTH: 70
+}
+
 export const RB_COLORS = {
   RED: "#ff5a66",
   RED_RING: "#ff9aa1",
