@@ -1,13 +1,13 @@
 import { type HierarchyNode, type Selection } from "d3";
 import { HierarchyNodeData, RotationType, SplayFrame, SplayRotation, SplayRotationTag, TreeLinkData } from "../../../types";
 import type { Dispatch, SetStateAction } from "react";
-import { defaultAppearTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
+import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { animateBSTInsertCore, animateEspecialBSTsRotation, highlightBinaryTreePath } from "./BinaryTreeDrawActions";
 import { straightPath } from "../treeUtils";
 
 /**
- * Función encargada de animar la inserción de un nuevo nodo en el árbol Splay.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo dentro de un árbol Splay.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param treeOffset Desplazamiento del árbol dentro del SVG.
  * @param insertionData Objeto con información del árbol necesaria para la animación.
@@ -44,17 +44,13 @@ export async function animateSplayInsertNode(
     const linksLayer = treeG.select<SVGGElement>("g.links-layer");
     const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
 
-    // Renderizado del estado del árbol previo a cualquier rotación
-    drawTreeNodes(nodesLayer, currentNodes, positions);
-    drawTreeLinks(linksLayer, currentLinks, positions);
-
     // Si el nodo a insertar ya se encuentra dentro del árbol
     if (!insertionData.inserted) {
         // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
         seqG.style("opacity", 0);
 
         // Animación de recorrido hasta el nodo objetivo
-        await highlightBinaryTreePath(treeG, insertionData.pathToNode, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
+        await highlightBinaryTreePath(treeG, insertionData.pathToNode, SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR);
 
         // Restablecimiento del estilo visual original del nodo objetivo
         await treeG.select<SVGGElement>(`g#${insertionData.newNodeId} circle.node-container`)
@@ -78,6 +74,10 @@ export async function animateSplayInsertNode(
             }
         );
     } else {
+        // Renderizado de los elementos correspondientes al nuevo nodo
+        drawTreeNodes(nodesLayer, currentNodes, positions);
+        drawTreeLinks(linksLayer, currentLinks, positions);
+
         // Animación de inserción del nuevo nodo como BST
         await animateBSTInsertCore(
             treeG,
@@ -94,7 +94,7 @@ export async function animateSplayInsertNode(
                 reposition: repositionSplayTree,
                 appearNode: defaultAppearTreeNode,
                 highlight: highlightBinaryTreePath,
-                highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR
+                highlightColor: SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR
             }
         );
 
@@ -108,7 +108,7 @@ export async function animateSplayInsertNode(
         }
     }
 
-    // Aplicación de rotaciones
+    // Aplicación de operación splay sobre el nodo objetivo
     let frameCount = 1;
     for (const rotationStep of insertionData.rotations) {
         // Rotación a aplicar
@@ -178,7 +178,7 @@ export async function animateSplayInsertNode(
     await showTreeHint(
         svg,
         { type: "node", id: insertionData.newNodeId },
-        { label: "Splay", value: "ya en raíz" },
+        { label: insertionData.parentId ? "Nueva Raíz" : "Splay", value: insertionData.parentId ? "Splay" : "ya en raíz" },
         positions,
         treeOffset,
         {
@@ -197,31 +197,34 @@ export async function animateSplayInsertNode(
 }
 
 /**
- * Función encargada de animar la búsqueda de un nodo dentro del árbol Splay.
+ * Función encargada de animar el proceso de eliminación de un nodo específico dentro de un árbol Splay
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
- * @param treeOffset Desplazamiento del árbol dentro del SVG. 
- * @param searchData Objeto con información del árbol necesaria para la animación.
- * @param resetQueryValues Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param deletionData Objeto con información del árbol necesaria para la animación. 
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
+ * @param setIsAnimating Función para establecer el estado de animación. 
  */
-export async function animateSplaySearch(
+export async function animateSplayDeleteNode(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     treeOffset: { x: number; y: number },
-    searchData: {
-        targetNodeId: string;
-        found: boolean;
+    deletionData: {
+        targetNode: HierarchyNode<HierarchyNodeData<number>>;
+        maxLeftNode: HierarchyNode<HierarchyNodeData<number>> | null;
+        removed: boolean;
         currentNodes: HierarchyNode<HierarchyNodeData<number>>[];
         currentLinks: TreeLinkData[];
         positions: Map<string, { x: number, y: number }>;
         pathToTargetNode: HierarchyNode<HierarchyNodeData<number>>[];
-        rotations: SplayRotation[],
+        pathToMaxLeftNode: HierarchyNode<HierarchyNodeData<number>>[];
+        targetNodeRotations: SplayRotation[],
+        maxLeftRotations: SplayRotation[],
         frames: SplayFrame[]
     },
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
-    const { positions, currentNodes, currentLinks } = searchData;
+    const { positions, targetNode, maxLeftNode, frames } = deletionData;
 
     // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
     const treeG = svg.select<SVGGElement>("g.tree-container");
@@ -233,35 +236,22 @@ export async function animateSplaySearch(
     const linksLayer = treeG.select<SVGGElement>("g.links-layer");
     const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
 
-    // Renderizado del estado del árbol previo a cualquier rotación
-    drawTreeNodes(nodesLayer, currentNodes, positions);
-    drawTreeLinks(linksLayer, currentLinks, positions);
-
     // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
     seqG.style("opacity", 0);
 
     // Grupo correspondiente al nodo objetivo
-    const targetNodeGroup = treeG.select<SVGCircleElement>(`g#${searchData.targetNodeId} circle.node-container`);
+    const targetNodeGroup = treeG.select<SVGGElement>(`g#${targetNode.data.id}`);
 
     // Animación de recorrido hasta el nodo objetivo
-    await highlightBinaryTreePath(treeG, searchData.pathToTargetNode, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
+    await highlightBinaryTreePath(treeG, deletionData.pathToTargetNode, SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR);
 
-    // Resaltado final del nodo objetivo (si esta presente en el árbol)
-    if (searchData.found) {
-        await targetNodeGroup
-            .transition()
-            .duration(250)
-            .attr("r", 30)
-            .transition()
-            .duration(250)
-            .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-            .end();
-    } else {
+    // En caso de que el nodo objetivo no se encuentre dentro del árbol (no se elimina nada)
+    if (!deletionData.removed) {
         // Mostrar indicador visual de que el nodo no fue encontrado
         await showTreeHint(
             svg,
-            { type: "node", id: searchData.targetNodeId },
-            { label: "Nodo", value: "no encontrado" },
+            { type: "node", id: targetNode.data.id },
+            { label: "Nodo", value: "no ubicado" },
             positions,
             treeOffset,
             {
@@ -275,23 +265,24 @@ export async function animateSplaySearch(
 
     // Restablecimiento del estilo visual original del nodo objetivo
     await targetNodeGroup
+        .select("circle.node-container")
         .transition()
         .duration(800)
         .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
         .end();
 
-    // Aplicación de rotaciones
+    // Aplicación de operación splay sobre el nodo objetivo (nodo a eliminar si el nodo se encuentra dentro del árbol o último visitado en caso contrario)
     let frameCount = 1;
-    for (const rotationStep of searchData.rotations) {
+    for (const rotationStep of deletionData.targetNodeRotations) {
         // Rotación a aplicar
         const rotation = rotationStep.rotation;
-        const { nodes, links } = searchData.frames[frameCount];
+        const { nodes, links } = frames[frameCount];
 
         // Mostrar indicador visual del caso splay (antes de aplicar cualquier rotación)
         if (rotationStep.rotationOrder === "first") {
             await showTreeHint(
                 svg,
-                { type: "node", id: searchData.targetNodeId },
+                { type: "node", id: targetNode.data.id },
                 { label: "Splay", value: `${rotationStep.tag} (${rotationStep.tag === "Zig" ? rotation.type.charAt(0) : rotation.type})` },
                 positions,
                 treeOffset,
@@ -349,8 +340,365 @@ export async function animateSplaySearch(
     // Mostrar indicador visual de que el nodo objetivo ya corresponde con la raíz del árbol
     await showTreeHint(
         svg,
-        { type: "node", id: searchData.targetNodeId },
-        { label: "Splay", value: "ya en raíz" },
+        { type: "node", id: targetNode.data.id },
+        { label: targetNode.parent ? "Nueva Raíz" : "Splay", value: targetNode.parent ? "Splay" : "ya en raíz" },
+        positions,
+        treeOffset,
+        {
+            size: { width: 70, height: 35 },
+            typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+            anchor: { side: "below", dx: 10, dy: -8 },
+            palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+        }
+    );
+
+    // En caso de que el nodo objetivo si se encuentre dentro del árbol (animamos el proceso de eliminación)
+    if (deletionData.removed) {
+        // El nodo a eliminar corresponde ahora a la raíz actual del árbol (si el nodo objetivo contaba con un nodo padre, usamos el 
+        // último frame post-rotación durante su búsqueda para obtener su estado actual)
+        const nodeToDelete = targetNode.parent ? frames[frameCount - 1].root : targetNode;
+
+        // Mostrar indicador visual de eliminación del nodo raíz
+        await showTreeHint(
+            svg,
+            { type: "node", id: nodeToDelete.data.id },
+            { label: "Eliminar", value: "Raíz" },
+            positions,
+            treeOffset,
+            {
+                size: { width: 78, height: 35 },
+                typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                anchor: { side: "below", dx: 10, dy: -8 },
+                palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+            }
+        );
+
+        // Si el nodo a eliminar cuenta con nodos hijos
+        let leftChild: HierarchyNodeData<number> | null = null;
+        let rightChild: HierarchyNodeData<number> | null = null;
+        if (nodeToDelete.data.children) {
+            // Desconexión de los enlaces entre el nodo a eliminar y sus hijos
+            leftChild = nodeToDelete.data.children[0];
+            rightChild = nodeToDelete.data.children[1];
+
+            if (!leftChild.isPlaceholder) {
+                await linksLayer.select<SVGGElement>(`g#link-${nodeToDelete.data.id}-${leftChild.id}`)
+                    .transition()
+                    .duration(800)
+                    .style("opacity", 0)
+                    .remove()
+                    .end();
+            }
+
+            if (!rightChild.isPlaceholder) {
+                await linksLayer.select<SVGGElement>(`g#link-${nodeToDelete.data.id}-${rightChild.id}`)
+                    .transition()
+                    .duration(800)
+                    .style("opacity", 0)
+                    .remove()
+                    .end();
+            }
+        }
+
+        // Salida del nodo a eliminar
+        await defaultDeleteTreeNode(targetNodeGroup);
+
+        // Limpiamos el registro del nodo eliminado
+        positions.delete(nodeToDelete.data.id);
+
+        // Si el nodo a eliminar cuenta con subárbol izquierdo (trabajamos con el nodo con máximo valor de dicho subárbol)
+        if (maxLeftNode) {
+            // Grupo correspondiente al nodo con mayor valor del subárbol izq.
+            const maxLeftNodeGroup = treeG.select<SVGGElement>(`g#${maxLeftNode.data.id}`);
+
+            // Mostrar indicador visual de búsqueda de la nueva raíz del árbol
+            await showTreeHint(
+                svg,
+                { type: "node", id: leftChild!.id },
+                { label: "Buscar Máx.", value: "Subárbol Izq." },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 80, height: 35 },
+                    typography: { labelFz: "9.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+                }
+            );
+
+            // Animación de recorrido hasta el nodo objetivo
+            await highlightBinaryTreePath(treeG, deletionData.pathToMaxLeftNode, SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR);
+
+            // Restablecimiento del estilo visual original del nodo objetivo
+            await maxLeftNodeGroup
+                .select("circle.node-container")
+                .transition()
+                .duration(800)
+                .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                .end();
+
+            // Aplicación de operación splay sobre el nodo objetivo (nodo con mayor valor del subárbol izq. para convertirlo en la nueva raíz)
+            for (const rotationStep of deletionData.maxLeftRotations) {
+                // Rotación a aplicar
+                const rotation = rotationStep.rotation;
+                const { nodes, links } = frames[frameCount];
+
+                // Mostrar indicador visual del caso splay (antes de aplicar cualquier rotación)
+                if (rotationStep.rotationOrder === "first") {
+                    await showTreeHint(
+                        svg,
+                        { type: "node", id: maxLeftNode.data.id },
+                        { label: "Splay", value: `${rotationStep.tag} (${rotationStep.tag === "Zig" ? rotation.type.charAt(0) : rotation.type})` },
+                        positions,
+                        treeOffset,
+                        {
+                            size: { width: 78, height: 35 },
+                            typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                            anchor: { side: "below", dx: 10, dy: -8 },
+                            palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+                        }
+                    );
+                }
+
+                // Determinar el indicador del tipo de rotación a aplicar
+                const rotationIndicator = determineSplayRotationIndicatorTag(rotationStep.tag, rotation.type, rotationStep.rotationOrder);
+
+                // Mostrar indicador visual de la rotación a aplicar
+                await showTreeHint(
+                    svg,
+                    { type: "node", id: rotation.zId },
+                    { label: "Rotación", value: `${rotationIndicator}` },
+                    positions,
+                    treeOffset,
+                    {
+                        size: { width: 78, height: 35 },
+                        typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                        anchor: { side: "below", dx: 10, dy: -8 },
+                        palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+                    }
+                );
+
+                // Renderizar los nuevos enlaces (post-rotación)
+                drawTreeLinks(linksLayer, links, positions);
+
+                // Actualizar la posición de los nodos (post-rotación)
+                drawTreeNodes(nodesLayer, nodes, positions);
+
+                // Animación de rotación a aplicar
+                await animateEspecialBSTsRotation(
+                    treeG,
+                    rotation.parentOfZId ?? null,
+                    rotation.zId,
+                    rotation.yId,
+                    rotation.BId ?? null,
+                    repositionSplayTree,
+                    {
+                        nodes,
+                        links,
+                        positions
+                    }
+                );
+
+                frameCount++;
+            }
+
+            if (rightChild && !rightChild.isPlaceholder) {
+                // Renderizado del nuevo enlace entre la nueva raíz y el subárbol derecho
+                drawTreeLinks(linksLayer, deletionData.currentLinks, positions);
+
+                // Estado visual inicial del nuevo enlace
+                const newRootRightLink = linksLayer.select<SVGGElement>(`g#link-${maxLeftNode.data.id}-${rightChild.id}`);
+                newRootRightLink.style("opacity", 0);
+
+                // Aparición del nuevo enlace
+                await newRootRightLink
+                    .transition()
+                    .duration(800)
+                    .style("opacity", 1)
+                    .end();
+            }
+        }
+
+        // Actualizar posiciones de los nodos
+        drawTreeNodes(nodesLayer, deletionData.currentNodes, positions);
+
+        // Reposición de nodos y enlaces
+        await repositionSplayTree(treeG, deletionData.currentNodes, deletionData.currentLinks, positions);
+
+        // Mostrar indicador visual de que el nodo objetivo ya corresponde con la raíz del árbol
+        if (rightChild || leftChild) {
+            await showTreeHint(
+                svg,
+                { type: "node", id: deletionData.currentNodes[0].data.id },
+                { label: "Nueva Raíz", value: "Splay" },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 70, height: 35 },
+                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+                }
+            );
+        }
+    }
+
+    // Restablecimiento de los valores de las queries del usuario
+    resetQueryValues();
+
+    // Finalización de la animación
+    setIsAnimating(false);
+}
+
+/**
+ * Función encargada de animar el proceso de búsqueda de un nodo dentro de un árbol Splay.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG. 
+ * @param searchData Objeto con información del árbol necesaria para la animación.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateSplaySearch(
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    treeOffset: { x: number; y: number },
+    searchData: {
+        targetNode: HierarchyNode<HierarchyNodeData<number>>;
+        found: boolean;
+        positions: Map<string, { x: number, y: number }>;
+        pathToTargetNode: HierarchyNode<HierarchyNodeData<number>>[];
+        rotations: SplayRotation[],
+        frames: SplayFrame[]
+    },
+    resetQueryValues: () => void,
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+    // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
+    const { positions, targetNode } = searchData;
+
+    // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
+    const treeG = svg.select<SVGGElement>("g.tree-container");
+
+    // Grupo contenedor de la secuencia de valores de recorrido
+    const seqG = svg.select<SVGGElement>("g.seq-container");
+
+    // Capas especificas de nodos y enlaces
+    const linksLayer = treeG.select<SVGGElement>("g.links-layer");
+    const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+
+    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+    seqG.style("opacity", 0);
+
+    // Grupo correspondiente al nodo objetivo
+    const targetNodeGroup = treeG.select<SVGCircleElement>(`g#${targetNode.data.id} circle.node-container`);
+
+    // Animación de recorrido hasta el nodo objetivo
+    await highlightBinaryTreePath(treeG, searchData.pathToTargetNode, SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR);
+
+    // Resaltado final del nodo objetivo (si esta presente en el árbol)
+    if (searchData.found) {
+        await targetNodeGroup
+            .transition()
+            .duration(250)
+            .attr("r", 30)
+            .transition()
+            .duration(250)
+            .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+            .end();
+    } else {
+        // Mostrar indicador visual de que el nodo no fue encontrado
+        await showTreeHint(
+            svg,
+            { type: "node", id: targetNode.data.id },
+            { label: "Nodo", value: "no ubicado" },
+            positions,
+            treeOffset,
+            {
+                size: { width: 80, height: 35 },
+                typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                anchor: { side: "below", dx: 10, dy: -8 },
+                palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+            }
+        );
+    }
+
+    // Restablecimiento del estilo visual original del nodo objetivo
+    await targetNodeGroup
+        .transition()
+        .duration(800)
+        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+        .end();
+
+    // Aplicación de rotaciones
+    let frameCount = 1;
+    for (const rotationStep of searchData.rotations) {
+        // Rotación a aplicar
+        const rotation = rotationStep.rotation;
+        const { nodes, links } = searchData.frames[frameCount];
+
+        // Mostrar indicador visual del caso splay (antes de aplicar cualquier rotación)
+        if (rotationStep.rotationOrder === "first") {
+            await showTreeHint(
+                svg,
+                { type: "node", id: targetNode.data.id },
+                { label: "Splay", value: `${rotationStep.tag} (${rotationStep.tag === "Zig" ? rotation.type.charAt(0) : rotation.type})` },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 78, height: 35 },
+                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+                }
+            );
+        }
+
+        // Determinar el indicador del tipo de rotación a aplicar
+        const rotationIndicator = determineSplayRotationIndicatorTag(rotationStep.tag, rotation.type, rotationStep.rotationOrder);
+
+        // Mostrar indicador visual de la rotación a aplicar
+        await showTreeHint(
+            svg,
+            { type: "node", id: rotation.zId },
+            { label: "Rotación", value: `${rotationIndicator}` },
+            positions,
+            treeOffset,
+            {
+                size: { width: 78, height: 35 },
+                typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                anchor: { side: "below", dx: 10, dy: -8 },
+                palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+            }
+        );
+
+        // Renderizar los nuevos enlaces (post-rotación)
+        drawTreeLinks(linksLayer, links, positions);
+
+        // Actualizar la posición de los nodos (post-rotación)
+        drawTreeNodes(nodesLayer, nodes, positions);
+
+        // Animación de rotación a aplicar
+        await animateEspecialBSTsRotation(
+            treeG,
+            rotation.parentOfZId ?? null,
+            rotation.zId,
+            rotation.yId,
+            rotation.BId ?? null,
+            repositionSplayTree,
+            {
+                nodes,
+                links,
+                positions
+            }
+        );
+
+        frameCount++;
+    }
+
+    // Mostrar indicador visual de que el nodo objetivo ya corresponde con la raíz del árbol
+    await showTreeHint(
+        svg,
+        { type: "node", id: targetNode.data.id },
+        { label: targetNode.parent ? "Nueva Raíz" : "Splay", value: targetNode.parent ? "Splay" : "ya en raíz" },
         positions,
         treeOffset,
         {
@@ -377,13 +725,13 @@ export async function animateSplaySearch(
  */
 function determineSplayRotationIndicatorTag(splayCase: SplayRotationTag, rotationType: RotationType, rotationOrder: "first" | "second") {
     if (splayCase === "Zig") {
-        return rotationType === "LL" ? "R(padre)" : "L(padre)"
+        return rotationType === "LL" ? "Der(padre)" : "Izq(padre)"
     } else if (splayCase === "Zig-Zig") {
-        if (rotationOrder === "first") return rotationType === "LL" ? "R(abuelo)" : "L(abuelo)";
-        else return rotationType === "LL" ? "R(padre)" : "L(padre)";
+        if (rotationOrder === "first") return rotationType === "LL" ? "Der(abuelo)" : "Izq(abuelo)";
+        else return rotationType === "LL" ? "Der(padre)" : "Izq(padre)";
     } else {
-        if (rotationOrder === "first") return rotationType === "RL" ? "R(padre)" : "L(padre)";
-        else return rotationType === "RL" ? "L(abuelo)" : "R(abuelo)";
+        if (rotationOrder === "first") return rotationType === "RL" ? "Der(padre)" : "Izq(padre)";
+        else return rotationType === "RL" ? "Izq(abuelo)" : "Der(abuelo)";
     }
 }
 

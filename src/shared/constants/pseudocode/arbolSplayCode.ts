@@ -2,16 +2,10 @@ import { OperationCode } from "./typesPseudoCode";
 
 export const getArbolSplayCode = (): OperationCode => ({
     insert: [
-        `/**`,
-        ` * Inserta un valor en el Árbol Roji-Negro.`,
-        ` * Regla: el nuevo nodo se inserta ROJO y luego se corrige (fix-up).`,
-        ` */`,
-        `public void insert(T valor) {`,
+        `public void insertar(T valor) {`,
         `    NodoRN<T> z = new NodoRN<T>(valor);`,
-        `    z.color = ROJO;`,
-        `    // Inserción BST estándar`,
-        `    NodoRN<T> y = null;`,
-        `    NodoRN<T> x = raiz;`,
+        `    NodoRN<T> p = null;`,
+        `    NodoRN<T> curr = this.getRaiz();`,
         `    while (x != null) {`,
         `        y = x;`,
         `        if (z.info.compareTo(x.info) < 0) x = x.izq;`,

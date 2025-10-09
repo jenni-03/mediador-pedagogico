@@ -1,6 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { Comparator, HierarchyNodeData, RotationStep, RotationType, SplayRotationTag, SplayTrace } from "../../../types";
+import { Comparator, HierarchyNodeData, RotationStep, RotationType, SplayRotationTag, SplayTrace, SplayTracePhase } from "../../../types";
 import { NodoSplay } from "../nodes/NodoSplay";
 import { defaultComparator } from "../treeUtils";
 import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
@@ -10,7 +10,7 @@ import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
  */
 export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
-    private lastSplayTrace: SplayTrace<T> | null = null;
+    private splayOperationTrace: SplayTrace<T> | null = null;
 
     /**
      * Constructor de la clase ArbolSplay.
@@ -35,8 +35,12 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         }
 
         // Inicializar la traza de seguimiento del estado del árbol durante la operación
-        this.lastSplayTrace = {
-            rotations: [],
+        this.splayOperationTrace = {
+            phases: {
+                insertion: [],
+                search: [],
+                deletion: []
+            },
             hierarchies: {
                 bst: null,
                 mids: []
@@ -51,7 +55,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
             p = cur;
             const cmp = this.compare(valor, cur.getInfo());
             if (cmp === 0) {
-                this.splay(cur);
+                this.splay(cur, "insertion");
                 return { targetNode: cur, inserted: false };
             }
             cur = cmp < 0 ? cur.getIzq() : cur.getDer();
@@ -70,7 +74,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         }
 
         // Splay del nuevo nodo
-        this.splay(nuevo);
+        this.splay(nuevo, "insertion");
         this.setTamanio(this.getTamanio() + 1);
 
         return { targetNode: nuevo, inserted: true };
@@ -113,7 +117,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         // Splay del máximo de L dentro de L
         this.setRaiz(L);
         const maxL = this.maximo(this.getRaiz()!);
-        this.splay(maxL);
+        this.splay(maxL, "deletion");
 
         // Colgamos R
         this.getRaiz()!.setDer(R)
@@ -137,8 +141,12 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         let last: NodoSplay<T> | null = null;
 
         // Inicializar la traza de seguimiento del estado del árbol durante la operación
-        this.lastSplayTrace = {
-            rotations: [],
+        this.splayOperationTrace = {
+            phases: {
+                insertion: [],
+                search: [],
+                deletion: []
+            },
             hierarchies: {
                 bst: null,
                 mids: []
@@ -149,14 +157,14 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
             last = cur;
             const cmp = this.compare(valor, cur.getInfo());
             if (cmp === 0) {
-                this.splay(cur);
+                this.splay(cur, "search");
                 return { node: cur, found: true };
             }
             cur = cmp < 0 ? cur.getIzq() : cur.getDer();
         }
 
         // Si el nodo no fue ubicado, splay del último visitado
-        this.splay(last!);
+        this.splay(last!, "search");
         return { node: last, found: false };
     }
 
@@ -277,22 +285,13 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que consume y limpia la última traza splay registrada.
-     * @returns Última traza splay o null si no existe.
-     */
-    public consumeLastSplayTrace(): SplayTrace<T> | null {
-        const t = this.lastSplayTrace;
-        this.lastSplayTrace = null;
-        return t;
-    }
-
-    /**
      * Método que realiza la operación splay en el nodo dado, moviendolo a la raíz del árbol splay.
      * Aplica una serie de rotaciones (Zig, Zig-Zig, Zig-Zag) dependiendo de la posición del nodo.
      * Durante cada rotación, captura estados pre- y post-rotación para propositos de seguimiento y visualización.
      * @param x Nodo a splayear hasta la raíz.
+     * @param tracePhase Fase de la traza de operación splay usada para capturar información sobre las rotaciones aplicadas.
      */
-    private splay(x: NodoSplay<T>) {
+    private splay(x: NodoSplay<T>, tracePhase: SplayTracePhase) {
         while (x.getPadre() !== null) {
             const p = x.getPadre()!;
             const g = p.getPadre();
@@ -302,13 +301,14 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
             if (g === null) {
                 // Capturar info de la rotación a aplicar
-                this.pushSplayRotationInfo(
+                this.pushSplayRotationStep(
                     p,
                     x,
                     x === p.getIzq() ? x.getDer() : x.getIzq(),
                     "Zig",
                     x === p.getIzq() ? "LL" : "RR",
-                    "first"
+                    "first",
+                    tracePhase
                 );
 
                 // Zig
@@ -328,14 +328,14 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     // Zig-Zig LL
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationInfo(g, p, p.getDer(), "Zig-Zig", "LL", "first");
+                    this.pushSplayRotationStep(g, p, p.getDer(), "Zig-Zig", "LL", "first", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(g);
                     this.pushSplayRotationHierarchy();
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationInfo(p, x, x.getDer(), "Zig-Zig", "LL", "second");
+                    this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zig", "LL", "second", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(p);
@@ -344,14 +344,14 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     // Zig-Zig RR
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationInfo(g, p, p.getIzq(), "Zig-Zig", "RR", "first");
+                    this.pushSplayRotationStep(g, p, p.getIzq(), "Zig-Zig", "RR", "first", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(g);
                     this.pushSplayRotationHierarchy();
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationInfo(p, x, x.getIzq(), "Zig-Zig", "RR", "second");
+                    this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zig", "RR", "second", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(p);
@@ -360,14 +360,14 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     // Zig-Zag LR
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationInfo(p, x, x.getIzq(), "Zig-Zag", "LR", "first");
+                    this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zag", "LR", "first", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(p);
                     this.pushSplayRotationHierarchy();
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationInfo(g, x, x.getDer(), "Zig-Zag", "LR", "second");
+                    this.pushSplayRotationStep(g, x, x.getDer(), "Zig-Zag", "LR", "second", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(g);
@@ -376,14 +376,14 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     // Zig–Zag RL
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationInfo(p, x, x.getDer(), "Zig-Zag", "RL", "first");
+                    this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zag", "RL", "first", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(p);
                     this.pushSplayRotationHierarchy();
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationInfo(g, x, x.getIzq(), "Zig-Zag", "RL", "second");
+                    this.pushSplayRotationStep(g, x, x.getIzq(), "Zig-Zag", "RL", "second", tracePhase);
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(g);
@@ -509,6 +509,16 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
+     * Método que consume y limpia la última traza de operación splay registrada.
+     * @returns Última traza splay registrada o null si no existe.
+     */
+    public consumeLastSplayTrace(): SplayTrace<T> | null {
+        const t = this.splayOperationTrace;
+        this.splayOperationTrace = null;
+        return t;
+    }
+
+    /**
      * Método que registra información sobre un paso de rotación realizado durante la operación splay.
      * @param zNode Nodo que rota (z).
      * @param yNode Nodo implicado en la rotación (y).
@@ -516,14 +526,16 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
      * @param rotationTag Etiqueta que identifica el tipo de rotación splay.
      * @param rotationType Tipo de rotación realizada.
      * @param rotationOrder Indica si se trata se la "primera" o "segunda" rotación de la secuencia splay.
+     * @param phase Fase de la traza de operación splay a la que pertenece el paso de rotación.
      */
-    private pushSplayRotationInfo(
+    private pushSplayRotationStep(
         zNode: NodoSplay<T>,
         yNode: NodoSplay<T>,
         BNode: NodoSplay<T> | null,
         rotationTag: SplayRotationTag,
         rotationType: RotationType,
         rotationOrder: "first" | "second",
+        phase: SplayTracePhase
     ): void {
         const step: RotationStep = {
             type: rotationType,
@@ -532,25 +544,28 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
             parentOfZId: zNode.getPadre()?.getId() ?? null,
             BId: BNode?.getId() ?? null
         }
-        this.lastSplayTrace?.rotations.push({ tag: rotationTag, rotation: step, rotationOrder: rotationOrder });
+        this.splayOperationTrace?.phases[phase].push({ tag: rotationTag, rotation: step, rotationOrder: rotationOrder });
     }
 
     /**
-     * Método que agrega la estructura jerárquica actual a la traza de seguimiento del estado del árbol.
+     * Método que registra un estado intermedio del árbol durante una operación splay para propósitos de visualización y análisis.
+     * Toma la estructura jerárquica actual del árbol y la agrega a la colección de jerarquías intermedias en la traza de operación splay.
      */
     private pushSplayRotationHierarchy(): void {
-        if (!this.lastSplayTrace) return;
-        this.lastSplayTrace.hierarchies.mids.push(
+        if (!this.splayOperationTrace) return;
+        this.splayOperationTrace.hierarchies.mids.push(
             this.convertirEstructuraJerarquica() as HierarchyNodeData<T>
         );
     }
 
     /**
-     * Método que asegura que se inicialice la traza splay de la jerárquia BST.
+     * Método que garantiza la inicialización de la jerarquía BST en la traza de operación splay,
+     * Convierte la estructura actual del árbol en una representación jerárquica y asegura la disposición 
+     * de un estado base del árbol antes de registrar rotaciones intermedias
      */
-    private ensureSplayTraceInit() {
-        if (this.lastSplayTrace && !this.lastSplayTrace.hierarchies.bst) {
-            this.lastSplayTrace.hierarchies.bst = this.convertirEstructuraJerarquica();
+    private ensureSplayTraceInit(): void {
+        if (this.splayOperationTrace && !this.splayOperationTrace.hierarchies.bst) {
+            this.splayOperationTrace.hierarchies.bst = this.convertirEstructuraJerarquica();
         }
     }
 

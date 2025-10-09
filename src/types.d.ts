@@ -780,8 +780,14 @@ export type SplayFrame = AvlFrame;
 
 export type SplayRotation = { tag: SplayRotationTag; rotation: RotationStep; rotationOrder: "first" | "second" };
 
+export type SplayTracePhase = "insertion" | "search" | "deletion";
+
 export type SplayTrace<T> = {
-  rotations: SplayRotation[];
+  phases: {
+    insertion: SplayRotation[];
+    search: SplayRotation[];
+    deletion: SplayRotation[];
+  }
   hierarchies: {
     bst: HierarchyNodeData<T> | null;
     mids: HierarchyNodeData<T>[];
