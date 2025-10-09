@@ -1,17 +1,19 @@
 import { TourStep } from "../typesTour";
 
 export const getPilaTourSteps = (): TourStep[] => [
-  // Introducción
+  /* ───────────────────────── Introducción ───────────────────────── */
   {
     type: "info",
-    description: `🍽️ Imagina una pila de platos en una cocina: solo puedes agregar o quitar el de arriba. Así funciona nuestra estructura **Pila**. Es un ejemplo clásico de la regla **LIFO**: Last In, First Out.`,
+    description:
+      "🍽️ Imagina una pila de platos: solo agregas o quitas desde arriba. Es la regla **LIFO** (Last In, First Out).",
   },
   {
     type: "info",
-    description: `📚 Formalmente, una pila permite almacenar elementos y operar con ellos a través de 3 comandos principales: **push**, **pop** y **getTop**. ¡Vamos a verlos en acción!`,
+    description:
+      "⚠️ Flujo de uso: el **primer** `push(...)` **crea el objeto `pila`**. Desde ese punto, **todas** las operaciones deben ir con el prefijo **`pila.`**. Tras `pila.clean()`, vuelve a ejecutar `push(...)` (sin prefijo) para **recrear `pila`** y continúa con `pila.`",
   },
 
-  // Comando: push(4)
+  /* ───── Creación del objeto (primer push SIN prefijo) ───── */
   {
     id: "inputConsola",
     text: "push(4);",
@@ -19,132 +21,128 @@ export const getPilaTourSteps = (): TourStep[] => [
   },
   {
     id: "console",
-    description: `📥 Este comando inserta el número **4** al tope de la pila.`,
+    description:
+      "📥 Este primer `push(4)` **crea la pila** y su referencia se guarda en **`pila`**. A partir de aquí usa **`pila.`** en cada comando.",
     type: "element",
   },
-  {
-    id: "inputConsola",
-    type: "enter",
-  },
+  { id: "inputConsola", type: "enter" },
   {
     id: "main-canvas",
-    description: `🧩 El número **4** aparece en la parte superior de la pila. La pila crece hacia arriba con cada nuevo elemento.`,
+    description:
+      "🧩 Aparece **4** en la parte superior. La pila crece hacia arriba con cada `push`.",
     type: "element",
   },
   {
     id: "info-cards",
-    description: `📏 El tamaño de la pila ha aumentado a **1**.`,
+    description: "📏 El tamaño de la pila ahora es **1**.",
     type: "element",
   },
 
-  // Comando: push(7)
+  /* ─────────────────── Operaciones con `pila.` ─────────────────── */
+  // push(7)
   {
     id: "inputConsola",
-    text: "push(7);",
+    text: "pila.push(7);",
     type: "write",
   },
   {
     id: "console",
-    description: `📥 Ahora agregamos el número **7**. Este quedará por encima del **4**.`,
+    description: "📥 Agrega **7** arriba de **4**. **7** será el nuevo tope.",
     type: "element",
   },
-  {
-    id: "inputConsola",
-    type: "enter",
-  },
+  { id: "inputConsola", type: "enter" },
   {
     id: "main-canvas",
-    description: `📦 El valor **7** se apiló arriba de **4**. Ahora **7** es el tope.`,
+    description: "📦 El valor **7** quedó sobre **4**. Tope = **7**.",
     type: "element",
   },
   {
     id: "info-cards",
-    description: `📏 El tamaño de la pila ahora es **2**.`,
+    description: "📏 El tamaño ahora es **2**.",
     type: "element",
   },
   {
     id: "memory-visualization",
     type: "element",
-    description: `🧠 Esta vista muestra cómo se asignan direcciones de memoria a los nodos apilados.`,
+    description:
+      "🧠 Vista de memoria: los nodos se apilan y su enlace superior apunta al anterior.",
   },
 
-  // Comando: getTop()
+  // getTop()
   {
     id: "inputConsola",
-    text: "getTop();",
+    text: "pila.getTop();",
     type: "write",
   },
   {
     id: "console",
-    description: `🔍 Este comando permite ver el elemento en la cima de la pila sin quitarlo.`,
+    description:
+      "🔍 Muestra el elemento en la cima sin retirarlo (operación de **peek**).",
     type: "element",
   },
-  {
-    id: "inputConsola",
-    type: "enter",
-  },
+  { id: "inputConsola", type: "enter" },
   {
     id: "main-canvas",
-    description: `👁️ El sistema resalta el nodo superior: **7**.`,
+    description: "👁️ Se resalta el nodo superior: **7**.",
     type: "element",
   },
 
-  // Comando: pop()
+  // pop()
   {
     id: "inputConsola",
-    text: "pop();",
+    text: "pila.pop();",
     type: "write",
   },
   {
     id: "console",
-    description: `🗑️ Este comando elimina el elemento en la cima de la pila (LIFO).`,
+    description:
+      "🗑️ Elimina el elemento en la cima de la pila siguiendo la regla **LIFO**.",
     type: "element",
   },
-  {
-    id: "inputConsola",
-    type: "enter",
-  },
+  { id: "inputConsola", type: "enter" },
   {
     id: "main-canvas",
-    description: `💥 El nodo con valor **7** desapareció. **4** vuelve a ser el tope.`,
+    description: "💥 El nodo **7** fue removido. El tope vuelve a ser **4**.",
     type: "element",
   },
   {
     id: "info-cards",
-    description: `📉 El tamaño de la pila se redujo a **1**.`,
+    description: "📉 El tamaño se redujo a **1**.",
     type: "element",
   },
 
-  // Comando: clean()
+  /* ───────────────────── Limpieza y reinicio ───────────────────── */
+  // clean()
   {
     id: "inputConsola",
-    text: "clean();",
+    text: "pila.clean();",
     type: "write",
   },
   {
     id: "console",
-    description: `🧼 Este comando vacía por completo la pila, eliminando todos sus elementos.`,
+    description:
+      "🧼 Vacía por completo la pila, eliminando todos sus elementos.",
     type: "element",
   },
-  {
-    id: "inputConsola",
-    type: "enter",
-  },
+  { id: "inputConsola", type: "enter" },
   {
     id: "main-canvas",
-    description: `🌪️ Todos los nodos fueron eliminados. La pila está vacía.`,
+    description:
+      "🌪️ Todos los nodos fueron eliminados. La pila está vacía (tamaño **0**).",
     type: "element",
   },
   {
     id: "info-cards",
-    description: `📦 El tamaño vuelve a ser **0**. Puedes comenzar desde cero.`,
+    description:
+      "📦 Para **volver a usar** la pila, ejecuta de nuevo **`push(...)`** (sin prefijo) para **recrear `pila`** y luego continúa con **`pila.`**",
     type: "element",
   },
 
-  // Extras visuales
+  /* ───────────────────── Extras visuales ───────────────────── */
   {
     id: "execution-code",
     type: "element",
-    description: `🧾 Aquí puedes ver el pseudocódigo de cada operación. Esto te ayuda a entender cómo funcionaría en un lenguaje real como Java.`,
+    description:
+      "🧾 Aquí puedes ver el pseudocódigo de **push**, **pop** y **getTop** para conectar la animación con un lenguaje real.",
   },
 ];

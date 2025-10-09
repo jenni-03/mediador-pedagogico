@@ -14,5 +14,5 @@ export const structureCommands: Record<string, string[]> = {
   arbol_123: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_b: ["insert", "delete", "search", "getPreOrder", "getInOrder", "getPostOrder", "getLevelOrder", "clean"],
   arbol_b_plus: ["insert", "delete", "search", "range", "scanFrom", "getInOrder", "getLevelOrder", "clean"],
-  arbol_heap: ["insert", "delete", "deleteR", "search", "peek", "getLevelOrder", "clean"],
+  arbol_heap: ["insert", "delete", "search", "getLevelOrder", "clean"],
 };

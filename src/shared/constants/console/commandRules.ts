@@ -1403,8 +1403,7 @@ export const commandRules: Record<
         return true;
       }
 
-      case "deleteR":
-      case "peek":
+ 
       case "getlevelorder":
       case "clean": {
         if (parts.length !== 1) {

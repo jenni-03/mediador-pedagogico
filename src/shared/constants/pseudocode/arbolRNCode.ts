@@ -178,7 +178,7 @@ export const getArbolRNCode = (): OperationCode => ({
     `private Color colorDe(NodoRN<T> n) { return (n == null) ? NEGRO : n.color; }`,
   ],
   search: [
-    `/** Busca un valor (propiedad BST). */`,
+    `/** Método que verifica la existencia de un elemento dentro del árbol Rojo-Negro. */`,
     `public boolean search(T valor) {`,
     `    NodoRN<T> x = raiz;`,
     `    while (x != null) {`,

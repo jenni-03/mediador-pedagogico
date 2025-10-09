@@ -225,7 +225,7 @@ export function getArbolSplayTour(): TourStep[] {
         {
             id: "console",
             type: "element",
-            description: "🧼 Árbol limpio. Recuerda que con cada limpieza, es necesario volver a crear el objeto `arbolS` usando el comando insert(). Ahora sientete libre de explorar nuevas secuencias.",
+            description: "🧼 Ya abarcadas todas las operaciones, sientete libre de explorar nuevas secuencias. Recuerda que con cada limpieza, es necesario volver a crear el objeto `arbolS` usando el comando insert().",
         },
         { id: "inputConsola", type: "enter" },
     ];

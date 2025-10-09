@@ -1,579 +1,961 @@
-import { ArbolBinario } from "./ArbolBinario";
-import { NodoBin } from "../nodes/NodoBin";
+// src/shared/logic/heap/ArbolHeap.ts
+// Árbol Heap (min o max) con transcripts pedagógicos para animaciones paso a paso.
+// - IDs estables por nodo (D3-friendly).
+// - Swaps de payload (priority/value) → no se mueven punteros, solo valores.
+// - Transcripts detallan: append/replace/remove + pickChild + compare/swap (dir up/down).
+// - En CADA paso, `array` refleja el estado **DESPUÉS** de ejecutar ese paso (ideal para D3).
+// - HeapFixLog de compat se deriva solo de swaps y replaceRoot/replaceNode.
 
-/**
- * Tipo de heap que se puede crear.
- */
-export type TipoHeap = "MAX" | "MIN";
+import { Comparator, HeapFixLog } from "../../../types";
+import { defaultComparator } from "../treeUtils";
+import { NodoHeap } from "../nodes/NodoHeap";
 
-/**
- * Clase que representa un árbol heap (montículo) que extiende de ArbolBinario.
- * Un heap es un árbol binario completo que cumple la propiedad del heap:
- * - MAX HEAP: cada nodo padre es mayor o igual que sus hijos
- * - MIN HEAP: cada nodo padre es menor o igual que sus hijos
- */
-export class ArbolHeap<T> extends ArbolBinario<T> {
-  private tipo: TipoHeap;
-  private compareFn: (a: T, b: T) => number;
+/* ─────────────────────────── Tipos pedagógicos ────────────────────────── */
 
-  /**
-   * Constructor de la clase ArbolHeap.
-   * @param tipo Tipo de heap (MAX o MIN)
-   * @param compareFn Función de comparación para ordenar los elementos
-   */
-  constructor(
-    tipo: TipoHeap = "MAX",
-    compareFn: (a: T, b: T) => number = (a, b) => {
-      if (a < b) return -1;
-      if (a > b) return 1;
-      return 0;
+type HeapItem = { id: string; value: number };
+type HeapArray = HeapItem[];
+
+/** Operadores mostrables en UI (texto del comparador). */
+type CmpOp = ">" | "<" | ">=" | "<=" | "==";
+
+/** Paso de comparación genérico para insert/delete. */
+type CompareStep = {
+  type: "compare";
+  /** Dirección del heapify: subir o bajar. */
+  dir: "up" | "down";
+  /** Siempre expresamos el operador como PARENT <op> CHILD (coherente en UI). */
+  parentIndex: number;
+  childIndex: number;
+  parentId: string;
+  childId: string;
+  /** Operador renderizable (no implica verdad/falsedad, es para mostrar). */
+  op: CmpOp;
+  /** Hint: si tras la comparación habrá swap. */
+  swap?: boolean;
+  /** Snapshot del estado **después** del paso (aquí coincide con “antes” porque no muta). */
+  array: HeapArray;
+  note: string;
+};
+
+/** Paso de swap genérico (intercambio de payload). */
+type SwapStep = {
+  type: "swap";
+  dir: "up" | "down";
+  aIndex: number;
+  bIndex: number;
+  aId: string;
+  bId: string;
+  /** Snapshot del estado **después** del swap. */
+  array: HeapArray;
+  note: string;
+};
+
+/** Paso didáctico: elegir el mejor hijo (max-heap: mayor; min-heap: menor). */
+type PickChildStep = {
+  type: "pickChild";
+  parentIndex: number;
+  leftIndex?: number;
+  rightIndex?: number;
+  leftId?: string;
+  rightId?: string;
+  /** Qué hijo fue elegido para comparar contra el parent. */
+  chosen?: "left" | "right" | "none";
+  /** Snapshot del estado **después** del paso (no muta estructura/payload). */
+  array: HeapArray;
+  note: string;
+};
+
+/** Pasos INSERT */
+type InsertStep =
+  | {
+      type: "append";
+      index: number; // índice donde se apendea (level-order)
+      item: HeapItem;
+      /** Snapshot del estado **después** del append. */
+      array: HeapArray;
+      note: string;
     }
-  ) {
-    super();
-    this.tipo = tipo;
-    this.compareFn = compareFn;
+  | PickChildStep // (no se usa en insert, pero dejamos el tipo común)
+  | CompareStep
+  | SwapStep;
+
+export type InsertTranscript = {
+  kind: "insert";
+  /** true → max-heap; false → min-heap (útil para pintar símbolos). */
+  maxHeap: boolean;
+  initial: HeapArray;
+  steps: InsertStep[];
+  final: HeapArray;
+  inserted: HeapItem;
+};
+
+/** Pasos DELETE */
+type DeleteStep =
+  | {
+      type: "selectTarget";
+      targetIndex: number;
+      targetId: string;
+      /** Snapshot del estado **después** del select (no muta). */
+      array: HeapArray;
+      note: string;
+    }
+  | {
+      type: "replaceNode";
+      targetId: string;
+      withId: string;
+      /** Posición original del que reemplaza (último antes de subir). */
+      withIndex?: number;
+      /** Snapshot del estado **después** de colocar el reemplazante en `targetIndex`. */
+      array: HeapArray;
+      note: string;
+    }
+  | {
+      type: "removeLast";
+      removedId: string;
+      /** Snapshot del estado **después** de eliminar físicamente el último. */
+      array: HeapArray;
+      note: string;
+    }
+  | PickChildStep
+  | CompareStep
+  | SwapStep;
+
+export type DeleteTranscript = {
+  kind: "delete";
+  maxHeap: boolean;
+  initial: HeapArray;
+  steps: DeleteStep[];
+  final: HeapArray;
+  deleted: HeapItem;
+  deletedWasRoot: boolean;
+  /** ID de la nueva raíz tras terminar (si existe). */
+  updatedRootId?: string | null;
+};
+
+export type LevelOrderTranscript = {
+  kind: "levelOrder";
+  /** Orden de visita en level-order (solo IDs + value numérico para UI) */
+  order: Array<{ id: string; value: number }>;
+  /**
+   * Snapshot opcional con índices densos para tejer links estables.
+   * index es 0..n-1 en level-order.
+   */
+  snapshot: Array<{ id: string; index: number; hidden?: boolean }>;
+  /** true → max-heap; false → min-heap (útil para pintar símbolos si hace falta) */
+  maxHeap: boolean;
+};
+
+/* ─────────────────────────── Clase heap ─────────────────────────── */
+
+export interface HeapOptions<T> {
+  /** Comparador total y estable: (a,b) → negativo, cero o positivo. */
+  compare?: Comparator<T>;
+  /** true → min-heap; false|undefined → max-heap. */
+  min?: boolean;
+  /** Límite de nodos por seguridad. */
+  maxNodos?: number;
+}
+
+export class ArbolHeap<T> {
+  public readonly MAX_NODOS: number;
+  private readonly compare: Comparator<T>;
+  private readonly isMinHeap: boolean;
+  private nodes: Array<NodoHeap<T>> = [];
+  private linkedRoot: NodoHeap<T> | null = null;
+
+  constructor(opts: HeapOptions<T> = {}) {
+    this.compare = opts.compare ?? defaultComparator;
+    this.isMinHeap = opts.min ?? false;
+    this.MAX_NODOS = opts.maxNodos ?? 150;
   }
 
-  // /**
-  //  * Inserta un elemento en el heap manteniendo las propiedades del heap.
-  //  * @param elemento Elemento a insertar
-  //  * @returns El nodo insertado
-  //  */
-  // public insertar(elemento: T): NodoBin<T> {
-  //   if (this.getTamanio() >= this.MAX_NODOS) {
-  //     throw new Error(
-  //       `No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
-  //     );
-  //   }
+  /* ───────── utilidades internas ───────── */
 
-  //   if (this.esta(elemento)) {
-  //     throw new Error(
-  //       `No fue posible insertar el nodo: El elemento ya existe en el heap.`
-  //     );
-  //   }
+  /** Devuelve true si a "mejora" a b según el tipo de heap. */
+  private better(a: T, b: T): boolean {
+    const c = this.compare(a, b);
+    return this.isMinHeap ? c < 0 : c > 0;
+  }
+  private parent(i: number) {
+    return Math.floor((i - 1) / 2);
+  }
+  private left(i: number) {
+    return 2 * i + 1;
+  }
+  private right(i: number) {
+    return 2 * i + 2;
+  }
 
-  //   const nuevoNodo = new NodoBin(elemento);
+  private swapPayload(i: number, j: number) {
+    this.nodes[i].swapPayloadWith(this.nodes[j]);
+  }
 
-  //   if (this.esVacio()) {
-  //     this.setRaiz(nuevoNodo);
-  //     this.setTamanio(1);
-  //     return nuevoNodo;
-  //   }
+  private findFirstIndexByValue(value: T): number {
+    for (let i = 0; i < this.nodes.length; i++)
+      if (this.compare(this.nodes[i].priority, value) === 0) return i;
+    return -1;
+  }
+  private findIndexById(id: string): number {
+    for (let i = 0; i < this.nodes.length; i++)
+      if (this.nodes[i].getId() === id) return i;
+    return -1;
+  }
 
-  //   // Encontrar la posición correcta para insertar (mantener árbol completo)
-  //   const padre = this.encontrarPadreParaInsercion();
+  /** Conversión numérica defensiva para snapshots D3. */
+  private num(x: unknown): number {
+    if (typeof x === "number") return Number.isFinite(x) ? x : 0;
+    const n = Number(x as any);
+    return Number.isFinite(n) ? n : 0;
+  }
 
-  //   if (padre.getIzq() === null) {
-  //     padre.setIzq(nuevoNodo);
-  //   } else {
-  //     padre.setDer(nuevoNodo);
-  //   }
+  /** Snapshot level-order minimalista: {id, value:number} */
+  private toHeapArray(): HeapArray {
+    return this.nodes.map((n) => ({
+      id: n.getId(),
+      value: this.num(n.priority as any),
+    }));
+  }
 
-  //   this.setTamanio(this.getTamanio() + 1);
+  /** Snapshot por índice denso: [{id, index}] para la posición level-order actual */
+  private toIndexSnapshot(): Array<{
+    id: string;
+    index: number;
+    hidden?: boolean;
+  }> {
+    const snap: Array<{ id: string; index: number; hidden?: boolean }> = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      snap.push({ id: this.nodes[i].getId(), index: i });
+    }
+    return snap;
+  }
 
-  //   // Restaurar propiedad del heap (heapify up)
-  //   this.heapifyUp(nuevoNodo);
+  /** Enlaza punteros parent/left/right solo cuando cambie el tamaño. */
+  private relinkIfNeeded(): void {
+    if (this.linkedRoot && this.count() === this.countLinked()) return;
+    this.linkedRoot = NodoHeap.linkAsCompleteBinaryTree(this.nodes);
+  }
+  private countLinked(): number {
+    if (!this.linkedRoot) return 0;
+    let c = 0;
+    const q: NodoHeap<T>[] = [this.linkedRoot];
+    while (q.length) {
+      const x = q.shift()!;
+      c++;
+      const l = x.getLeft();
+      if (l) q.push(l);
+      const r = x.getRight();
+      if (r) q.push(r);
+    }
+    return c;
+  }
 
-  //   return nuevoNodo;
-  // }
+  /* ───────── INSERT con transcript ───────── */
 
-  public insertar(elemento: T): { nodo: NodoBin<T>; swapPath: string[] } {
-    if (this.getTamanio() >= this.MAX_NODOS) {
+  /**
+   * Inserta un valor devolviendo el nodo y un transcript de pasos:
+   * append → (compare↑/swap↑)* → final.
+   * En cada paso, `array` refleja el estado **después** del paso.
+   */
+  public insertarConTranscript(valor: T): {
+    node: NodoHeap<T>;
+    transcript: InsertTranscript;
+  } {
+    if (this.count() >= this.MAX_NODOS) {
       throw new Error(
-        `No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
+        `No fue posible insertar: límite de nodos (${this.MAX_NODOS}).`
       );
     }
 
-    if (this.esta(elemento)) {
-      throw new Error(
-        `No fue posible insertar el nodo: El elemento ya existe en el heap.`
-      );
+    const maxHeap = !this.isMinHeap;
+    const initial = this.toHeapArray();
+    const steps: InsertStep[] = [];
+
+    // 1) Append al final del array (level-order).
+    const nuevo = new NodoHeap<T>(valor);
+    this.nodes.push(nuevo);
+    const appendedIndex = this.nodes.length - 1;
+
+    const appended: HeapItem = {
+      id: nuevo.getId(),
+      value: this.num(nuevo.priority as any),
+    };
+    steps.push({
+      type: "append",
+      index: appendedIndex,
+      item: appended,
+      array: this.toHeapArray(), // ← estado después del append
+      note: `append`,
+    });
+
+    // 2) Heapify-up con compare/swap unificados.
+    let i = appendedIndex;
+    while (i > 0) {
+      const p = this.parent(i);
+      const child = this.nodes[i];
+      const parent = this.nodes[p];
+
+      const shouldSwap = this.better(child.priority, parent.priority);
+      // Operador mostrado como PARENT <op> CHILD (condición de swap):
+      // - max-heap: parent < child  → "<"
+      // - min-heap: parent > child  → ">"
+      const op: CmpOp = this.isMinHeap ? ">" : "<";
+
+      steps.push({
+        type: "compare",
+        dir: "up",
+        parentIndex: p,
+        childIndex: i,
+        parentId: parent.getId(),
+        childId: child.getId(),
+        op,
+        swap: shouldSwap,
+        array: this.toHeapArray(), // no mutó
+        note: `heapify-up`,
+      });
+
+      if (!shouldSwap) break;
+
+      this.swapPayload(i, p);
+      steps.push({
+        type: "swap",
+        dir: "up",
+        aIndex: i,
+        bIndex: p,
+        aId: child.getId(),
+        bId: parent.getId(),
+        array: this.toHeapArray(), // ← después del swap
+        note: `swap payload`,
+      });
+
+      i = p;
     }
 
-    const nuevoNodo = new NodoBin(elemento);
+    const transcript: InsertTranscript = {
+      kind: "insert",
+      maxHeap,
+      initial,
+      steps,
+      final: this.toHeapArray(),
+      inserted: appended,
+    };
 
-    if (this.esVacio()) {
-      this.setRaiz(nuevoNodo);
-      this.setTamanio(1);
-      return { nodo: nuevoNodo, swapPath: [] };
-    }
-
-    // Encontrar el padre donde se inserta
-    const padre = this.encontrarPadreParaInsercion();
-
-    if (padre.getIzq() === null) {
-      padre.setIzq(nuevoNodo);
-    } else {
-      padre.setDer(nuevoNodo);
-    }
-
-    this.setTamanio(this.getTamanio() + 1);
-
-    // Restaurar propiedad del heap (heapify up)
-    const swapPath = this.heapifyUp(nuevoNodo);
-
-    return { nodo: nuevoNodo, swapPath };
+    this.linkedRoot = null;
+    return { node: nuevo, transcript };
   }
 
-  /**
-   * Elimina y retorna el elemento raíz del heap (máximo en MAX heap, mínimo en MIN heap).
-   * @returns El elemento eliminado
-   */
-  public extraerRaiz(): T {
-    if (this.esVacio()) {
-      throw new Error("No fue posible extraer la raíz: El heap está vacío.");
-    }
-
-    const raiz = this.getRaiz()!;
-    const elementoRaiz = raiz.getInfo();
-
-    if (this.getTamanio() === 1) {
-      this.setRaiz(null);
-      this.setTamanio(0);
-      return elementoRaiz;
-    }
-
-    // Encontrar el último nodo y moverlo a la raíz
-    const ultimoNodo = this.encontrarUltimoNodo();
-    const ultimoPadre = this.getPadre(ultimoNodo.getInfo());
-
-    // Reemplazar raíz con último elemento
-    raiz.setInfo(ultimoNodo.getInfo());
-
-    // Eliminar último nodo
-    if (ultimoPadre) {
-      if (ultimoPadre.getDer() === ultimoNodo) {
-        ultimoPadre.setDer(null);
-      } else {
-        ultimoPadre.setIzq(null);
-      }
-    }
-
-    this.setTamanio(this.getTamanio() - 1);
-
-    // Restaurar propiedad del heap (heapify down)
-    this.heapifyDown(raiz);
-
-    return elementoRaiz;
-  }
+  /* ───────── DELETE con transcript (root o arbitrario) ───────── */
 
   /**
-   * Retorna el elemento raíz sin eliminarlo.
-   * @returns El elemento en la raíz del heap
+   * Elimina por índice devolviendo transcript pedagógico:
+   * selectTarget → replaceNode → removeLast → heapify (up|down) → final.
+   * En cada paso, `array` refleja el estado **después** del paso.
    */
-  public peek(): T | null {
-    return this.esVacio() ? null : this.getRaiz()!.getInfo();
-  }
+  private eliminarPorIndiceConTranscript(idx: number): {
+    deleted: NodoHeap<T>;
+    updatedRoot: NodoHeap<T> | null;
+    deletedWasRoot: boolean;
+    transcript: DeleteTranscript;
+  } {
+    const maxHeap = !this.isMinHeap;
+    const steps: DeleteStep[] = [];
+    const initial = this.toHeapArray();
 
-  /**
-   * Construye un heap a partir de un array de elementos.
-   * @param elementos Array de elementos para construir el heap
-   */
-  public construirDesdeArray(elementos: T[]): void {
-    if (elementos.length > this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible construir el heap: Demasiados elementos (${elementos.length}). Máximo permitido: ${this.MAX_NODOS}.`
-      );
-    }
+    const n = this.nodes.length;
+    const deletedWasRoot = idx === 0;
 
-    this.vaciar();
+    const target = this.nodes[idx];
+    const deletedSnap: HeapItem = {
+      id: target.getId(),
+      value: this.num(target.priority as any),
+    };
+    steps.push({
+      type: "selectTarget",
+      targetIndex: idx,
+      targetId: target.getId(),
+      array: this.toHeapArray(), // no muta
+      note: `select target`,
+    });
 
-    if (elementos.length === 0) return;
-
-    // Crear todos los nodos
-    const nodos: NodoBin<T>[] = elementos.map(
-      (elemento) => new NodoBin(elemento)
+    // Snapshot del nodo eliminado preservando el ID original (para devolverlo)
+    const deletedNodeSnapshot = new NodoHeap<T>(
+      target.priority,
+      (target as any).value,
+      target.getId()
     );
 
-    // Construir árbol completo
-    for (let i = 0; i < nodos.length; i++) {
-      if (i === 0) {
-        this.setRaiz(nodos[i]);
-      } else {
-        const padreIndex = Math.floor((i - 1) / 2);
-        const padre = nodos[padreIndex];
+    // Caso trivial: un solo nodo
+    if (n === 1) {
+      this.nodes.pop();
+      const transcript: DeleteTranscript = {
+        kind: "delete",
+        maxHeap,
+        initial,
+        steps,
+        final: this.toHeapArray(),
+        deleted: deletedSnap,
+        deletedWasRoot,
+      };
+      this.linkedRoot = null;
+      return {
+        deleted: deletedNodeSnapshot,
+        updatedRoot: null,
+        deletedWasRoot,
+        transcript,
+      };
+    }
 
-        if (padre.getIzq() === null) {
-          padre.setIzq(nodos[i]);
-        } else {
-          padre.setDer(nodos[i]);
+    const lastIdx = n - 1;
+    const last = this.nodes[lastIdx];
+
+    // Si el target ya es el último, solo se elimina
+    if (idx === lastIdx) {
+      this.nodes.pop();
+      steps.push({
+        type: "removeLast",
+        removedId: target.getId(),
+        array: this.toHeapArray(), // ← después de eliminar la hoja
+        note: "remove last (leaf)",
+      });
+
+      const transcript: DeleteTranscript = {
+        kind: "delete",
+        maxHeap,
+        initial,
+        steps,
+        final: this.toHeapArray(),
+        deleted: deletedSnap,
+        deletedWasRoot,
+        updatedRootId: this.nodes[0]?.getId() ?? null,
+      };
+      this.linkedRoot = null;
+      return {
+        deleted: deletedNodeSnapshot,
+        updatedRoot: this.nodes[0] ?? null,
+        deletedWasRoot,
+        transcript,
+      };
+    }
+
+    // 🧩 Caso general D3-friendly:
+    // A) Mover el OBJETO del último al hueco (el id "last" pasa a ocupar `idx`).
+    this.nodes[idx] = last;
+
+    // B) Emitir **replaceNode** con el snapshot del estado YA reemplazado.
+    //    (Ojo: todavía existe el "last" en la cola; su id aparece por duplicado
+    //     hasta que hagamos el pop. D3 no crea nodos, pero el texto/valor queda
+    //     bien definido para el id que sube.)
+    steps.push({
+      type: "replaceNode",
+      targetId: target.getId(),
+      withId: last.getId(),
+      withIndex: lastIdx,
+      array: this.toHeapArray(), // ← después de colocar el reemplazante en `idx`
+      note: `replace target with last`,
+    });
+
+    // C) Eliminar físicamente el último (ahora sí desaparece del snapshot)
+    this.nodes.pop();
+    steps.push({
+      type: "removeLast",
+      removedId: last.getId(),
+      array: this.toHeapArray(), // ← después del pop
+      note: `remove physical last`,
+    });
+
+    // D) Heapify desde idx: puede ser up o down (según relación con el padre).
+    const p = this.parent(idx);
+    const hasParent = idx > 0;
+    const canBubbleUp =
+      hasParent &&
+      this.better(this.nodes[idx].priority, this.nodes[p].priority);
+
+    if (canBubbleUp) {
+      // heapify-up
+      let i = idx;
+      while (i > 0) {
+        const pp = this.parent(i);
+        const child = this.nodes[i];
+        const parent = this.nodes[pp];
+        const shouldSwap = this.better(child.priority, parent.priority);
+        const op: CmpOp = this.isMinHeap ? ">" : "<"; // PARENT <op> CHILD para swap
+
+        steps.push({
+          type: "compare",
+          dir: "up",
+          parentIndex: pp,
+          childIndex: i,
+          parentId: parent.getId(),
+          childId: child.getId(),
+          op,
+          swap: shouldSwap,
+          array: this.toHeapArray(), // no muta
+          note: `heapify-up`,
+        });
+
+        if (!shouldSwap) break;
+
+        this.swapPayload(i, pp);
+        steps.push({
+          type: "swap",
+          dir: "up",
+          aIndex: i,
+          bIndex: pp,
+          aId: child.getId(),
+          bId: parent.getId(),
+          array: this.toHeapArray(), // ← después del swap
+          note: `swap payload`,
+        });
+
+        i = pp;
+      }
+    } else {
+      // heapify-down
+      let i = idx;
+      const n2 = this.nodes.length;
+      while (true) {
+        const l = this.left(i),
+          r = this.right(i);
+
+        // Paso didáctico: mostrar elección del mejor hijo.
+        steps.push({
+          type: "pickChild",
+          parentIndex: i,
+          leftIndex: l < n2 ? l : undefined,
+          rightIndex: r < n2 ? r : undefined,
+          leftId: l < n2 ? this.nodes[l].getId() : undefined,
+          rightId: r < n2 ? this.nodes[r].getId() : undefined,
+          chosen: undefined, // se rellena tras decidir
+          array: this.toHeapArray(), // no muta
+          note: `pick child`,
+        });
+
+        let best = i;
+        if (
+          l < n2 &&
+          this.better(this.nodes[l].priority, this.nodes[best].priority)
+        )
+          best = l;
+        if (
+          r < n2 &&
+          this.better(this.nodes[r].priority, this.nodes[best].priority)
+        )
+          best = r;
+
+        // Actualizar el último pick con la elección real.
+        const lastStep = steps[steps.length - 1];
+        if (lastStep.type === "pickChild") {
+          lastStep.chosen = best === l ? "left" : best === r ? "right" : "none";
         }
+
+        if (best === i) break;
+
+        const parent = this.nodes[i],
+          child = this.nodes[best];
+        const shouldSwap = this.better(child.priority, parent.priority);
+        const op: CmpOp = this.isMinHeap ? ">" : "<"; // PARENT <op> CHILD para swap
+
+        steps.push({
+          type: "compare",
+          dir: "down",
+          parentIndex: i,
+          childIndex: best,
+          parentId: parent.getId(),
+          childId: child.getId(),
+          op,
+          swap: shouldSwap,
+          array: this.toHeapArray(), // no muta
+          note: `heapify-down`,
+        });
+
+        // Si no hay mejora, se corta; en práctica no debería ocurrir por cómo elegimos "best".
+        if (!shouldSwap) break;
+
+        this.swapPayload(i, best);
+        steps.push({
+          type: "swap",
+          dir: "down",
+          aIndex: i,
+          bIndex: best,
+          aId: parent.getId(),
+          bId: child.getId(),
+          array: this.toHeapArray(), // ← después del swap
+          note: `swap payload`,
+        });
+
+        i = best;
       }
     }
 
-    this.setTamanio(elementos.length);
+    const transcript: DeleteTranscript = {
+      kind: "delete",
+      maxHeap,
+      initial,
+      steps,
+      final: this.toHeapArray(),
+      deleted: deletedSnap,
+      deletedWasRoot,
+      updatedRootId: this.nodes[0]?.getId() ?? null,
+    };
 
-    // Heapificar desde el último nodo padre hacia arriba
-    for (let i = Math.floor(elementos.length / 2) - 1; i >= 0; i--) {
-      this.heapifyDown(nodos[i]);
+    this.linkedRoot = null;
+    return {
+      deleted: deletedNodeSnapshot,
+      updatedRoot: this.nodes[0] ?? null,
+      deletedWasRoot,
+      transcript,
+    };
+  }
+
+  /* ───────── API pública: INSERT (compat) ───────── */
+
+  public insertar(valor: T): NodoHeap<T> {
+    const { node } = this.insertarConTranscript(valor);
+    return node;
+  }
+
+  public insertarConLog(valor: T): {
+    node: NodoHeap<T>;
+    heapFix: HeapFixLog;
+    transcript: InsertTranscript;
+  } {
+    const { node, transcript } = this.insertarConTranscript(valor);
+    // Derivar heapFix solo con swaps (compat dibujador legacy).
+    const heapFix: HeapFixLog = transcript.steps
+      .filter((s): s is SwapStep => s.type === "swap")
+      .map((s) => ({ type: "swap", aId: s.aId, bId: s.bId }) as any);
+    return { node, heapFix, transcript };
+  }
+  /**
+   * API pública: devuelve un transcript de Level-Order.
+   * No muta nada; sirve para que la vista/animación sea determinista.
+   */
+  public getLevelOrderTranscript(): LevelOrderTranscript {
+    const order = this.toHeapArray(); // [{id, value}] en orden level-order
+    const snapshot = this.toIndexSnapshot(); // [{id, index}] índice denso 0..n-1
+    return {
+      kind: "levelOrder",
+      order,
+      snapshot,
+      maxHeap: !this.isMinHeap,
+    };
+  }
+
+  /* ───────── API pública: DELETE (compat) ───────── */
+
+  public eliminarTopeConLog(): {
+    deleted: NodoHeap<T>;
+    updatedRoot: NodoHeap<T> | null;
+    deletedWasRoot: boolean;
+    heapFix: HeapFixLog;
+    transcript: DeleteTranscript;
+  } {
+    if (this.esVacio())
+      throw new Error("No fue posible eliminar: el heap está vacío.");
+    const { deleted, updatedRoot, deletedWasRoot, transcript } =
+      this.eliminarPorIndiceConTranscript(0);
+
+    const heapFix: HeapFixLog = transcript.steps.flatMap((s) => {
+      if (s.type === "replaceNode")
+        return [
+          { type: "replaceRoot", rootId: s.targetId, withId: s.withId } as any,
+        ];
+      if (s.type === "swap")
+        return [{ type: "swap", aId: s.aId, bId: s.bId } as any];
+      return [];
+    });
+
+    return { deleted, updatedRoot, deletedWasRoot, heapFix, transcript };
+  }
+
+  public eliminar(target: T | { id: string }): {
+    deleted: NodoHeap<T>;
+    updatedRoot: NodoHeap<T> | null;
+    deletedWasRoot: boolean;
+    heapFix: HeapFixLog;
+    transcript: DeleteTranscript;
+  } {
+    if (this.esVacio())
+      throw new Error("No fue posible eliminar: el heap está vacío.");
+
+    // Resolver índice del elemento a eliminar (por id estable o por valor)
+    const idx =
+      typeof target === "object" && target !== null && "id" in target
+        ? this.findIndexById((target as any).id)
+        : this.findFirstIndexByValue(target as T);
+
+    if (idx < 0)
+      throw new Error("No fue posible eliminar: elemento/ID no encontrado.");
+
+    // Ejecuta la eliminación real con transcript detallado
+    const { deleted, updatedRoot, deletedWasRoot, transcript } =
+      this.eliminarPorIndiceConTranscript(idx);
+
+    // Derivar el log compacto para el motor de dibujo.
+    const heapFix: HeapFixLog = transcript.steps.flatMap((s) => {
+      if (s.type === "replaceNode") {
+        return [
+          (transcript.deletedWasRoot
+            ? { type: "replaceRoot", rootId: s.targetId, withId: s.withId }
+            : {
+                type: "replaceNode",
+                targetId: s.targetId,
+                withId: s.withId,
+              }) as any,
+        ];
+      }
+      if (s.type === "swap") {
+        return [{ type: "swap", aId: s.aId, bId: s.bId } as any];
+      }
+      return [];
+    });
+
+    return { deleted, updatedRoot, deletedWasRoot, heapFix, transcript };
+  }
+
+  /* ───────── API pública: SEARCH / BUILD / VIEW / CLEAN ───────── */
+
+  public peek(): T | undefined {
+    return this.nodes[0]?.priority;
+  }
+  public esta(valor: T): boolean {
+    return this.nodes.some((n) => this.compare(n.priority, valor) === 0);
+  }
+  public getPeso(): number {
+    return this.nodes.length;
+  }
+  public getCantidadHojas(): number {
+    let count = 0,
+      n = this.nodes.length;
+    for (let i = 0; i < n; i++) {
+      const l = 2 * i + 1,
+        r = 2 * i + 2;
+      if (l >= n && r >= n) count++;
     }
+    return count;
+  }
+  public contarHojas(): number {
+    return this.getCantidadHojas();
+  }
+  public getTamanio(): number {
+    return this.nodes.length;
+  }
+  public count(): number {
+    return this.nodes.length;
+  }
+  public esVacio(): boolean {
+    return this.nodes.length === 0;
+  }
+  public vaciar(): void {
+    this.nodes = [];
+    this.linkedRoot = null;
   }
 
   /**
-   * Verifica si el árbol cumple con las propiedades del heap.
-   * @returns true si es un heap válido, false en caso contrario
+   * Construye el heap desde una lista (heapify O(n)).
+   * Inserta nodos en array y hace sift-down desde ⌊n/2⌋-1 → 0.
    */
-  public esHeapValido(): boolean {
-    return this.verificarPropiedadHeap(this.getRaiz());
-  }
-
-  /**
-   * Convierte el heap en un array ordenado (heap sort).
-   * @returns Array con los elementos ordenados
-   */
-  public heapSort(): T[] {
-    const resultado: T[] = [];
-    const heapTemporal = this.clonar() as ArbolHeap<T>;
-
-    while (!heapTemporal.esVacio()) {
-      resultado.push(heapTemporal.extraerRaiz());
+  public build(values: Iterable<T>): void {
+    this.nodes = Array.from(values, (v) => new NodoHeap<T>(v));
+    for (let i = Math.floor(this.nodes.length / 2) - 1; i >= 0; i--) {
+      const n = this.nodes.length;
+      let k = i;
+      while (true) {
+        const l = this.left(k),
+          r = this.right(k);
+        let best = k;
+        if (
+          l < n &&
+          this.better(this.nodes[l].priority, this.nodes[best].priority)
+        )
+          best = l;
+        if (
+          r < n &&
+          this.better(this.nodes[r].priority, this.nodes[best].priority)
+        )
+          best = r;
+        if (best !== k) {
+          this.swapPayload(k, best);
+          k = best;
+        } else break;
+      }
     }
-
-    return resultado;
+    this.linkedRoot = null;
   }
 
   /**
-   * Obtiene el tipo del heap.
-   * @returns El tipo de heap (MAX o MIN)
+   * Reemplaza el tope y repara el heap (sift-down). Devuelve el anterior tope.
+   * No genera transcript (solo útil en lógica interna/benchmarks).
    */
-  public getTipo(): TipoHeap {
-    return this.tipo;
-  }
-
-  /**
-   * Cambia el tipo de heap y reorganiza los elementos.
-   * @param nuevoTipo Nuevo tipo de heap
-   */
-  public cambiarTipo(nuevoTipo: TipoHeap): void {
-    if (this.tipo === nuevoTipo) return;
-
-    this.tipo = nuevoTipo;
-
-    if (!this.esVacio()) {
-      // Reheapificar todo el árbol
-      const elementos = this.inOrden().map((nodo) => nodo.getInfo());
-      this.construirDesdeArray(elementos);
-    }
-  }
-
-  // Override del método clonar para mantener el tipo correcto
-  public clonar(): ArbolHeap<T> {
-    const nuevoHeap = new ArbolHeap<T>(this.tipo, this.compareFn);
-    nuevoHeap.setRaiz(this.clonarNodo(this.getRaiz()));
-    nuevoHeap.setTamanio(this.getTamanio());
-    return nuevoHeap;
-  }
-
-  // /**
-  //  * Actualiza el valor de un elemento específico en el heap.
-  //  * @param elementoViejo Elemento actual a cambiar
-  //  * @param elementoNuevo Nuevo valor del elemento
-  //  * @returns true si la actualización fue exitosa, false si el elemento no se encontró
-  //  */
-  // public actualizarElemento(elementoViejo: T, elementoNuevo: T): boolean {
-  //   if (this.esVacio()) {
-  //     return false;
-  //   }
-
-  //   // Verificar que el nuevo elemento no existe ya en el heap (evitar duplicados)
-  //   if (this.esta(elementoNuevo)) {
-  //     throw new Error(
-  //       "No fue posible actualizar: El nuevo elemento ya existe en el heap."
-  //     );
-  //   }
-
-  //   // Buscar el nodo que contiene el elemento viejo
-  //   const nodo = this.buscarNodo(elementoViejo);
-  //   if (!nodo) {
-  //     return false;
-  //   }
-
-  //   // Guardar el valor anterior y actualizar
-  //   const valorAnterior = nodo.getInfo();
-  //   nodo.setInfo(elementoNuevo);
-
-  //   // Determinar la dirección de heapify necesaria
-  //   const comparacion = this.compareFn(elementoNuevo, valorAnterior);
-
-  //   if (comparacion === 0) {
-  //     // No hay cambio, no necesita reheapificar
-  //     return true;
-  //   }
-
-  //   // Decidir si hacer heapify up o down basado en el tipo de heap y la comparación
-  //   const necesitaHeapifyUp =
-  //     (this.tipo === "MAX" && comparacion > 0) ||
-  //     (this.tipo === "MIN" && comparacion < 0);
-
-  //   if (necesitaHeapifyUp) {
-  //     // El nuevo valor es "mejor" que el anterior, puede necesitar subir
-  //     const padre = this.getPadre(elementoNuevo);
-  //     this.heapifyUp(nodo, padre);
-  //   } else {
-  //     // El nuevo valor es "peor" que el anterior, puede necesitar bajar
-  //     this.heapifyDown(nodo);
-  //   }
-
-  //   return true;
-  // }
-
-  /**
-   * Reemplaza la raíz del heap con un nuevo elemento y restaura las propiedades.
-   * @param nuevoElemento Nuevo elemento para la raíz
-   * @returns El elemento anterior de la raíz
-   */
-  public reemplazarRaiz(nuevoElemento: T): T {
+  public reemplazarTope(valor: T): T | undefined {
     if (this.esVacio()) {
-      throw new Error("No fue posible reemplazar la raíz: El heap está vacío.");
+      this.insertar(valor);
+      return undefined;
     }
+    const prev = this.nodes[0].priority;
+    this.nodes[0].priority = valor;
+    (this.nodes[0] as any).value = valor as any;
 
-    // Verificar que el nuevo elemento no existe ya en el heap (evitar duplicados)
-    if (this.esta(nuevoElemento)) {
-      throw new Error(
-        "No fue posible reemplazar la raíz: El nuevo elemento ya existe en el heap."
-      );
+    // reconstrucción rápida sin transcript
+    const dummy: HeapFixLog = [];
+    let i = 0,
+      n = this.nodes.length;
+    while (true) {
+      const l = this.left(i),
+        r = this.right(i);
+      let best = i;
+      if (
+        l < n &&
+        this.better(this.nodes[l].priority, this.nodes[best].priority)
+      )
+        best = l;
+      if (
+        r < n &&
+        this.better(this.nodes[r].priority, this.nodes[best].priority)
+      )
+        best = r;
+      if (best !== i) {
+        this.swapPayload(i, best);
+        dummy.push({
+          type: "swap",
+          aId: this.nodes[i].getId(),
+          bId: this.nodes[best].getId(),
+        } as any);
+        i = best;
+      } else break;
     }
-
-    const raiz = this.getRaiz()!;
-    const elementoAnterior = raiz.getInfo();
-
-    // Reemplazar el valor de la raíz
-    raiz.setInfo(nuevoElemento);
-
-    // Restaurar la propiedad del heap hacia abajo
-    // (la raíz nunca necesita heapify up ya que no tiene padre)
-    this.heapifyDown(raiz);
-
-    return elementoAnterior;
+    this.linkedRoot = null;
+    return prev;
   }
 
-  // Métodos privados
-
-  /**
-   * Busca un nodo que contenga el elemento especificado.
-   * @param elemento Elemento a buscar
-   * @returns El nodo que contiene el elemento o null si no se encuentra
-   */
-  public buscarNodo(elemento: T): NodoBin<T> | null {
-    return this.buscarNodoRecursivo(this.getRaiz(), elemento);
+  public toArray(): readonly T[] {
+    return this.nodes.map((n) => n.priority);
   }
 
-  /**
-   * Método que vacia el árbol heap.
-   */
-  public override vaciar(): void {
-    super.vaciar();
+  public getRaiz(): NodoHeap<T> | null {
+    this.relinkIfNeeded();
+    return this.linkedRoot;
+  }
+  public getNodosPorNiveles(): Array<NodoHeap<T>> {
+    return this.nodes.slice();
   }
 
-  /**
-   * Método que realiza el recorrido por niveles del árbol AVL.
-   * @returns Array de nodos por niveles.
-   */
-  public override getNodosPorNiveles(): NodoBin<T>[] {
-    return super.getNodosPorNiveles();
+  /** Recorridos sobre la estructura enlazada (útiles para inspección). */
+  public inOrden(): Array<NodoHeap<T>> {
+    const r = this.getRaiz();
+    const res: NodoHeap<T>[] = [];
+    const dfs = (n: NodoHeap<T> | null) => {
+      if (!n) return;
+      dfs(n.getLeft());
+      res.push(n);
+      dfs(n.getRight());
+    };
+    dfs(r);
+    return res;
+  }
+  public preOrden(): Array<NodoHeap<T>> {
+    const r = this.getRaiz();
+    const res: NodoHeap<T>[] = [];
+    const dfs = (n: NodoHeap<T> | null) => {
+      if (!n) return;
+      res.push(n);
+      dfs(n.getLeft());
+      dfs(n.getRight());
+    };
+    dfs(r);
+    return res;
+  }
+  public postOrden(): Array<NodoHeap<T>> {
+    const r = this.getRaiz();
+    const res: NodoHeap<T>[] = [];
+    const dfs = (n: NodoHeap<T> | null) => {
+      if (!n) return;
+      dfs(n.getLeft());
+      dfs(n.getRight());
+      res.push(n);
+    };
+    dfs(r);
+    return res;
   }
 
-  /**
-   * Busca recursivamente un nodo que contenga el elemento especificado.
-   * @param nodo Nodo actual en la búsqueda
-   * @param elemento Elemento a buscar
-   * @returns El nodo que contiene el elemento o null si no se encuentra
-   */
-  private buscarNodoRecursivo(
-    nodo: NodoBin<T> | null,
-    elemento: T
-  ): NodoBin<T> | null {
-    if (!nodo) {
-      return null;
+  public getHojas(): Array<NodoHeap<T>> {
+    const res: NodoHeap<T>[] = [];
+    for (let i = 0; i < this.nodes.length; i++) {
+      const l = this.left(i),
+        r = this.right(i);
+      if (l >= this.nodes.length && r >= this.nodes.length)
+        res.push(this.nodes[i]);
     }
-
-    if (this.compareFn(nodo.getInfo(), elemento) === 0) {
-      return nodo;
-    }
-
-    // Buscar en subárbol izquierdo
-    const izquierdo = this.buscarNodoRecursivo(nodo.getIzq(), elemento);
-    if (izquierdo) {
-      return izquierdo;
-    }
-
-    // Buscar en subárbol derecho
-    return this.buscarNodoRecursivo(nodo.getDer(), elemento);
+    return res;
   }
 
-  /**
-   * Encuentra el padre donde se debe insertar el próximo nodo para mantener el árbol completo.
-   */
-  private encontrarPadreParaInsercion(): NodoBin<T> {
-    const nodosPorNivel = this.getNodosPorNiveles();
+  /** Altura (vacío→0; un nodo→1; n nodos→floor(log2(n))+1) */
+  public getAltura(): number {
+    const n = this.nodes.length;
+    return n === 0 ? 0 : Math.floor(Math.log2(n)) + 1;
+  }
 
-    // Encontrar el primer nodo que no tenga dos hijos
-    for (const nodo of nodosPorNivel) {
-      if (nodo.getIzq() === null || nodo.getDer() === null) {
-        return nodo;
+  /** Vista jerárquica serializable (para D3 trees, debug, etc.). */
+  public convertirEstructuraJerarquica(): any | null {
+    const root = this.getRaiz();
+    const build = (n: NodoHeap<T> | null): any | null => {
+      if (!n) return null;
+      const left = build(n.getLeft());
+      const right = build(n.getRight());
+      const children = [left, right].filter(Boolean);
+      return {
+        id: n.getId(),
+        priority: n.priority,
+        value: (n as any).value,
+        children: children.length ? children : undefined,
+      };
+    };
+    return build(root);
+  }
+
+  /** Clonado que **preserva IDs** (clave para que transcript y DOM calcen). */
+  public clonePreservingIds(): ArbolHeap<T> {
+    const c = new ArbolHeap<T>({
+      min: this.isMinHeap,
+      compare: this.compare,
+      maxNodos: this.MAX_NODOS,
+    });
+    // copiamos los nodos conservando id y payload
+    // @ts-ignore - as any para value auxiliar si lo usas
+    c.nodes = this.nodes.map(
+      (n) => new NodoHeap<T>(n.priority, (n as any).value, n.getId())
+    );
+    c.linkedRoot = null;
+    return c;
+  }
+
+  /** Verificación defensiva de propiedad de heap (O(n)). */
+  public validarHeap(): { ok: true } | { ok: false; i: number; why: string } {
+    for (let i = 0; i < this.nodes.length; i++) {
+      const l = this.left(i),
+        r = this.right(i);
+      if (l < this.nodes.length) {
+        const ok = this.isMinHeap
+          ? this.compare(this.nodes[i].priority, this.nodes[l].priority) <= 0
+          : this.compare(this.nodes[i].priority, this.nodes[l].priority) >= 0;
+        if (!ok)
+          return {
+            ok: false,
+            i,
+            why: `Violación con hijo izquierdo en índice ${l}`,
+          };
+      }
+      if (r < this.nodes.length) {
+        const ok = this.isMinHeap
+          ? this.compare(this.nodes[i].priority, this.nodes[r].priority) <= 0
+          : this.compare(this.nodes[i].priority, this.nodes[r].priority) >= 0;
+        if (!ok)
+          return {
+            ok: false,
+            i,
+            why: `Violación con hijo derecho en índice ${r}`,
+          };
       }
     }
-
-    // Si todos los nodos tienen dos hijos, insertar en el siguiente nivel
-    return nodosPorNivel[0]; // Esto no debería ocurrir en un heap bien formado
-  }
-
-  /**
-   * Obtiene el padre de un nodo (por referencia, no por valor).
-   */
-  private getPadreDeNodo(hijo: NodoBin<T>): NodoBin<T> | null {
-    const nodosPorNivel = this.getNodosPorNiveles();
-    for (const nodo of nodosPorNivel) {
-      if (nodo.getIzq() === hijo || nodo.getDer() === hijo) {
-        return nodo;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Encuentra el último nodo del heap (el más a la derecha en el último nivel).
-   */
-  private encontrarUltimoNodo(): NodoBin<T> {
-    const nodosPorNivel = this.getNodosPorNiveles();
-    return nodosPorNivel[nodosPorNivel.length - 1];
-  }
-
-  // /**
-  //  * Restaura la propiedad del heap hacia arriba (bubble up).
-  //  */
-  // private heapifyUp(nodo: NodoBin<T>): void {
-  //   let padre = this.getPadreDeNodo(nodo);
-
-  //   while (padre) {
-  //     const debeIntercambiar =
-  //       this.tipo === "MAX"
-  //         ? this.compareFn(nodo.getInfo(), padre.getInfo()) > 0
-  //         : this.compareFn(nodo.getInfo(), padre.getInfo()) < 0;
-
-  //     if (!debeIntercambiar) break;
-
-  //     // Intercambiar valores
-  //     const temp = nodo.getInfo();
-  //     nodo.setInfo(padre.getInfo());
-  //     padre.setInfo(temp);
-
-  //     // Subir un nivel
-  //     nodo = padre;
-  //     padre = this.getPadreDeNodo(nodo);
-  //   }
-  // }
-
-  /**
-   * Heapify up con registro de la ruta de swaps.
-   */
-  private heapifyUp(nodo: NodoBin<T>): string[] {
-    const swapPath: string[] = [nodo.getId()];
-    let padre = this.getPadreDeNodo(nodo);
-
-    while (padre) {
-      const debeIntercambiar =
-        this.tipo === "MAX"
-          ? this.compareFn(nodo.getInfo(), padre.getInfo()) > 0
-          : this.compareFn(nodo.getInfo(), padre.getInfo()) < 0;
-
-      if (!debeIntercambiar) break;
-
-      // Intercambiar valores
-      const temp = nodo.getInfo();
-      nodo.setInfo(padre.getInfo());
-      padre.setInfo(temp);
-
-      // Guardamos en la ruta
-      swapPath.push(padre.getId());
-
-      // Subir un nivel
-      nodo = padre;
-      padre = this.getPadreDeNodo(nodo);
-    }
-
-    return swapPath;
-  }
-
-  /**
-   * Restaura la propiedad del heap hacia abajo (bubble down).
-   */
-  private heapifyDown(nodo: NodoBin<T>): void {
-    const izq = nodo.getIzq();
-    const der = nodo.getDer();
-    let candidato = nodo;
-
-    // Encontrar el candidato para intercambio
-    if (izq && this.debeIntercambiar(izq.getInfo(), candidato.getInfo())) {
-      candidato = izq;
-    }
-
-    if (der && this.debeIntercambiar(der.getInfo(), candidato.getInfo())) {
-      candidato = der;
-    }
-
-    // Si hay que hacer intercambio
-    if (candidato !== nodo) {
-      const temp = nodo.getInfo();
-      nodo.setInfo(candidato.getInfo());
-      candidato.setInfo(temp);
-
-      // Continuar hacia abajo
-      this.heapifyDown(candidato);
-    }
-  }
-
-  /**
-   * Determina si dos elementos deben intercambiarse según el tipo de heap.
-   */
-  private debeIntercambiar(hijo: T, padre: T): boolean {
-    return this.tipo === "MAX"
-      ? this.compareFn(hijo, padre) > 0
-      : this.compareFn(hijo, padre) < 0;
-  }
-
-  /**
-   * Verifica recursivamente si se cumple la propiedad del heap.
-   */
-  private verificarPropiedadHeap(nodo: NodoBin<T> | null): boolean {
-    if (!nodo) return true;
-
-    const izq = nodo.getIzq();
-    const der = nodo.getDer();
-
-    // Verificar hijo izquierdo
-    if (izq && !this.cumplePropiedadHeap(nodo.getInfo(), izq.getInfo())) {
-      return false;
-    }
-
-    // Verificar hijo derecho
-    if (der && !this.cumplePropiedadHeap(nodo.getInfo(), der.getInfo())) {
-      return false;
-    }
-
-    // Verificar recursivamente subárboles
-    return this.verificarPropiedadHeap(izq) && this.verificarPropiedadHeap(der);
-  }
-
-  /**
-   * Verifica si se cumple la propiedad del heap entre padre e hijo.
-   */
-  private cumplePropiedadHeap(padre: T, hijo: T): boolean {
-    return this.tipo === "MAX"
-      ? this.compareFn(padre, hijo) >= 0
-      : this.compareFn(padre, hijo) <= 0;
-  }
-
-  /**
-   * Clona un nodo y sus subárboles recursivamente.
-   */
-  private clonarNodo(nodo: NodoBin<T> | null): NodoBin<T> | null {
-    if (!nodo) return null;
-
-    const nuevoNodo = new NodoBin(nodo.getInfo(), nodo.getId());
-    nuevoNodo.setIzq(this.clonarNodo(nodo.getIzq()));
-    nuevoNodo.setDer(this.clonarNodo(nodo.getDer()));
-
-    return nuevoNodo;
+    return { ok: true };
   }
 }

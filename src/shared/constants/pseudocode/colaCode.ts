@@ -1,63 +1,72 @@
 import { OperationCode } from "./typesPseudoCode";
 
 export const getColaCode = (): OperationCode => ({
- enqueue: [
-            `/**
- * Método que permite agregar un elemento al final de la cola.
- * post: Se insertó un nuevo elemento al final de la cola.
- * @param info es de tipo T y corresponde a la informacion a encolar.
- */`,
-            `public void enColar(T info){`,
-            `    Nodo<T>nuevoNodo = new Nodo(info);`,
-            `    if (this.esVacia()) {`,
-            `        this.inicio = nuevoNodo;`,
-            `        this.fin = nuevoNodo;`,
-            `    } else {`,
-            `        this.fin.setSig(nuevoNodo);`,
-            `        this.fin = nuevoNodo;`,
-            `    }`,
-            `    this.tamanio++;`,
-            `}`
-        ],
-        dequeue: [
-            `/**
- * Método que permite retirar el primer elemento insertado en la cola.
- * post: Se retiró el primer elemento de la cola.
- * @return un tipo T correspondiente a la informacion del elemento retirado.
- */`,
-            `public T deColar(){`,
-            `    if(this.esVacia())`,
-            `        return null;`,
-            `    NodoD<T>x = this.inicio`,
-            `    if (this.inicio == this.fin) {`,
-            `        this.inicio = null;`,
-            `        this.fin = null;`,
-            `    } else {`,
-            `        this.inicio = this.inicio.getSig();`,
-            `    }`,
-            `    this.tamanio--;`,
-            `    return x.getInfo();`,
-            `}`
-        ],
-        getFront: [
-            `/**
- * Método que permite obtener el primer elemento insertado en la cola.
- * post: Se obtuvó el primer elemento de la cola.
- * @return El primer elemento de la cola.
- */`,
-            `protected Nodo<T> getInicio(){`,
-            `    return this.inicio;`,
-            `}`
-        ],
-        clean: [
-            `/**
- * Método que permite eliminar toda la información que contiene la cola.
- * post: Se eliminó todos los elementos que se encontraban en la Cola.
- */`,
-            `public void vaciar(){`,
-            `    this.inicio = null;`,
-            `    this.fin = null;`,
-            `    this.tamanio = 0;`,
-            `}`
-        ]
+  enqueue: [
+    "/**",
+    " * Método que encola un nuevo elemento en la cola.",
+    " * @param valor Elemento a encolar.",
+    " */",
+    "public NodoS<T> encolar(T valor) {",
+    "  if (this.tamanio >= this.MAX_TAMANIO)",
+    '    throw new RuntimeException("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: " + this.MAX_TAMANIO + ").");',
+    "",
+    "  NodoS<T> nuevoNodo = new NodoS<>(valor);",
+    "",
+    "  if (this.esVacia()) {",
+    "    this.inicio = nuevoNodo;",
+    "    this.fin = nuevoNodo;",
+    "  } else {",
+    "    this.fin.setSiguiente(nuevoNodo);",
+    "    this.fin = nuevoNodo;",
+    "  }",
+    "",
+    "  this.tamanio++;",
+    "  return nuevoNodo;",
+    "}",
+  ],
+
+  dequeue: [
+    "/**",
+    " * Método que decola (remueve) el primer elemento de la cola.",
+    " * @return Elemento decolado.",
+    " */",
+    "public NodoS<T> decolar() {",
+    "  if (this.esVacia())",
+    '    throw new RuntimeException("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");',
+    "",
+    "  NodoS<T> nodoAEliminar = this.inicio;",
+    "",
+    "  if (this.inicio == this.fin) {",
+    "    this.inicio = null;",
+    "    this.fin = null;",
+    "  } else {",
+    "    this.inicio = this.inicio.getSiguiente();",
+    "  }",
+    "",
+    "  this.tamanio--;",
+    "  return nodoAEliminar;",
+    "}",
+  ],
+
+  clean: [
+    "/**",
+    " * Método que vacía la cola.",
+    " * post: La cola quedó vacía.",
+    " */",
+    "public void vaciar() {",
+    "  this.inicio = null;",
+    "  this.fin = null;",
+    "  this.tamanio = 0;",
+    "}",
+  ],
+
+  getFront: [
+    "/**",
+    " * Método que obtiene el elemento inicial de la cola.",
+    " * @return NodoS o null si la cola está vacía.",
+    " */",
+    "public NodoS<T> getInicio() {",
+    "  return this.inicio;",
+    "}",
+  ],
 });

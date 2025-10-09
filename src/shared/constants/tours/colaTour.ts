@@ -3,9 +3,16 @@ import { TourStep } from "../typesTour";
 export function getColaTourSteps(): TourStep[] {
   return [
     {
+      type: "info",
+      description:
+        "🧭 Flujo correcto: el **primer** `enqueue(...)` **crea el objeto `cola`**. Desde entonces **todas** las operaciones deben ir con el prefijo **`cola.`**. Tras `cola.clean()`, vuelve a ejecutar `enqueue(...)` (sin prefijo) para **recrear `cola`** y continúa con `cola.`",
+    },
+
+    /* ─────────── Creación del objeto (primer enqueue SIN prefijo) ─────────── */
+    {
       id: "console",
       description:
-        "🎮 En esta consola puedes escribir comandos para manipular la cola. Aquí es donde vas a encolar, desencolar y consultar el frente.",
+        "🎮 Usa esta consola para encolar, desencolar y consultar el frente de la **Cola**.",
       type: "element",
     },
     {
@@ -16,114 +23,109 @@ export function getColaTourSteps(): TourStep[] {
     {
       id: "console",
       description:
-        "📥 Este comando encola el número **10** al final de la cola.",
+        "📥 Este primer `enqueue(10)` **crea la cola** y su referencia queda en **`cola`**. A partir de aquí, usa **`cola.`** en cada comando.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "🚚 ¡Genial! El valor 10 fue añadido a la estructura de cola. Recuerda: **primero en entrar, primero en salir** (FIFO).",
-      type: "element",
-    },
-    {
-      id: "inputConsola",
-      text: "enqueue(20);",
-      type: "write",
-    },
-    {
-      id: "console",
-      description:
-        "⏩ Encolamos ahora el número **20**. Se añadirá al final de la cola, detrás del 10.",
-      type: "element",
-    },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
-    {
-      id: "main-canvas",
-      description:
-        "📦 La cola crece. Los elementos nuevos siempre van al **final**, manteniendo el orden de entrada.",
-      type: "element",
-    },
-    {
-      id: "memory-visualization",
-      description:
-        "🧠 Aquí puedes visualizar cómo se gestiona la memoria de la cola: cada nodo se enlaza de forma secuencial hasta vaciarse.",
-      type: "element",
-    },
-    {
-      id: "inputConsola",
-      text: "getFront();",
-      type: "write",
-    },
-    {
-      id: "console",
-      description:
-        "🔍 Con este comando puedes **consultar el frente** de la cola, sin eliminarlo.",
-      type: "element",
-    },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
-    {
-      id: "main-canvas",
-      description:
-        "📌 El valor que aparece al frente es el primero que fue encolado: **10**.",
-      type: "element",
-    },
-    {
-      id: "inputConsola",
-      text: "dequeue();",
-      type: "write",
-    },
-    {
-      id: "console",
-      description:
-        "🚪 Al ejecutar `dequeue()`, eliminamos el primer elemento de la cola (el que lleva más tiempo).",
-      type: "element",
-    },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
-    {
-      id: "main-canvas",
-      description:
-        "🧹 Observa cómo **el nodo frontal desaparece**. El siguiente nodo toma su lugar como nuevo frente.",
-      type: "element",
-    },
-    {
-      id: "info-cards",
-      description:
-        "📊 El tamaño de la cola también cambia. Esta tarjeta te muestra cuántos elementos contiene actualmente.",
+        "🚚 Se añadió **10**. Recuerda la regla **FIFO** (First In, First Out): el primero en entrar es el primero en salir.",
       type: "element",
     },
 
+    /* ─────────── Operaciones usando el prefijo `cola.` ─────────── */
+    // enqueue(20)
     {
       id: "inputConsola",
-      text: "clean();",
+      text: "cola.enqueue(20);",
+      type: "write",
+    },
+    {
+      id: "console",
+      description: "⏩ Encolamos **20** al final, detrás de **10**.",
+      type: "element",
+    },
+    { id: "inputConsola", type: "enter" },
+    {
+      id: "main-canvas",
+      description:
+        "📦 La cola crece por el **final**, manteniendo el orden de llegada.",
+      type: "element",
+    },
+
+    // memory-visualization
+    {
+      id: "memory-visualization",
+      description:
+        "🧠 Visualización de memoria: los nodos se enlazan secuencialmente del frente hacia el final.",
+      type: "element",
+    },
+
+    // getFront()
+    {
+      id: "inputConsola",
+      text: "cola.getFront();",
+      type: "write",
+    },
+    {
+      id: "console",
+      description: "🔍 Consulta el **frente** de la cola sin eliminarlo.",
+      type: "element",
+    },
+    { id: "inputConsola", type: "enter" },
+    {
+      id: "main-canvas",
+      description: "📌 El elemento al frente es **10** (el primero que entró).",
+      type: "element",
+    },
+
+    // dequeue()
+    {
+      id: "inputConsola",
+      text: "cola.dequeue();",
       type: "write",
     },
     {
       id: "console",
       description:
-        "🗑️ El comando `clean()` borra completamente todos los elementos de la cola.",
+        "🚪 `dequeue()` elimina el **primer** elemento (el más antiguo) siguiendo **FIFO**.",
       type: "element",
     },
-    {
-      id: "inputConsola",
-      type: "enter",
-    },
+    { id: "inputConsola", type: "enter" },
     {
       id: "main-canvas",
       description:
-        "🌌 ¡Todo limpio! Ahora puedes empezar una nueva simulación desde cero.",
+        "🧹 El nodo frontal desaparece y el siguiente pasa a ser el nuevo frente.",
+      type: "element",
+    },
+
+    // info-cards (tamaño)
+    {
+      id: "info-cards",
+      description:
+        "📊 Revisa el **tamaño** actual de la cola; se actualiza tras cada operación.",
+      type: "element",
+    },
+
+    /* ─────────── Limpieza y recordatorio de recreación ─────────── */
+    // clean()
+    {
+      id: "inputConsola",
+      text: "cola.clean();",
+      type: "write",
+    },
+    {
+      id: "console",
+      description:
+        "🗑️ `clean()` borra **todos** los elementos de la cola. `cola` queda vacía.",
+      type: "element",
+    },
+    { id: "inputConsola", type: "enter" },
+    {
+      id: "main-canvas",
+      description:
+        "🌌 ¡Todo limpio! Para **volver a usar** la cola, ejecuta de nuevo **`enqueue(...)`** (sin prefijo) para **recrear `cola`** y continúa con **`cola.`** en cada comando.",
       type: "element",
     },
   ];
