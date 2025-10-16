@@ -5,6 +5,7 @@ export const commandRules: Record<
 > = {
   secuencia: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "create": {
         if (parts.length !== 2) {
@@ -173,6 +174,7 @@ export const commandRules: Record<
 
   pila: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "push": {
         if (parts.length !== 2) {
@@ -213,6 +215,7 @@ export const commandRules: Record<
 
   cola: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "enqueue": {
         if (parts.length !== 2) {
@@ -253,6 +256,7 @@ export const commandRules: Record<
 
   "cola de prioridad": (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "enqueue": {
         if (parts.length !== 3) {
@@ -300,6 +304,7 @@ export const commandRules: Record<
 
   lista_enlazada: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "insertfirst":
       case "insertlast": {
@@ -439,8 +444,10 @@ export const commandRules: Record<
         return false;
     }
   },
+
   arbol_binario: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "insertleft":
       case "insertright": {
@@ -527,6 +534,7 @@ export const commandRules: Record<
         return false;
     }
   },
+
   arbol_avl: (parts) => {
     const keyword = parts[0]?.toLowerCase();
 
@@ -608,8 +616,10 @@ export const commandRules: Record<
         return false;
     }
   },
+
   arbol_binario_busqueda: (parts) => {
     const keyword = parts[0]?.toLowerCase();
+
     switch (keyword) {
       case "insert": {
         if (parts.length !== 2) {
@@ -771,12 +781,86 @@ export const commandRules: Record<
     }
   },
 
-  splay: (parts) => {
+  arbol_splay: (parts) => {
     const keyword = parts[0]?.toLowerCase();
-    return (
-      commandRules.bst(parts) ||
-      (keyword === "splay" && parts.length === 2 && !isNaN(Number(parts[1])))
-    );
+
+    switch (keyword) {
+      case "insert": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a insertar como argumento."
+                : "El método únicamente espera el valor a insertar como argumento.",
+          };
+        }
+        const insertPattern = /^\d{1,2}$/; // hasta 2 dígitos (consistente con arbol_binario)
+        if (!insertPattern.test(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+          };
+        }
+        return true;
+      }
+
+      case "delete": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a eliminar como argumento."
+                : "El método únicamente espera el valor a eliminar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a eliminar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "search": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar el valor a buscar como argumento."
+                : "El método únicamente espera el valor a buscar como argumento.",
+          };
+        }
+        if (isNaN(Number(parts[1]))) {
+          return {
+            valid: false,
+            message: "El valor a buscar debe ser un número válido.",
+          };
+        }
+        return true;
+      }
+
+      case "getpreorder":
+      case "getinorder":
+      case "getpostorder":
+      case "getlevelorder":
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
+        }
+        return true;
+      }
+
+      default:
+        return false;
+    }
   },
 
   heap: (parts) => {

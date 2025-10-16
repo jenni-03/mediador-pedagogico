@@ -22,6 +22,7 @@ export const STRUCTURE_NAME = {
   BINARY_SEARCH_TREE: 'arbol_binario_busqueda',
   AVL_TREE: "arbol_avl",
   RB_TREE: "arbol_rojinegro",
+  SPLAY_TREE: "arbol_splay",
   NARY_TREE: "arbol_nario",
   TREE_123: "arbol_123",
   TREE_B: "arbol_b",
@@ -144,6 +145,14 @@ export const SVG_RB_TREE_VALUES = {
   NODE_SPACING: 75,
   LEVEL_SPACING: 95,
   EXTRA_WIDTH: 70
+}
+
+export const SVG_SPLAY_TREE_VALUES = {
+  NODE_SPACING: 75,
+  LEVEL_SPACING: 95,
+  EXTRA_WIDTH: 70,
+  HIGHLIGHT_COLOR: "#B185DB",
+  TRAVERSAL_HIGHLIGHT_COLOR: "#B185DB",
 }
 
 export const RB_COLORS = {

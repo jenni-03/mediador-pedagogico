@@ -19,6 +19,7 @@ const creatorCommands: Record<string, string[]> = {
   arbol_binario_busqueda: ["insert"],
   arbol_avl: ["insert"],
   arbol_rojinegro: ["insert"],
+  arbol_splay: ["insert"],
   arbol_nario: ["createRoot"],
   arbol_123: ["insert"],
   arbol_b: ["insert"],
@@ -112,9 +113,8 @@ export const parseCommand = (
     !isCreatorCommand(structureType, rawCommand)
   ) {
     return {
-      error: `Aún no existe un objeto de la estructura. Primero debe crearla usando: ${
-        creatorCommands[structureType]?.join(", ") || "create"
-      }.`,
+      error: `Aún no existe un objeto de la estructura. Primero debe crearla usando: ${creatorCommands[structureType]?.join(", ") || "create"
+        }.`,
     };
   }
 

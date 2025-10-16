@@ -16,6 +16,7 @@ export const structureNames: Record<string, string> = {
   arbol_binario_busqueda: "arbolBB",
   arbol_avl: "arbolA",
   arbol_rojinegro: "arbolRN",
+  arbol_splay: "arbolS",
   arbol_nario: "arbolNario",
   arbol_123: "arbol123",
   arbol_b: "arbolB",

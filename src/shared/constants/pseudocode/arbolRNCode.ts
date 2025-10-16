@@ -71,7 +71,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `    raiz.color = NEGRO; // la raíz siempre negra`,
     `}`,
   ],
-
   delete: [
     `/**`,
     ` * Elimina un valor del Árbol Roji-Negro.`,
@@ -178,7 +177,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `}`,
     `private Color colorDe(NodoRN<T> n) { return (n == null) ? NEGRO : n.color; }`,
   ],
-
   search: [
     `/** Método que verifica la existencia de un elemento dentro del árbol Rojo-Negro. */`,
     `public boolean search(T valor) {`,
@@ -191,7 +189,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `    return false;`,
     `}`,
   ],
-
   getInOrder: [
     `/** In-Orden: izq -> nodo -> der */`,
     `private void inOrden(NodoRN<T> n, ListaCD<T> out) {`,
@@ -201,7 +198,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `    inOrden(n.der, out);`,
     `}`,
   ],
-
   getPreOrder: [
     `/** Pre-Orden: nodo -> izq -> der */`,
     `private void preOrden(NodoRN<T> n, ListaCD<T> out) {`,
@@ -211,7 +207,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `    preOrden(n.der, out);`,
     `}`,
   ],
-
   getPostOrder: [
     `/** Post-Orden: izq -> der -> nodo */`,
     `private void postOrden(NodoRN<T> n, ListaCD<T> out) {`,
@@ -221,7 +216,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `    out.insertarAlFinal(n.info);`,
     `}`,
   ],
-
   getLevelOrder: [
     `/** Recorrido por niveles (BFS). */`,
     `public ListaCD<T> getLevelOrder(NodoRN<T> root) {`,
@@ -238,27 +232,6 @@ export const getArbolRNCode = (): OperationCode => ({
     `    return out;`,
     `}`,
   ],
-
-  findMin: [
-    `/** Devuelve el mínimo (clave más a la izquierda). */`,
-    `public T findMin() {`,
-    `    NodoRN<T> x = raiz;`,
-    `    if (x == null) return null;`,
-    `    while (x.izq != null) x = x.izq;`,
-    `    return x.info;`,
-    `}`,
-  ],
-
-  findMax: [
-    `/** Devuelve el máximo (clave más a la derecha). */`,
-    `public T findMax() {`,
-    `    NodoRN<T> x = raiz;`,
-    `    if (x == null) return null;`,
-    `    while (x.der != null) x = x.der;`,
-    `    return x.info;`,
-    `}`,
-  ],
-
   clean: [
     `/**`,
     ` * Vacía completamente el Árbol Roji-Negro.`,

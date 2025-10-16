@@ -18,42 +18,44 @@ import { TwoThreeTreeSimulator } from "./123TreeSimulator";
 import { BTreeSimulator } from "./BTreeSimulator";
 import { BPlusTreeSimulator } from "./BPlusTreeSimulator";
 import { HeapSimulator } from "./HeapSimulator";
+import { SplayTreeSimulator } from "./SplayTreeSimulator";
 
 // Mapea los nombres a sus respectivos componentes
 const componentMap: Record<string, React.FC> = {
-  Secuencia: SequenceSimulator,
-  Cola: QueueSimulator,
-  tabla_hash: HashTableSimulator,
-  Pila: StackSimulator,
-  "Cola de Prioridad": PriorityQueueSimulator,
-  "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
-  "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
-  "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
-  "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
-  "Árbol Binario": BinaryTreeSimulator,
-  "Árbol Binario de Búsqueda": BinarySearchTreeSimulator,
-  "Árbol AVL": AvlTreeSimulator,
-  "Árbol RojiNegro": RbTreeSimulator,
-  "Árbol Eneario": NaryTreeSimulator,
-  "Árbol 1-2-3": TwoThreeTreeSimulator,
-  "Árbol B": BTreeSimulator,
-  "Árbol B+": BPlusTreeSimulator,
-  "Árbol Heap": HeapSimulator,
+    Secuencia: SequenceSimulator,
+    Cola: QueueSimulator,
+    tabla_hash: HashTableSimulator,
+    Pila: StackSimulator,
+    "Cola de Prioridad": PriorityQueueSimulator,
+    "Lista Simplemente Enlazada": SimpleLinkedListSimulator,
+    "Lista Doblemente Enlazada": DoublyLinkedListSimulator,
+    "Lista Circular Doblemente Enlazada": CircularDoublyLinkedListSimulator,
+    "Lista Circular Simplemente Enlazada": CircularSimpleLinkedListSimulator,
+    "Árbol Binario": BinaryTreeSimulator,
+    "Árbol Binario de Búsqueda": BinarySearchTreeSimulator,
+    "Árbol AVL": AvlTreeSimulator,
+    "Árbol RojiNegro": RbTreeSimulator,
+    "Árbol Splay": SplayTreeSimulator,
+    "Árbol Eneario": NaryTreeSimulator,
+    "Árbol 1-2-3": TwoThreeTreeSimulator,
+    "Árbol B": BTreeSimulator,
+    "Árbol B+": BPlusTreeSimulator,
+    "Árbol Heap": HeapSimulator,
 };
 
 export function StructureSimulator() {
-  const route = getRouteApi("/simulador/$estructura");
+    const route = getRouteApi("/simulador/$estructura");
 
-  const { estructura } = route.useParams();
-  const nombre: string = conceptosData[estructura].nombre;
+    const { estructura } = route.useParams();
+    const nombre: string = conceptosData[estructura].nombre;
 
-  // Buscar el componente correspondiente en el mapeo, si no existe, usar un fallback
-  const DynamicComponent =
-    componentMap[nombre] || (() => <p>Componente no encontrado</p>);
+    // Buscar el componente correspondiente en el mapeo, si no existe, usar un fallback
+    const DynamicComponent =
+        componentMap[nombre] || (() => <p>Componente no encontrado</p>);
 
-  return (
-    <div>
-      <DynamicComponent />
-    </div>
-  );
+    return (
+        <div>
+            <DynamicComponent />
+        </div>
+    );
 }
