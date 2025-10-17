@@ -173,6 +173,7 @@ export function ConsoleComponent({
           ring-1 ring-transparent hover:ring-[#D72638]/60
           overflow-hidden transition-all
         "
+        data-tour="divInputConsola"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 bg-[#161616] border-b border-white/10">
