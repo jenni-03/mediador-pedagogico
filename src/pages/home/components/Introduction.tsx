@@ -15,7 +15,7 @@ export function Introduction() {
   return (
     <div
       id="introduction-section"
-      className="scroll-mt-20 sm:scroll-mt-16 md:scroll-mt-12 lg:scroll-mt-8 w-full min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center py-10"
+      className="scroll-mt-20 sm:scroll-mt-16 md:scroll-mt-16 lg:scroll-mt-8 w-full min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center py-10"
     >
       <div className="max-w-[1300px] w-full px-6 space-y-12">
         {/* Texto principal */}
