@@ -74,14 +74,6 @@ export function ConsoleComponent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [structurePrueba?.getTamanio()]);
 
-  // Foco tras animaciones
-  useEffect(() => {
-    if (!isAnimating && inputRef.current) {
-      const t = setTimeout(() => inputRef.current?.focus(), 500);
-      return () => clearTimeout(t);
-    }
-  }, [isAnimating]);
-
   // Error → historial
   useEffect(() => {
     if (error) {
