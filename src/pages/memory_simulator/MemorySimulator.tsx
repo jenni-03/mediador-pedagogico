@@ -81,7 +81,7 @@ export function MemorySimulator() {
         </div>
 
         {/* Contenido central con altura disponible real (fila 2) */}
-        <div className="min-h-0 overflow-hidden">
+        <div className="min-h-0 h-full overflow-hidden">
           <MemoryScreen
             consolaRef={consolaRef}
             memoryState={memoryState}

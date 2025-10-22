@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Consola } from "../../../../shared/utils/RAM/Consola";
 import { motion, AnimatePresence } from "framer-motion";
 import { VariableDetailsModal } from "../atoms/VariableDetailsModal";
 import { DeleteConfirmationModal } from "../atoms/DeleteConfirmationModal";
 import { ChangeTypeModal } from "../atoms/ChangeTypeModal";
+
+/* ============================================================
+ * Tipos y Props
+ * ============================================================
+ */
 
 interface ArrayMemoryProps {
   searchTerm: string;
@@ -12,15 +17,108 @@ interface ArrayMemoryProps {
   setMemoryState: (newState: Record<string, any[]>) => void;
 }
 
+/** Estructura mínima esperada para cada entrada del segmento "array". */
+interface MemoryArrayEntry {
+  address: string;
+  name: string;
+  value: any[]; // valores del arreglo
+  // meta opcional si en el futuro agregas más datos
+  meta?: Record<string, unknown>;
+}
+
+/* ============================================================
+ * Helpers de tipos
+ * ============================================================
+ */
+
+/**
+ * Inferencia básica del tipo del elemento a partir de los valores JS.
+ * - number: distingue entre int (todos enteros) y float (alguno no entero)
+ * - boolean, string, object
+ * - mezcla -> any
+ * Ajusta "float" => "double" si tu RAM usa ese nombre.
+ */
+function inferElementType(values: any[]): string {
+  if (!values || values.length === 0) return "any";
+  if (values.every((v) => typeof v === "boolean")) return "boolean";
+  if (values.every((v) => typeof v === "string")) return "char"; // o "string" según tu modelo
+
+  if (values.every((v) => typeof v === "number" && Number.isFinite(v))) {
+    const allInts = values.every((v) => Number.isInteger(v));
+    return allInts ? "int" : "float"; // cambia a "double" si corresponde
+  }
+
+  if (
+    values.every(
+      (v) => v !== null && typeof v === "object" && !Array.isArray(v)
+    )
+  ) {
+    return "struct"; // o "object" según tu modelo de RAM
+  }
+
+  return "any";
+}
+
+/**
+ * Normaliza el tipo final a mostrar en UI:
+ * - Si rawType ya es específico (p.ej. "int[]" o "boolean[]"), úsalo.
+ * - Si rawType es "array" o viene vacío, arma "<elemType>[]".
+ */
+function resolveFinalArrayType(
+  rawType: string | undefined,
+  elemType: string
+): string {
+  if (rawType && rawType.toLowerCase() !== "array") return rawType;
+  return `${elemType}[]`;
+}
+
+/**
+ * Consulta a la consola el tipo de una dirección concreta.
+ * Devuelve `undefined` si falla o no hay consola.
+ */
+function getTypeFromConsole(
+  consola: Consola | null | undefined,
+  address: string
+): string | undefined {
+  if (!consola) return undefined;
+  const res = consola.ejecutarComando(`type address ${address}`);
+  return res?.[0] ? String(res[1]) : undefined;
+}
+
+/**
+ * Firma ligera para dependencias: evita JSON.stringify de todo el objeto.
+ * Usa address y length para detectar cambios "importantes".
+ */
+function signatureForSegment(entries: MemoryArrayEntry[]): string {
+  return entries
+    .map((e) => `${e.address}:${Array.isArray(e.value) ? e.value.length : 0}`)
+    .join("|");
+}
+
+/* ============================================================
+ * Componente principal
+ * ============================================================
+ */
+
 export function ArrayMemory({
   searchTerm,
   consolaRef,
   memoryState,
   setMemoryState,
 }: ArrayMemoryProps) {
-  const memorySegment = memoryState["array"] || [];
+  // Segmento de memoria de arreglos
+  const memorySegment = useMemo<MemoryArrayEntry[]>(
+    () =>
+      Array.isArray(memoryState["array"])
+        ? (memoryState["array"] as MemoryArrayEntry[])
+        : [],
+    [memoryState]
+  );
 
-  const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
+  // Estado de UI
+  const [selectedEntry, setSelectedEntry] = useState<MemoryArrayEntry | null>(
+    null
+  );
   const [tempValue, setTempValue] = useState("");
   const [sizes, setSizes] = useState<Record<string, string>>({});
   const [addresses, setAddresses] = useState<Record<string, string[]>>({});
@@ -28,36 +126,67 @@ export function ArrayMemory({
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [changeTypeTarget, setChangeTypeTarget] = useState<string | null>(null);
 
+  // Firma ligera para el efecto
+  const segSignature = useMemo(
+    () => signatureForSegment(memorySegment),
+    [memorySegment]
+  );
+
+  /**
+   * Efecto: consulta SIZE/TYPE del bloque, resuelve direcciones de elementos
+   * y deduce el tipo específico del arreglo (int[], boolean[], etc.)
+   *
+   * Estrategia de tipo:
+   *  1) TYPE del bloque (puede venir como "array")
+   *  2) TYPE del primer elemento (por address) si está disponible
+   *  3) Inferencia por valores JS si 1/2 fallan
+   */
   useEffect(() => {
+    const consola = consolaRef.current ?? null;
+
     const newSizes: Record<string, string> = {};
     const newAddresses: Record<string, string[]> = {};
     const newTypes: Record<string, string> = {};
 
-    memorySegment.forEach((entry) => {
-      const sizeRes = consolaRef.current?.ejecutarComando(
-        `size address ${entry.address}`
-      );
-      if (sizeRes?.[0]) newSizes[entry.address] = sizeRes[1];
+    for (const entry of memorySegment) {
+      // 1) SIZE del bloque del arreglo
+      const sizeRes = consola?.ejecutarComando(`size address ${entry.address}`);
+      if (sizeRes?.[0]) newSizes[entry.address] = String(sizeRes[1]);
 
-      const typeRes = consolaRef.current?.ejecutarComando(
-        `type address ${entry.address}`
-      );
-      if (typeRes?.[0]) newTypes[entry.address] = typeRes[1];
+      // 2) TYPE del bloque del arreglo (podría ser "array")
+      const rawType = getTypeFromConsole(consola, entry.address);
 
-      const addrs = entry.value.map((_: any, idx: number) => {
-        const res = consolaRef.current?.ejecutarComando(
-          `address of ${entry.name}_${idx}`
-        );
-        return res?.[0] ? res[1] : "—";
+      // 3) Direcciones de cada elemento
+      const addrs = (entry.value ?? []).map((_: any, idx: number) => {
+        const res = consola?.ejecutarComando(`address of ${entry.name}_${idx}`);
+        return res?.[0] ? String(res[1]) : "—";
       });
-
       newAddresses[entry.address] = addrs;
-    });
+
+      // 4) Intento de tipo de elemento por consola (primer addr válido)
+      const firstValidElemAddr = addrs.find((a) => a && a !== "—");
+      const elemTypeFromConsole = firstValidElemAddr
+        ? getTypeFromConsole(consola, firstValidElemAddr)
+        : undefined;
+
+      // 5) Inferencia por valores si consola no dio nada útil
+      const elemTypeByInference = inferElementType(entry.value ?? []);
+
+      // 6) Tipo final que verá el usuario
+      const chosenElemType = elemTypeFromConsole ?? elemTypeByInference;
+      const finalType = resolveFinalArrayType(rawType, chosenElemType);
+      newTypes[entry.address] = finalType;
+    }
 
     setSizes(newSizes);
     setAddresses(newAddresses);
     setTypes(newTypes);
-  }, [JSON.stringify(memorySegment)]);
+  }, [segSignature, consolaRef]);
+
+  /* ============================================================
+   * Render
+   * ============================================================
+   */
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -81,11 +210,11 @@ export function ArrayMemory({
                   setTempValue(JSON.stringify(entry.value));
                 }}
                 className="relative bg-gradient-to-br from-[#262626] to-[#1F1F1F]
-             p-5 rounded-2xl border border-[#2E2E2E]
-             shadow-xl shadow-black/40 hover:ring-2 hover:ring-[#D72638]/50
-             transition-all cursor-pointer"
+                  p-5 rounded-2xl border border-[#2E2E2E]
+                  shadow-xl shadow-black/40 hover:ring-2 hover:ring-[#D72638]/50
+                  transition-all cursor-pointer"
               >
-                {/* Botón: engranaje en la esquina superior izquierda */}
+                {/* Botón: engranaje (cambiar tipo) */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -93,13 +222,13 @@ export function ArrayMemory({
                   }}
                   title="Cambiar tipo de dato"
                   className="absolute top-3 left-3 flex items-center gap-1
-               text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
-               px-2 py-1 rounded-full transition duration-200 cursor-pointer"
+                    text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
+                    px-2 py-1 rounded-full transition duration-200 cursor-pointer"
                 >
                   <span className="text-base">⚙️</span>
                 </button>
 
-                {/* Botón: eliminar (X) en la esquina superior derecha */}
+                {/* Botón: eliminar */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -107,13 +236,13 @@ export function ArrayMemory({
                   }}
                   title="Eliminar variable"
                   className="absolute top-3 right-3 flex items-center gap-1
-               text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
-               px-2 py-1 rounded-full transition duration-200 cursor-pointer"
+                    text-sm text-gray-300 hover:text-white hover:bg-[#D72638]
+                    px-2 py-1 rounded-full transition duration-200 cursor-pointer"
                 >
                   <span className="text-base">✖</span>
                 </button>
 
-                {/* Sección central: información de ADDR y SIZE */}
+                {/* ADDR y SIZE */}
                 <div className="w-full mt-8 flex justify-center gap-8">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold uppercase text-white/90">
@@ -133,7 +262,7 @@ export function ArrayMemory({
                   </div>
                 </div>
 
-                {/* Nombre y tipo de la variable */}
+                {/* Nombre y tipo del arreglo */}
                 <div className="mt-4">
                   <p className="text-lg font-bold uppercase truncate w-full px-2 text-[#E0E0E0]">
                     {entry.name}
@@ -163,7 +292,7 @@ export function ArrayMemory({
                       </tr>
                     </thead>
                     <tbody>
-                      {entry.value.map((val: any, idx: number) => (
+                      {(entry.value ?? []).map((val: any, idx: number) => (
                         <tr
                           key={idx}
                           className="hover:bg-[#2B2B2B] transition-all"
