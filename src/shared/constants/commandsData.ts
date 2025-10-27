@@ -87,7 +87,7 @@ export const commandsData: Record<string, any> = {
         estructura: `Si el objeto no ha sido instanciado: <strong>enqueue(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.enqueue(valor);</strong>`,
         ejemplo:
-          "<strong>enqueue(1);</strong> ó <strong>colaP.enqueue(1);</strong>",
+          "<strong>enqueue(1);</strong> ó <strong>cola.enqueue(1);</strong>",
       },
       {
         title: "dequeue",
@@ -305,13 +305,13 @@ export const commandsData: Record<string, any> = {
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
         ejemplo:
-          "<strong>insert(200);</strong> ó <strong>arbolBB.insert(20);</strong>",
+          "<strong>insert(20);</strong> ó <strong>arbolBB.insert(20);</strong>",
       },
       {
         title: "delete",
         description: "Elimina un nodo del árbol binario de búsqueda.",
         estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolBB.delete(100);",
+        ejemplo: "arbolBB.delete(10);",
       },
       {
         title: "search",
