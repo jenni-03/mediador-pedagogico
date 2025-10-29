@@ -278,7 +278,7 @@ export type AvlFrame = {
 
 export type RBFrame = AvlFrame;
 
-export type RbRotationTag = "L(padre)" | "R(padre)" | "R(tío)" | "L(tío)" | "R(abuelo)" | "L(abuelo)";
+export type RbRotationTag = "Izq(padre)" | "Der(padre)" | "Der(hermano)" | "Izq(hermano)" | "Der(abuelo)" | "Izq(abuelo)";
 
 export type RBRenderColor = "red" | "black";
 export type RBColor = "RED" | "BLACK";
@@ -314,6 +314,35 @@ export type SplayTrace<T> = {
     mids: HierarchyNodeData<T>[];
   };
 };
+
+/* ───────────── Tipos de retorno para árboles BST ───────────── */
+
+export type BSTInsertOutput<T> = {
+  pathIds: string[];
+  parent: NodoBin<T> | null;
+  targetNode: NodoBin<T>;
+  exists: boolean;
+};
+
+export type BSTSearchOutput<T> = {
+  pathIds: string[];
+  found: boolean;
+  lastVisited: NodoBin<T> | null;
+};
+
+export type BSTDeleteOutput<T> = {
+  pathToTargetIds: string[];
+  parent: NodoBin<T> | null;
+  targetNode: NodoBin<T>;
+  pathToSuccessorIds: string[];
+  successor: NodoBin<T> | null;
+  replacement: NodoBin<T> | null;
+  exists: boolean;
+};
+
+export type SplayInsertOutput<T> = BSTInsertOutput<T>;
+export type SplayDeleteOutput<T> = BSTDeleteOutput<T>;
+export type SplaySearchOutput<T> = BSTSearchOutput<T>;
 
 /* ───────────── UI / Props varias ───────────── */
 
@@ -471,11 +500,11 @@ export type BaseQueryOperations<
   T extends "secuencia"
   ? {
     create: number | null;
-    toAdd: number | null;
-    toDelete: number | null;
+    toAdd: { element: number, index: number } | null;
+    toDelete: { index: number, firstNullIndex: number } | null;
     toGet: number | null;
     toSearch: number | null;
-    toUpdate: [number, number] | [];
+    toUpdate: { newValue: number, index: number } | null;
   }
   : // Colas
   T extends "cola"
@@ -528,9 +557,9 @@ export type BaseQueryOperations<
   : // ABB
   T extends "arbol_binario_busqueda"
   ? {
-    toInsert: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
+    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
+    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
+    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
     toGetPreOrder: TraversalNodeType[] | [];
     toGetInOrder: TraversalNodeType[] | [];
     toGetPostOrder: TraversalNodeType[] | [];
@@ -540,9 +569,9 @@ export type BaseQueryOperations<
   : // AVL
   T extends "arbol_avl"
   ? {
-    toInsert: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
+    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
+    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
+    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
     toGetPreOrder: TraversalNodeType[] | [];
     toGetInOrder: TraversalNodeType[] | [];
     toGetPostOrder: TraversalNodeType[] | [];
@@ -553,9 +582,9 @@ export type BaseQueryOperations<
   : // RB (ambos alias)
   T extends "arbol_rojinegro" | "arbol_rb"
   ? {
-    toInsert: string | null;
-    toDelete: [string, string | null] | [];
-    toSearch: number | null;
+    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
+    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
+    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
     toGetPreOrder: TraversalNodeType[] | [];
     toGetInOrder: TraversalNodeType[] | [];
     toGetPostOrder: TraversalNodeType[] | [];
