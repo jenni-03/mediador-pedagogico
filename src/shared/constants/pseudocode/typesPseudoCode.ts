@@ -1,3 +1,4 @@
 export type OperationCode = {
-  [operationName: string]: string[];
+  lines: string[];
+  labels?: Record<string, number>;
 };

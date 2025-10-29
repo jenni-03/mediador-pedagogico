@@ -1,5 +1,5 @@
 // src/pages/simulator/components/organisms/Simulator.tsx
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "../molecules/Header";
 import { ConsoleComponent } from "../atoms/ConsoleComponent";
 import { DataStructureInfo } from "../atoms/DataStructureInfo";
@@ -10,6 +10,8 @@ import { getPseudoCodeByStructure } from "../../../../shared/constants/pseudocod
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { SimulatorProps } from "../../../../types";
+import { createBus } from "../../../../shared/events/eventBus";
+import { BusProvider } from "../../../../shared/context/BusProvider";
 
 /**
  * Simulator
@@ -28,6 +30,8 @@ export function Simulator<T extends string>({
     /* ─────────────────────────── Estado local ─────────────────────────── */
     // Código de ejecución a mostrar a la derecha
     const [executionCode, setExecutionCode] = useState<string[]>([]);
+    // Línea del código a resaltar
+    const [currentLine, setCurrentLine] = useState<number | null>(null);
     // Flag para mostrar/ocultar bloque de “asignación de memoria”
     const [memoryCode, setMemoryCode] = useState(false);
 
@@ -35,6 +39,8 @@ export function Simulator<T extends string>({
     const { setIsAnimating } = useAnimation();
 
     /* ─────────────────────────── Derivados ─────────────────────────── */
+    // Instancia propia del bus de eventos
+    const bus = useMemo(() => createBus(), []);
     // Título visible
     const pageTitle = structureType || structureName;
     // Selector para constantes (botones, etc.)
@@ -42,7 +48,11 @@ export function Simulator<T extends string>({
     // Botones propios de la estructura (fallback a [])
     const buttons = commandsData[dataSelector]?.buttons ?? [];
     // Mapa de pseudocódigo para cada operación
-    const operationsCode = getPseudoCodeByStructure(pageTitle);
+    const operationsCode = useMemo(
+        () => getPseudoCodeByStructure(pageTitle),
+        [pageTitle]
+    );
+    console.log(operationsCode);
 
     /* ─────────────────────────── Handler consola ─────────────────────────── */
     const handleCommand = (command: string[], isValid: boolean) => {
@@ -111,12 +121,7 @@ export function Simulator<T extends string>({
             }
         }
 
-        // 6) actualizar pseudocódigo mostrado
-        setExecutionCode(
-            operationsCode[action as keyof typeof operationsCode] ?? []
-        );
-
-        // 7) decidir si mostramos panel de “asignación de memoria”
+        // 6) decidir si mostramos panel de “asignación de memoria”
         if (
             action === "create" ||
             action === "push" ||
@@ -131,9 +136,39 @@ export function Simulator<T extends string>({
         }
     };
 
+    /* ─────────────────────────── Eventos de código ─────────────────────────── */
+    useEffect(() => {
+        console.log("Entrando en el hook");
+        const offStart = bus.on<{ op: string }>("op:start", ({ op }) => {
+            const script = operationsCode[op];
+            console.log("SUSCRIPCIÓN");
+            setExecutionCode(script.lines);
+            setCurrentLine(null);
+        });
+
+        const offProgress = bus.on<{ stepId: string; lineIndex: number }>(
+            "step:progress",
+            ({ lineIndex }) => {
+                console.log("PROGRESO");
+                setCurrentLine((prev) =>
+                    prev === lineIndex ? prev : lineIndex
+                );
+            }
+        );
+
+        const offDone = bus.on("op:done", () => setCurrentLine(null));
+
+        return () => {
+            console.log("Limpieza del hook");
+            offStart();
+            offProgress();
+            offDone();
+        };
+    }, [bus, operationsCode]);
+
     /* ─────────────────────────── Render ─────────────────────────── */
     return (
-        <>
+        <BusProvider bus={bus}>
             <Header />
 
             {/* Lienzo general del simulador */}
@@ -178,7 +213,10 @@ export function Simulator<T extends string>({
                                     data-tour="execution-code"
                                     className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D72638]/60 max-h-[450px] flex-1 overflow-auto rounded-xl border border-[#2E2E2E] bg-[#1F1F22] p-4"
                                 >
-                                    <PseudoCodeRunner lines={executionCode} />
+                                    <PseudoCodeRunner
+                                        lines={executionCode}
+                                        currentLineIndex={currentLine}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -206,6 +244,6 @@ export function Simulator<T extends string>({
 
             {/* Tour contextual */}
             <CustomTour tipo={pageTitle as TourType} />
-        </>
+        </BusProvider>
     );
 }

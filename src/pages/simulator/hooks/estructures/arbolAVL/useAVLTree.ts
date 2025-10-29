@@ -12,7 +12,7 @@ export function useAVLTree(structure: ArbolAVL<number>) {
   // Estado de la "query" que usan los renderers/animaciones
   const [query, setQuery] = useState<BaseQueryOperations<"arbol_avl">>({
     toInsert: null,
-    toDelete: [],
+    toDelete: null,
     toSearch: null,
     toGetPreOrder: [],
     toGetInOrder: [],
@@ -22,25 +22,25 @@ export function useAVLTree(structure: ArbolAVL<number>) {
     avlTrace: null
   });
 
-  // Operación de inserción
+  // Operación para insertar un nodo en el árbol
   const insertNode = useCallback((value: number) => {
     try {
-      // Clonar el árbol para garantizar la inmutabilidad del estado
-      const cloned = tree.clonarAVL();
+      // Clonación del árbol para garantizar la inmutabilidad del estado
+      const clonedTree = tree.clonarAVL();
 
-      // Insertar el nuevo nodo
-      const inserted = cloned.insertar(value);
+      // Inserción del nuevo nodo
+      const { pathIds, parent, targetNode, exists } = clonedTree.insertarAVL(value);
 
-      // Obtener la traza de rotaciones
-      const trace = cloned.consumeLastAvlTrace();
+      // Obtención de la traza de rotaciones
+      const trace = clonedTree.consumeLastAvlTrace();
 
-      // Actualizar el estado del árbol
-      setTree(cloned);
+      // Actualización del estado del árbol
+      setTree(clonedTree);
 
-      // Actualizar la query a partir de la operación realizada
+      // Actualización de la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toInsert: inserted.getId(),
+        toInsert: { pathIds, parentId: parent?.getId() ?? null, targetNodeId: targetNode.getId(), exists },
         avlTrace: trace
       }));
 
@@ -51,25 +51,33 @@ export function useAVLTree(structure: ArbolAVL<number>) {
     }
   }, [tree]);
 
-  // Operación de eliminar un nodo del árbol
+  // Operación para eliminar un nodo del árbol
   const deleteNode = useCallback((value: number) => {
     try {
-      // Clonar el árbol para asegurar la inmutabilidad del estado
-      const cloned = tree.clonarAVL();
+      // Clonación del árbol para asegurar la inmutabilidad del estado
+      const clonedTree = tree.clonarAVL();
 
-      // Obtener el nodo a ser eliminado para acceder a su ID
-      const { removed, updated } = cloned.eliminar(value);
+      // Eliminación del nodo
+      const deletedNodeData = clonedTree.eliminarAVL(value);
 
-      // Obtener la traza de rotaciones
-      const trace = cloned.consumeLastAvlTrace();
+      // Obtención de la traza de rotaciones
+      const trace = clonedTree.consumeLastAvlTrace();
 
-      // Actualizar el estado del árbol
-      setTree(cloned);
+      // Actualización del estado del árbol
+      setTree(clonedTree);
 
-      // Actualizar la query a partir de la operación realizada
+      // Actualización de la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toDelete: [removed!.getId(), updated?.getId() ?? null],
+        toDelete: {
+          pathToTargetIds: deletedNodeData.pathToTargetIds,
+          parentId: deletedNodeData.parent?.getId() ?? null,
+          targetNodeId: deletedNodeData.targetNode.getId(),
+          pathToSuccessorIds: deletedNodeData.pathToSuccessorIds,
+          successorId: deletedNodeData.successor?.getId() ?? null,
+          replacementId: deletedNodeData.replacement?.getId() ?? null,
+          exists: deletedNodeData.exists
+        },
         avlTrace: trace
       }));
 
@@ -83,16 +91,18 @@ export function useAVLTree(structure: ArbolAVL<number>) {
   // Operación para buscar un nodo en el árbol
   const searchNode = useCallback((value: number) => {
     try {
-      // Buscar el nodo en el árbol
-      const foundNode = tree.esta(value);
+      // Búsqueda del nodo en el árbol
+      const { pathIds, found, lastVisited } = tree.buscarAVL(value);
 
-      // Verificar su existencia
-      if (!foundNode) throw new Error("No fue posible encontrar el nodo.");
+      // Verificación del proceso de búsqueda
+      if (!lastVisited) {
+        throw new Error("No fue posible buscar el nodo (El árbol se encuentra vacío)");
+      }
 
-      // Actualizar la query para informar de la operación realizada
+      // Actualización de la query a partir de la operación realizada
       setQuery((prev) => ({
         ...prev,
-        toSearch: value
+        toSearch: { pathIds, found, lastVisitedId: lastVisited.getId() }
       }));
 
       // Limpieza del error existente
@@ -212,7 +222,7 @@ export function useAVLTree(structure: ArbolAVL<number>) {
   const resetQueryValues = useCallback(() => {
     setQuery({
       toInsert: null,
-      toDelete: [],
+      toDelete: null,
       toSearch: null,
       toGetPreOrder: [],
       toGetInOrder: [],
