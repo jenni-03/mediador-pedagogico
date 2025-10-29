@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/pages/simulator/components/organisms/Simulator.tsx
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "../molecules/Header";
 import { ConsoleComponent } from "../atoms/ConsoleComponent";
 import { DataStructureInfo } from "../atoms/DataStructureInfo";
@@ -9,7 +10,15 @@ import { getPseudoCodeByStructure } from "../../../../shared/constants/pseudocod
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { SimulatorProps } from "../../../../types";
+import { createBus } from "../../../../shared/events/eventBus";
+import { BusProvider } from "../../../../shared/context/BusProvider";
 
+/**
+ * Simulator
+ *  - Contenedor principal del simulador por estructura.
+ *  - Orquesta: vista de estructura, consola, comandos y pseudocódigo.
+ *  - No “encapsula” la consola con otro scroller: la propia consola gestiona su scroll.
+ */
 export function Simulator<T extends string>({
   structureName,
   structureType,
@@ -18,20 +27,32 @@ export function Simulator<T extends string>({
   error, // error proveniente del hook de la estructura.
   children,
 }: SimulatorProps<T>) {
-  // Código de ejecución a mostrar a la derecha
-  const [executionCode, setExecutionCode] = useState<string[]>([]);
-  // Flag para mostrar/ocultar bloque de “asignación de memoria”
-  const [memoryCode, setMemoryCode] = useState(false);
-  // Código de ejecución a mostrar a la derecha
-  const [extendedArgsCode, setExtendedArgsCode] = useState<string[]>([]);
+    /* ─────────────────────────── Estado local ─────────────────────────── */
+    // Código de ejecución a mostrar a la derecha
+    const [executionCode, setExecutionCode] = useState<string[]>([]);
+    // Línea del código a resaltar
+    const [currentLine, setCurrentLine] = useState<number | null>(null);
+    // Flag para mostrar/ocultar bloque de “asignación de memoria”
+    const [memoryCode, setMemoryCode] = useState(false);
 
   // Control de animaciones globales (evita que el input procese mientras anima)
   const { setIsAnimating } = useAnimation();
 
-  const pageTitle = structureType || structureName;
-  const dataSelector = structureName;
-  const buttons = commandsData[dataSelector]?.buttons ?? [];
-  const operationsCode = getPseudoCodeByStructure(pageTitle);
+    /* ─────────────────────────── Derivados ─────────────────────────── */
+    // Instancia propia del bus de eventos
+    const bus = useMemo(() => createBus(), []);
+    // Título visible
+    const pageTitle = structureType || structureName;
+    // Selector para constantes (botones, etc.)
+    const dataSelector = structureName;
+    // Botones propios de la estructura (fallback a [])
+    const buttons = commandsData[dataSelector]?.buttons ?? [];
+    // Mapa de pseudocódigo para cada operación
+    const operationsCode = useMemo(
+        () => getPseudoCodeByStructure(pageTitle),
+        [pageTitle]
+    );
+    console.log(operationsCode);
 
   const handleCommand = (command: string[], isValid: boolean) => {
     if (!isValid) return;
@@ -95,53 +116,67 @@ export function Simulator<T extends string>({
       }
     }
 
-    // actualiza el código a mostrar
-    setExecutionCode(
-      operationsCode[action as keyof typeof operationsCode] ?? []
-    );
+        // 6) decidir si mostramos panel de “asignación de memoria”
+        if (
+            action === "create" ||
+            action === "push" ||
+            action === "enqueue" ||
+            action === "insertFirst" ||
+            action === "insertLast" ||
+            action === "insertAt"
+        ) {
+            setMemoryCode(true);
+        } else {
+            setMemoryCode(false);
+        }
+    };
 
-    // se decide si mostrar el panel de asignación de memoria
-    if (
-      action === "create" ||
-      action === "push" ||
-      action === "enqueue" ||
-      action === "insertFirst" ||
-      action === "insertLast" ||
-      action === "insertAt"
-    ) {
-      setMemoryCode(true);
-    } else {
-      setMemoryCode(false);
-    }
+    /* ─────────────────────────── Eventos de código ─────────────────────────── */
+    useEffect(() => {
+        console.log("Entrando en el hook");
+        const offStart = bus.on<{ op: string }>("op:start", ({ op }) => {
+            const script = operationsCode[op];
+            console.log("SUSCRIPCIÓN");
+            setExecutionCode(script.lines);
+            setCurrentLine(null);
+        });
 
-    const structurePrueba: any = structure;
-    // Combinar los argumentos recibidos con los valores de la estructura
-    const extendedArgs = [
-      ...flatArgs,
-      structurePrueba?.getTamanio?.(),
-      structurePrueba?.vector?.length,
-      structurePrueba?.getMaxTamanio?.(),
-      structurePrueba?.getPeso?.(),
-      structurePrueba?.getAltura?.(),
-      structurePrueba?.contarHojas?.(),
-    ];
-    setExtendedArgsCode(extendedArgs);
+        const offProgress = bus.on<{ stepId: string; lineIndex: number }>(
+            "step:progress",
+            ({ lineIndex }) => {
+                console.log("PROGRESO");
+                setCurrentLine((prev) =>
+                    prev === lineIndex ? prev : lineIndex
+                );
+            }
+        );
 
-    console.log(extendedArgs);
-  };
+        const offDone = bus.on("op:done", () => setCurrentLine(null));
 
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
-        <div className="flex w-full flex-col gap-6">
-          <h1
-            data-tour="structure-title"
-            className="mt-2 mb-6 bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] bg-clip-text text-center text-2xl font-extrabold uppercase tracking-wide text-transparent sm:text-4xl drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)]"
-          >
-            {pageTitle.replace(/_/g, " ").toUpperCase()}{" "}
-            <span className="text-[#D72638]">&lt;Integer&gt;</span>
-          </h1>
+        return () => {
+            console.log("Limpieza del hook");
+            offStart();
+            offProgress();
+            offDone();
+        };
+    }, [bus, operationsCode]);
+
+    /* ─────────────────────────── Render ─────────────────────────── */
+    return (
+        <BusProvider bus={bus}>
+            <Header />
+
+            {/* Lienzo general del simulador */}
+            <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+                <div className="flex w-full flex-col gap-6">
+                    {/* Título */}
+                    <h1
+                        data-tour="structure-title"
+                        className="mt-2 mb-6 bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] bg-clip-text text-center text-2xl font-extrabold uppercase tracking-wide text-transparent sm:text-4xl drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)]"
+                    >
+                        {pageTitle.replace(/_/g, " ").toUpperCase()}{" "}
+                        <span className="text-[#D72638]">&lt;Integer&gt;</span>
+                    </h1>
 
           <div className="w-full rounded-2xl border border-[#2E2E2E] bg-[#1A1A1F] px-4 py-6 shadow-xl shadow-black/40">
             <div className="mb-6 flex flex-col gap-6 overflow-hidden lg:flex-row">
@@ -163,23 +198,22 @@ export function Simulator<T extends string>({
                 </DataStructureInfo>
               </div>
 
-              {/* Código de ejecución */}
-              <div className="flex w-full flex-col lg:w-[40%]">
-                <span className="mb-3 rounded-xl border border-[#2E2E2E] bg-[#1F1F22] px-3 py-1 text-center font-semibold text-[#E0E0E0]">
-                  CÓDIGO DE EJECUCIÓN
-                </span>
-                <div
-                  data-tour="execution-code"
-                  className="max-h-[450px] flex-1 overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D72638]/60 rounded-xl border border-[#2E2E2E] bg-[#1F1F22] p-4"
-                >
-                  <PseudoCodeRunner
-                    lines={executionCode}
-                    args={extendedArgsCode}
-                    structurePrueba={structure}
-                  />
-                </div>
-              </div>
-            </div>
+                            {/* Pseudocódigo de ejecución */}
+                            <div className="flex w-full flex-col lg:w-[40%]">
+                                <span className="mb-3 rounded-xl border border-[#2E2E2E] bg-[#1F1F22] px-3 py-1 text-center font-semibold text-[#E0E0E0]">
+                                    CÓDIGO DE EJECUCIÓN
+                                </span>
+                                <div
+                                    data-tour="execution-code"
+                                    className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D72638]/60 max-h-[450px] flex-1 overflow-auto rounded-xl border border-[#2E2E2E] bg-[#1F1F22] p-4"
+                                >
+                                    <PseudoCodeRunner
+                                        lines={executionCode}
+                                        currentLineIndex={currentLine}
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
             {/* Consola + comandos */}
             <div className="flex w-full flex-col gap-4 sm:flex-row">
@@ -201,7 +235,8 @@ export function Simulator<T extends string>({
         </div>
       </div>
 
-      <CustomTour tipo={pageTitle as TourType} />
-    </>
-  );
+            {/* Tour contextual */}
+            <CustomTour tipo={pageTitle as TourType} />
+        </BusProvider>
+    );
 }
