@@ -1,213 +1,325 @@
 import type { HierarchyNode, Selection } from "d3";
 import { HierarchyNodeData, LinkPathFn, TreeLinkData } from "../../../types";
-import { defaultAppearTreeNode, defaultDeleteTreeNode, repositionTree } from "./drawActionsUtilities";
+import { defaultAppearTreeNode, defaultDeleteTreeNode, repositionTree, showTreeHint } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import type { Dispatch, SetStateAction } from "react";
 import { straightPath } from "../treeUtils";
 
 /**
- * Función encargada de animar la inserción de un nuevo nodo en el árbol binario.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
- * @param treeData Objeto con información del árbol necesaria para la animación.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo en el árbol binario.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param insertionData Objeto con información del árbol necesaria para la animación.
+ * @param animationOpts Objeto con opciones de animación para el proceso de inserción.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateInsertNode(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    seqG: Selection<SVGGElement, unknown, null, undefined>,
-    treeData: {
-        newNodeId: string;
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    treeOffset: { x: number; y: number },
+    insertionData: {
+        targetNodeId: string;
         parentId: string | null;
-        nodesData: HierarchyNode<HierarchyNodeData<number>>[];
-        linksData: TreeLinkData[];
-        pathToParent: HierarchyNode<HierarchyNodeData<number>>[];
+        exists: boolean;
+        currentNodes: HierarchyNode<HierarchyNodeData<number>>[];
+        currentLinks: TreeLinkData[];
         positions: Map<string, { x: number, y: number }>;
+        pathToTarget: string[];
+    },
+    animationOpts: {
+        highlightColor: string;
     },
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-    // Animación de inserción del elemento como BST 
-    await animateBSTInsertCore(
-        treeG,
-        seqG,
-        {
-            newNodeId: treeData.newNodeId,
-            parentId: treeData.parentId,
-            nodesData: treeData.nodesData,
-            linksData: treeData.linksData,
-            pathToParent: treeData.pathToParent,
-            positions: treeData.positions,
-        },
-        {
-            reposition: repositionBinaryTree,
-            appearNode: defaultAppearTreeNode,
-            highlight: highlightBinaryTreePath,
-            highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR
+    try {
+        // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
+        const { positions, targetNodeId, parentId } = insertionData;
+
+        // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
+        const treeG = svg.select<SVGGElement>("g.tree-container");
+
+        // Grupo contenedor de la secuencia de valores de recorrido
+        const seqG = svg.select<SVGGElement>("g.seq-container");
+
+        if (insertionData.exists) {
+            // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+            seqG.style("opacity", 0);
+
+            // Animación de recorrido hasta el nodo objetivo
+            await highlightBinaryTreePath(treeG, insertionData.pathToTarget, animationOpts.highlightColor);
+
+            // Restablecimiento del estilo visual original del nodo objetivo
+            await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
+                .transition()
+                .duration(800)
+                .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                .end();
+
+            // Mostrar indicador visual de que el nodo ya estaba presente dentro del árbol
+            await showTreeHint(
+                svg,
+                { type: "node", id: targetNodeId },
+                { label: "Nodo", value: "ya insertado" },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 75, height: 35 },
+                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                }
+            );
+        } else {
+            // Animación de inserción del elemento como BST 
+            await animateBSTInsertCore(
+                treeG,
+                seqG,
+                {
+                    newNodeId: targetNodeId,
+                    parentId: parentId,
+                    nodesData: insertionData.currentNodes,
+                    linksData: insertionData.currentLinks,
+                    pathToParent: insertionData.pathToTarget,
+                    positions: insertionData.positions,
+                },
+                {
+                    reposition: repositionBinaryTree,
+                    appearNode: defaultAppearTreeNode,
+                    highlight: highlightBinaryTreePath,
+                    highlightColor: animationOpts.highlightColor
+                }
+            );
+
+            // Restablecimiento del fondo original del padre del nuevo nodo (si aplica)
+            if (parentId) {
+                await treeG.select<SVGGElement>(`g#${parentId} circle.node-container`)
+                    .transition()
+                    .duration(800)
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .end();
+            }
         }
-    );
-
-    // Restablecimiento del color original del padre del nuevo nodo (si aplica)
-    if (treeData.parentId) {
-        await treeG.select<SVGGElement>(`g#${treeData.parentId} circle.node-container`)
-            .transition()
-            .duration(800)
-            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-            .end();
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
     }
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
 }
 
 /**
  * Función encargada de animar la eliminación de un nodo especifico en el árbol binario.
  * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
- * @param treeData Objeto con información del árbol necesaria para la animación.
+ * @param deletionData Objeto con información del árbol necesaria para la animación.
+ * @param animationOpts Objeto con opciones de animación para el proceso de eliminación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateDeleteNode(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    seqG: Selection<SVGGElement, unknown, null, undefined>,
-    treeData: {
-        prevRootNode: HierarchyNode<HierarchyNodeData<number>>;
-        nodeToDelete: HierarchyNode<HierarchyNodeData<number>>;
-        nodeToUpdate: HierarchyNode<HierarchyNodeData<number>> | null;
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    treeOffset: { x: number; y: number },
+    deletionData: {
+        targetNodeId: string;
+        parentId: string | null;
+        successorNodeId: string | null;
+        replacementNodeId: string | null;
+        exists: boolean;
         remainingNodesData: HierarchyNode<HierarchyNodeData<number>>[];
         remainingLinksData: TreeLinkData[];
         positions: Map<string, { x: number, y: number }>;
+        pathToTarget: string[];
+        pathToSuccessor: string[];
+    },
+    animationOpts: {
+        highlightTargetColor: string;
+        highlightSuccessorColor: string;
     },
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-    // Elementos del árbol requeridos para la animación
-    const { nodeToDelete, prevRootNode, nodeToUpdate } = treeData;
+    try {
+        // Elementos del árbol requeridos para la animación
+        const { targetNodeId, parentId, successorNodeId, positions } = deletionData;
 
-    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-    seqG.style("opacity", 0);
+        // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
+        const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    if (!nodeToUpdate) {
-        // Nodo padre del nodo a eliminar
-        const parentNode = nodeToDelete.parent;
+        // Grupo contenedor de la secuencia de valores de recorrido
+        const seqG = svg.select<SVGGElement>("g.seq-container");
 
-        // Ruta desde el nodo raíz hasta el nodo padre del nodo a eliminar
-        const pathToParent = parentNode ? prevRootNode.path(parentNode) : [];
+        // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+        seqG.style("opacity", 0);
 
-        // Animación especifica de eliminación para nodo hoja o nodo con único hijo
-        await animateLeafOrSingleChild(
-            treeG,
-            nodeToDelete,
-            parentNode ? parentNode.data.id : null,
-            pathToParent,
-            {
-                deleteNode: defaultDeleteTreeNode,
-                highlightNodePath: highlightBinaryTreePath,
-                highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR,
-                buildPath: straightPath
-            }
-        );
+        // En caso de que el nodo objetivo no se encuentre dentro del árbol (no se elimina nada)
+        if (!deletionData.exists) {
+            // Animación de recorrido hasta el último nodo visitado
+            await highlightBinaryTreePath(treeG, deletionData.pathToTarget, animationOpts.highlightTargetColor);
 
-        // Restablecimiento del color original del padre del nodo eliminado (si aplica)
-        if (parentNode) {
-            await treeG.select<SVGGElement>(`g#${parentNode.data.id} circle.node-container`)
+            // Mostrar indicador visual de que el nodo no fue encontrado
+            await showTreeHint(
+                svg,
+                { type: "node", id: targetNodeId },
+                { label: "Nodo", value: "no ubicado" },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 70, height: 35 },
+                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                }
+            );
+
+            // Restablecimiento del fondo original del último nodo visitado.
+            await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
                 .transition()
                 .duration(800)
                 .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
                 .end();
-        }
-    } else {
-        // Ruta desde el nodo raiz hasta el nodo a actualizar
-        const pathToUpdateNode = prevRootNode.path(nodeToUpdate);
+        } else {
+            const nodeToDeleteId = successorNodeId ? successorNodeId : targetNodeId;
 
-        // Ruta desde el nodo a actualizar hasta el nodo a eliminar
-        const pathToRemovalNode = nodeToUpdate.path(nodeToDelete);
+            if (!successorNodeId) {
+                // Animación especifica de eliminación para nodo hoja o nodo con único hijo
+                await animateLeafOrSingleChild(
+                    treeG,
+                    nodeToDeleteId,
+                    parentId,
+                    deletionData.replacementNodeId,
+                    deletionData.pathToTarget,
+                    {
+                        deleteNode: defaultDeleteTreeNode,
+                        highlightNodePath: highlightBinaryTreePath,
+                        highlightColor: animationOpts.highlightTargetColor,
+                        buildPath: straightPath
+                    }
+                );
 
-        // Animación especifica de eliminación para nodo con 2 hijos
-        await animateTwoChildren(
-            treeG,
-            nodeToDelete,
-            nodeToUpdate,
-            pathToUpdateNode,
-            pathToRemovalNode,
-            {
-                highlightNodePath: highlightBinaryTreePath
+                // Restablecimiento del fondo original del padre del nodo eliminado (si aplica)
+                if (parentId) {
+                    await treeG.select<SVGGElement>(`g#${parentId} circle.node-container`)
+                        .transition()
+                        .duration(800)
+                        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                        .end();
+                }
+            } else {
+                // Animación específica de eliminación para nodo con 2 hijos
+                await animateTwoChildren(
+                    treeG,
+                    nodeToDeleteId,
+                    targetNodeId,
+                    parentId!,
+                    deletionData.replacementNodeId,
+                    deletionData.pathToTarget,
+                    deletionData.pathToSuccessor,
+                    {
+                        highlightNodePath: highlightBinaryTreePath,
+                        highlightTargetColor: animationOpts.highlightTargetColor,
+                        highlightSuccessorColor: animationOpts.highlightSuccessorColor
+                    }
+                );
+
+                // Restablecimiento del color original del nodo actualizado
+                await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
+                    .transition()
+                    .duration(800)
+                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                    .end();
             }
-        );
 
-        // Restablecimiento del color original del nodo actualizado
-        await treeG.select<SVGGElement>(`g#${nodeToUpdate.data.id} circle.node-container`)
-            .transition()
-            .duration(800)
-            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-            .end();
+            // Limpiamos el registro del nodo eliminado
+            deletionData.positions.delete(nodeToDeleteId);
+
+            // Reposicionamiento de los nodos y enlaces del árbol luego de la salida del nodo
+            await repositionBinaryTree(treeG, deletionData.remainingNodesData, deletionData.remainingLinksData, positions);
+        }
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
     }
-
-    // Limpiamos el registro del nodo eliminado
-    treeData.positions.delete(nodeToDelete.data.id);
-
-    // Reposicionamiento de los nodos y enlaces del árbol luego de la salida del nodo
-    await repositionBinaryTree(treeG, treeData.remainingNodesData, treeData.remainingLinksData, treeData.positions);
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
 }
 
 /**
- * Función encargada de animar la búsqueda de un nodo dentro del árbol binario. 
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
- * @param targetNode ID del nodo a buscar.
- * @param path Array de nodos jerárquicos que representan el camino a resaltar.
+ * Función encargada de animar el proceso de búsqueda de un nodo dentro del árbol binario. 
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param searchData Objeto con información del árbol necesaria para la animación.
+ * @param animationOpts Objeto con opciones de animación para el proceso de búsqueda.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario. 
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateSearchNode(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    seqG: Selection<SVGGElement, unknown, null, undefined>,
-    targetNode: string,
-    path: HierarchyNode<HierarchyNodeData<number>>[],
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    treeOffset: { x: number; y: number },
+    searchData: {
+        lastVisitedNodeId: string,
+        found: boolean,
+        positions: Map<string, { x: number, y: number }>;
+        path: string[],
+    },
+    animationOpts: {
+        highlightColor: string;
+    },
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-    seqG.style("opacity", 0);
+    try {
+        // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
+        const { positions, lastVisitedNodeId } = searchData;
 
-    // Grupo correspondiente al nodo a buscar
-    const foundNodeGroup = treeG.select<SVGCircleElement>(`g#${targetNode} circle.node-container`);
+        // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
+        const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    // Animación de recorrido de los nodos hasta el nodo a buscar
-    await highlightBinaryTreePath(treeG, path, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
+        // Grupo contenedor de la secuencia de valores de recorrido
+        const seqG = svg.select<SVGGElement>("g.seq-container");
 
-    // Resaltado final del nodo ubicado
-    await foundNodeGroup
-        .transition()
-        .duration(250)
-        .attr("r", 30)
-        .transition()
-        .duration(250)
-        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-        .end();
+        // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+        seqG.style("opacity", 0);
 
-    // Restablecimiento del color original del nodo ubicado
-    await foundNodeGroup
-        .transition()
-        .duration(800)
-        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-        .end();
+        // Grupo correspondiente al último nodo visitado
+        const lastVisitedNodeGroup = treeG.select<SVGCircleElement>(`g#${lastVisitedNodeId} circle.node-container`);
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+        // Animación de recorrido hasta el nodo objetivo
+        await highlightBinaryTreePath(treeG, searchData.path, animationOpts.highlightColor);
 
-    // Finalización de la animación
-    setIsAnimating(false);
+        // Resaltado final del nodo objetivo (si esta presente en el árbol)
+        if (searchData.found) {
+            await lastVisitedNodeGroup
+                .transition()
+                .duration(250)
+                .attr("r", 30)
+                .transition()
+                .duration(250)
+                .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+                .end();
+        } else {
+            // Mostrar indicador visual de que el nodo no fue encontrado
+            await showTreeHint(
+                svg,
+                { type: "node", id: lastVisitedNodeId },
+                { label: "Nodo", value: "no ubicado" },
+                positions,
+                treeOffset,
+                {
+                    size: { width: 70, height: 35 },
+                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                }
+            );
+        }
+
+        // Restablecimiento del fondo original del último nodo visitado
+        await lastVisitedNodeGroup
+            .transition()
+            .duration(800)
+            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+            .end();
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
+    }
 }
 
 /**
@@ -225,7 +337,7 @@ export async function animateBSTInsertCore(
         parentId: string | null;
         nodesData: HierarchyNode<HierarchyNodeData<number>>[];
         linksData: TreeLinkData[];
-        pathToParent: HierarchyNode<HierarchyNodeData<number>>[];
+        pathToParent: string[];
         positions: Map<string, { x: number, y: number }>;
     },
     opts: {
@@ -240,7 +352,7 @@ export async function animateBSTInsertCore(
         ) => Promise<void>;
         highlight: (
             g: Selection<SVGGElement, unknown, null, undefined>,
-            path: HierarchyNode<HierarchyNodeData<number>>[],
+            path: string[],
             highlightColor: string
         ) => Promise<void>;
         highlightColor: string;
@@ -279,7 +391,7 @@ export async function animateBSTInsertCore(
         // Establecimiento del enlace entre el nodo padre al nuevo nodo
         await newParentLinkGroup
             .transition()
-            .duration(1000)
+            .duration(800)
             .style("opacity", 1)
             .end();
     } else {
@@ -293,25 +405,27 @@ export async function animateBSTInsertCore(
 }
 
 /**
- * Función encargada de animar la eliminación de un nodo hoja o un nodo con un único hijo en el árbol binario.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param nodeToDelete Nodo jerárquico que representa el nodo a ser eliminado.
- * @param parentNodeId ID del nodo padre o null si el nodo a eliminar es la raíz.
- * @param pathToParent Arreglo de nodos jerárquicos que representan el camino desde la raíz hasta el padre del nodo a eliminar.
+ * Función encargada de animar el proceso de eliminación de un nodo hoja o un nodo con un único hijo en un árbol ABB.
+ * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
+ * @param nodeToDeleteId ID del nodo a eliminar.
+ * @param parentNodeId ID del nodo padre del nodo a eliminar o null si el nodo a eliminar es la raíz.
+ * @param childNodeId ID del nodo hijo del nodo a eliminar o null si el nodo a eliminar no tiene hijos.
+ * @param pathToParent Lista de IDs de los nodos que representan el camino desde la raíz hasta el padre del nodo a eliminar.
  * @param opts Objeto con opciones de animación para el desvanecimiento, resaltado de nodos y dibujado de enlaces.
  */
 export async function animateLeafOrSingleChild(
-    g: Selection<SVGGElement, unknown, null, undefined>,
-    nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
+    treeG: Selection<SVGGElement, unknown, null, undefined>,
+    nodeToDeleteId: string | null,
     parentNodeId: string | null,
-    pathToParent: HierarchyNode<HierarchyNodeData<number>>[],
+    childNodeId: string | null,
+    pathToParent: string[],
     opts: {
         deleteNode: (
             nodeGroup: Selection<SVGGElement, unknown, null, undefined>
         ) => Promise<void>;
         highlightNodePath: (
             g: Selection<SVGGElement, unknown, null, undefined>,
-            path: HierarchyNode<HierarchyNodeData<number>>[],
+            path: string[],
             highlightColor: string
         ) => Promise<void>;
         highlightColor: string;
@@ -319,24 +433,21 @@ export async function animateLeafOrSingleChild(
     }
 ) {
     // Grupo del lienzo correspondiente al nodo a eliminar
-    const removedG = g.select<SVGGElement>(`g#${nodeToDelete.data.id}`);
-
-    // Nodo hijo del nodo a eliminar
-    const childNode = nodeToDelete.children?.filter((node) => !node.data.isPlaceholder)[0]?.data.id;
+    const removedG = treeG.select<SVGGElement>(`g#${nodeToDeleteId}`);
 
     // Grupo del lienzo correspondiente al nuevo enlace formado entre el nodo padre y el nodo hijo del nodo a elimimar (solo si ambos están presentes)
-    const newParentLinkGroup = parentNodeId && childNode
-        ? g.select<SVGGElement>(`g#link-${parentNodeId}-${childNode}`)
+    const newParentLinkGroup = parentNodeId && childNodeId
+        ? treeG.select<SVGGElement>(`g#link-${parentNodeId}-${childNodeId}`)
         : null;
 
     // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo padre y el nodo a eliminar (solo si el padre esta presente)
     const parentRemovalLinkGroup = parentNodeId
-        ? g.select<SVGGElement>(`g#link-${parentNodeId}-${nodeToDelete.data.id}`)
+        ? treeG.select<SVGGElement>(`g#link-${parentNodeId}-${nodeToDeleteId}`)
         : null;
 
     // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo a eliminar y su nodo hijo (solo si el hijo esta presente)
-    const removalNodeLinkGroup = childNode
-        ? g.select<SVGGElement>(`g#link-${nodeToDelete.data.id}-${childNode}`)
+    const removalNodeLinkGroup = childNodeId
+        ? treeG.select<SVGGElement>(`g#link-${nodeToDeleteId}-${childNodeId}`)
         : null;
 
     // Estado visual inicial del nuevo enlace entre el nodo padre y nodo hijo del nodo a eliminar (si aplica)
@@ -347,22 +458,22 @@ export async function animateLeafOrSingleChild(
     // Si el nodo a eliminar cuenta con nodo padre
     if (parentRemovalLinkGroup) {
         // Animación de recorrido desde el nodo raíz hasta el nodo padre del nodo a eliminar
-        await opts.highlightNodePath(g, pathToParent, opts.highlightColor);
+        await opts.highlightNodePath(treeG, pathToParent, opts.highlightColor);
 
         // Desconexión del enlace entre el nodo padre y el nodo a eliminar
         await parentRemovalLinkGroup
             .transition()
-            .duration(1000)
+            .duration(800)
             .style("opacity", 0)
             .remove()
             .end();
     }
 
-    // Desconexión del enlace entre el nodo a eliminar y su hijo (si el nodo a eliminar cuenta con un hijo)
+    // Desconexión del enlace entre el nodo a eliminar y su hijo (si el nodo a eliminar cuenta con uno)
     if (removalNodeLinkGroup) {
         await removalNodeLinkGroup
             .transition()
-            .duration(1000)
+            .duration(800)
             .style("opacity", 0)
             .remove()
             .end();
@@ -374,63 +485,63 @@ export async function animateLeafOrSingleChild(
     // Si el nodo a eliminar cuenta tanto con un nodo padre y un nodo hijo
     if (newParentLinkGroup) {
         // Establecemos la forma inicial del nuevo enlace entre el nodo padre e hijo del nodo eliminado
-        updateTreeLinkPath(g, parentNodeId!, childNode!, SVG_BINARY_TREE_VALUES.NODE_RADIUS, opts.buildPath);
+        updateTreeLinkPath(treeG, parentNodeId!, childNodeId!, SVG_BINARY_TREE_VALUES.NODE_RADIUS, opts.buildPath);
 
         // Aparición del nuevo enlace entre el nodo padre e hijo del nodo eliminado
         await newParentLinkGroup
             .transition()
-            .duration(1000)
+            .duration(800)
             .style("opacity", 1)
             .end();
     }
 }
 
 /**
- * Función encargada de animar la eliminación de un nodo con 2 nodos hijos en el árbol binario.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param nodeToDelete Nodo jerárquico que representa el nodo a ser eliminado.
- * @param nodeToUpdate Nodo jerárquico que representa el nodo cuyo valor será actualizado.
- * @param pathToUpdateNode Arreglo de nodos jerárquicos que representan el camino desde la raíz hasta el nodo a actualziar.
- * @param pathToRemovalNode Arreglo de nodos jerárquicos que representan el camino desde el nodo a actualizar hasta el nodo a eliminar.
+ * Función encargada de animar el proceso de eliminación de un nodo con 2 hijos en un árbol ABB.
+ * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
+ * @param nodeToDeleteId ID del nodo a eliminar.
+ * @param nodeToUpdateId ID del nodo que actualizará su valor.
+ * @param parentNodeId ID del nodo padre del nodo a eliminar.
+ * @param childNodeId ID del nodo hijo del nodo a eliminar o null si el nodo a eliminar no tiene hijos.
+ * @param pathToUpdateNode Lista de IDs de los nodos que representan el camino desde la raíz hasta el nodo a actualizar.
+ * @param pathToRemovalNode Lista de IDs de los nodos que representan el camino desde el nodo a actualizar hasta el nodo a eliminar.
  * @param opts Objeto con opciones de animación para el resaltado de nodos.
  */
 export async function animateTwoChildren(
-    g: Selection<SVGGElement, unknown, null, undefined>,
-    nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
-    nodeToUpdate: HierarchyNode<HierarchyNodeData<number>>,
-    pathToUpdateNode: HierarchyNode<HierarchyNodeData<number>>[],
-    pathToRemovalNode: HierarchyNode<HierarchyNodeData<number>>[],
+    treeG: Selection<SVGGElement, unknown, null, undefined>,
+    nodeToDeleteId: string,
+    nodeToUpdateId: string,
+    parentNodeId: string,
+    childNodeId: string | null,
+    pathToUpdateNode: string[],
+    pathToRemovalNode: string[],
     opts: {
         highlightNodePath: (
-            g: Selection<SVGGElement, unknown, null, undefined>,
-            path: HierarchyNode<HierarchyNodeData<number>>[],
+            treeG: Selection<SVGGElement, unknown, null, undefined>,
+            path: string[],
             highlightColor: string
-        ) => Promise<void>
+        ) => Promise<void>,
+        highlightTargetColor: string,
+        highlightSuccessorColor: string
     }
 ) {
     // Grupo del lienzo correspondiente al nodo a eliminar
-    const removedG = g.select<SVGGElement>(`g#${nodeToDelete.data.id}`);
+    const removedG = treeG.select<SVGGElement>(`g#${nodeToDeleteId}`);
 
     // Grupo del lienzo correspondiente al nodo a actualizar
-    const updatedG = g.select<SVGGElement>(`g#${nodeToUpdate.data.id}`);
-
-    // Nodo padre del nodo a eliminar
-    const parentNode = nodeToDelete.parent!.data.id;
-
-    // Nodo hijo del nodo a eliminar
-    const childNode = nodeToDelete.children?.filter((node) => !node.data.isPlaceholder)[0]?.data.id;
+    const updatedG = treeG.select<SVGGElement>(`g#${nodeToUpdateId}`);
 
     // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo padre y el nodo a eliminar
-    const removalParentLinkGroup = g.select<SVGGElement>(`g#link-${parentNode}-${nodeToDelete.data.id}`);
+    const removalParentLinkGroup = treeG.select<SVGGElement>(`g#link-${parentNodeId}-${nodeToDeleteId}`);
 
     // Grupo del lienzo correspondiente al nuevo enlace entre el nodo padre y el nodo hijo del nodo a eliminar (solo si el nodo a eliminar cuenta con un nodo hijo)
-    const newParentLinkGroup = childNode
-        ? g.select<SVGGElement>(`g#link-${parentNode}-${childNode}`)
+    const newParentLinkGroup = childNodeId
+        ? treeG.select<SVGGElement>(`g#link-${parentNodeId}-${childNodeId}`)
         : null;
 
     // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo a eliminar y su nodo hijo (solo si el nodo a eliminar cuenta con un nodo hijo)
-    const removalNodeLinkGroup = childNode
-        ? g.select<SVGGElement>(`g#link-${nodeToDelete.data.id}-${childNode}`)
+    const removalNodeLinkGroup = childNodeId
+        ? treeG.select<SVGGElement>(`g#link-${nodeToDeleteId}-${childNodeId}`)
         : null;
 
     // Estado visual inicial del nuevo enlace entre el nodo padre y el nodo hijo del nodo a eliminar (si aplica)
@@ -439,26 +550,26 @@ export async function animateTwoChildren(
     }
 
     // Animación de recorrido desde el nodo raíz hasta el nodo que actualizará su valor
-    await opts.highlightNodePath(g, pathToUpdateNode, SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR);
+    await opts.highlightNodePath(treeG, pathToUpdateNode, opts.highlightTargetColor);
 
     // Animación de recorrido desde el nodo a actualizar hasta el nodo a eliminar
-    for (const node of pathToRemovalNode) {
+    for (const nodeId of pathToRemovalNode) {
         // Selección del círculo contenedor del nodo actual
-        const nodeCircleGroup = g.select<SVGGElement>(`g#${node.data.id} circle.node-container`);
+        const nodeCircleGroup = treeG.select<SVGGElement>(`g#${nodeId} circle.node-container`);
 
         // Resaltado de bordes del contenedor del nodo actual
         await nodeCircleGroup
             .transition()
-            .duration(1000)
-            .attr("stroke", SVG_BINARY_TREE_VALUES.UPDATE_STROKE_COLOR)
+            .duration(800)
+            .attr("stroke", opts.highlightSuccessorColor)
             .attr("stroke-width", 3)
             .end();
 
-        if (node.data.id !== nodeToDelete.data.id) {
+        if (nodeId !== nodeToDeleteId) {
             // Restablecimiento del borde original
             await nodeCircleGroup
                 .transition()
-                .duration(1000)
+                .duration(800)
                 .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
                 .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
                 .end();
@@ -468,24 +579,24 @@ export async function animateTwoChildren(
     // Desvanecimiento del valor actual del nodo a actualizar
     await updatedG.select("text")
         .transition()
-        .duration(1000)
+        .duration(800)
         .style("opacity", 0)
         .end();
 
     // Actualizar el valor del nodo copiando el valor del nodo a eliminar
-    updatedG.select("text").text(nodeToDelete.data.value!);
+    updatedG.select("text").text(removedG.select<SVGTextElement>("text").text());
 
     // Aparición del nuevo valor del nodo a actualizar
     await updatedG.select("text")
         .transition()
-        .duration(1000)
+        .duration(800)
         .style("opacity", 1)
         .end();
 
     // Desconexión del enlace entre el nodo padre y el nodo a eliminar
     await removalParentLinkGroup
         .transition()
-        .duration(1000)
+        .duration(800)
         .style("opacity", 0)
         .remove()
         .end();
@@ -494,7 +605,7 @@ export async function animateTwoChildren(
     if (removalNodeLinkGroup) {
         await removalNodeLinkGroup
             .transition()
-            .duration(1000)
+            .duration(800)
             .style("opacity", 0)
             .remove()
             .end();
@@ -506,31 +617,31 @@ export async function animateTwoChildren(
     // Si el nodo a eliminar cuenta con un nodo hijo
     if (newParentLinkGroup) {
         // Establecemos la forma inicial del nuevo enlace entre el nodo padre e hijo del nodo eliminado
-        updateTreeLinkPath(g, parentNode!, childNode!, SVG_BINARY_TREE_VALUES.NODE_RADIUS, straightPath);
+        updateTreeLinkPath(treeG, parentNodeId, childNodeId!, SVG_BINARY_TREE_VALUES.NODE_RADIUS, straightPath);
 
         // Aparición del nuevo enlace entre el nodo padre e hijo del nodo eliminado
         await newParentLinkGroup.select("path.tree-link")
             .transition()
-            .duration(1000)
+            .duration(800)
             .style("opacity", 1)
             .end();
     }
 }
 
 /**
- * Función encargada de resaltar cada nodo del árbol binario a lo largo de un camino dado
+ * Función encargada de resaltar secuencialmente cada nodo del árbol binario a lo largo de un camino dado.
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param path Array de nodos jerárquicos que representan el camino a resaltar.
+ * @param pathIds Array con los identificadores de los nodos que representan el camino a resaltar. El orden determina la secuencia de resaltado.
  * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
  */
 export async function highlightBinaryTreePath(
     g: Selection<SVGGElement, unknown, null, undefined>,
-    path: HierarchyNode<HierarchyNodeData<number>>[],
+    pathIds: string[],
     highlightColor: string
 ) {
-    for (const node of path) {
+    for (const nodeId of pathIds) {
         // Selección del grupo contenedor del nodo actual
-        const nodeCircle = g.select<SVGGElement>(`g#${node.data.id} circle.node-container`);
+        const nodeCircle = g.select<SVGGElement>(`g#${nodeId} circle.node-container`);
 
         // Resaltado del nodo actual
         await nodeCircle
@@ -539,8 +650,8 @@ export async function highlightBinaryTreePath(
             .attr("fill", highlightColor)
             .end();
 
-        if (node.data.id !== path[path.length - 1].data.id) {
-            // Restablecimiento del color original
+        // Restablecimiento del fondo original del último nodo visitado
+        if (nodeId !== pathIds[pathIds.length - 1]) {
             await nodeCircle
                 .transition()
                 .duration(800)
@@ -551,7 +662,7 @@ export async function highlightBinaryTreePath(
 }
 
 /**
- * Función encargada de animar la rotación de los nodos en un árbol binario de búsqueda especial.
+ * Función encargada de animar el proceso de rotación de los nodos en un árbol binario de búsqueda especial.
  * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param parentOfUnbalanced ID del nodo padre del nodo desbalanceado (o null si no hay).
  * @param unbalancedNode ID del nodo desbalanceado (el nodo donde ocurre la rotación).

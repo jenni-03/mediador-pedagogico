@@ -1,6 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { Comparator } from "../../../types";
+import { BSTDeleteOutput, BSTInsertOutput, BSTSearchOutput, Comparator } from "../../../types";
 import { NodoBin } from "../nodes/NodoBin";
 import { defaultComparator } from "../treeUtils";
 import { ArbolBinario } from "./ArbolBinario";
@@ -20,44 +20,184 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
     }
 
     /**
-     * Método que inserta un nuevo nodo en el árbol binario de búsqueda.
-     * @param valor Elemento a insertar. 
-     * @returns Nodo insertado.
+     * Método que inserta un nuevo nodo en el árbol binario de búsqueda. Si el elemento ya existe en el árbol, no se inserta nada.
+     * @param valor Elemento a insertar.
+     * @returns Objeto con la siguiente información:
+     * 
+     *  - `pathIds`: Lista con los IDs de los nodos visitados durante el recorrido de búsqueda, en orden.
+     *     Incluye el nodo padre donde se intentó insertar o el nodo ya existente.
+     * 
+     *  - `parent`: Nodo padre bajo el cual se insertó el nuevo nodo. Será `null` en 2 casos:
+     *     1. Si el elemento ya existía en el árbol.
+     *     2. Si el nuevo nodo se insertó como raíz.
+     * 
+     *  - `targetNode`: Nodo asociado al elemento (nuevo o ya existente).
+     * 
+     *  - `exists`: Booleano que indica si el elemento ya existía (`true`) o si se creó e insertó un nuevo nodo (`false`).
      */
-    public insertar(valor: T): NodoBin<T> {
+    public insertarABB(valor: T): BSTInsertOutput<T> {
         if (this.getTamanio() >= this.MAX_NODOS) {
             throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
         }
-        const salida = { inserted: null };
-        this.setRaiz(this.insertarABB(this.getRaiz(), valor, salida));
+
+        const pathIds: string[] = [];
+        let p: NodoBin<T> | null = null;
+        let cur = this.getRaiz();
+
+        // Buscar posición de inserción
+        while (cur) {
+            pathIds.push(cur.getId());
+            p = cur;
+            const cmp = this.compare(valor, cur.getInfo());
+            if (cmp === 0) {
+                return { pathIds, parent: null, targetNode: cur, exists: true };
+            }
+            cur = cmp < 0 ? cur.getIzq() : cur.getDer();
+        }
+
+        // Insertar nuevo nodo
+        const nuevo = new NodoBin<T>(valor);
+        if (!p) {
+            this.setRaiz(nuevo);
+        } else if (this.compare(valor, p.getInfo()) < 0) {
+            p.setIzq(nuevo);
+        } else {
+            p.setDer(nuevo);
+        }
+
         this.setTamanio(this.getTamanio() + 1);
-        return salida.inserted!;
+        return { pathIds, parent: p, targetNode: nuevo, exists: false };
     }
 
     /**
-     * Método que elimina un nodo del árbol binario de búsqueda dado un valor especificado.
-     * @param valor Valor del nodo a ser eliminado.
-     * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
+     * Método que elimina un nodo específico del árbol binario de búsqueda. Si el nodo no existe, no se elimina nada. 
+     * @param valor Elemento a eliminar.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `pathToTargetIds`: Lista con los IDs de los nodos visitados durante la búsqueda, 
+     *    en orden desde la raíz hasta el nodo objetivo (incluye el nodo objetivo si fue encontrado).
+     * 
+     * - `parent`: Nodo padre del nodo eliminado. Será `null` en 2 casos:
+     *    1. Si el nodo eliminado era la raíz.
+     *    2. Si el valor no se encontró en el árbol.
+     * 
+     * - `targetNode`: Nodo objetivo que se intentó eliminar (nodo eliminado o último nodo visitado durante la búsqueda).
+     * 
+     * - `pathToSuccessorIds`: Lista con los IDs de los nodos visitados durante la búsqueda del sucesor in-order (solo se llena si el nodo eliminado tenía dos hijos).
+     * 
+     * - `successor`: Nodo que reemplazó lógicamente al nodo eliminado en el caso de dos hijos (nodo cuyo valor fue copiado al nodo objetivo).  
+     *    Será `null` en los demás casos.
+     * 
+     * - `replacement`: Nodo que ocupó físicamente el lugar del nodo eliminado en el árbol. Puede ser:
+     *    1. El hijo izquierdo o derecho (si existía uno).  
+     *    2. `null` si se eliminó una hoja.  
+     *    3. El hijo derecho del sucesor in-order (en el caso de dos hijos).
+     * 
+     * - `exists`: Booleano que indica si el elemento fue encontrado y eliminado (`true`) o no (`false`).
      */
-    public override eliminar(valor: T): { removed: NodoBin<T>, updated: NodoBin<T> | null } {
-        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
+    public eliminarABB(valor: T): BSTDeleteOutput<T> {
+        if (this.esVacio()) {
+            throw new Error("No fue posible eliminar el nodo: El árbol árbol se encuentra vacío (cantidad de nodos: 0).");
+        }
 
-        const salida: { removed: NodoBin<T> | null, updated: NodoBin<T> | null } = { removed: null, updated: null };
-        this.setRaiz(this.eliminarABB(this.getRaiz(), valor, salida));
+        const pathToTargetIds: string[] = [];
+        let p: NodoBin<T> | null = null;
+        let cur = this.getRaiz();
 
-        if (salida.removed === null) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
+        // Buscar nodo a eliminar
+        while (cur && this.compare(valor, cur.getInfo()) !== 0) {
+            pathToTargetIds.push(cur.getId());
+            p = cur;
+            if (this.compare(valor, cur.getInfo()) < 0) {
+                cur = cur.getIzq();
+            } else {
+                cur = cur.getDer();
+            }
+        }
+
+        // No encontrado
+        if (!cur) {
+            return { pathToTargetIds, parent: null, targetNode: p!, pathToSuccessorIds: [], successor: null, replacement: null, exists: false };
+        }
+
+        const removed = cur;
+        const pathToSuccessorIds: string[] = [];
+        let successor: NodoBin<T> | null = null;
+
+        // Nodo con 0 o 1 hijo
+        let replacement: NodoBin<T> | null = null;
+        if (!cur.getIzq() || !cur.getDer()) {
+            replacement = cur.getIzq() ? cur.getIzq() : cur.getDer();
+
+            if (!p) {
+                this.setRaiz(replacement);
+            } else if (p.getIzq() === cur) {
+                p.setIzq(replacement);
+            } else {
+                p.setDer(replacement);
+            }
+        } else {
+            // Nodo con 2 hijos
+            pathToTargetIds.push(cur.getId());
+            pathToSuccessorIds.push(cur.getId());
+
+            let succParent = cur;
+            let succ = cur.getDer();
+            while (succ && succ.getIzq()) {
+                pathToSuccessorIds.push(succ.getId());
+                succParent = succ;
+                succ = succ.getIzq();
+            }
+            pathToSuccessorIds.push(succ!.getId());
+
+            // Copiar valor del sucesor al nodo actual
+            cur.setInfo(succ!.getInfo());
+            successor = succ;
+
+            // Eliminar el sucesor (que tiene a lo sumo un hijo derecho)
+            replacement = succ!.getDer();
+            if (succParent.getIzq() === succ) {
+                succParent.setIzq(replacement);
+            } else {
+                succParent.setDer(replacement);
+            }
+            p = succParent;
+        }
 
         this.setTamanio(this.getTamanio() - 1);
-        return { removed: salida.removed, updated: salida.updated };
+        return { pathToTargetIds, parent: p, targetNode: removed, pathToSuccessorIds, successor, replacement, exists: true };
     }
 
     /**
-     * Método que verifica la existencia de un elemento dentro del árbol binario de búsqueda.
-     * @param valor Valor del elemento a buscar.
-     * @returns Booleano que indica si el elemento fue encontrado o no. 
+     * Método que busca un nodo especifico en el árbol binario de búsqueda.
+     * @param valor Elemento a buscar.
+     * @returns Objeto con la siguiente información:
+     * 
+     *  - `pathIds`: Lista con los IDs de los nodos visitados, en orden, desde la raíz hasta el nodo donde se detuvo la búsqueda.
+     * 
+     *  - `lastVisited`: Último nodo visitado durante el recorrido. Puede ser:
+     *     1. El nodo que contiene el valor buscado si fue encontrado.
+     *     2. El nodo donde la búsqueda se detuvo sin éxito (padre de la rama nula).
+     *     3. `null` si el árbol está vacío.
+     * 
+     *  - `found`: Booleano que indica si el elemento fue encontrado (`true`) o no (`false`).
      */
-    public override esta(valor: T): boolean {
-        return this.estaABB(this.getRaiz(), valor);
+    public buscarABB(valor: T): BSTSearchOutput<T> {
+        const pathIds: string[] = [];
+        let cur = this.getRaiz();
+        let last = cur;
+
+        while (cur) {
+            pathIds.push(cur.getId());
+            last = cur;
+            const cmp = this.compare(valor, cur.getInfo());
+            if (cmp === 0) {
+                return { pathIds, found: true, lastVisited: cur };
+            }
+            cur = cmp < 0 ? cur.getIzq() : cur.getDer();
+        }
+
+        return { pathIds, found: false, lastVisited: last }
     }
 
     /**
@@ -172,100 +312,6 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
         nuevoArbol.setRaiz(this.clonarABBrec(this.getRaiz()));
         nuevoArbol.setTamanio(this.getTamanio());
         return nuevoArbol;
-    }
-
-    /**
-     * Método recursivo que inserta un nuevo nodo en el árbol binario de búsqueda.
-     * @param root Nodo raíz del subárbol actual.
-     * @param valor Valor a insertar.
-     * @param salida Objeto usado para guardar la referencia al nodo insertado.
-     * @returns Nodo raíz del subárbol actualizado luego de la inserción.
-     */
-    private insertarABB(root: NodoBin<T> | null, valor: T, salida: { inserted: NodoBin<T> | null }): NodoBin<T> {
-        if (root === null) {
-            const nuevo = new NodoBin(valor);
-            salida.inserted = nuevo;
-            return nuevo;
-        }
-
-        const cmp = this.compare(valor, root.getInfo());
-        if (cmp < 0) {
-            root.setIzq(this.insertarABB(root.getIzq(), valor, salida));
-        } else if (cmp > 0) {
-            root.setDer(this.insertarABB(root.getDer(), valor, salida));
-        } else {
-            throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
-        }
-
-        return root;
-    }
-
-    /**
-     * Método recursivo que elimina un nodo con el valor especificado del árbol binario de búsqueda.
-     * @param root Nodo raíz del subárbol actual que se esta procesando.
-     * @param valor Valor del nodo a ser eliminado.
-     * @param salida Objeto usado para guardar las referencias al nodo eliminado y actualizado.
-     * @returns Nodo raíz del subárbol actualizado luego de la eliminación.
-     */
-    private eliminarABB(
-        root: NodoBin<T> | null,
-        valor: T,
-        salida: { removed: NodoBin<T> | null, updated: NodoBin<T> | null }
-    ): NodoBin<T> | null {
-        if (!root) return null;
-
-        const cmp = this.compare(valor, root.getInfo());
-        if (cmp < 0) {
-            root.setIzq(this.eliminarABB(root.getIzq(), valor, salida));
-        } else if (cmp > 0) {
-            root.setDer(this.eliminarABB(root.getDer(), valor, salida));
-        } else {
-            if (!root.getIzq()) {
-                salida.removed = root;
-                return root.getDer();
-            }
-
-            if (!root.getDer()) {
-                salida.removed = root;
-                return root.getIzq();
-            }
-
-            const succ = this.minValorNodo(root.getDer()!);
-            root.setInfo(succ.getInfo());
-            salida.updated = root;
-            root.setDer(this.eliminarABB(root.getDer(), succ.getInfo(), salida));
-        }
-
-        return root;
-    }
-
-    /**
-     * Método recursivo que determina si un elemento se encuentra dentro del árbol binario de búsqueda.
-     * @param root Nodo raíz del árbol.
-     * @param valor Valor del elemento a buscar.
-     * @returns Un booleano que indica si se encontro o no el elemento.
-     */
-    private estaABB(root: NodoBin<T> | null, valor: T): boolean {
-        if (root === null) return false;
-
-        const cmp = this.compare(valor, root.getInfo());
-        if (cmp < 0) {
-            return this.estaABB(root.getIzq(), valor);
-        } else if (cmp > 0) {
-            return this.estaABB(root.getDer(), valor);
-        } else {
-            return true;
-        }
-    }
-
-    /**
-     * Método que obtiene el nodo con menor valor del árbol binario de búsqueda.
-     * @param n Nodo raíz del árbol.
-     * @returns Nodo más izquierdo del árbol.
-     */
-    private minValorNodo(n: NodoBin<T>): NodoBin<T> {
-        while (n.getIzq()) n = n.getIzq()!;
-        return n;
     }
 
     /**
