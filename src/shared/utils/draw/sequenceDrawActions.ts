@@ -259,7 +259,7 @@ export async function animateInsertionSequence(
     bus.emit("op:start", { op: "insertLast" });
     bus.emit("step:enter", { stepId: "insert-last" });
 
-    bus.emit("step:progress", { stepId: "insert-last", lineIndex: labels.IF });
+    bus.emit("step:progress", { stepId: "insert-last", lineIndex: labels.IF_FULL });
     await delay(1000);
 
     bus.emit("step:progress", { stepId: "insert-last", lineIndex: labels.ELSE });
@@ -384,7 +384,10 @@ export async function animateDeleteElementSequence(
     bus.emit("op:start", { op: "delete" });
     bus.emit("step:enter", { stepId: "delete" });
 
-    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IFPOS });
+    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_EMPTY });
+    await delay(800);
+
+    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_RANGE });
 
     // Aparición del indicador de eliminación
     await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
@@ -546,14 +549,14 @@ export async function animateGetElementSequence(
     bus.emit("op:start", { op: "get" });
     bus.emit("step:enter", { stepId: "get" });
 
-    bus.emit("step:progress", { stepId: "get", lineIndex: labels.IFCANT });
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.IF_EMPTY });
     await delay(1000);
 
-    bus.emit("step:progress", { stepId: "get", lineIndex: labels.IFPOS });
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.IF_RANGE });
     await delay(1000);
 
     // Paso de animación visual
-    bus.emit("step:progress", { stepId: "get", lineIndex: labels.RETURN });
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.RETURN_ELEM });
 
     // Aparición del indicador de obtención
     await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
@@ -649,7 +652,7 @@ export async function animateUpdateSequence(
     bus.emit("op:start", { op: "set" });
     bus.emit("step:enter", { stepId: "set" });
 
-    bus.emit("step:progress", { stepId: "set", lineIndex: labels.IFCANT });
+    bus.emit("step:progress", { stepId: "set", lineIndex: labels.IF_RANGE });
     await delay(1000);
 
     // Paso de animación visual
@@ -827,6 +830,50 @@ export async function animateSearchSequence(
 
     bus.emit("step:done", { stepId: "search" });
     bus.emit("op:done", { op: "search" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
+}
+
+/**
+ * Función encargada del proceso de limpieza de todos los elementos de la secuencia dentro del lienzo.
+ * @param svg Selección D3 del elemento SVG a limpiar.
+ * @param bus EventBus para el registro de eventos sobre la operación.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateClearSequence(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.clean.labels!;
+
+    // Inicio de la operación
+    bus.emit("op:start", { op: "clean" });
+    bus.emit("step:enter", { stepId: "clean" });
+
+    // Paso de animación visual
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAN_CANT });
+    await delay(1000);
+
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAN_VECTOR });
+    // Animación de salida de los elementos
+    await svg.selectAll("g.element")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
+
+    // Eliminación de los nodos del DOM
+    svg.selectAll("g.element").remove();
+
+    bus.emit("step:done", { stepId: "clean" });
+    bus.emit("op:done", { op: "clean" });
   } finally {
     resetQueryValues();
     setIsAnimating(false);

@@ -12,6 +12,7 @@ import { useAnimation } from "../../../../shared/hooks/useAnimation";
 import { SimulatorProps } from "../../../../types";
 import { createBus } from "../../../../shared/events/eventBus";
 import { BusProvider } from "../../../../shared/context/BusProvider";
+import { delay } from "../../../../shared/utils/simulatorUtils";
 
 /**
  * Simulator
@@ -52,7 +53,6 @@ export function Simulator<T extends string>({
         () => getPseudoCodeByStructure(pageTitle),
         [pageTitle]
     );
-    console.log(operationsCode);
 
     /* ─────────────────────────── Handler consola ─────────────────────────── */
     const handleCommand = (command: string[], isValid: boolean) => {
@@ -138,10 +138,8 @@ export function Simulator<T extends string>({
 
     /* ─────────────────────────── Eventos de código ─────────────────────────── */
     useEffect(() => {
-        console.log("Entrando en el hook");
         const offStart = bus.on<{ op: string }>("op:start", ({ op }) => {
             const script = operationsCode[op];
-            console.log("SUSCRIPCIÓN");
             setExecutionCode(script.lines);
             setCurrentLine(null);
         });
@@ -149,7 +147,6 @@ export function Simulator<T extends string>({
         const offProgress = bus.on<{ stepId: string; lineIndex: number }>(
             "step:progress",
             ({ lineIndex }) => {
-                console.log("PROGRESO");
                 setCurrentLine((prev) =>
                     prev === lineIndex ? prev : lineIndex
                 );
@@ -159,12 +156,36 @@ export function Simulator<T extends string>({
         const offDone = bus.on("op:done", () => setCurrentLine(null));
 
         return () => {
-            console.log("Limpieza del hook");
             offStart();
             offProgress();
             offDone();
         };
     }, [bus, operationsCode]);
+
+    useEffect(() => {
+        if (!error) return;
+        if (!error.planId) return;
+
+        const script = operationsCode[error.op];
+        const plan = script?.errorPlans?.[error.planId];
+        if (!script || !plan) return;
+
+        setExecutionCode(script.lines);
+        setCurrentLine(null);
+
+        (async () => {
+            bus.emit("op:start", { op: error.op });
+            for (const step of plan) {
+                const idx = script.labels[step.lineLabel];
+                bus.emit("step:progress", {
+                    stepId: `${error.op}:error`,
+                    lineIndex: idx,
+                });
+                await delay(step.hold);
+            }
+            bus.emit("op:done", { op: error.op });
+        })();
+    }, [error?.id, bus, operationsCode]);
 
     /* ─────────────────────────── Render ─────────────────────────── */
     return (

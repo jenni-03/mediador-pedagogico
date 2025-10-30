@@ -18,7 +18,14 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `    this.vector = (T[])r;`,
       `}`,
     ],
-    labels: { IF: 2, ALLOC: 6, CANT0: 7, ASSIGN: 8 }
+    labels: { IF_CANT: 2, PRINT_INVALID: 3, RETURN: 4, ALLOC: 6, CANT0: 7, ASSIGN: 8 },
+    errorPlans: {
+      INVALID_CAPACITY: [
+        { lineLabel: "IF_CANT", hold: 700 },
+        { lineLabel: "PRINT_INVALID", hold: 900 },
+        { lineLabel: "RETURN", hold: 600 }
+      ]
+    }
   },
   insertLast: {
     lines: [
@@ -27,14 +34,20 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   * post: Se insertó un elemento en la secuencia.
   * @param elem de tipo T que corresponde al elemento a insertar.
   */`,
-      `public void insertar(T elem){`,
+      `public void insertLast(T elem){`,
       `    if (this.cant >= this.vector.length)`,
       `        System.err.println("No hay más espacio!");`,
       `    else`,
       `        this.vector[this.cant++] = elem;`,
       `}`,
     ],
-    labels: { IF: 2, ELSE: 4, ASSIGN: 5 }
+    labels: { IF_FULL: 2, PRINT_FULL: 3, ELSE: 4, ASSIGN: 5 },
+    errorPlans: {
+      CAPACITY_EXCEEDED: [
+        { lineLabel: "IF_FULL", hold: 700 },
+        { lineLabel: "PRINT_FULL", hold: 900 }
+      ]
+    }
   },
   get: {
     lines: [
@@ -46,19 +59,30 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   */`,
       `public T get(int i) {`,
       `    if (this.cant == 0) {`,
-      `        System.err.println("La secuencia está vacía (tamaño actual: 0), debe crear la secuencia primero.");`,
+      `        System.err.println("La secuencia está vacía (tamaño actual: 0).");`,
       `        return null;`,
       `    }`,
       `    if (i < 0 || i >= this.cant) {`,
-      `        System.err.println("Posición inválida: se intentó acceder a la posición " + i + `,
-      `            ", pero el rango válido es de 0 a " + (this.cant - 1) + `,
-      `            ", ya que su tamaño es " + this.getTamanio() + ".");`,
+      `        System.err.println("Indíce fuera de rango!")`,
       `        return null;`,
       `    }`,
       `    return this.vector[i];`,
       `}`,
     ],
-    labels: { IFCANT: 2, IFPOS: 6, RETURN: 12 }
+    labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, RETURN_EMPTY: 4, IF_RANGE: 6, PRINT_RANGE: 7, RETURN_RANGE: 8, RETURN_ELEM: 10 },
+    errorPlans: {
+      GET_EMPTY: [
+        { lineLabel: "IF_EMPTY", hold: 700 },
+        { lineLabel: "PRINT_EMPTY", hold: 900 },
+        { lineLabel: "RETURN_EMPTY", hold: 600 }
+      ],
+      GET_OUT_OF_RANGE: [
+        { lineLabel: "IF_EMPTY", hold: 700 },
+        { lineLabel: "IF_RANGE", hold: 700 },
+        { lineLabel: "PRINT_RANGE", hold: 900 },
+        { lineLabel: "RETURN_RANGE", hold: 600 }
+      ]
+    }
   },
   set: {
     lines: [
@@ -76,7 +100,14 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `    this.vector[i] = nuevo;`,
       `}`,
     ],
-    labels: { IFCANT: 2, UPDATE: 6 }
+    labels: { IF_RANGE: 2, PRINT_ERR: 3, RETURN: 4, UPDATE: 6 },
+    errorPlans: {
+      SET_OUT_OF_RANGE: [
+        { lineLabel: "IF_RANGE", hold: 700 },
+        { lineLabel: "PRINT_ERR", hold: 900 },
+        { lineLabel: "RETURN", hold: 600 }
+      ]
+    }
   },
   delete: {
     lines: [
@@ -85,7 +116,11 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  * post: Se eliminó un elemento en la secuencia.
  * @param pos Posicion del elemento a eliminar.
  */`,
-      `public void eliminarP(int pos){`,
+      `public void delete(int pos){`,
+      `    if (this.cant == 0) {`,
+      `        System.err.println("La secuencia está vacía (tamaño actual: 0).");`,
+      `        return;`,
+      `    }`,
       `    if (pos < 0 || pos > this.cant) {`,
       `        System.err.println("Indíce fuera de rango!");`,
       `        return;`,
@@ -97,7 +132,20 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `    this.cant--;`,
       `}`,
     ],
-    labels: { IFPOS: 2, FOR: 6, REASSING: 7, DELETE: 9, DECREASE: 10 }
+    labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, RETURN_EMPTY: 4, IF_RANGE: 6, PRINT_RANGE: 7, RETURN_RANGE: 8, FOR: 10, REASSING: 11, DELETE: 13, DECREASE: 14 },
+    errorPlans: {
+      DELETE_EMPTY: [
+        { lineLabel: "IF_EMPTY", hold: 700 },
+        { lineLabel: "PRINT_EMPTY", hold: 900 },
+        { lineLabel: "RETURN_EMPTY", hold: 600 },
+      ],
+      DELETE_OUT_OF_RANGE: [
+        { lineLabel: "IF_EMPTY", hold: 700 },
+        { lineLabel: "IF_RANGE", hold: 700 },
+        { lineLabel: "PRINT_RANGE", hold: 900 },
+        { lineLabel: "RETURN_RANGE", hold: 600 }
+      ]
+    }
   },
   search: {
     lines: [
@@ -121,15 +169,14 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   clean: {
     lines: [
       `/**
- * Método que permite vaciar la secuencia.
- * post: La Secuencia se encuentra vacia.
+ * Método que permite eliminar la secuencia actual.
+ * post: Se eliminó la secuencia.
  */`,
-      `public void vaciar(){`,
-      `    for (int i = 0; i < this.cant; i++) {`,
-      `         this.vector[i] = null;`,
-      `    }`,
+      `public void clean(){`,
       `    this.cant = 0;`,
+      `    this.vector = null;`,
       `}`,
-    ]
+    ],
+    labels: { CLEAN_VECTOR: 2, CLEAN_CANT: 3 }
   },
 });

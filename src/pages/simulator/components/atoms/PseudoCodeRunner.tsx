@@ -5,8 +5,6 @@ export function PseudoCodeRunner({
     lines: string[];
     currentLineIndex: number | null;
 }) {
-    console.log("lineas", lines);
-    console.log(currentLineIndex);
     return (
         <pre className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md">
             {lines.map((line, index) => {

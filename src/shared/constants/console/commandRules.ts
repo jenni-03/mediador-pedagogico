@@ -24,8 +24,7 @@ export const commandRules: Record<
             message: "La capacidad de la secuencia debe ser un número válido.",
           };
         }
-        const createPattern = /^(1[0-9]|20|[1-9])$/; // Coincide con números del 1 al 20
-        if (!createPattern.test(parts[1])) {
+        if (num >= 21) {
           return {
             valid: false,
             message:
@@ -1403,7 +1402,7 @@ export const commandRules: Record<
         return true;
       }
 
- 
+
       case "getlevelorder":
       case "clean": {
         if (parts.length !== 1) {

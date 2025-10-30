@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useState } from "react";
 import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
 import { BaseQueryOperations } from "../../../../../types";
+import { DomainError } from "../../../../../shared/utils/error/DomainError";
 
 export function useSequence(structure: Secuencia<number>) {
     // Estado para manejar la secuencia
     const [sequence, setSequence] = useState(structure);
 
     // Estado para manejar el error
-    const [error, setError] = useState<{ message: string, id: number } | null>(null);
+    const [error, setError] = useState<{ message: string, id: number, op: string, planId?: string | null } | null>(null);
 
     // Estado para manejar la operación solicitada por el usuario
     const [query, setQuery] = useState<BaseQueryOperations<"secuencia">>({
@@ -16,17 +17,27 @@ export function useSequence(structure: Secuencia<number>) {
         toDelete: null,
         toGet: null,
         toSearch: null,
-        toUpdate: null
+        toUpdate: null,
+        toClear: false
     });
 
     // Operación para crear una secuencia con elementos vacíos
     const createSequence = useCallback((n: number) => {
-        const newSecuencia = new Secuencia<number>(n);
-        setSequence(newSecuencia);
-        setQuery((prev) => ({
-            ...prev,
-            create: n
-        }));
+        try {
+
+            if (n <= 0) {
+                throw new DomainError("Tamaño de secuencia no válido.", "INVALID_CAPACITY");
+            }
+
+            const newSecuencia = new Secuencia<number>(n);
+            setSequence(newSecuencia);
+            setQuery((prev) => ({
+                ...prev,
+                create: n
+            }));
+        } catch (error: any) {
+            setError({ message: error.message, id: Date.now(), op: "create", planId: error?.code ?? null });
+        }
     }, []);
 
     // Operación para insertar un elemento
@@ -50,7 +61,7 @@ export function useSequence(structure: Secuencia<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "insertLast", planId: error?.code ?? null });
         }
     }, [sequence]);
 
@@ -75,7 +86,7 @@ export function useSequence(structure: Secuencia<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "delete", planId: error?.code ?? null });
         }
     }, [sequence]);
 
@@ -94,7 +105,7 @@ export function useSequence(structure: Secuencia<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "get", planId: error?.code ?? null });
         }
     }, [sequence]);
 
@@ -110,7 +121,7 @@ export function useSequence(structure: Secuencia<number>) {
             // Limpieza del error existente
             setError(null)
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "search" });
         }
     }, []);
 
@@ -135,7 +146,7 @@ export function useSequence(structure: Secuencia<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "set", planId: error?.code ?? null });
         }
     }, [sequence]);
 
@@ -149,6 +160,12 @@ export function useSequence(structure: Secuencia<number>) {
 
         // Actualización del estado de la secuencia
         setSequence(newSequence);
+
+        // Actualizar la query a partir de la operación realizada
+        setQuery((prev) => ({
+            ...prev,
+            toClear: true
+        }));
     }, [sequence]);
 
     // Función de restablecimiento de las queries del usuario
@@ -159,7 +176,8 @@ export function useSequence(structure: Secuencia<number>) {
             toDelete: null,
             toGet: null,
             toSearch: null,
-            toUpdate: null
+            toUpdate: null,
+            toClear: false
         });
     }, []);
 

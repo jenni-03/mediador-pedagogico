@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { BaseQueryOperations } from "../../../../../types";
 import { select } from "d3";
-import { drawBaseSequence, animateInsertionSequence, animateGetElementSequence, animateUpdateSequence, animateDeleteElementSequence, animateSearchSequence } from "../../../../../shared/utils/draw/sequenceDrawActions";
+import { drawBaseSequence, animateInsertionSequence, animateGetElementSequence, animateUpdateSequence, animateDeleteElementSequence, animateSearchSequence, animateClearSequence } from "../../../../../shared/utils/draw/sequenceDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_SEQUENCE_VALUES } from "../../../../../shared/constants/consts";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
@@ -22,7 +22,11 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
     // Bus para la emisión de eventos de código
     const bus = useBus();
 
-    console.log(query);
+    console.log("Secuencia actual");
+    console.log(sequence);
+
+    console.log("Secuencia previa");
+    console.log(prevSequence);
 
     // Efecto para renderizado base de la secuencia
     useEffect(() => {
@@ -40,9 +44,15 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
         const spacing = SVG_SEQUENCE_VALUES.SPACING;
 
         // Ancho y alto del SVG dependiendo del número de elementos de la secuencia
+        console.log("longitud secuencia previa");
+        console.log(prevSequence?.length);
         const displayLength = Math.max(sequence.length, prevSequence?.length ?? 0);
-        const width = margin.left + displayLength * (elementWidth + spacing) - spacing;
+        console.log("longitud final");
+        console.log(displayLength);
+        const width = margin.left + displayLength * (elementWidth + spacing) - spacing + SVG_SEQUENCE_VALUES.EXTRA_WIDTH;
         const height = SVG_SEQUENCE_VALUES.HEIGHT;
+        console.log("Width final")
+        console.log(width)
 
         // Configuración del contenedor SVG
         const svg = select(svgRef.current)
@@ -59,7 +69,7 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
             // justo antes de arrancar las transiciones “grandes”
             setIsAnimating(true);
 
-            bus.emit("step:progress", { stepId: "create", lineIndex: labels.IF });
+            bus.emit("step:progress", { stepId: "create", lineIndex: labels.IF_CANT });
             await delay(600);
 
             // Renderizado de la estructura base de la secuencia en el SVG
@@ -250,6 +260,17 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
             setIsAnimating
         );
     }, [query.toSearch, sequence, bus, resetQueryValues, setIsAnimating]);
+
+    useEffect(() => {
+        // Verificaciones necesarias para realizar la animación
+        if (!sequence || !svgRef.current || !query.toClear) return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = select(svgRef.current);
+
+        // Animación de limpieza del lienzo
+        animateClearSequence(svg, bus, resetQueryValues, setIsAnimating);
+    })
 
     return { svgRef }
 }

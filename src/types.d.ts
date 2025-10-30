@@ -505,6 +505,7 @@ export type BaseQueryOperations<
     toGet: number | null;
     toSearch: number | null;
     toUpdate: { newValue: number, index: number } | null;
+    toClear: boolean;
   }
   : // Colas
   T extends "cola"
@@ -898,6 +899,6 @@ export type SimulatorProps<T extends string> = {
   structure: unknown;
   actions: BaseStructureActions<T>;
   query: BaseQueryOperations<T>;
-  error: { message: string; id: number } | null;
+  error: { message: string; id: number; op: string; planId?: string | null } | null;
   children: ReactNode;
 };
