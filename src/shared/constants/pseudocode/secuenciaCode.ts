@@ -86,6 +86,10 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  * @param pos Posicion del elemento a eliminar.
  */`,
       `public void eliminarP(int pos){`,
+      `    if ({1} == 0) {`,
+      `        throw new RuntimeException("La secuencia está vacía (tamaño actual: 0).");`,
+      `        return;`,
+      `    }`,
       `    if ({0} < 0 || {0} >= {1}) {`,
       `        throw new RuntimeException("Indíce fuera de rango!");`,
       `        return;`,
