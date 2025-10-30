@@ -55,12 +55,21 @@ export function MemoryScreen({
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
 
-  // Scrollbar local (sin tocar tailwind.config)
+  // Scrollbar local (UN solo contenedor scrolleable)
   const SCROLLBAR_CSS = `
-    .nice-scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#d72638 transparent;scrollbar-gutter:stable both-edges}
+    .nice-scroll{
+      overflow-y:auto;
+      overscroll-behavior-y:contain;
+      scrollbar-width:thin;
+      scrollbar-color:#d72638 transparent;
+      scrollbar-gutter:stable both-edges;
+    }
     .nice-scroll::-webkit-scrollbar{width:10px;height:10px}
     .nice-scroll::-webkit-scrollbar-track{background:transparent}
-    .nice-scroll::-webkit-scrollbar-thumb{background:#d72638;border-radius:9999px;border:2px solid transparent;background-clip:content-box;transition:background .16s ease}
+    .nice-scroll::-webkit-scrollbar-thumb{
+      background:#d72638;border-radius:9999px;border:2px solid transparent;
+      background-clip:content-box;transition:background .16s ease
+    }
     .nice-scroll:hover::-webkit-scrollbar-thumb{background:#ff8ea0;background-clip:content-box}
     .nice-scroll::-webkit-scrollbar-corner{background:transparent}
   `;
@@ -92,10 +101,15 @@ export function MemoryScreen({
     <>
       <style>{SCROLLBAR_CSS}</style>
 
-      <div className="w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto mt-4 sm:mt-6 relative">
-        {/* Panel con un ÚNICO contenedor scrolleable */}
+      {/* h-full + min-h-0 para encajar en su fila, sin márgenes verticales extras */}
+      <div className="h-full min-h-0 w-full flex flex-col items-center px-4 sm:px-6 xl:px-10 2xl:px-20 max-w-[1800px] mx-auto relative">
+        {/* Panel principal */}
         <div className="w-full bg-[#111]/95 border border-white/10 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,.8)] overflow-hidden">
-          <div className="nice-scroll max-h-[85vh]">
+          {/* ÚNICO viewport con scroll, limitado por viewport (funciona aunque el padre no tenga altura explícita) */}
+          <div
+            className="nice-scroll max-h-[80vh] md:max-h-[calc(100dvh-10rem)]"
+            data-tour="visualizacionVariables"
+          >
             {/* Header sticky dentro del MISMO scroll */}
             <div className="sticky top-0 left-0 z-20 bg-[#111]/95 backdrop-blur-sm border-b border-white/10">
               <div className="p-4">
@@ -154,23 +168,25 @@ export function MemoryScreen({
               </div>
             </div>
 
-            {/* Contenido */}
-            <div className="px-2 pt-4 pb-32" data-tour="visualizacionVariables">
-              {!hasDataInSelected && !searchTerm ? (
-                <div className="flex items-center justify-center py-16">
-                  <div className="text-center text-sm text-gray-400">
-                    No hay datos en este segmento.
+            {/* Contenido (target del tour) */}
+            <div className="px-2 pt-4 pb-28 scroll-mt-24 md:scroll-mt-28">
+              <div className="mx-auto w-full max-w-[1600px]">
+                {!hasDataInSelected && !searchTerm ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="text-center text-sm text-gray-400">
+                      No hay datos en este segmento.
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <MemoryDisplay
-                  segment={selectedSegment}
-                  searchTerm={searchTerm}
-                  consolaRef={consolaRef}
-                  memoryState={memoryState}
-                  setMemoryState={setMemoryState}
-                />
-              )}
+                ) : (
+                  <MemoryDisplay
+                    segment={selectedSegment}
+                    searchTerm={searchTerm}
+                    consolaRef={consolaRef}
+                    memoryState={memoryState}
+                    setMemoryState={setMemoryState}
+                  />
+                )}
+              </div>
             </div>
 
             {/* Footer sticky dentro del MISMO scroll */}
@@ -219,7 +235,6 @@ export function MemoryScreen({
     </>
   );
 }
-
 
 /* ───────── UI Atómicas ───────── */
 function Chip({

@@ -87,7 +87,7 @@ export const commandsData: Record<string, any> = {
         estructura: `Si el objeto no ha sido instanciado: <strong>enqueue(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.enqueue(valor);</strong>`,
         ejemplo:
-          "<strong>enqueue(1);</strong> ó <strong>colaP.enqueue(1);</strong>",
+          "<strong>enqueue(1);</strong> ó <strong>cola.enqueue(1);</strong>",
       },
       {
         title: "dequeue",
@@ -305,13 +305,13 @@ export const commandsData: Record<string, any> = {
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
         ejemplo:
-          "<strong>insert(200);</strong> ó <strong>arbolBB.insert(20);</strong>",
+          "<strong>insert(20);</strong> ó <strong>arbolBB.insert(20);</strong>",
       },
       {
         title: "delete",
         description: "Elimina un nodo del árbol binario de búsqueda.",
         estructura: "nombreObjeto.delete(valor);",
-        ejemplo: "arbolBB.delete(100);",
+        ejemplo: "arbolBB.delete(10);",
       },
       {
         title: "search",
@@ -359,7 +359,8 @@ export const commandsData: Record<string, any> = {
     buttons: [
       {
         title: "insert",
-        description: "Inserta un nodo dentro del árbol AVL (con rebalanceo automático).",
+        description:
+          "Inserta un nodo dentro del árbol AVL (con rebalanceo automático).",
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
         ejemplo:
@@ -367,7 +368,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "delete",
-        description: "Elimina un nodo del árbol AVL (con rebalanceo automático).",
+        description:
+          "Elimina un nodo del árbol AVL (con rebalanceo automático).",
         estructura: "nombreObjeto.delete(valor);",
         ejemplo: "arbolA.delete(20);",
       },
@@ -413,7 +415,8 @@ export const commandsData: Record<string, any> = {
     buttons: [
       {
         title: "insert",
-        description: "Inserta un nodo en el árbol Rojo-Negro (con restauración de propiedades automática)",
+        description:
+          "Inserta un nodo en el árbol Rojo-Negro (con restauración de propiedades automática)",
         estructura: `Si el objeto no ha sido instanciado: <strong>insert(valor);</strong> 
                Si el objeto ya existe: <strong>nombreObjeto.insert(valor);</strong>`,
         ejemplo:
@@ -421,7 +424,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "delete",
-        description: "Elimina un nodo del árbol Rojo-Negro (con restauración de propiedades automática)",
+        description:
+          "Elimina un nodo del árbol Rojo-Negro (con restauración de propiedades automática)",
         estructura: "nombreObjeto.delete(valor);",
         ejemplo: "arbolRN.delete(55);",
       },
@@ -481,7 +485,8 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "search",
-        description: "Busca un nodo dentro del árbol Splay (con splay automático)",
+        description:
+          "Busca un nodo dentro del árbol Splay (con splay automático)",
         estructura: "nombreObjeto.search(valor);",
         ejemplo: "arbolS.search(35);",
       },
@@ -505,8 +510,7 @@ export const commandsData: Record<string, any> = {
       },
       {
         title: "getLevelOrder",
-        description:
-          "Obtiene el recorrido por niveles (BFS) del árbol Splay.",
+        description: "Obtiene el recorrido por niveles (BFS) del árbol Splay.",
         estructura: "nombreObjeto.getLevelOrder();",
         ejemplo: "arbolS.getLevelOrder();",
       },
@@ -820,14 +824,14 @@ export const commandsData: Record<string, any> = {
         estructura: "nombreObjeto.delete(valor);",
         ejemplo: "arbolHeap.delete(1);",
       },
-  
+
       {
         title: "search",
         description: "Buscar un nodo en el árbol heap",
         estructura: "nombreObjeto.search(valor);",
         ejemplo: "arbolHeap.search(1);",
       },
-  
+
       {
         title: "getLevelOrder",
         description: "Obtiene el recorrido por niveles del árbol heap.",
@@ -894,13 +898,13 @@ export const commandsData: Record<string, any> = {
         ejemplo: "size address 5x002",
       },
       {
-        title: "Update Value",
+        title: "Set Address",
         description:
-          "Permite modificar el valor almacenado en una dirección de memoria.\n" +
-          "Ideal para cambiar el contenido de una variable o un array ya declarado.\n" +
-          "El comando interpreta el nuevo valor y actualiza la estructura correspondiente.",
-        estructura: "update address <direccion> value <nuevovalor>",
-        ejemplo: "update address 4x003 value 99",
+          "Modifica el valor almacenado en una dirección de memoria.\n" +
+          "Útil para cambiar el contenido de una variable o un array ya declarado.\n" +
+          "El valor puede ser número, boolean o string (con comillas)",
+        estructura: "set address <direccion> value <nuevo_valor>",
+        ejemplo: "set address 4x003 value 99",
       },
       {
         title: "Address Of",

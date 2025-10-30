@@ -4,22 +4,11 @@ import { useEffect } from "react";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   content: React.ReactNode;
 }
 
 export function Modal({ isOpen, onClose, title, content }: ModalProps) {
-  // useEffect(() => {
-  //   if (isOpen) {
-  //     document.body.style.overflow = "hidden"; // desactivar scroll
-  //   } else {
-  //     document.body.style.overflow = "auto"; // restaurar scroll
-  //   }
-
-  //   return () => {
-  //     document.body.style.overflow = "auto"; // cleanup
-  //   };
-  // }, [isOpen]);
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";

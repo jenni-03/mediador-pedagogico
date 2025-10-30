@@ -6,205 +6,211 @@ import { NodoS } from "../nodes/NodoS";
  * Clase que representa una Cola utilizando nodos simples.
  */
 export class Cola<T> {
+  // Nodo inicial de la cola.
+  private inicio: NodoS<T> | null;
 
-    // Nodo inicial de la cola.
-    private inicio: NodoS<T> | null;
+  // Nodo final de la cola.
+  private fin: NodoS<T> | null;
 
-    // Nodo final de la cola.
-    private fin: NodoS<T> | null;
+  // Tamaño de la cola.
+  private tamanio: number;
 
-    // Tamaño de la cola.
-    private tamanio: number;
+  // Tamaño simulado de cada nodo en bytes.
+  private tamanioNodo: number;
 
-    // Tamaño simulado de cada nodo en bytes.
-    private tamanioNodo: number;
+  // Tamaño máximo permitido para la cola.
+  private readonly MAX_TAMANIO = 15;
 
-    // Tamaño máximo permitido para la cola.
-    private readonly MAX_TAMANIO = 15;
+  /**
+   * Constructor de la clase Cola.
+   */
+  constructor(tamanioNodo: number = 16) {
+    this.inicio = null;
+    this.fin = null;
+    this.tamanio = 0;
+    this.tamanioNodo = tamanioNodo;
+  }
 
-    /**
-     * Constructor de la clase Cola.
-     */
-    constructor(
-        tamanioNodo: number = 16
-    ) {
-        this.inicio = null;
-        this.fin = null;
-        this.tamanio = 0;
-        this.tamanioNodo = tamanioNodo;
+  /**
+   * Método que encola un nuevo elemento en la cola.
+   * @param valor Elemento a encolar.
+   */
+  public encolar(valor: T): NodoS<T> {
+    if (this.tamanio >= this.MAX_TAMANIO)
+      throw new Error(
+        `No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`
+      );
+
+    const nuevoNodo = new NodoS(valor);
+
+    if (this.esVacia()) {
+      this.inicio = nuevoNodo;
+      this.fin = nuevoNodo;
+    } else {
+      if (this.fin) {
+        this.fin.setSiguiente(nuevoNodo);
+        this.fin = nuevoNodo;
+      }
     }
 
-    /**
-     * Método que encola un nuevo elemento en la cola.
-     * @param valor Elemento a encolar.
-     */
-    public encolar(valor: T): NodoS<T> {
-        if (this.tamanio >= this.MAX_TAMANIO) throw new Error(`No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: ${this.MAX_TAMANIO}).`);
+    this.tamanio++;
+    return nuevoNodo;
+  }
 
-        const nuevoNodo = new NodoS(valor);
+  /**
+   * Método que decola (remueve) el primer elemento de la cola.
+   * @returns Elemento decolado.
+   */
+  public decolar(): NodoS<T> {
+    if (this.esVacia())
+      throw new Error(
+        "No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0)."
+      );
 
-        if (this.esVacia()) {
-            this.inicio = nuevoNodo;
-            this.fin = nuevoNodo;
-        } else {
-            if (this.fin) {
-                this.fin.setSiguiente(nuevoNodo);
-                this.fin = nuevoNodo;
-            }
+    const nodoAEliminar = this.inicio!;
+
+    if (this.inicio === this.fin) {
+      this.inicio = null;
+      this.fin = null;
+    } else {
+      if (this.inicio) {
+        this.inicio = this.inicio.getSiguiente();
+      }
+    }
+
+    this.tamanio--;
+    return nodoAEliminar;
+  }
+
+  /**
+   * Método que vacia la cola.
+   */
+  public vaciar(): void {
+    this.inicio = null;
+    this.fin = null;
+    this.tamanio = 0;
+  }
+
+  /**
+   * Método que obtiene el elemento inicial de la cola.
+   * @returns NodoS o null si la cola está vacía.
+   */
+  public getInicio(): NodoS<T> | null {
+    return this.inicio;
+  }
+
+  /**
+   * Método que obtiene el valor del elemento inicial de la cola.
+   * @returns Valor del nodo o null si la cola está vacía.
+   */
+  public getInfoInicio(): T | null {
+    return this.inicio?.getValor() ?? null;
+  }
+
+  /**
+   * Método que obtiene el elemento final de la cola.
+   * @returns NodoS o null si la cola está vacía.
+   */
+  public getFin(): NodoS<T> | null {
+    return this.fin;
+  }
+
+  /**
+   * Método que obtiene el valor del elemento final de la cola.
+   * @returns Valor del nodo o null si la cola está vacía.
+   */
+  public getInfoFin(): T | null {
+    return this.fin?.getValor() ?? null;
+  }
+
+  /**
+   * Método que devuelve el tamaño actual de la cola.
+   * @returns Número de elementos en la cola.
+   */
+  public getTamanio(): number {
+    return this.tamanio;
+  }
+
+  public getMaxTamanio(): number {
+    return this.MAX_TAMANIO;
+  }
+
+  /**
+   * Método que retorna el tamaño en bytes de los nodos almacenados.
+   * @returns Tamaño en bytes de los nodos.
+   */
+  public getTamanioNodo(): number {
+    return this.tamanioNodo;
+  }
+
+  /**
+   * Método que verifica si la cola está vacía.
+   * @returns True si está vacía, false en caso contrario.
+   */
+  public esVacia(): boolean {
+    return this.tamanio === 0;
+  }
+
+  /**
+   * Método que transforma la cola en un array de nodos.
+   * @returns Array de nodos con la información de la cola.
+   */
+  public getArrayDeNodos() {
+    const resultArray = [];
+    let currentNode = this.inicio;
+
+    while (currentNode !== null) {
+      const nextNode = currentNode.getSiguiente();
+
+      resultArray.push({
+        id: currentNode.getId(),
+        value: currentNode.getValor(),
+        next: nextNode ? nextNode.getId() : null,
+        memoryAddress: currentNode.getDireccionMemoria(),
+      });
+
+      currentNode = nextNode;
+    }
+
+    return resultArray;
+  }
+
+  /**
+   * Método que clona la cola actual.
+   * @returns Nueva cola clonada.
+   */
+  public clonar() {
+    const nuevaCola = new (this.constructor as new () => this)();
+
+    if (this.esVacia()) {
+      return nuevaCola;
+    }
+
+    let nodoActual = this.inicio;
+    let ultimoNodoClonado: NodoS<T> | null = null;
+
+    while (nodoActual !== null) {
+      const nuevoNodo = new NodoS(
+        nodoActual.getValor(),
+        nodoActual.getId(),
+        nodoActual.getDireccionMemoria()
+      );
+
+      if (nuevaCola.inicio === null) {
+        nuevaCola.inicio = nuevoNodo;
+        nuevaCola.fin = nuevoNodo;
+      } else {
+        if (ultimoNodoClonado) {
+          ultimoNodoClonado.setSiguiente(nuevoNodo);
         }
+        nuevaCola.fin = nuevoNodo;
+      }
 
-        this.tamanio++;
-        return nuevoNodo;
+      ultimoNodoClonado = nuevoNodo;
+      nodoActual = nodoActual.getSiguiente();
     }
 
-    /**
-     * Método que decola (remueve) el primer elemento de la cola.
-     * @returns Elemento decolado.
-     */
-    public decolar(): NodoS<T> {
-        if (this.esVacia()) throw new Error("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");
-
-        const nodoAEliminar = this.inicio!;
-
-        if (this.inicio === this.fin) {
-            this.inicio = null;
-            this.fin = null;
-        } else {
-            if (this.inicio) {
-                this.inicio = this.inicio.getSiguiente();
-            }
-        }
-
-        this.tamanio--;
-        return nodoAEliminar;
-    }
-
-    /**
-     * Método que vacia la cola.
-     */
-    public vaciar(): void {
-        this.inicio = null;
-        this.fin = null;
-        this.tamanio = 0;
-    }
-
-    /**
-     * Método que obtiene el elemento inicial de la cola.
-     * @returns NodoS o null si la cola está vacía.
-     */
-    public getInicio(): NodoS<T> | null {
-        return this.inicio;
-    }
-
-    /**
-     * Método que obtiene el valor del elemento inicial de la cola.
-     * @returns Valor del nodo o null si la cola está vacía.
-     */
-    public getInfoInicio(): T | null {
-        return this.inicio?.getValor() ?? null;
-    }
-
-    /**
-     * Método que obtiene el elemento final de la cola.
-     * @returns NodoS o null si la cola está vacía.
-     */
-    public getFin(): NodoS<T> | null {
-        return this.fin;
-    }
-
-    /**
-     * Método que obtiene el valor del elemento final de la cola.
-     * @returns Valor del nodo o null si la cola está vacía.
-     */
-    public getInfoFin(): T | null {
-        return this.fin?.getValor() ?? null;
-    }
-
-    /**
-     * Método que devuelve el tamaño actual de la cola.
-     * @returns Número de elementos en la cola.
-     */
-    public getTamanio(): number {
-        return this.tamanio;
-    }
-
-    /**
-     * Método que retorna el tamaño en bytes de los nodos almacenados.
-     * @returns Tamaño en bytes de los nodos.
-     */
-    public getTamanioNodo(): number {
-        return this.tamanioNodo;
-    }
-
-    /**
-     * Método que verifica si la cola está vacía.
-     * @returns True si está vacía, false en caso contrario.
-     */
-    public esVacia(): boolean {
-        return this.tamanio === 0;
-    }
-
-    /**
-     * Método que transforma la cola en un array de nodos.
-     * @returns Array de nodos con la información de la cola.
-     */
-    public getArrayDeNodos() {
-        const resultArray = [];
-        let currentNode = this.inicio;
-
-        while (currentNode !== null) {
-            const nextNode = currentNode.getSiguiente();
-
-            resultArray.push({
-                id: currentNode.getId(),
-                value: currentNode.getValor(),
-                next: nextNode ? nextNode.getId() : null,
-                memoryAddress: currentNode.getDireccionMemoria()
-            });
-
-            currentNode = nextNode;
-        }
-
-        return resultArray;
-    }
-
-    /**
-     * Método que clona la cola actual.
-     * @returns Nueva cola clonada.
-     */
-    public clonar() {
-        const nuevaCola = new (this.constructor as new () => this)();
-
-        if (this.esVacia()) {
-            return nuevaCola;
-        }
-
-        let nodoActual = this.inicio;
-        let ultimoNodoClonado: NodoS<T> | null = null;
-
-        while (nodoActual !== null) {
-            const nuevoNodo = new NodoS(
-                nodoActual.getValor(),
-                nodoActual.getId(),
-                nodoActual.getDireccionMemoria()
-            );
-
-            if (nuevaCola.inicio === null) {
-                nuevaCola.inicio = nuevoNodo;
-                nuevaCola.fin = nuevoNodo;
-            } else {
-                if (ultimoNodoClonado) {
-                    ultimoNodoClonado.setSiguiente(nuevoNodo);
-                }
-                nuevaCola.fin = nuevoNodo;
-            }
-
-            ultimoNodoClonado = nuevoNodo;
-            nodoActual = nodoActual.getSiguiente();
-        }
-
-        nuevaCola.tamanio = this.tamanio;
-        return nuevaCola;
-    }
-
+    nuevaCola.tamanio = this.tamanio;
+    return nuevaCola;
+  }
 }

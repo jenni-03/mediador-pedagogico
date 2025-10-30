@@ -4,16 +4,16 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   create: {
     lines: [
       `/**
-  * Constructor con parámetros de la clase secuencia.
-  * post: Se construye una secuencia vacia.
-  * @param n de tipo integer que corresponde a la capacidad de la secuencia. 
-  */`,
-      `public Secuencia(int n){`,
-      `    if (n <= 0) {`,
-      `        System.err.println("Tamaño de secuencia no válido!");`,
+ * Constructor con parámetros de la clase secuencia.
+ * post: Se construye una secuencia vacia.
+ * @param n de tipo integer que corresponde a la capacidad de la secuencia. 
+ */`,
+      `public Secuencia(int {0}){`,
+      `    if ({0} <= 0) {`,
+      `        throw new RuntimeException("Tamaño de secuencia no válido!");`,
       `        return;`,
       `    }`,
-      `    Object r[] = new Object[n];`,
+      `    Object r[] = new Object[{0}];`,
       `    cant = 0;`,
       `    this.vector = (T[])r;`,
       `}`,
@@ -34,11 +34,11 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   * post: Se insertó un elemento en la secuencia.
   * @param elem de tipo T que corresponde al elemento a insertar.
   */`,
-      `public void insertLast(T elem){`,
-      `    if (this.cant >= this.vector.length)`,
-      `        System.err.println("No hay más espacio!");`,
+      `public void insertar(T {0}){`,
+      `    if ({1} >= {2})`,
+      `        throw new RuntimeException("No hay más espacio!");`,
       `    else`,
-      `        this.vector[this.cant++] = elem;`,
+      `        this.vector[{1}++] = {0};`,
       `}`,
     ],
     labels: { IF_FULL: 2, PRINT_FULL: 3, ELSE: 4, ASSIGN: 5 },
@@ -57,16 +57,18 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   * @param i es de tipo integer y corresponde a la posición del elemento en la secuencia.
   * @return un tipo T correspondiente al valor del elemento, o null si la posición es inválida.
   */`,
-      `public T get(int i) {`,
-      `    if (this.cant == 0) {`,
-      `        System.err.println("La secuencia está vacía (tamaño actual: 0).");`,
+      `public T get(int {0}) {`,
+      `    if ({1} == 0) {`,
+      `        throw new RuntimeException("La secuencia está vacía (tamaño actual: 0), debe crear la secuencia primero.");`,
       `        return null;`,
       `    }`,
-      `    if (i < 0 || i >= this.cant) {`,
-      `        System.err.println("Indíce fuera de rango!")`,
+      `    if ({0} < 0 || {0} >= {1}) {`,
+      `        throw new RuntimeException("Posición inválida: se intentó acceder a la posición " + {0} + `,
+      `            ", pero el rango válido es de 0 a " + ({1} - 1) + `,
+      `            ", ya que su tamaño es " + {1} + ".");`,
       `        return null;`,
       `    }`,
-      `    return this.vector[i];`,
+      `    return this.vector[{0}];`,
       `}`,
     ],
     labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, RETURN_EMPTY: 4, IF_RANGE: 6, PRINT_RANGE: 7, RETURN_RANGE: 8, RETURN_ELEM: 10 },
@@ -92,12 +94,12 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  * @param i es de tipo integer y corresponde a la posición del elemento en la secuencia que se va a cambiar.
  * @param un tipo T correspondiente al nuevo elemento que reemplazará al elemento indicado.
  */`,
-      `public void set(int i, T nuevo){`,
-      `    if (i < 0 || i > this.cant) {`,
-      `        System.err.println("Indíce fuera de rango!");`,
+      `public void set(int {0}, T {1}){`,
+      `    if ({0} < 0 || {0} >= {2}) {`,
+      `        throw new RuntimeException("Indíce fuera de rango!");`,
       `        return;`,
       `    }`,
-      `    this.vector[i] = nuevo;`,
+      `    this.vector[{0}] = {1};`,
       `}`,
     ],
     labels: { IF_RANGE: 2, PRINT_ERR: 3, RETURN: 4, UPDATE: 6 },
@@ -116,20 +118,20 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  * post: Se eliminó un elemento en la secuencia.
  * @param pos Posicion del elemento a eliminar.
  */`,
-      `public void delete(int pos){`,
-      `    if (this.cant == 0) {`,
-      `        System.err.println("La secuencia está vacía (tamaño actual: 0).");`,
+      `public void eliminarP(int pos){`,
+      `    if ({1} == 0) {`,
+      `        throw new RuntimeException("La secuencia está vacía (tamaño actual: 0).");`,
       `        return;`,
       `    }`,
-      `    if (pos < 0 || pos > this.cant) {`,
-      `        System.err.println("Indíce fuera de rango!");`,
+      `    if ({0} < 0 || {0} >= {1}) {`,
+      `        throw new RuntimeException("Indíce fuera de rango!");`,
       `        return;`,
       `    }`,
-      `    for (int i=0; i < this.cant - 1; i++) {`,
+      `    for (int i=0; i < {1} - 1; i++) {`,
       `         this.vector[i] = this.vector[i + 1];`,
       `    }`,
-      `    this.vector[this.cant - 1] = null`,
-      `    this.cant--;`,
+      `    this.vector[{1} - 1] = null`,
+      `    {1}--;`,
       `}`,
     ],
     labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, RETURN_EMPTY: 4, IF_RANGE: 6, PRINT_RANGE: 7, RETURN_RANGE: 8, FOR: 10, REASSING: 11, DELETE: 13, DECREASE: 14 },
@@ -155,16 +157,16 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  * @param elem es de tipo T y corresponde al elemento a buscar.
  * @return un tipo boolean, retorna true si el objeto existe y false en caso contrario.
  */`,
-      `public boolean search(T elem){`,
-      `    for (int i = 0; i < this.cant; i++) {`,
-      `         if (this.vector[i].equals(elem)) {`,
+      `public boolean search(T {0}){`,
+      `    for (int i = 0; i < {1}; i++) {`,
+      `         if (this.vector[i].equals({0})) {`,
       `             return true;`,
       `         }`,
       `    }`,
       `    return false;`,
       `}`,
     ],
-    labels: { FOR: 2, IF: 3, RETURN_TRUE: 4, RETURN_FALSE: 7 }
+    labels: { FOR: 2, IF: 3, RETURN_TRUE: 4, RETURN_FALSE: 7 },
   },
   clean: {
     lines: [

@@ -1,43 +1,40 @@
 import { OperationCode } from "./typesPseudoCode";
 
 export const getArbolNarioCode = (): OperationCode => ({
-  /* ───────────────────────────── Crear raíz ───────────────────────────── */
   createRoot: [
     `/** Crea la raíz del árbol N-ario. */`,
-    `public void createRoot(T valor) {`,
+    `public void createRoot(T {0}) {`,
     `    if (raiz != null) throw new RuntimeException("La raíz ya existe");`,
-    `    raiz = new NodoN(valor);`,
+    `    raiz = new NodoN({0});`,
     `    // hijos = lista vacía`,
     `}`,
   ],
 
-  /* ───────────────────────────── Insertar hijo ───────────────────────────── */
   insertChild: [
     `/**`,
     ` * Inserta un nuevo hijo bajo un padre dado (por id).`,
     ` * Si 'index' se omite, agrega al final; si se especifica, inserta en esa posición.`,
     ` */`,
-    `public void insertChild(String parentId, T valor, Integer index = null) {`,
+    `public void insertChild(String {0}, T {1}, Integer index = null) {`,
     `    if (raiz == null) throw new RuntimeException("Árbol vacío: primero crea la raíz");`,
-    `    NodoN padre = buscarPorIdBFS(raiz, parentId);`,
+    `    NodoN padre = buscarPorIdBFS(raiz, {0});`,
     `    if (padre == null) throw new RuntimeException("Padre no existe");`,
-    `    NodoN nuevo = new NodoN(valor);`,
+    `    NodoN nuevo = new NodoN({1});`,
     `    if (index == null) padre.hijos.agregar(nuevo);`,
     `    else padre.hijos.insertar(index, nuevo);`,
     `    nuevo.padre = padre;`,
     `}`,
   ],
 
-  /* ───────────────────────────── Eliminar nodo ───────────────────────────── */
   deleteNode: [
     `/**`,
     ` * Elimina un nodo (y todo su subárbol) por id.`,
     ` * Si el nodo es la raíz, el árbol queda vacío.`,
     ` */`,
-    `public void deleteNode(String id) {`,
+    `public void deleteNode(String {0}) {`,
     `    if (raiz == null) return;`,
-    `    NodoN objetivo = buscarPorIdBFS(raiz, id);`,
-    `    if (objetivo == null) return;`,
+    `    NodoN objetivo = buscarPorIdBFS(raiz, {0});`,
+    `    if (objetivo == null) throw new RuntimeException("No existe el nodo con id: {0});`,
     `    if (objetivo == raiz) {`,
     `        raiz = null;`,
     `        return;`,
@@ -48,17 +45,16 @@ export const getArbolNarioCode = (): OperationCode => ({
     `}`,
   ],
 
-  /* ───────────────────────────── Mover nodo ───────────────────────────── */
   moveNode: [
     `/**`,
     ` * Mueve un subárbol (id) para que cuelgue de 'nuevoPadreId'.`,
     ` * Usa 'index' opcional para indicar la posición del nuevo hijo.`,
     ` * No permite mover dentro de su propio subárbol (evita ciclos).`,
     ` */`,
-    `public void moveNode(String id, String nuevoPadreId, Integer index = null) {`,
-    `    if (id.equals(nuevoPadreId)) throw new RuntimeException("Movimiento inválido");`,
-    `    NodoN x = buscarPorIdBFS(raiz, id);`,
-    `    NodoN p = buscarPorIdBFS(raiz, nuevoPadreId);`,
+    `public void moveNode(String {0}, String {1}, Integer index = null) {`,
+    `    if ({0}.equals({1})) throw new RuntimeException("Movimiento inválido");`,
+    `    NodoN x = buscarPorIdBFS(raiz, {0});`,
+    `    NodoN p = buscarPorIdBFS(raiz, {1});`,
     `    if (x == null || p == null) throw new RuntimeException("Nodo no encontrado");`,
     `    if (esDescendiente(p, x)) throw new RuntimeException("Crearía un ciclo");`,
     `    if (x == raiz) throw new RuntimeException("No se puede mover la raíz");`,
@@ -73,36 +69,33 @@ export const getArbolNarioCode = (): OperationCode => ({
     `}`,
   ],
 
-  /* ───────────────────────────── Actualizar valor ───────────────────────────── */
   updateValue: [
     `/** Actualiza el valor almacenado en un nodo por id. */`,
-    `public void updateValue(String id, T nuevoValor) {`,
-    `    NodoN n = buscarPorIdBFS(raiz, id);`,
-    `    if (n == null) throw new RuntimeException("Nodo no existe");`,
-    `    n.info = nuevoValor;`,
+    `public void updateValue(String {0}, T {1}) {`,
+    `    NodoN n = buscarPorIdBFS(raiz, {0});`,
+    `    if (n == null) throw new RuntimeException("No existe el nodo con id: {0}}");`,
+    `    n.info = {1};`,
     `}`,
   ],
 
-  /* ───────────────────────────── Buscar por valor ───────────────────────────── */
   search: [
     `/**`,
     ` * Busca el primer nodo cuyo valor coincida (BFS).`,
     ` * Retorna true si se encuentra; además permite resaltar el camino.`,
     ` */`,
-    `public boolean search(T valor) {`,
+    `public boolean search(T {0}) {`,
     `    if (raiz == null) return false;`,
     `    Cola<NodoN> q = new Cola<>();`,
     `    q.encolar(raiz);`,
     `    while (!q.esVacia()) {`,
     `        NodoN u = q.decolar();`,
-    `        if (u.info.equals(valor)) return true;`,
+    `        if (u.info.equals({0})) return true;`,
     `        for (NodoN h : u.hijos) q.encolar(h);`,
     `    }`,
     `    return false;`,
     `}`,
   ],
 
-  /* ───────────────────────────── Preorden ───────────────────────────── */
   getPreOrder: [
     `/**`,
     ` * Obtiene el recorrido en preorden (nodo → hijos).`,
@@ -114,7 +107,6 @@ export const getArbolNarioCode = (): OperationCode => ({
     `}`,
   ],
 
-  /* ───────────────────────────── Postorden ───────────────────────────── */
   getPostOrder: [
     `/**`,
     ` * Obtiene el recorrido en postorden (hijos → nodo).`,
@@ -126,7 +118,6 @@ export const getArbolNarioCode = (): OperationCode => ({
     `}`,
   ],
 
-  /* ───────────────────────────── Recorrido por niveles ───────────────────────────── */
   getLevelOrder: [
     `/**`,
     ` * Obtiene el recorrido por niveles (BFS).`,
@@ -143,7 +134,6 @@ export const getArbolNarioCode = (): OperationCode => ({
     `}`,
   ],
 
-  /* ───────────────────────────── Vaciar ───────────────────────────── */
   clean: [
     `/** Vacía por completo el árbol N-ario. */`,
     `public void clean() {`,
