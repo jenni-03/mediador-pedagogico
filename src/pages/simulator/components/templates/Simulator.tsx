@@ -14,12 +14,6 @@ import { createBus } from "../../../../shared/events/eventBus";
 import { BusProvider } from "../../../../shared/context/BusProvider";
 import { delay } from "../../../../shared/utils/simulatorUtils";
 
-/**
- * Simulator
- *  - Contenedor principal del simulador por estructura.
- *  - Orquesta: vista de estructura, consola, comandos y pseudocódigo.
- *  - No “encapsula” la consola con otro scroller: la propia consola gestiona su scroll.
- */
 export function Simulator<T extends string>({
     structureName,
     structureType,
@@ -28,8 +22,6 @@ export function Simulator<T extends string>({
     error, // error proveniente del hook de la estructura.
     children,
 }: SimulatorProps<T>) {
-    // Código de ejecución a mostrar a la derecha
-    // const [executionCode, setExecutionCode] = useState<string[]>([]);
     const [executionCode, setExecutionCode] = useState<{
         id: number;
         lines: string[];
@@ -114,6 +106,7 @@ export function Simulator<T extends string>({
             );
 
             try {
+                console.log("ejecutando");
                 fn(...args);
             } catch (e) {
                 console.error(`[Simulator] Error ejecutando "${action}"`, e);
@@ -149,13 +142,9 @@ export function Simulator<T extends string>({
     };
 
     useEffect(() => {
-        console.log("Entrando en el hook");
         const offStart = bus.on<{ op: string }>("op:start", ({ op }) => {
             const script = operationsCode[op];
-            console.log("SUSCRIPCIÓN");
-            // setExecutionCode(script.lines);
             setCurrentLine(null);
-
             setExecutionCode({
                 id: Date.now(), // Nuevo ID
                 lines: script.lines,
@@ -187,9 +176,6 @@ export function Simulator<T extends string>({
         const script = operationsCode[error.op];
         const plan = script?.errorPlans?.[error.planId];
         if (!script || !plan) return;
-
-        setExecutionCode(script.lines);
-        setCurrentLine(null);
 
         (async () => {
             bus.emit("op:start", { op: error.op });

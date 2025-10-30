@@ -61,7 +61,7 @@ export function drawBaseSequence(
         // Transición "lote" de rectángulos
         rect
           .transition()
-          .duration(1500)
+          .duration(1000)
           .attr("width", elementWidth)
           .attr("height", elementHeight)
           .ease(easeQuad);
@@ -83,7 +83,7 @@ export function drawBaseSequence(
 
         valueText
           .transition()
-          .duration(2500)
+          .duration(2000)
           .style("opacity", 1)
           .ease(easeQuad);
 
@@ -102,7 +102,7 @@ export function drawBaseSequence(
 
         memRect
           .transition()
-          .duration(1500)
+          .duration(1000)
           .attr("width", elementWidth)
           .attr("height", 20)
           .ease(easeQuad);
@@ -122,7 +122,7 @@ export function drawBaseSequence(
 
         memText
           .transition()
-          .duration(2500)
+          .duration(2000)
           .style("opacity", 1);
 
         // Índice del elemento
@@ -138,7 +138,7 @@ export function drawBaseSequence(
           .style("font-size", SVG_SEQUENCE_VALUES.INDEX_TEXT_SIZE)
           .style("font-weight", SVG_SEQUENCE_VALUES.INDEX_TEXT_WEIGHT)
           .transition()
-          .duration(2500)
+          .duration(2000)
           .style("opacity", 1);
 
         return gEnter;
@@ -192,7 +192,7 @@ export function drawBaseSequence(
 
         // Eliminación del grupo completo
         exit.transition()
-          .delay(15000)
+          .delay(1200)
           .remove();
 
         return exit;

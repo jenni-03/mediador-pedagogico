@@ -11,19 +11,17 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `public Secuencia(int {0}){`,
       `    if ({0} <= 0) {`,
       `        throw new RuntimeException("Tamaño de secuencia no válido!");`,
-      `        return;`,
       `    }`,
       `    Object r[] = new Object[{0}];`,
       `    cant = 0;`,
       `    this.vector = (T[])r;`,
       `}`,
     ],
-    labels: { IF_CANT: 2, PRINT_INVALID: 3, RETURN: 4, ALLOC: 6, CANT0: 7, ASSIGN: 8 },
+    labels: { IF_CANT: 2, PRINT_INVALID: 3, ALLOC: 5, CANT0: 6, ASSIGN: 7 },
     errorPlans: {
       INVALID_CAPACITY: [
         { lineLabel: "IF_CANT", hold: 700 },
-        { lineLabel: "PRINT_INVALID", hold: 900 },
-        { lineLabel: "RETURN", hold: 600 }
+        { lineLabel: "PRINT_INVALID", hold: 900 }
       ]
     }
   },
@@ -34,7 +32,7 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   * post: Se insertó un elemento en la secuencia.
   * @param elem de tipo T que corresponde al elemento a insertar.
   */`,
-      `public void insertar(T {0}){`,
+      `public void insertLast(T {0}){`,
       `    if ({1} >= {2})`,
       `        throw new RuntimeException("No hay más espacio!");`,
       `    else`,
@@ -59,30 +57,24 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   */`,
       `public T get(int {0}) {`,
       `    if ({1} == 0) {`,
-      `        throw new RuntimeException("La secuencia está vacía (tamaño actual: 0), debe crear la secuencia primero.");`,
-      `        return null;`,
+      `        throw new RuntimeException("La secuencia está vacía (tamaño actual: 0).");`,
       `    }`,
       `    if ({0} < 0 || {0} >= {1}) {`,
-      `        throw new RuntimeException("Posición inválida: se intentó acceder a la posición " + {0} + `,
-      `            ", pero el rango válido es de 0 a " + ({1} - 1) + `,
-      `            ", ya que su tamaño es " + {1} + ".");`,
-      `        return null;`,
+      `        throw new RuntimeException("Posición de acceso no válida.");`,
       `    }`,
       `    return this.vector[{0}];`,
       `}`,
     ],
-    labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, RETURN_EMPTY: 4, IF_RANGE: 6, PRINT_RANGE: 7, RETURN_RANGE: 8, RETURN_ELEM: 10 },
+    labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, IF_RANGE: 5, PRINT_RANGE: 6, RETURN_ELEM: 8 },
     errorPlans: {
       GET_EMPTY: [
         { lineLabel: "IF_EMPTY", hold: 700 },
-        { lineLabel: "PRINT_EMPTY", hold: 900 },
-        { lineLabel: "RETURN_EMPTY", hold: 600 }
+        { lineLabel: "PRINT_EMPTY", hold: 900 }
       ],
       GET_OUT_OF_RANGE: [
         { lineLabel: "IF_EMPTY", hold: 700 },
         { lineLabel: "IF_RANGE", hold: 700 },
-        { lineLabel: "PRINT_RANGE", hold: 900 },
-        { lineLabel: "RETURN_RANGE", hold: 600 }
+        { lineLabel: "PRINT_RANGE", hold: 900 }
       ]
     }
   },
@@ -96,18 +88,16 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  */`,
       `public void set(int {0}, T {1}){`,
       `    if ({0} < 0 || {0} >= {2}) {`,
-      `        throw new RuntimeException("Indíce fuera de rango!");`,
-      `        return;`,
+      `        throw new RuntimeException("Posición de acceso no válida.");`,
       `    }`,
       `    this.vector[{0}] = {1};`,
       `}`,
     ],
-    labels: { IF_RANGE: 2, PRINT_ERR: 3, RETURN: 4, UPDATE: 6 },
+    labels: { IF_RANGE: 2, PRINT_ERR: 3, UPDATE: 5 },
     errorPlans: {
       SET_OUT_OF_RANGE: [
         { lineLabel: "IF_RANGE", hold: 700 },
-        { lineLabel: "PRINT_ERR", hold: 900 },
-        { lineLabel: "RETURN", hold: 600 }
+        { lineLabel: "PRINT_ERR", hold: 900 }
       ]
     }
   },
@@ -118,14 +108,12 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
  * post: Se eliminó un elemento en la secuencia.
  * @param pos Posicion del elemento a eliminar.
  */`,
-      `public void eliminarP(int pos){`,
+      `public void delete(int {0}){`,
       `    if ({1} == 0) {`,
       `        throw new RuntimeException("La secuencia está vacía (tamaño actual: 0).");`,
-      `        return;`,
       `    }`,
       `    if ({0} < 0 || {0} >= {1}) {`,
-      `        throw new RuntimeException("Indíce fuera de rango!");`,
-      `        return;`,
+      `        throw new RuntimeException("Posición de acceso no válida.");`,
       `    }`,
       `    for (int i=0; i < {1} - 1; i++) {`,
       `         this.vector[i] = this.vector[i + 1];`,
@@ -134,18 +122,16 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `    {1}--;`,
       `}`,
     ],
-    labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, RETURN_EMPTY: 4, IF_RANGE: 6, PRINT_RANGE: 7, RETURN_RANGE: 8, FOR: 10, REASSING: 11, DELETE: 13, DECREASE: 14 },
+    labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, IF_RANGE: 5, PRINT_RANGE: 6, FOR: 8, REASSING: 9, DELETE: 11, DECREASE: 12 },
     errorPlans: {
       DELETE_EMPTY: [
         { lineLabel: "IF_EMPTY", hold: 700 },
-        { lineLabel: "PRINT_EMPTY", hold: 900 },
-        { lineLabel: "RETURN_EMPTY", hold: 600 },
+        { lineLabel: "PRINT_EMPTY", hold: 900 }
       ],
       DELETE_OUT_OF_RANGE: [
         { lineLabel: "IF_EMPTY", hold: 700 },
         { lineLabel: "IF_RANGE", hold: 700 },
-        { lineLabel: "PRINT_RANGE", hold: 900 },
-        { lineLabel: "RETURN_RANGE", hold: 600 }
+        { lineLabel: "PRINT_RANGE", hold: 900 }
       ]
     }
   },
@@ -179,6 +165,6 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `    this.vector = null;`,
       `}`,
     ],
-    labels: { CLEAN_VECTOR: 2, CLEAN_CANT: 3 }
+    labels: { CLEAN_VECTOR: 3, CLEAN_CANT: 2 }
   },
 });

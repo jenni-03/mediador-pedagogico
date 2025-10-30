@@ -22,16 +22,14 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
     // Bus para la emisión de eventos de código
     const bus = useBus();
 
-    console.log("Secuencia actual");
-    console.log(sequence);
-
-    console.log("Secuencia previa");
-    console.log(prevSequence);
-
     // Efecto para renderizado base de la secuencia
     useEffect(() => {
         // Verificamos que la secuencia sea válida y que la referencia al SVG se haya establecido
         if (!sequence || !svgRef.current || !query.create) return;
+
+        if (prevSequence && prevSequence.length === sequence.length) {
+            return;
+        }
 
         // Margenes para el SVG
         const margin = { left: SVG_SEQUENCE_VALUES.MARGIN_LEFT, right: SVG_SEQUENCE_VALUES.MARGIN_RIGHT };
@@ -44,15 +42,9 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
         const spacing = SVG_SEQUENCE_VALUES.SPACING;
 
         // Ancho y alto del SVG dependiendo del número de elementos de la secuencia
-        console.log("longitud secuencia previa");
-        console.log(prevSequence?.length);
         const displayLength = Math.max(sequence.length, prevSequence?.length ?? 0);
-        console.log("longitud final");
-        console.log(displayLength);
         const width = margin.left + displayLength * (elementWidth + spacing) - spacing + SVG_SEQUENCE_VALUES.EXTRA_WIDTH;
         const height = SVG_SEQUENCE_VALUES.HEIGHT;
-        console.log("Width final")
-        console.log(width)
 
         // Configuración del contenedor SVG
         const svg = select(svgRef.current)
