@@ -134,6 +134,14 @@ export class ByteStore {
   allocAligned(n: Size, align: number, label?: string): Addr {
     if (n <= 0) throw new Error("Alloc size must be > 0");
     const aligned = this.alignUp(this.bump, align > 0 ? align : 1);
+
+    // ⬇⬇ NUEVO: si hubo salto, registra el padding
+    if (aligned > this.bump) {
+      const pad = aligned - this.bump;
+      // etiqueta corta y clara; la UI puede ocultarla si quiere
+      this.recordAlloc(this.bump, pad, "padding");
+    }
+
     if (aligned + n > this.mem.length) throw new OutOfMemoryError();
     const addr = aligned;
     this.bump = aligned + n;

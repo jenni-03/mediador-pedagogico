@@ -70,23 +70,28 @@ export function alignOf(t: PrimitiveType) {
 // Strings UTF-16 (header 8B = [len:u32][dataPtr:u32])
 // ---------------------------------------------------------------------------
 
-/** Escribe string UTF-16 como: header + data. Devuelve dirección del HEADER. */
+/**
+ * Escribe string UTF-16 como: header + data. Devuelve dirección del HEADER.
+ * Fix: strings vacías reservan un bloque “sentinela” de 2 bytes para evitar n=0.
+ */
 export function allocUtf16String(
   store: ByteStore,
   s: string,
   label?: string
 ): Addr {
   const hdr = store.reservarAlineado(8, 4, label ? `${label}#hdr` : undefined);
-  store.writeU32(hdr, s.length);
+  const len = s.length;
+  store.writeU32(hdr, len);
 
+  const dataBytes = Math.max(1, len) * 2; // evita alloc(0)
   const data = store.reservarAlineado(
-    s.length * 2,
+    dataBytes,
     2,
     label ? `${label}#data` : undefined
   );
   store.writeU32(hdr + 4, data);
 
-  for (let i = 0; i < s.length; i++) {
+  for (let i = 0; i < len; i++) {
     store.writeCharU16(data + i * 2, s.charCodeAt(i));
   }
   return hdr;
@@ -224,6 +229,7 @@ function readPrimitive(store: ByteStore, type: PrimitiveType, addr: Addr): any {
  * Array inline-prim (NO string):
  *  Header 8B: [len:u32][dataPtr:u32]
  *  Data: bloque contiguo de len * elemSize (alineado a alignOf(elemType)).
+ * Fix: si len=0, se reserva un bloque sentinela mínimo para no llamar alloc(0).
  */
 function writeArrayInlinePrim<T>(
   store: ByteStore,
@@ -241,17 +247,15 @@ function writeArrayInlinePrim<T>(
   );
   store.writeU32(hdr, values.length);
 
+  const dataBytes = Math.max(1, values.length) * elemSize; // evita alloc(0)
   const data =
     elemAlign > 1
       ? store.reservarAlineado(
-          elemSize * values.length,
+          dataBytes,
           elemAlign,
           label ? `${label}#arrData` : undefined
         )
-      : store.reservar(
-          elemSize * values.length,
-          label ? `${label}#arrData` : undefined
-        );
+      : store.reservar(dataBytes, label ? `${label}#arrData` : undefined);
 
   store.writePtr32(hdr + 4, data);
 
@@ -266,7 +270,7 @@ function writeArrayInlinePrim<T>(
     );
     cursor += elemSize;
   }
-  return { addr: hdr, size: 8 + elemSize * values.length };
+  return { addr: hdr, size: 8 + values.length * elemSize };
 }
 
 /** Lee un array inline-prim (NO string) apuntado por `addr` (header). */
@@ -292,6 +296,7 @@ function readArrayInlinePrim<T>(
  * Array de strings (tabla ref32):
  *  Header 8B: [len:u32][tablePtr:u32]
  *  Tabla: len * 4 bytes, cada entrada es un puntero u32 al HEADER de cada string.
+ * Fix: usa Math.max(1, len) para evitar alloc(0) cuando len=0.
  */
 function writeArrayOfStrings(
   store: ByteStore,
@@ -340,6 +345,7 @@ function readArrayOfStrings(store: ByteStore, addr: Addr): string[] {
  *  Header 8B: [len:u32][tablePtr:u32]
  *  Tabla: len * 4 bytes con punteros u32 a headers de objetos/arrays/strings.
  *  Útil para arrays de objetos o mixtos (siempre referencias).
+ * Fix: usa Math.max(1, len) para evitar alloc(0).
  */
 function writeArrayRef32(store: ByteStore, ptrs: Addr[], label?: string) {
   const hdr = store.reservarAlineado(
@@ -428,10 +434,6 @@ function writeObjectDispersed(
  *   - si es primitivo no-string → bytes inline (alineación por campo NO se fuerza; el bloque completo se alinea a 4)
  *   - si es string               → puntero u32 al header de la string
  *   - si es "ptr32" explícito    → puntero u32 (para arrays/objetos ya construidos)
- *
- * Para soportar arrays/objetos dentro de objeto compacto, usamos un "FieldSpec":
- *   - kind:"prim", type:PrimitiveType, value:any
- *   - kind:"ptr",  ptr:Addr
  */
 export type FieldSpec =
   | { kind: "prim"; key: string; type: PrimitiveType; value: any }
@@ -506,6 +508,76 @@ function readObjectCompact(
 }
 
 // ---------------------------------------------------------------------------
+// API de RESERVA (sin escribir datos) — para “ocupado pero no tocado”
+// ---------------------------------------------------------------------------
+
+/** Reserva un bloque para un primitivo y NO escribe su valor (solo marca ocupado). */
+export function allocPrimitiveReserve(
+  store: ByteStore,
+  type: PrimitiveType,
+  label?: string
+) {
+  const sz = sizeOf(type);
+  const alg = alignOf(type);
+  const addr =
+    alg > 1
+      ? store.reservarAlineado(sz, alg, label ?? `prim#reserve`)
+      : store.reservar(sz, label ?? `prim#reserve`);
+  return { addr, size: sz };
+}
+
+/**
+ * Reserva header + bloque de datos para array inline-prim y NO escribe los datos.
+ * Se escribe únicamente el header [len][dataPtr] para que la UI/Heap tengan meta.
+ * Fix: para len=0, reserva bloque sentinela mínimo.
+ */
+export function allocArrayInlinePrimReserve(
+  store: ByteStore,
+  elem: Exclude<PrimitiveType, "string">,
+  length: number,
+  label?: string
+) {
+  const elemSize = sizeOf(elem);
+  const elemAlign = alignOf(elem);
+
+  const hdr = store.reservarAlineado(8, 4, (label ?? "arr#inline") + " hdr");
+  const dataBytes = Math.max(1, length) * elemSize; // evita alloc(0)
+  const dataPtr =
+    elemAlign > 1
+      ? store.reservarAlineado(
+          dataBytes,
+          elemAlign,
+          (label ?? "arr#inline") + " data"
+        )
+      : store.reservar(dataBytes, (label ?? "arr#inline") + " data");
+
+  store.writeU32(hdr + 0, length);
+  store.writeU32(hdr + 4, dataPtr);
+
+  return { addr: hdr, dataPtr, length, elemSize };
+}
+
+/**
+ * Reserva header + tabla u32 para array ref32 y NO escribe la tabla.
+ * Para len=0, reserva una celda sentinela de 4 bytes.
+ */
+export function allocArrayRef32Reserve(
+  store: ByteStore,
+  length: number,
+  label?: string
+) {
+  const hdr = store.reservarAlineado(8, 4, (label ?? "arr#ref32") + " hdr");
+  const tablePtr = store.reservarAlineado(
+    Math.max(1, length) * 4,
+    4,
+    (label ?? "arr#ref32") + " table"
+  );
+  store.writeU32(hdr + 0, length);
+  store.writeU32(hdr + 4, tablePtr);
+  return { addr: hdr, tablePtr, length };
+}
+
+// ---------------------------------------------------------------------------
 // Export público
 // ---------------------------------------------------------------------------
 
@@ -537,4 +609,9 @@ export const Layout = {
   writeObjectDispersed, // legacy/explicativo
   writeObjectCompact, // recomendado para docencia
   readObjectCompact,
+
+  // reservas sin escritura (nuevo)
+  allocPrimitiveReserve,
+  allocArrayInlinePrimReserve,
+  allocArrayRef32Reserve,
 };

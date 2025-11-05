@@ -1,47 +1,58 @@
-// src/app/MemoryApp/HeapView.tsx
 import { useState, useMemo } from "react";
 import { useAnchors } from "./AnchorRegistry";
-import { useHighlight, ByteRange } from "./HighlightCtx";
 import {
   HeapInspectorModal,
-  type UiHeapEntry as HeapEntry, // ← tipado del snapshot (hex)
+  type UiHeapEntry as HeapEntry,
 } from "./components/HeapInspectorModal";
 
-/* ───────── util ───────── */
+/* ───────── utils ───────── */
 const hexToNum = (h: `0x${string}` | string): number =>
   typeof h === "string" ? parseInt(h, 16) : 0;
 
-const rangeToByteRange = (fromHex: `0x${string}`, toHex: `0x${string}`): ByteRange => {
-  const start = hexToNum(fromHex);
-  const end = hexToNum(toHex);
-  return { start, len: Math.max(0, end - start) };
-};
+const bytesBetween = (fromHex?: `0x${string}`, toHex?: `0x${string}`) =>
+  fromHex && toHex ? Math.max(0, hexToNum(toHex) - hexToNum(fromHex)) : 0;
 
-/* Colores tipo UFPS (rojo/blanco/negro) */
-function kindColor(_kind: HeapEntry["kind"]) {
-  return {
-    side: "bg-red-600",
-    badge: "bg-red-600/15 text-red-300 ring-1 ring-red-700/40",
-    dot: "bg-red-500",
-  };
+/* ───────── Colores por tipo ───────── */
+function kindColor(kind: HeapEntry["kind"]) {
+  switch (kind) {
+    case "string":
+      return {
+        side: "bg-blue-600",
+        badge: "bg-blue-600/15 text-blue-300 ring-1 ring-blue-700/40",
+        dot: "bg-blue-500",
+      };
+    case "array":
+      return {
+        side: "bg-emerald-600",
+        badge: "bg-emerald-600/15 text-emerald-300 ring-1 ring-emerald-700/40",
+        dot: "bg-emerald-500",
+      };
+    case "object":
+    default:
+      return {
+        side: "bg-red-600",
+        badge: "bg-red-600/15 text-red-300 ring-1 ring-red-700/40",
+        dot: "bg-red-500",
+      };
+  }
 }
 
 export function HeapView({
   heap,
   pulseAddrs = [],
 }: {
-  heap: HeapEntry[];          // ← viene del snapshot-builder (addr/range en HEX)
-  pulseAddrs?: number[];      // ← eventos de animación en addr NUMÉRICO
+  heap: HeapEntry[];
+  pulseAddrs?: number[];
 }) {
   const [inspect, setInspect] = useState<HeapEntry | null>(null);
-
-  // Normalizamos pulse en base al addr hex de cada entrada
   const pulseSet = useMemo(() => new Set(pulseAddrs ?? []), [pulseAddrs]);
 
   return (
     <section className="rounded-2xl border p-3 bg-white dark:bg-[#0b0b0c] border-neutral-200 dark:border-neutral-800">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-black dark:text-white">Heap</h2>
+        <h2 className="text-lg font-semibold text-black dark:text-white">
+          Heap
+        </h2>
         <span className="text-xs text-neutral-500">{heap.length} items</span>
       </div>
 
@@ -62,7 +73,6 @@ export function HeapView({
         </div>
       )}
 
-      {/* Modal (puro presentacional) */}
       <HeapInspectorModal
         open={!!inspect}
         entry={inspect}
@@ -85,84 +95,68 @@ function HeapCard({
 }) {
   const color = kindColor(entry.kind);
   const { bind } = useAnchors();
-  const { setRanges, clear } = useHighlight();
 
-  // RANGOS YA CALCULADOS POR EL SNAPSHOT (nada de heurísticas acá)
-  const ranges: ByteRange[] = useMemo(() => {
-    const out: ByteRange[] = [];
-    if (entry.range) out.push(rangeToByteRange(entry.range.from, entry.range.to));
-   
-    if ((entry as any).dataRange?.from && (entry as any).dataRange?.to) {
-    
-      const dr = (entry as any).dataRange;
-      out.push(rangeToByteRange(dr.from, dr.to));
-    }
-    return out;
-  }, [entry]);
-
-  const onEnter = () =>
-    setRanges(ranges, { heapId: `heap-${entry.addr}` });
-  const onLeave = () => clear();
+  const headerBytes = bytesBetween(entry.range?.from, entry.range?.to);
+  const dataRange = (entry as any).dataRange as
+    | { from?: `0x${string}`; to?: `0x${string}` }
+    | undefined;
+  const dataBytes = dataRange ? bytesBetween(dataRange.from, dataRange.to) : 0;
 
   return (
-    <div
-      className="relative overflow-hidden rounded-xl border p-2 border-neutral-200 bg-white dark:border-neutral-800 dark:bg-black/30"
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-    >
-      {/* ancla para futuras flechas */}
+    <div className="relative overflow-hidden rounded-xl border p-2 border-neutral-200 bg-white dark:border-neutral-800 dark:bg-black/30">
+      {/* ancla (para futuras navegaciones/enlaces) */}
       <span
         ref={bind(`heap-${entry.addr}`)}
         id={`heap-${entry.addr}`}
         className="pointer-events-none absolute -left-2 top-4 h-4 w-4"
       />
-      <div className={`absolute left-0 top-0 h-full w-1 ${color.side}`} aria-hidden />
+      <div
+        className={`absolute left-0 top-0 h-full w-1 ${color.side}`}
+        aria-hidden
+      />
       <div className="pl-2">
         <div className="flex flex-wrap items-center gap-2">
           <KindBadge kind={entry.kind} />
           <AddrChip addr={entry.addr} />
           <RefCountPill count={entry.refCount} pulse={pulse} />
+          <TagPill entry={entry} />
           {entry.label && (
             <span className="text-[11px] rounded-md px-1.5 py-0.5 bg-neutral-100 text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
               {entry.label}
             </span>
           )}
+          <span className="ml-auto text-[11px] text-neutral-500">
+            hdr:{headerBytes}B
+            {"dataRange" in entry && dataBytes > 0 ? (
+              <> · data:{dataBytes}B</>
+            ) : null}
+          </span>
           <button
             onClick={onInspect}
-            className="ml-auto px-2 py-1 rounded text-sm bg-red-600 text-white hover:bg-red-500"
+            className="px-2 py-1 rounded text-sm bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
           >
             inspeccionar
           </button>
         </div>
 
-        {/* Preview simple: muestra meta clave sin leer RAM */}
+        {/* Preview simple: pinta meta sin leer RAM */}
         <div className="mt-1 text-xs text-neutral-700 dark:text-neutral-200">
           {entry.kind === "string" && <StringMeta meta={entry.meta} />}
           {entry.kind === "array" && <ArrayMeta meta={entry.meta} />}
           {entry.kind === "object" && <ObjectMeta meta={entry.meta} />}
         </div>
 
-        {/* Rango en RAM (docente) */}
+        {/* Rangos en RAM */}
         <div className="mt-1 text-[11px] text-neutral-500">
           <span className="mr-2">header:</span>
           <code className="font-mono">
             [{entry.range.from} .. {entry.range.to})
           </code>
-          {"dataRange" in entry && (entry as any).dataRange?.from && (
+          {dataRange?.from && dataRange?.to && (
             <>
               <span className="mx-2">| data:</span>
               <code className="font-mono">
-                [
-                {
-                  
-                  (entry as any).dataRange.from
-                }
-                {" .. "}
-                {
-                 
-                  (entry as any).dataRange.to
-                }
-                )
+                [{dataRange.from} .. {dataRange.to})
               </code>
             </>
           )}
@@ -172,45 +166,87 @@ function HeapCard({
   );
 }
 
-function StringMeta({ meta }: { meta: Extract<HeapEntry, { kind: "string" }>["meta"] }) {
-  const len = meta.length;
-  const dataPtr = meta.dataPtr;
+/* ───────── Metas por tipo ───────── */
+
+function StringMeta({
+  meta,
+}: {
+  meta: Extract<HeapEntry, { kind: "string" }>["meta"];
+}) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-neutral-500">string</span>
-      <span className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
-        len={len}
-      </span>
-      <span className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
-        dataPtr=<code className="font-mono">{dataPtr}</code>
-      </span>
+      <TinyBadge>len={meta.length}</TinyBadge>
+      <TinyBadge>
+        dataPtr=<code className="font-mono">{meta.dataPtr}</code>
+      </TinyBadge>
     </div>
   );
 }
 
-function ArrayMeta({ meta }: { meta: Extract<HeapEntry, { kind: "array" }>["meta"] }) {
-  const length = meta.length;
-  const dataPtr = meta.dataPtr;
-  // elem puede ser un objeto tipo { tag: "prim", name: "string" } — lo mostramos crudo
+function ArrayMeta({
+  meta,
+}: {
+  meta: Extract<HeapEntry, { kind: "array" }>["meta"];
+}) {
+  const tag = (meta as any).tag ?? "";
+  const elem =
+    (meta as any).elem?.name ??
+    (meta as any).elemType ??
+    (typeof (meta as any).elem === "string" ? (meta as any).elem : undefined);
+  const elemSize =
+    typeof (meta as any).elemSize === "number"
+      ? (meta as any).elemSize
+      : undefined;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-neutral-500">array</span>
-      <span className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
-        length={length}
-      </span>
-      <span className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
-        dataPtr=<code className="font-mono">{dataPtr}</code>
-      </span>
-      {meta.elem !== undefined && (
-        <span className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
-          elem=<code className="font-mono">{JSON.stringify(meta.elem)}</code>
-        </span>
-      )}
+      <TinyBadge>length={meta.length}</TinyBadge>
+      <TinyBadge>
+        dataPtr=<code className="font-mono">{meta.dataPtr}</code>
+      </TinyBadge>
+      {tag && <TinyBadge>{tag}</TinyBadge>}
+      {elem && <TinyBadge>elem={elem}</TinyBadge>}
+      {elemSize !== undefined && <TinyBadge>elemSize={elemSize}</TinyBadge>}
     </div>
   );
 }
 
-function ObjectMeta({ meta }: { meta: Extract<HeapEntry, { kind: "object" }>["meta"] }) {
+function ObjectMeta({
+  meta,
+}: {
+  meta: Extract<HeapEntry, { kind: "object" }>["meta"];
+}) {
+  const tag = (meta as any)?.tag;
+  const schema = (meta as any)?.schema as
+    | Array<{ key: string; type: string }>
+    | undefined;
+
+  if (tag === "object-compact" && Array.isArray(schema)) {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <span className="text-neutral-500">object</span>
+          <TinyBadge>object-compact</TinyBadge>
+          <TinyBadge>fields={schema.length}</TinyBadge>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-1">
+          {schema.map((f) => (
+            <span
+              key={f.key}
+              className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700"
+              title={`${f.key}: ${f.type}`}
+            >
+              {f.key}: <code className="font-mono">{f.type}</code>
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // fallback: meta cruda
   return (
     <div className="flex flex-col gap-1">
       <span className="text-neutral-500">object</span>
@@ -221,7 +257,8 @@ function ObjectMeta({ meta }: { meta: Extract<HeapEntry, { kind: "object" }>["me
   );
 }
 
-/* UI atómica */
+/* ───────── UI atómica ───────── */
+
 function KindBadge({ kind }: { kind: HeapEntry["kind"] }) {
   const color = kindColor(kind);
   return (
@@ -234,14 +271,32 @@ function KindBadge({ kind }: { kind: HeapEntry["kind"] }) {
   );
 }
 
+function TagPill({ entry }: { entry: HeapEntry }) {
+  const tag =
+    entry.kind === "array"
+      ? (entry.meta as any)?.tag
+      : entry.kind === "object"
+        ? (entry.meta as any)?.tag
+        : undefined;
+
+  if (!tag) return null;
+  return (
+    <span className="text-[11px] rounded px-1.5 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
+      {tag}
+    </span>
+  );
+}
+
 function RefCountPill({ count, pulse }: { count: number; pulse?: boolean }) {
   const cls =
     count <= 0
       ? "bg-red-900/30 text-red-200 ring-red-900/60"
-      : "bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700";
+      : "bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700";
   return (
     <span
-      className={`text-[11px] rounded px-1.5 py-0.5 ring-1 ${cls} ${pulse ? "animate-pulse" : ""}`}
+      className={`text-[11px] rounded px-1.5 py-0.5 ${cls} ${
+        pulse ? "animate-pulse" : ""
+      }`}
       title="Recuento de referencias"
     >
       refCount={count}
@@ -250,7 +305,7 @@ function RefCountPill({ count, pulse }: { count: number; pulse?: boolean }) {
 }
 
 function AddrChip({ addr }: { addr: HeapEntry["addr"] }) {
-  const hex = addr; // ya viene en hex
+  const hex = addr;
   return (
     <button
       type="button"
@@ -270,5 +325,13 @@ function AddrChip({ addr }: { addr: HeapEntry["addr"] }) {
         <path d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 17H8V7h11v15Z" />
       </svg>
     </button>
+  );
+}
+
+function TinyBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-[11px] rounded px-1 py-0.5 ring-1 bg-neutral-100 text-neutral-700 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-700">
+      {children}
+    </span>
   );
 }

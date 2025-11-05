@@ -95,28 +95,109 @@ export class Memory {
   }
 
   // ==========================================================================
+  // DECLARACIÓN (reserva sin escribir datos)
+  // ==========================================================================
+  /**
+   * Declara un primitivo como en `int x;` reservando bytes sin tocar el contenido.
+   * RAM: ocupado por `alloc` y visible en `dumpRows().allocations`.
+   */
+  declarePrimitive(name: string, type: PrimitiveType) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+    const w = Layout.allocPrimitiveReserve(this.ram, type, `prim ${name}#decl`);
+    this.upsertSlot(name, { name, kind: "prim", type, valueAddr: w.addr });
+    return [true, `decl ${type} ${name} @0x${w.addr.toString(16)}`] as const;
+  }
+
+  /**
+   * Declara un array de tamaño fijo (Java: `new T[n]`) y NO escribe datos.
+   * - elem prim no-string → inline-prim: header + bloque contiguo reservado.
+   * - string/objeto/array  → ref32: header + tabla u32 reservada (punteros 0 por defecto).
+   */
+  declareArray(
+    name: string,
+    elem: MemType, // típicamente Arr(Prim("int")).elem
+    length: number,
+    mode: "auto" | "inline-prim" | "ref32" = "auto"
+  ) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+
+    const isInlinePrim =
+      mode === "inline-prim" ||
+      (mode === "auto" && elem.tag === "prim" && elem.name !== "string");
+
+    if (isInlinePrim) {
+      if (!(elem.tag === "prim" && elem.name !== "string")) {
+        throw new Error("inline-prim solo admite primitivos no-string");
+      }
+      const r = Layout.allocArrayInlinePrimReserve(
+        this.ram,
+        elem.name,
+        length,
+        `arr ${name}#decl`
+      );
+      this.heap.addArrayInlinePrim(
+        r.addr,
+        {
+          length,
+          dataPtr: r.dataPtr,
+          elemType: elem.name,
+          elemSize: sizeOf(elem.name),
+        },
+        `arr(${name})`
+      );
+      this.upsertSlot(name, { name, kind: "ref", refAddr: r.addr });
+      return [
+        true,
+        `array ${name} -> @0x${r.addr.toString(16)} (len=${length})`,
+      ] as const;
+    }
+
+    // ref32 (strings/objetos/anidados)
+    const r = Layout.allocArrayRef32Reserve(
+      this.ram,
+      length,
+      `arr ${name}#decl`
+    );
+    this.heap.addArrayRef32(
+      r.addr,
+      { length, dataPtr: r.tablePtr, elem },
+      `arr(${name})`
+    );
+    this.upsertSlot(name, { name, kind: "ref", refAddr: r.addr });
+    return [
+      true,
+      `array ${name} -> @0x${r.addr.toString(16)} (len=${length})`,
+    ] as const;
+  }
+
+  // ==========================================================================
   // Escritura recursiva por MemType (principal)
   // ==========================================================================
   /**
    * API principal para crear/actualizar una variable en el stack.
    * Crea en RAM lo necesario (vía Layout) y registra el nodo en Heap si es compuesto.
+   * Esta ruta **sí escribe** los datos (inicializadores).
    */
   storeValue(
     name: string,
     type: MemType,
     value: any,
-    opts?: { layout?: "compact" | "dispersed" }
+    opts?: { layout?: "compact" | "dispersed"; mustBeNew?: boolean }
   ) {
+    if (opts?.mustBeNew && this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
     const res = this.allocDeep(type, value, `var ${name}`, opts);
-
-    // Nota: allocDeep ya registra refCount=1 para el nodo raíz (si fue compuesto).
-    // Aquí solo conectamos el slot (y dec del antiguo si corresponde).
     this.upsertSlot(name, res.slot);
     return [true, `ok ${name}`] as const;
   }
 
   /**
-   * Crea en RAM según el MemType.
+   * Crea en RAM según el MemType (con escritura de datos).
    * - prim no-string → PRIM slot por valor (valueAddr)
    * - string         → header UTF-16; HEAP; REF slot a header
    * - array          → inline-prim | ref32 (strings/objetos/nested)
@@ -206,9 +287,7 @@ export class Memory {
           label
         );
 
-        // Importante: cada string del array se registró con addString dentro de allocDeep? No:
-        // writeArrayOfStrings reserva headers; aquí los punteros fueron escritos, pero no subimos
-        // entradas por-cadena. Las registramos ahora:
+        // Registrar cada string en Heap (uno por header creado).
         for (let i = 0; i < len; i++) {
           const sh = this.ram.readU32(table + i * 4);
           const slen = this.ram.readU32(sh);
@@ -251,11 +330,10 @@ export class Memory {
 
       // 4.a) DISPERSED (legacy/explicativo solo con primitivos)
       if (!wantCompact) {
-        // Solo primitivos para esta ruta (como tu writeObject legacy)
         const propsLegacy = fields.map(({ key, type }) => {
           if (type.tag === "prim")
             return { key, type: type.name as PrimitiveType, value: v?.[key] };
-          // Si no es primitivo, no hay forma dispersa “bonita” aquí → placeholder 0
+          // No-prim en disperso: placeholder 0 (docente)
           return { key, type: "int" as PrimitiveType, value: 0 };
         });
         const w = Layout.writeObjectDispersed(this.ram, propsLegacy, label);
@@ -271,18 +349,15 @@ export class Memory {
       }
 
       // 4.b) COMPACTO (recomendado)
-      // Construimos FieldSpec: prim vs ptr32 (para compuestos).
       const fieldSpecs: Array<
         | { kind: "prim"; key: string; type: PrimitiveType; value: any }
         | { kind: "ptr"; key: string; ptr: Addr }
       > = [];
-      // También armamos el schema de lectura (PrimitiveType | "ptr32")
       const schema: Array<{ key: string; type: PrimitiveType | "ptr32" }> = [];
 
       for (const f of fields) {
         const fv = v?.[f.key];
         if (f.type.tag === "prim") {
-          // string cuenta como prim, pero su inline es un PTR u32 (Layout se encarga).
           fieldSpecs.push({
             kind: "prim",
             key: f.key,
@@ -291,7 +366,6 @@ export class Memory {
           });
           schema.push({ key: f.key, type: f.type.name });
         } else {
-          // Compuesto → crear nodo y almacenar puntero
           const child = this.allocDeep(
             f.type,
             fv,
@@ -316,6 +390,9 @@ export class Memory {
   // ==========================================================================
   /** Crea un primitivo o una string (como referencia) con mensaje clásico. */
   storePrimitive(type: PrimitiveType, name: string, value: any) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
     if (type === "string") {
       const hdr = Layout.allocUtf16String(
         this.ram,
@@ -337,6 +414,9 @@ export class Memory {
   }
 
   storeArray(elem: PrimitiveType, name: string, values: any[]) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
     const mt = Arr(Prim(elem), "auto");
     const r = this.storeValue(name, mt, values);
     const slot = this.resolveSlot(name);
@@ -354,6 +434,9 @@ export class Memory {
     props: Array<{ type: PrimitiveType; key: string; value: any }>,
     options?: { compact?: boolean }
   ) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
     const mt = Obj(
       props.map((p) => ({ key: p.key, type: Prim(p.type) })),
       options?.compact ?? true
@@ -400,7 +483,6 @@ export class Memory {
     if (ea.kind !== "object" || eb.kind !== "object")
       return [false, "Alguna no es objeto"];
 
-    // Requiere objetos compactos con schema completo (PrimitiveType | "ptr32")
     const ma = ea.meta as ObjectCompactMeta | undefined;
     const mb = eb.meta as ObjectCompactMeta | undefined;
     if (
@@ -442,18 +524,21 @@ export class Memory {
     if (!s) return [false, `Fuente "${source}" no existe.`] as const;
     if (!t) return [false, `Destino "${target}" no existe.`] as const;
 
-    // Valor por valor (mismo tipo)
     if (t.kind === "prim" && s.kind === "prim") {
-      if (t.type !== s.type)
-        throw new TypeMismatchError("Tipos distintos en asignación primitiva");
+      if (t.type !== s.type) throw new TypeMismatchError("Tipos distintos");
       const sz = SIZES[t.type];
-      const bytes = this.ram.readBytes(s.valueAddr, sz);
-      this.ram.writeBytes(t.valueAddr, bytes);
+      this.ram.writeBytes(t.valueAddr, this.ram.readBytes(s.valueAddr, sz));
       return [true, `Asignado (valor): "${target}" = "${source}"`] as const;
     }
 
-    // Referencia por referencia (maneja refCount)
     if (t.kind === "ref" && s.kind === "ref") {
+      // 🔒 no-op seguro
+      if (t.refAddr === s.refAddr) {
+        return [
+          true,
+          `Asignado (ref, sin cambios): "${target}" mantiene 0x${s.refAddr.toString(16)}`,
+        ] as const;
+      }
       if (t.refAddr !== 0 && this.heap.has(t.refAddr)) this.heap.dec(t.refAddr);
       (t as any).refAddr = s.refAddr;
       if (s.refAddr !== 0) this.heap.inc(s.refAddr);
@@ -546,6 +631,7 @@ export class Memory {
 
       // dec del puntero anterior si existía
       const oldPtr = this.ram.readU32(cell);
+
       if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
 
       if (isStr(elem)) {
@@ -741,8 +827,83 @@ export class Memory {
     }
     return null;
   }
+
   getNullGuard(): number {
     return this.NULL_GUARD;
+  }
+
+  setArrayIndexFromId(name: string, index: number, source: string) {
+    const arrSlot = this.resolveSlot(name);
+    if (!arrSlot || arrSlot.kind !== "ref" || arrSlot.refAddr === 0)
+      return [false, `"${name}" no es un array válido.`] as const;
+
+    const entry = this.heap.get(arrSlot.refAddr);
+    if (!entry || entry.kind !== "array")
+      return [false, `"${name}" no es un array.`] as const;
+
+    const src = this.resolveSlot(source);
+    if (!src) return [false, `Fuente "${source}" no existe.`] as const;
+
+    // 1) Array inline-prim: copiamos BYTES desde el primitivo fuente
+    if (entry.meta.tag === "array-inline-prim") {
+      const m = entry.meta;
+      const { length, elemType, elemSize, dataPtr } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango: 0..${length - 1}`] as const;
+
+      if (src.kind !== "prim" || src.type !== elemType)
+        return [
+          false,
+          `Tipos incompatibles: se esperaba ${elemType} y "${source}" es ${src.kind === "prim" ? src.type : "ref"}.`,
+        ] as const;
+
+      const dst = dataPtr + index * elemSize;
+      const bytes = this.ram.readBytes(src.valueAddr, elemSize);
+      this.ram.writeBytes(dst, bytes);
+      return [true, `${name}[${index}] ← (bytes de ${source})`] as const;
+    }
+
+    // 2) Array ref32: escribimos PUNTERO y ajustamos refCounts
+    if (entry.meta.tag === "array-ref32") {
+      const m = entry.meta;
+      const { length, dataPtr: table } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango: 0..${length - 1}`] as const;
+
+      if (src.kind !== "ref")
+        return [
+          false,
+          `Tipos incompatibles: "${name}" guarda referencias y "${source}" no es referencia.`,
+        ] as const;
+
+      const cell = table + index * 4;
+      const oldPtr = this.ram.readU32(cell);
+      if (oldPtr === src.refAddr) {
+        return [true, `${name}[${index}] sin cambios`] as const; // 🔒 no-op
+      }
+      if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
+
+      this.ram.writeU32(cell, src.refAddr >>> 0);
+      if (src.refAddr !== 0) this.heap.inc(src.refAddr);
+
+      return [
+        true,
+        `${name}[${index}] → 0x${src.refAddr.toString(16)}`,
+      ] as const;
+    }
+
+    return [false, `Modo de array no soportado para "${name}".`] as const;
+  }
+
+  /** ¿Hay una variable con ese nombre en el frame ACTUAL (top)? */
+  private existsInCurrentFrame(name: string): boolean {
+    const top = this.stack.top();
+    return !!top && !!top.find(name);
+  }
+
+  /** Mensaje estándar para duplicados. */
+  private dupMsg(name: string) {
+    return `Variable "${name}" ya existe en este ámbito. Usa otro nombre.`;
   }
   // ==========================================================================
   // Accesos directos (tests/depuración)
@@ -755,5 +916,16 @@ export class Memory {
   }
   getStack() {
     return this.stack;
+  }
+
+  getRefOwners(addr: number): Array<{ frame: string; name: string }> {
+    const out: Array<{ frame: string; name: string }> = [];
+    for (const f of this.stack.all()) {
+      for (const s of f.slots.values()) {
+        if (s.kind === "ref" && s.refAddr === addr)
+          out.push({ frame: f.name, name: s.name });
+      }
+    }
+    return out;
   }
 }

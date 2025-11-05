@@ -14,9 +14,11 @@ export function useMemorySimulator(sizeBytes = 64 * 1024) {
   const memory = useMemo(() => new Memory(sizeBytes), [sizeBytes]);
   const vm = useMemo(() => new VmController(memory), [memory]);
 
-  const [snapshot, setSnapshot] = useState<UiSnapshot>(
-  () => buildUiSnapshot(memory, { ram: { hideGuards: true } })
-);
+  const [snapshot, setSnapshot] = useState<UiSnapshot>(() =>
+    buildUiSnapshot(memory, {
+      ram: { hideGuards: true, extraHiddenLabels: ["padding"] },
+    })
+  );
   const [logs, setLogs] = useState<string[]>([]);
   const [animEvents] = useState<any[]>([]); // opcional
 
@@ -27,7 +29,7 @@ export function useMemorySimulator(sizeBytes = 64 * 1024) {
 
       try {
         const res = vm.run(cmd); // ya viene con try/catch interno, pero este try protege el propio hook
-        setSnapshot(buildUiSnapshot(memory, { ram: { hideGuards: true } }));
+        setSnapshot(buildUiSnapshot(memory, { ram: { hideGuards: true, extraHiddenLabels: ["padding"] } }));
 
         // Prefijo aquí (no en VmController) para no duplicar iconos
         const line = res.ok ? `✅ ${res.message}` : `❌ ${res.message}`;

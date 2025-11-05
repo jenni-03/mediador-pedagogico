@@ -15,7 +15,6 @@ import { Lexicon } from "./lexicon";
 import {
   PrimitiveValueValidator,
   type PrimitiveLike,
-  type ValidationResult,
 } from "./primitive-value-validator";
 import { ArrayValueValidator } from "./array-value-validator";
 import { ObjectValueValidator } from "./object-value-validator";
@@ -34,6 +33,20 @@ export type DeclAST = {
   init: Expr; // expresión del lado derecho
 };
 
+export type ObjectKind = "class" | "record" | "struct";
+
+export type TypeDefAST = {
+  kind: "typeDef";
+  objectKind: ObjectKind; // "class" | "record" | "struct"
+  typeName: string;
+  fields: Array<{
+    name: string;
+    spec:
+      | { kind: "prim"; type: PrimitiveLike | "String" }
+      | { kind: "array"; elem: PrimitiveLike | "String" };
+  }>;
+};
+
 export type Expr =
   | { kind: "number"; value: number }
   | { kind: "boolean"; value: boolean }
@@ -41,22 +54,156 @@ export type Expr =
   | { kind: "string"; value: string } // "hola"
   | { kind: "char"; value: string } // 'A' → string de 1 char
   | { kind: "array"; items: Expr[] } // {1,2,3} ó {"a","b"}
-  | { kind: "object"; fields: Record<string, Expr> }; // {x:1, y:"a"}
+  | { kind: "object"; fields: Record<string, Expr> } // {x:1, y:"a"}
+  | { kind: "newArray"; length: number } // ← NUEVO
+  | { kind: "absent" }
+  | { kind: "ident"; name: string };
 
 // ======== Registro de esquemas para objetos ========
+/** Intenta parsear:   class|record|struct  TypeName ( fieldList ) ; */
+export function parseTypeDef(source: string): TypeDefAST {
+  const src = preprocess(source);
+  const m = src.match(
+    /^\s*(class|record|struct)\s+([A-Za-z_]\w*)\s*\(\s*([\s\S]*?)\s*\)\s*;\s*$/
+  );
+  if (!m)
+    throw new Error("No es una definición de tipo (class/record/struct).");
+  const objectKind = m[1] as ObjectKind;
+  const typeName = m[2];
+  const fieldsSrc = m[3].trim();
+
+  const fields: TypeDefAST["fields"] = [];
+  if (fieldsSrc !== "") {
+    const parts = splitTopLevel(fieldsSrc, ","); // ya tienes splitTopLevel
+    for (const raw of parts) {
+      const spec = raw.trim();
+      if (!spec) continue;
+
+      // Soporta:   Tipo[]?  nombre[]?   (al estilo que ya soportas en declaraciones)
+      const fm = spec.match(
+        /^\s*([A-Za-z_]\w*)(\s*\[\s*\])?\s+([A-Za-z_]\w*)(\s*\[\s*\])?\s*$/
+      );
+      if (!fm) {
+        throw new Error(
+          `Campo no reconocido: "${spec}". Usa p.ej. "int id" o "String nombre" o "int[] meses".`
+        );
+      }
+      const [, rawType, arrAfterType, rawName, arrAfterName] = fm;
+      const dims = (arrAfterType ? 1 : 0) + (arrAfterName ? 1 : 0);
+      if (dims > 1) {
+        throw new Error(`Solo arreglos 1D en campos. Revisa "${spec}".`);
+      }
+      const isArray = dims === 1;
+
+      // Validar tipo permitido en campos: primitivos o String
+      const typeNameTok = rawType;
+      const isPrim = Lexicon.hasType(typeNameTok as any);
+      const isString = typeNameTok === "String";
+      if (!isPrim && !isString) {
+        // Para este sprint, mantenemos simple: solo primitivos y String en campos
+        // (si luego quieres objetos anidados, aquí puedes extender a kind:"object")
+        throw new Error(
+          `Tipo de campo no soportado en este sprint: "${typeNameTok}". Usa primitivos o String.`
+        );
+      }
+
+      const name = rawName;
+      if (!/^[A-Za-z_]\w*$/.test(name)) {
+        throw new Error(`Nombre de campo inválido: "${name}".`);
+      }
+
+      const fieldSpec = isArray
+        ? ({
+            kind: "array",
+            elem: isString ? "String" : (typeNameTok as PrimitiveLike),
+          } as const)
+        : ({
+            kind: "prim",
+            type: isString ? "String" : (typeNameTok as PrimitiveLike),
+          } as const);
+
+      fields.push({ name, spec: fieldSpec });
+    }
+  }
+
+  return { kind: "typeDef", objectKind, typeName, fields };
+}
+
+/**
+ * Intenta registrar un tipo. Si no matchea como typedef, devuelve { matched:false }.
+ * Si matchea, registra en SchemaRegistry y devuelve { matched:true, ok:..., message:... }.
+ */
+export function defineType(
+  source: string
+): ({ matched: true } & EvalResult) | { matched: false } {
+  try {
+    const ast = parseTypeDef(source);
+    // Construir ObjectSchema a partir de fields
+    const schema: ObjectSchema = {};
+    for (const f of ast.fields) {
+      if (f.spec.kind === "prim") {
+        schema[f.name] = { kind: "prim", type: f.spec.type };
+      } else {
+        schema[f.name] = { kind: "array", elem: f.spec.elem };
+      }
+    }
+    SchemaRegistry.register(ast.typeName, schema, ast.objectKind);
+    return {
+      matched: true,
+      ok: true,
+      message: `✅ ${ast.objectKind} ${ast.typeName} registrado con ${ast.fields.length} campo(s).`,
+    };
+  } catch (e: any) {
+    // Si no era typedef, indicamos que no matcheó; si sí era y falló, devolvemos error.
+    const s = String(e?.message ?? e);
+    if (s.includes("No es una definición de tipo")) {
+      return { matched: false };
+    }
+    return {
+      matched: true,
+      ok: false,
+      message: `❌ Error en definición de tipo: ${s}`,
+    };
+  }
+}
 
 export class SchemaRegistry {
-  private static schemas = new Map<string, ObjectSchema>();
-  static register(typeName: string, schema: ObjectSchema) {
-    this.schemas.set(typeName, schema);
+  private static schemas = new Map<
+    string,
+    { schema: ObjectSchema; kind: ObjectKind }
+  >();
+
+  static register(
+    typeName: string,
+    schema: ObjectSchema,
+    kind: ObjectKind = "class"
+  ) {
+    this.schemas.set(typeName, { schema, kind });
   }
-  static has(typeName: string): boolean {
-    return this.schemas.has(typeName);
-  }
-  static get(typeName: string): ObjectSchema {
+
+  /** Compat: devuelve SOLO el ObjectSchema (lo que esperan los validadores). */
+  static get(typeName: string): { schema: ObjectSchema; kind: ObjectKind } {
     const s = this.schemas.get(typeName);
-    if (!s) throw new Error(`No hay esquema para el tipo objeto "${typeName}"`);
+    if (!s) throw new Error(`No hay esquema para "${typeName}"`);
     return s;
+  }
+
+  /** Si necesitas el "kind" (class/record/struct) en otra parte. */
+  static getKind(typeName: string): ObjectKind {
+    const s = this.schemas.get(typeName);
+    if (!s) throw new Error(`No hay esquema para "${typeName}"`);
+    return s.kind;
+  }
+
+  /** Meta completo por si quieres ambas cosas. */
+  static getMeta(typeName: string): { schema: ObjectSchema; kind: ObjectKind } {
+    const s = this.schemas.get(typeName);
+    if (!s) throw new Error(`No hay esquema para "${typeName}"`);
+    return s;
+  }
+
+  static has(typeName: string) {
+    return this.schemas.has(typeName);
   }
 }
 
@@ -65,23 +212,147 @@ export class SchemaRegistry {
 export function parseDeclaration(source: string): DeclAST {
   const src = preprocess(source);
 
-  // Captura: Tipo [ ]? nombre = (inicializador hasta ';') ;
-  // [\s\S]*? = non-greedy multiline
-  const re =
-    /^\s*([A-Za-z_]\w*)(\s*\[\s*\])?\s+([A-Za-z_]\w*)\s*=\s*([\s\S]*?)\s*;\s*$/;
-  const m = src.match(re);
-  if (!m) {
-    throw new Error(
-      `No pude reconocer la declaración. Formato esperado: Tipo[[]] nombre = inicializador;`
+  // Soporta: Tipo[ ]? nombre[ ]? = init ;
+  const withInit =
+    /^\s*([A-Za-z_]\w*)(\s*\[\s*\])?\s+([A-Za-z_]\w*)(\s*\[\s*\])?\s*=\s*([\s\S]*?)\s*;\s*$/;
+
+  // Soporta: Tipo[ ]? nombre[ ]? ;
+  const noInit =
+    /^\s*([A-Za-z_]\w*)(\s*\[\s*\])?\s+([A-Za-z_]\w*)(\s*\[\s*\])?\s*;\s*$/;
+
+  let m = src.match(withInit);
+  if (m) {
+    const [, rawType, arrAfterType, name, arrAfterName, rawInit] = m;
+
+    const dims = (arrAfterType ? 1 : 0) + (arrAfterName ? 1 : 0);
+    if (dims > 1) {
+      throw new Error(
+        `Por ahora solo soportamos arreglos 1D. Detecté ${dims} corchetes (p.ej. int[] a[]).`
+      );
+    }
+    const isArray = dims === 1;
+    const typeName = rawType;
+    const t = rawInit.trim();
+
+    // 1) new Tipo[n]  (ya lo tenías)
+    const mNew = t.match(/^new\s+([A-Za-z_]\w*)\s*\[\s*(\d+)\s*\]\s*$/);
+    if (isArray && mNew) {
+      const newType = mNew[1];
+      if (newType !== typeName) {
+        throw new Error(
+          `Tipo del 'new' no coincide: declaraste ${typeName}[] pero escribiste new ${newType}[...].`
+        );
+      }
+      return {
+        kind: "declaration",
+        typeName,
+        isArray,
+        name,
+        init: { kind: "newArray", length: Number(mNew[2]) },
+      };
+    }
+    /* 1b) NUEVO: new Tipo[]{ a, b, c }  (Java-style initializer) */
+    const mNewInit = t.match(
+      /^new\s+([A-Za-z_]\w*)\s*\[\s*\]\s*\{\s*([\s\S]*?)\s*\}\s*$/
     );
+    if (isArray && mNewInit) {
+      const newType = mNewInit[1];
+      if (newType !== typeName) {
+        throw new Error(
+          `Tipo del 'new' no coincide: declaraste ${typeName}[] pero escribiste new ${newType}[]{...}.`
+        );
+      }
+      const inner = mNewInit[2].trim();
+      const items =
+        inner === "" ? [] : splitTopLevel(inner, ",").map(parseExpr);
+      return {
+        kind: "declaration",
+        typeName,
+        isArray,
+        name,
+        init: { kind: "array", items },
+      };
+    }
+    // 2) new Tipo(arg1, arg2, ...)  →  reescribir a objeto literal con el orden del schema
+    //    (solo para NO array)
+    const mCtor = !isArray
+      ? t.match(/^new\s+([A-Za-z_]\w*)\s*\(([\s\S]*)\)\s*$/)
+      : null;
+    if (mCtor) {
+      const newType = mCtor[1];
+      if (newType !== typeName) {
+        throw new Error(
+          `Tipo del 'new' no coincide: declaraste ${typeName} pero escribiste new ${newType}(...).`
+        );
+      }
+
+      const argsSrc = mCtor[2].trim();
+      const args = argsSrc === "" ? [] : splitTopLevel(argsSrc, ",");
+
+      // Usamos el schema registrado para obtener el orden de campos
+      const { schema } = SchemaRegistry.get(typeName);
+      const keys = Object.keys(schema);
+
+      if (args.length !== keys.length) {
+        throw new Error(
+          `Constructor de ${typeName} espera ${keys.length} argumentos en orden: ${keys.join(
+            ", "
+          )}; recibidos ${args.length}.`
+        );
+      }
+
+      const fields: Record<string, Expr> = {};
+      for (let i = 0; i < keys.length; i++) {
+        fields[keys[i]] = parseExpr(args[i]);
+      }
+
+      return {
+        kind: "declaration",
+        typeName,
+        isArray,
+        name,
+        init: { kind: "object", fields },
+      };
+    }
+
+    // 3) Resto de inicializadores (números, strings, {…}, etc.)
+    return {
+      kind: "declaration",
+      typeName,
+      isArray,
+      name,
+      init: parseExpr(t),
+    };
   }
-  const [, rawType, arrSuffix, name, rawInit] = m;
-  const isArray = !!arrSuffix;
 
-  const typeName = rawType;
-  const initExpr = parseExpr(rawInit.trim());
+  m = src.match(noInit);
+  if (m) {
+    const [, rawType, arrAfterType, name, arrAfterName] = m;
 
-  return { kind: "declaration", typeName, isArray, name, init: initExpr };
+    const dims = (arrAfterType ? 1 : 0) + (arrAfterName ? 1 : 0);
+    if (dims > 1) {
+      throw new Error(
+        `Por ahora solo soportamos arreglos 1D. Detecté ${dims} corchetes (p.ej. int[] a[]).`
+      );
+    }
+    const isArray = dims === 1;
+
+    return {
+      kind: "declaration",
+      typeName: rawType,
+      isArray,
+      name,
+      init: { kind: "absent" },
+    };
+  }
+
+  throw new Error(
+    `No pude reconocer la declaración. Formatos:
+     • Tipo nombre = inicializador;
+     • Tipo[] nombre = inicializador;   • Tipo nombre[] = inicializador;
+     • Tipo nombre;
+     • Tipo[] nombre = new Tipo[n];     • Tipo nombre[] = new Tipo[n];`
+  );
 }
 
 function parseExpr(s: string): Expr {
@@ -126,8 +397,12 @@ function parseExpr(s: string): Expr {
       return { kind: "array", items: parts.map(parseExpr) };
     }
   }
+  // Identificador simple
+  if (/^[A-Za-z_]\w*$/.test(t)) {
+    return { kind: "ident", name: t };
+  }
 
-  // Número (decimal o entero)
+  // Número
   if (/^[+-]?\d+(?:\.\d+)?$/.test(t)) {
     return { kind: "number", value: Number(t) };
   }
@@ -360,6 +635,72 @@ function stripCommentsPreservingStrings(input: string): string {
   }
   return out;
 }
+// === NUEVO: AST para asignaciones =============================
+export type LValue =
+  | { kind: "var"; name: string }
+  | { kind: "index"; name: string; index: number };
+
+export type AssignAST = {
+  kind: "assign";
+  target: LValue;
+  expr: Expr;
+};
+
+// Parseo simple:  id = expr;   |   id[123] = expr;
+export function parseAssignment(source: string): AssignAST {
+  const src = preprocess(source);
+
+  // id[index] = expr;
+  {
+    const m = src.match(
+      /^\s*([A-Za-z_]\w*)\s*\[\s*(\d+)\s*\]\s*=\s*([\s\S]*?)\s*;\s*$/
+    );
+    if (m) {
+      const [, name, idx, rhs] = m;
+      return {
+        kind: "assign",
+        target: { kind: "index", name, index: Number(idx) },
+        expr: parseExpr(rhs.trim()),
+      };
+    }
+  }
+
+  // id = expr;
+  {
+    const m = src.match(/^\s*([A-Za-z_]\w*)\s*=\s*([\s\S]*?)\s*;\s*$/);
+    if (m) {
+      const [, name, rhs] = m;
+      return {
+        kind: "assign",
+        target: { kind: "var", name },
+        expr: parseExpr(rhs.trim()),
+      };
+    }
+  }
+
+  throw new Error(
+    `No reconocí una asignación. Formatos: id = expr;  |  id[n] = expr;`
+  );
+}
+
+// Validación liviana (el tipo real lo verifica Memory en ejecución)
+export function validateAssignment(src: string): EvalResult {
+  try {
+    const ast = parseAssignment(src);
+    if (ast.target.kind === "index") {
+      if (!Number.isInteger(ast.target.index) || ast.target.index < 0) {
+        return { ok: false, message: `❌ El índice debe ser un entero ≥ 0.` };
+      }
+      return {
+        ok: true,
+        message: `✅ Asignación a ${ast.target.name}[${ast.target.index}].`,
+      };
+    }
+    return { ok: true, message: `✅ Asignación a ${ast.target.name}.` };
+  } catch (e: any) {
+    return { ok: false, message: `❌ ${e?.message ?? String(e)}` };
+  }
+}
 
 // ======== Bridge: AST → validadores ========
 
@@ -388,9 +729,51 @@ export class CommandInterpreter {
       };
     }
 
+    // Ramas nuevas primero
+    if (ast.init.kind === "absent") {
+      // Aceptamos: prim sin init (p.ej. int x;)
+      if (!ast.isArray && isPrimOrString) {
+        return {
+          ok: true,
+          message: `✅ Declaración de ${typeName} ${ast.name} (sin inicializador).`,
+        };
+      }
+      // Para este sprint, forzamos que los arreglos sin init usen new Tipo[n]
+      if (ast.isArray) {
+        return {
+          ok: false,
+          message: `❌ Para reservar un arreglo usa: ${typeName}[] ${ast.name} = new ${typeName}[n];`,
+        };
+      }
+      // Objetos sin init (null) los podemos habilitar luego.
+      return {
+        ok: false,
+        message: `❌ Aún no soportamos declaración sin inicializador para "${typeName}".`,
+      };
+    }
+
+    if (ast.init.kind === "newArray") {
+      if (!ast.isArray) {
+        return {
+          ok: false,
+          message: `❌ "new ${typeName}[n]" solo tiene sentido con ${typeName}[]`,
+        };
+      }
+      if (!Number.isInteger(ast.init.length) || ast.init.length < 0) {
+        return {
+          ok: false,
+          message: `❌ El tamaño del arreglo debe ser entero ≥ 0.`,
+        };
+      }
+      return {
+        ok: true,
+        message: `✅ ${ast.name} será un arreglo de ${typeName} de tamaño ${ast.init.length}.`,
+      };
+    }
+
+    // Resto: igual que antes (validadores de valores)
     try {
       if (!ast.isArray) {
-        // Caso no arreglo
         if (isPrimOrString) {
           const value = buildJsValue(ast.init);
           return new PrimitiveValueValidator(
@@ -399,12 +782,11 @@ export class CommandInterpreter {
             value
           ).validate();
         } else {
-          const schema = this.schema.get(typeName);
+          const { schema } = this.schema.get(typeName);
           const value = buildJsValue(ast.init);
           return new ObjectValueValidator(schema, ast.name, value).validate();
         }
       } else {
-        // Caso arreglo
         if (isPrimOrString) {
           const arr = buildJsArray(ast.init);
           return new ArrayValueValidator(
@@ -413,8 +795,7 @@ export class CommandInterpreter {
             arr
           ).validate();
         } else {
-          // Arreglo de objetos
-          const schema = this.schema.get(typeName);
+          const { schema } = this.schema.get(typeName);
           const arr = buildJsArray(ast.init);
           for (let i = 0; i < arr.length; i++) {
             const r = new ObjectValueValidator(schema, arr[i], {
@@ -431,9 +812,7 @@ export class CommandInterpreter {
     } catch (e: any) {
       return {
         ok: false,
-        message: `❌ Error al interpretar el inicializador: ${
-          e?.message ?? String(e)
-        }`,
+        message: `❌ Error al interpretar el inicializador: ${e?.message ?? String(e)}`,
       };
     }
   }

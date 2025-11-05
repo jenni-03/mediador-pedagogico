@@ -13,6 +13,11 @@ import type { PrimitiveType } from "./memoria/layout";
 
 type HexAddr = `0x${string}`;
 type ByteRange = { from: HexAddr; to: HexAddr }; // semiabierto [from, to)
+export type UiRamItemSource =
+  | "stack-prim"
+  | "stack-ref"
+  | "heap-header"
+  | "heap-data";
 
 export type HexAlloc = { at: HexAddr; size: number; label?: string };
 
@@ -34,12 +39,52 @@ export type UiPrimSlot = {
   range: ByteRange; // bytes ocupados por el prim en RAM
 };
 
+export type UiRamItem = {
+  id: string; // estable: p.ej. "frame1:x" ó "heap#12:header"
+  source: UiRamItemSource;
+  label: string; // lo que verá el alumno ("x:int", "String header", "Array<String> data")
+  type: string; // tipo docente ("int", "ref32", "string", "array<String>")
+  range: ByteRange; // [from..to)
+  bytes: number; // tamaño en bytes
+  meta?: Record<string, unknown>; // opcional (frameId, heapId, etc.)
+};
+
+// Rango con tono para colorear la grilla (lo usa RamView)
+export type UiRamTone = {
+  start: number;
+  size: number;
+  label?: string;
+  tone: "header" | "data" | "slot" | "object";
+};
+
 // ── Previews tipados para docencia ───────────────────────────────────────────
 type StringPreview = {
   kind: "string";
   len: number;
   text: string;
   chars?: { index: number; code: number; char: string }[];
+};
+type ArrayPrimPreview = {
+  kind: "array-prim";
+  elemType: string; // ej: "int"
+  items: Array<number | string>; // números o string si long > MAX_SAFE_INTEGER
+  truncated: boolean;
+};
+
+type ArrayStringPreview = {
+  kind: "array-string";
+  items: { index: number; ref: HexAddr; len: number; text: string }[];
+  truncated: boolean;
+};
+type ArrayRefPreview = {
+  kind: "array-ref";
+  items: { index: number; ref: HexAddr }[];
+  truncated: boolean;
+};
+type ObjectPreview = {
+  kind: "object";
+  fields: { key: string; type: string; value: unknown }[];
+  truncated?: boolean;
 };
 
 type ArrayItemString = {
@@ -82,13 +127,16 @@ export type UiHeapEntry =
       refCount: number;
       label?: string;
       meta: {
-        tag?: string; // ej: "array-ref32"
+        tag?: string; // "array-inline-prim" | "array-ref32"
         length: number;
         dataPtr: HexAddr;
-        elem?: unknown; // p. ej. { tag: "prim", name: "string" }
+        elem?: unknown;
+        elemType?: string;
+        elemSize?: number;
       };
-      range: ByteRange; // header (len+dataPtr)
-      dataRange: ByteRange; // área de datos (refs o prims)
+      range: ByteRange;
+      dataRange: ByteRange;
+      preview?: ArrayPrimPreview | ArrayStringPreview | ArrayRefPreview; // ← NUEVO
       id?: number;
     }
   | {
@@ -97,12 +145,13 @@ export type UiHeapEntry =
       refCount: number;
       label?: string;
       meta: {
-        tag?: string; // ej: "string"
+        tag?: string;
         length: number;
         dataPtr: HexAddr;
       };
-      range: ByteRange; // header (len+dataPtr)
-      dataRange: ByteRange; // bytes UTF-16 = len*2
+      range: ByteRange;
+      dataRange: ByteRange;
+      preview?: StringPreview; // ← NUEVO
       id?: number;
     }
   | {
@@ -111,7 +160,8 @@ export type UiHeapEntry =
       refCount: number;
       label?: string;
       meta: unknown;
-      range: ByteRange; // si no hay tamaño claro, deja from==to
+      range: ByteRange;
+      preview?: ObjectPreview; // ← NUEVO
       id?: number;
     };
 
@@ -127,8 +177,31 @@ export type UiSnapshot = {
   stack: UiFrame[];
   heap: UiHeapEntry[];
   ram: UiRamView;
-  // meta opcional si luego necesitas activeFrameId u otros campos
+  ramIndex: UiRamItem[];
+  ramTones: UiRamTone[];
 };
+
+// Tamaño de un campo inline dentro de objeto-compact
+function objectFieldSize(t: PrimitiveType | "ptr32" | "string"): number {
+  if (t === "ptr32" || t === "string") return 4; // puntero
+  return primSizeOf(t);
+}
+
+// Calcula el tamaño del header de un objeto compacto:
+// [len:u32] + suma de tamaños inline de sus campos
+function compactObjectHeaderSize(meta: any): number {
+  if (!meta || meta.tag !== "object-compact" || !Array.isArray(meta.schema)) {
+    return 0;
+  }
+  let size = 4; // len:u32
+  for (const f of meta.schema as Array<{
+    key: string;
+    type: PrimitiveType | "ptr32";
+  }>) {
+    size += objectFieldSize(f.type);
+  }
+  return size;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Opciones de RAM para la UI
@@ -241,7 +314,59 @@ export function buildUiStack(mem: Memory): UiFrame[] {
 /** Normaliza Heap.list() → entradas con direcciones en hex + rangos para RAM */
 export function buildUiHeap(mem: Memory): UiHeapEntry[] {
   const list = mem.getHeap().list() as any[];
+  const bs = mem.getByteStore();
   const out: UiHeapEntry[] = [];
+
+  const toHex = (n: number): HexAddr =>
+    ("0x" + (n >>> 0).toString(16).padStart(8, "0")) as HexAddr;
+
+  const STRING_PREVIEW_MAX = 64; // chars máx para preview
+  const ARRAY_PREVIEW_MAX = 16; // elementos máx para preview
+
+  const readU16 = (addr: number) => readU16Safe(bs, addr);
+
+  const readStringPreviewFull = (headerAddr: number) => {
+    const len = bs.readU32(headerAddr);
+    const data = bs.readU32(headerAddr + 4);
+    const max = Math.min(len, STRING_PREVIEW_MAX);
+    let text = "";
+    const chars: { index: number; code: number; char: string }[] = [];
+    for (let i = 0; i < max; i++) {
+      const code = readU16(data + i * 2);
+      const ch = String.fromCharCode(code);
+      text += ch;
+      chars.push({ index: i, code, char: ch });
+    }
+    return { len, text, chars };
+  };
+
+  const readInlinePrim = (elem: string, addr: number): number | string => {
+    switch (elem) {
+      case "boolean":
+        return (bs.readU8(addr) & 1) === 1 ? 1 : 0;
+      case "byte":
+        return sign8(bs.readU8(addr));
+      case "short":
+        return sign16(readU16(addr));
+      case "char":
+        return readU16(addr);
+      case "int":
+        return bs.readI32(addr);
+      case "long": {
+        const bi = readLongAsBigInt(bs, addr);
+        return bi >= BigInt(Number.MIN_SAFE_INTEGER) &&
+          bi <= BigInt(Number.MAX_SAFE_INTEGER)
+          ? Number(bi)
+          : bi.toString();
+      }
+      case "float":
+        return bs.readF32(addr);
+      case "double":
+        return bs.readF64(addr);
+      default:
+        return bs.readU8(addr);
+    }
+  };
 
   for (const e of list) {
     const id = e.id as number | undefined;
@@ -259,51 +384,214 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
       const length = Number(meta.length ?? 0);
       const dataPtrNum = Number(meta.dataPtr ?? 0);
       const dataPtrHex = toHex(dataPtrNum);
+      const tag = String(meta.tag ?? ""); // "array-inline-prim" | "array-ref32"
+
+      // Bytes de data reales
+      let dataBytes = 0;
+      if (tag === "array-inline-prim") {
+        const elemSize =
+          typeof meta.elemSize === "number" && meta.elemSize > 0
+            ? Number(meta.elemSize)
+            : primSizeOf(String(meta.elemType) as PrimitiveType);
+        dataBytes = length * elemSize;
+      } else {
+        dataBytes = length * 4;
+      }
+
+      // ==== PREVIEW ====
+      let preview:
+        | ArrayPrimPreview
+        | ArrayStringPreview
+        | ArrayRefPreview
+        | undefined;
+
+      if (tag === "array-inline-prim" && typeof meta.elemType === "string") {
+        const elemType = meta.elemType as string;
+        const elemSize =
+          typeof meta.elemSize === "number" && meta.elemSize > 0
+            ? Number(meta.elemSize)
+            : primSizeOf(elemType as PrimitiveType);
+
+        const count = Math.min(length, ARRAY_PREVIEW_MAX);
+        const items: Array<number | string> = [];
+        let cursor = dataPtrNum;
+        for (let i = 0; i < count; i++) {
+          items.push(readInlinePrim(elemType, cursor));
+          cursor += elemSize;
+        }
+        preview = {
+          kind: "array-prim",
+          elemType,
+          items,
+          truncated: length > count,
+        };
+      } else if (tag === "array-ref32" && meta.elem?.name === "string") {
+        const count = Math.min(length, ARRAY_PREVIEW_MAX);
+        const items: {
+          index: number;
+          ref: HexAddr;
+          len: number;
+          text: string;
+        }[] = [];
+        for (let i = 0; i < count; i++) {
+          const ref = bs.readU32(dataPtrNum + i * 4);
+          if (ref === 0) {
+            items.push({ index: i, ref: toHex(0), len: 0, text: "" });
+          } else {
+            const sp = readStringPreviewFull(ref);
+            items.push({
+              index: i,
+              ref: toHex(ref),
+              len: sp.len,
+              text: sp.text,
+            });
+          }
+        }
+        preview = { kind: "array-string", items, truncated: length > count };
+      } else if (tag === "array-ref32") {
+        const count = Math.min(length, ARRAY_PREVIEW_MAX);
+        const items: { index: number; ref: HexAddr }[] = [];
+        for (let i = 0; i < count; i++) {
+          const ref = bs.readU32(dataPtrNum + i * 4);
+          items.push({ index: i, ref: toHex(ref) });
+        }
+        preview = { kind: "array-ref", items, truncated: length > count };
+      }
 
       out.push({
         kind: "array",
         ...baseCommon,
         meta: {
-          tag: meta.tag,
+          tag,
           length,
           dataPtr: dataPtrHex,
-          elem: meta.elem,
-        },
-        range: { from: baseAddr, to: toHex(addrNum + 8) }, // header (len+ptr)
-        dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + length * 4) }, // array-ref32
+          ...(meta.elem ? { elem: meta.elem } : {}),
+          ...(meta.elemType ? { elemType: meta.elemType } : {}),
+          ...(meta.elemSize ? { elemSize: meta.elemSize } : {}),
+        } as any,
+        range: { from: baseAddr, to: toHex(addrNum + 8) },
+        dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + dataBytes) },
+        preview, // ← aquí va
       });
-    } else if (e.kind === "string") {
+      continue;
+    }
+
+    if (e.kind === "string") {
       const meta = e.meta ?? {};
       const length = Number(meta.length ?? 0);
       const dataPtrNum = Number(meta.dataPtr ?? 0);
       const dataPtrHex = toHex(dataPtrNum);
 
+      const sp = readStringPreviewFull(addrNum);
+
       out.push({
         kind: "string",
         ...baseCommon,
-        meta: {
-          tag: meta.tag,
-          length,
-          dataPtr: dataPtrHex,
+        meta: { tag: meta.tag, length, dataPtr: dataPtrHex },
+        range: { from: baseAddr, to: toHex(addrNum + 8) },
+        dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + length * 2) },
+        preview: {
+          kind: "string",
+          len: sp.len,
+          text: sp.text,
+          chars: sp.chars,
         },
-        range: { from: baseAddr, to: toHex(addrNum + 8) }, // header
-        dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + length * 2) }, // UTF-16
       });
-    } else if (e.kind === "object") {
-      out.push({
-        kind: "object",
-        ...baseCommon,
-        meta: e.meta,
-        range: { from: baseAddr, to: baseAddr }, // si no sabes tamaño, deja from=to
-      });
-    } else {
-      out.push({
-        kind: "object",
-        ...baseCommon,
-        meta: e.meta,
-        range: { from: baseAddr, to: baseAddr },
-      });
+      continue;
     }
+
+    if (e.kind === "object") {
+      const meta = e.meta ?? {};
+      const headerBytes =
+        meta?.tag === "object-compact" ? compactObjectHeaderSize(meta) : 0;
+
+      // ==== PREVIEW object-compact (si viene schema) ====
+      let preview: ObjectPreview | undefined;
+      if (meta?.tag === "object-compact" && Array.isArray(meta?.schema)) {
+        const schema = meta.schema as Array<{
+          key: string;
+          type: PrimitiveType | "ptr32" | "string";
+        }>;
+        const fields: { key: string; type: string; value: unknown }[] = [];
+        let cur = addrNum + 4; // tras len
+
+        for (const f of schema) {
+          const t = f.type;
+          let value: unknown;
+          switch (t) {
+            case "boolean":
+              value = (bs.readU8(cur) & 1) === 1;
+              cur += 1;
+              break;
+            case "byte":
+              value = sign8(bs.readU8(cur));
+              cur += 1;
+              break;
+            case "short":
+              value = sign16(readU16(cur));
+              cur += 2;
+              break;
+            case "char":
+              value = String.fromCharCode(readU16(cur));
+              cur += 2;
+              break;
+            case "int":
+              value = bs.readI32(cur);
+              cur += 4;
+              break;
+            case "long": {
+              const bi = readLongAsBigInt(bs, cur);
+              cur += 8;
+              value =
+                bi >= BigInt(Number.MIN_SAFE_INTEGER) &&
+                bi <= BigInt(Number.MAX_SAFE_INTEGER)
+                  ? Number(bi)
+                  : bi.toString();
+              break;
+            }
+            case "float":
+              value = bs.readF32(cur);
+              cur += 4;
+              break;
+            case "double":
+              value = bs.readF64(cur);
+              cur += 8;
+              break;
+            case "string": {
+              const sh = bs.readU32(cur);
+              cur += 4;
+              value = sh ? readStringPreviewFull(sh).text : null;
+              break;
+            }
+            case "ptr32":
+            default: {
+              const p = bs.readU32(cur);
+              cur += 4;
+              value = toHex(p);
+            }
+          }
+          fields.push({ key: f.key, type: String(t), value });
+        }
+        preview = { kind: "object", fields };
+      }
+
+      out.push({
+        kind: "object",
+        ...baseCommon,
+        meta,
+        range: { from: baseAddr, to: toHex(addrNum + headerBytes) },
+        preview, // ← aquí va
+      });
+      continue;
+    }
+
+    // fallback
+    out.push({
+      kind: "object",
+      ...baseCommon,
+      meta: e.meta,
+      range: { from: baseAddr, to: baseAddr },
+    });
   }
 
   return out;
@@ -317,10 +605,12 @@ export function buildUiRam(
   const bs = mem.getByteStore();
 
   // Rango por defecto: [NULL_GUARD, used)
-   const fromNum =
-    typeof (mem as any).getNullGuard === "function" ? (mem as any).getNullGuard() : 0;
+  const fromNum =
+    typeof (mem as any).getNullGuard === "function"
+      ? (mem as any).getNullGuard()
+      : 0;
   const toNum = bs.used();
- const usedExposed = Math.max(0, toNum - fromNum);
+  const usedExposed = Math.max(0, toNum - fromNum);
   // dumpRows() nuevo devuelve bytes, labels y allocations numéricas
   const rawRows =
     typeof (bs as any).dumpRows === "function"
@@ -420,14 +710,154 @@ export function buildUiSnapshot(
 ): UiSnapshot {
   const stack = buildUiStack(mem);
   const heap = buildUiHeap(mem);
-  // Pasamos heap a RAM para que pueda etiquetar filas con header/data
   const ram = buildUiRam(mem, heap, opts?.ram);
-  return { stack, heap, ram };
+
+  const { items: ramIndex, tones: ramTones } = buildUiRamIndex(stack, heap);
+
+  return { stack, heap, ram, ramIndex, ramTones };
 }
 
 // -----------------------------------------------------------------------------
 // Helpers de lectura/decodificación
 // -----------------------------------------------------------------------------
+const hexToNum = (h: HexAddr) => parseInt(h, 16);
+const sizeOfRange = (r: ByteRange) =>
+  Math.max(0, hexToNum(r.to) - hexToNum(r.from));
+
+export function buildUiRamIndex(
+  stackUi: UiFrame[],
+  heapUi: UiHeapEntry[]
+): { items: UiRamItem[]; tones: UiRamTone[] } {
+  const items: UiRamItem[] = [];
+  const tones: UiRamTone[] = [];
+
+  // 1) stack prims / refs (igual que lo llevas)
+  for (const f of stackUi) {
+    for (const s of f.slots) {
+      if (s.kind === "prim") {
+        const id = `frame${f.id}:${s.name}`;
+        const bytes = sizeOfRange(s.range);
+        items.push({
+          id,
+          source: "stack-prim",
+          label: `${s.name}: ${s.type}`,
+          type: s.type,
+          range: s.range,
+          bytes,
+          meta: { frameId: f.id, var: s.name, rangeKind: "data" },
+        });
+        tones.push({
+          start: hexToNum(s.range.from),
+          size: bytes,
+          label: id,           // ← EXACTO igual que item.id
+          tone: "data",
+        });
+      } else {
+        const ref: any = s as any;
+        if (ref.range) {
+          const id = `frame${f.id}:${s.name}@ref`;
+          const bytes = sizeOfRange(ref.range);
+          items.push({
+            id,
+            source: "stack-ref",
+            label: `${s.name}: ref32`,
+            type: "ref32",
+            range: ref.range,
+            bytes,
+            meta: { frameId: f.id, var: s.name, rangeKind: "slot" },
+          });
+          tones.push({
+            start: hexToNum(ref.range.from),
+            size: bytes,
+            label: id,          // ← EXACTO igual que item.id
+            tone: "slot",
+          });
+        }
+      }
+    }
+  }
+
+  // 2) heap headers + data (lo importante es que label === item.id)
+  for (const h of heapUi) {
+    const hid = `heap#${h.id ?? hexToNum(h.addr)}`;
+
+    // header
+    {
+      const hdrBytes = sizeOfRange(h.range);
+      const itemId = `${hid}:header`;
+      items.push({
+        id: itemId,
+        source: "heap-header",
+        label:
+          h.kind === "string"
+            ? "String header"
+            : h.kind === "array"
+            ? "Array header"
+            : "Object header (compact)",
+        type: h.kind,
+        range: h.range,
+        bytes: hdrBytes,
+        meta: {
+          heapId: h.id,
+          at: h.addr,
+          rangeKind: "header",
+          // extras para panel (opcionales)
+          ...(h.kind === "object" ? {
+            objTag: (h.meta as any)?.tag,
+            fieldCount: Array.isArray((h.meta as any)?.schema)
+              ? (h.meta as any).schema.length
+              : undefined,
+            objKeys: Array.isArray((h.meta as any)?.schema)
+              ? (h.meta as any).schema.map((f: any) => f.key)
+              : undefined,
+            displayName: (h.label as string) || undefined,
+          } : {}),
+        },
+      });
+      tones.push({
+        start: hexToNum(h.range.from),
+        size: hdrBytes,
+        label: itemId,      // ← EXACTO igual que item.id
+        tone: "header",
+      });
+    }
+
+    // data (si aplica)
+    const dr: any = (h as any).dataRange;
+    if (dr?.from && dr?.to && hexToNum(dr.to) > hexToNum(dr.from)) {
+      const dataBytes = sizeOfRange(dr);
+      const elemName =
+        (h as any).meta?.elem?.name ??
+        (h as any).meta?.elemType ??
+        "?";
+      const dataLabel =
+        h.kind === "string"
+          ? "String data (UTF-16)"
+          : h.kind === "array"
+          ? `Array<${elemName}> data`
+          : "Object data";
+
+      const itemId = `${hid}:data`;
+      items.push({
+        id: itemId,
+        source: "heap-data",
+        label: dataLabel,
+        type: h.kind,
+        range: dr,
+        bytes: dataBytes,
+        meta: { heapId: h.id, at: h.addr, rangeKind: "data", elemName },
+      });
+      tones.push({
+        start: hexToNum(dr.from),
+        size: dataBytes,
+        label: itemId,      // ← EXACTO igual que item.id
+        tone: "data",
+      });
+    }
+  }
+
+  return { items, tones };
+}
 
 function toHex(n: number): HexAddr {
   return ("0x" + (n >>> 0).toString(16).padStart(8, "0")) as HexAddr;
