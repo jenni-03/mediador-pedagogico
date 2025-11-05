@@ -4,10 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -30,6 +28,7 @@
     "@tanstack/router-devtools": "^1.106.0",
     "@tanstack/router-plugin": "^1.106.0",
     "@types/d3": "^7.4.3",
+    "@types/node": "^24.10.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react-swc": "^3.5.0",
