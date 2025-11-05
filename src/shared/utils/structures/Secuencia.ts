@@ -1,5 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { DomainError } from "../error/DomainError";
 import { sequentialAddressGenerator } from "../memoryAllocator";
 
 /**
@@ -15,14 +16,14 @@ export class Secuencia<T> {
   // Vector de direcciones de memoria.
   private vectorMemoria: string[];
 
-  // Tamaño simulado de cada nodo en bytes
+  // Tamaño simulado de cada nodo en bytes.
   private tamanioNodo: number;
 
   /**
    * Constructor de la clase Secuencia.
    * @param n Tamaño (capacidad) de la secuencia.
    * @param memoriaExistente Vector de direcciones de memoria (opcional).
-   * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4)
+   * @param tamanioNodo Tamaño de cada nodo en bytes (opcional, por defecto 4).
    */
   constructor(n: number, memoriaExistente?: string[], tamanioNodo: number = 4) {
     if (n <= 0) {
@@ -46,39 +47,47 @@ export class Secuencia<T> {
   }
 
   /**
-   * Método que inserta un nuevo elemento a la secuencia.
+   * Método que inserta un elemento al final de la secuencia sin realizar recolocación.
    * @param elem Elemento a insertar.
+   * @returns Índice en el que se insertó el elemento.
    */
-  public insertar(elem: T) {
+  public insertar(elem: T): number {
     if (this.cant >= this.vector.length) {
-      throw new Error(
-        `No hay espacio para insertar el elemento ${elem}, debe crear la secuencia primero.`
-      );
+      throw new DomainError(`La secuencia está llena, no hay espacio suficiente para insertar el elemento ${elem}.`, "CAPACITY_EXCEEDED");
     }
+    const insertIndex = this.cant;
     this.vector[this.cant++] = elem;
+    return insertIndex;
   }
 
   /**
-   * Método que elimina un elemento a la secuencia dada su posición.
-   * @param pos Posición del elemento a eliminar.
+   * Método que elimina el elemento en la posición especificada de la secuencia.
+   * Realiza un corrimiento de los elementos a la derecha de la posición hacia la izquierda,
+   * y deja la última casilla en null.
+   * @param pos Índice del elemento a eliminar.
+   * @returns Índice que quedó en null tras la eliminación (índice del último elemento).
    */
-  public eliminarPos(pos: number) {
+  public eliminarPos(pos: number): number {
     if (this.cant === 0) {
-      throw new Error(
-        "No fue posible eliminar el elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
     }
 
     if (pos < 0 || pos >= this.cant) {
-      throw new Error(
-        `Posición inválida: se intentó acceder a la posición ${pos}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`
+      throw new DomainError(
+        `Posición inválida: se intentó acceder a la posición ${pos}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`,
+        "DELETE_OUT_OF_RANGE"
       );
     }
+    const firstNullIndex = this.cant - 1;
     for (let i = pos; i < this.cant - 1; i++) {
       this.vector[i] = this.vector[i + 1];
     }
     this.vector[this.cant - 1] = null;
     this.cant--;
+    return firstNullIndex;
   }
 
   /**
@@ -96,14 +105,10 @@ export class Secuencia<T> {
    */
   public get(i: number): T | null {
     if (this.cant === 0) {
-      throw new Error(
-        "No fue posible acceder al elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0), debe crear la secuencia primero."
-      );
+      throw new DomainError("No fue posible acceder al elemento en la posición especificada: la secuencia está vacía (tamaño actual: 0), debe crear la secuencia primero.", "GET_EMPTY");
     }
     if (i < 0 || i >= this.cant) {
-      throw new Error(
-        `Posición inválida: se intentó acceder a la posición ${i}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`
-      );
+      throw new DomainError(`Posición inválida: se intentó acceder a la posición ${i}, pero el rango válido es de 0 a ${this.cant - 1}, ya que su tamaño es ${this.getTamanio()}.`, "GET_OUT_OF_RANGE");
     }
     return this.vector[i];
   }
@@ -115,8 +120,9 @@ export class Secuencia<T> {
    */
   public set(i: number, nuevo: T) {
     if (i < 0 || i >= this.cant) {
-      throw new Error(
-        `Posición inválida, no se puede acceder a la posición ${i} porque no está en un rango válido. Primero debe insertar el elemento ${nuevo} en la posición ${i} antes de poder modificarlo. Le recomendamos primero hacer "insertLast(${nuevo});"`
+      throw new DomainError(
+        `Posición inválida, no se puede acceder a la posición ${i} porque no está en un rango válido. Primero debe insertar el elemento ${nuevo} en la posición ${i} antes de poder modificarlo. Le recomendamos primero hacer "insertLast(${nuevo});"`,
+        "SET_OUT_OF_RANGE"
       );
     }
     this.vector[i] = nuevo;
@@ -128,10 +134,7 @@ export class Secuencia<T> {
    * @returns true si se encuentra, false en caso contrario.
    */
   public esta(elem: T): boolean {
-    if (this.vector.includes(elem)) {
-      return true;
-    }
-    throw new Error(`El elemento ${elem} no se encontró en la secuencia.`);
+    return this.vector.includes(elem);
   }
 
   /**

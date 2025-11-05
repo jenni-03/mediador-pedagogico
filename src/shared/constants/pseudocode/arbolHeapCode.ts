@@ -7,14 +7,14 @@ export const getArbolHeapCode = (): OperationCode => ({
  * @param elemento Elemento a insertar
  * @return El nodo insertado
  */`,
-    `public NodoBin<T> insertar(T elemento) {`,
-    `    if (getTamanio() >= MAX_NODOS) {`,
+    `public NodoBin<T> insertar(T {0}) {`,
+    `    if ({1} >= MAX_NODOS) {`,
     `        throw new RuntimeException("No fue posible insertar el nodo: Límite máximo de nodos alcanzado (" + MAX_NODOS + ").");`,
     `    }`,
-    `    if (esta(elemento)) {`,
-    `        throw new RuntimeException("No fue posible insertar el nodo: El elemento ya existe en el heap.");`,
+    `    if (esta({0})) {`,
+    `        throw new RuntimeException("No fue posible insertar el nodo: El {0} ya existe en el heap.");`,
     `    }`,
-    `    NodoBin<T> nuevoNodo = new NodoBin<>(elemento);`,
+    `    NodoBin<T> nuevoNodo = new NodoBin<>({0});`,
     `    if (esVacio()) {`,
     `        setRaiz(nuevoNodo);`,
     `        setTamanio(1);`,
@@ -26,7 +26,7 @@ export const getArbolHeapCode = (): OperationCode => ({
     `    } else {`,
     `        padre.setDer(nuevoNodo);`,
     `    }`,
-    `    setTamanio(getTamanio() + 1);`,
+    `    setTamanio({1} + 1);`,
     `    heapifyUp(nuevoNodo, padre);`,
     `    return nuevoNodo;`,
     `}`,
@@ -68,13 +68,13 @@ export const getArbolHeapCode = (): OperationCode => ({
  * @param elemento Elemento a eliminar
  * @return true si el elemento fue eliminado, false si no se encontró
  */`,
-    `public boolean eliminarElemento(T elemento) {`,
+    `public boolean eliminarElemento(T {0}) {`,
     `    if (esVacio()) {`,
     `        return false;`,
     `    }`,
-    `    NodoBin<T> nodoAEliminar = buscarNodo(elemento);`,
+    `    NodoBin<T> nodoAEliminar = buscarNodo({0});`,
     `    if (nodoAEliminar == null) {`,
-    `        return false;`,
+    `        throw new RuntimeException("No fue posible eliminar: elemento/ID no encontrado.");`,
     `    }`,
     `    if (nodoAEliminar == getRaiz()) {`,
     `        extraerRaiz();`,
@@ -111,8 +111,8 @@ export const getArbolHeapCode = (): OperationCode => ({
  * @param elemento Elemento a buscar
  * @return true si el elemento existe en el heap, false en caso contrario
  */`,
-    `public boolean buscar(T elemento) {`,
-    `    return esta(elemento);`,
+    `public boolean buscar(T {0}) {`,
+    `    return esta({0});`,
     `}`,
   ],
   peek: [

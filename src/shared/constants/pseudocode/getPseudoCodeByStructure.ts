@@ -20,7 +20,7 @@ import { getArbolHeapCode } from "./arbolHeapCode";
 import { getArbolSplayCode } from "./arbolSplayCode";
 
 // Mapa de funciones para cargar operaciones según estructura
-const pseudoCodeLoaders: Record<string, () => OperationCode> = {
+const pseudoCodeLoaders: Record<string, () => Record<string, OperationCode>> = {
   secuencia: getSecuenciaCode,
   lista_simplemente_enlazada: getListaSimplementeEnlazadaCode,
   lista_doblemente_enlazada: getListaDoblementeEnlazadaCode,
@@ -43,7 +43,7 @@ const pseudoCodeLoaders: Record<string, () => OperationCode> = {
 };
 
 // Devuelve el pseudocódigo correspondiente, o {} si no existe
-export const getPseudoCodeByStructure = (structure: string): OperationCode => {
+export const getPseudoCodeByStructure = (structure: string): Record<string, OperationCode> => {
   const loader = pseudoCodeLoaders[structure];
   return loader ? loader() : {};
 };

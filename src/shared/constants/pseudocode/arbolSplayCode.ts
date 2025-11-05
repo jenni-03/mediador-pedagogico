@@ -2,8 +2,8 @@ import { OperationCode } from "./typesPseudoCode";
 
 export const getArbolSplayCode = (): OperationCode => ({
     insert: [
-        `public void insertar(T valor) {`,
-        `    NodoRN<T> z = new NodoRN<T>(valor);`,
+        `public void insertar(T {0}) {`,
+        `    NodoRN<T> z = new NodoRN<T>({0});`,
         `    NodoRN<T> p = null;`,
         `    NodoRN<T> curr = this.getRaiz();`,
         `    while (x != null) {`,
@@ -69,8 +69,8 @@ export const getArbolSplayCode = (): OperationCode => ({
         ` * Elimina un valor del Árbol Roji-Negro.`,
         ` * Se hace delete BST + fix-up para restaurar las propiedades.`,
         ` */`,
-        `public void delete(T valor) {`,
-        `    NodoRN<T> z = buscarNodo(raiz, valor);`,
+        `public void delete(T {0}) {`,
+        `    NodoRN<T> z = buscarNodo(raiz, {0});`,
         `    if (z == null) return;`,
         ``,
         `    NodoRN<T> y = z;`,
@@ -172,10 +172,10 @@ export const getArbolSplayCode = (): OperationCode => ({
     ],
     search: [
         `/** Busca un valor (propiedad BST). */`,
-        `public boolean search(T valor) {`,
+        `public boolean search(T {0}) {`,
         `    NodoRN<T> x = raiz;`,
         `    while (x != null) {`,
-        `        int cmp = valor.compareTo(x.info);`,
+        `        int cmp = {0}.compareTo(x.info);`,
         `        if (cmp == 0) return true;`,
         `        x = (cmp < 0) ? x.izq : x.der;`,
         `    }`,

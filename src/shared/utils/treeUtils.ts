@@ -1,5 +1,5 @@
 import { extent, hierarchy, type HierarchyNode, tree } from "d3";
-import { HierarchyNodeData } from "../../types";
+import { HierarchyNodeData, TreeLinkData } from "../../types";
 
 export function defaultComparator<T>(a: T, b: T): number {
     if (a === b) return 0;
@@ -101,7 +101,7 @@ export const hierarchyFrom = (data: HierarchyNodeData<number>, node_spacing: num
     tree<HierarchyNodeData<number>>()
         .nodeSize([node_spacing, level_spacing])(h);
     const nodes = h.descendants().filter(d => !d.data.isPlaceholder);
-    const links = h.links().reduce<{ sourceId: string, targetId: string }[]>((acc, l) => {
+    const links = h.links().reduce<TreeLinkData[]>((acc, l) => {
         if (!l.target.data.isPlaceholder) acc.push({ sourceId: l.source.data.id, targetId: l.target.data.id });
         return acc;
     }, []);

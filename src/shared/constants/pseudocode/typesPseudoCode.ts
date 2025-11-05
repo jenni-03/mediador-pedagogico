@@ -1,3 +1,7 @@
+export type PlanStep = { lineLabel: string; hold: number }
+
 export type OperationCode = {
-  [operationName: string]: string[];
+  lines: string[];
+  labels: Record<string, number>;
+  errorPlans?: Record<string, PlanStep[]>;
 };

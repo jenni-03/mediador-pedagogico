@@ -110,6 +110,10 @@ export class ColaDePrioridad<T> {
     return this.tamanio;
   }
 
+  public getMaxTamanio(): number {
+    return this.MAX_TAMANIO;
+  }
+
   /**
    * Método que retorna el tamaño en bytes de los nodos almacenados.
    * @returns Tamaño en bytes de los nodos.

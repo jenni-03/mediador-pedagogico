@@ -7,8 +7,8 @@ export const getPilaCode = (): OperationCode => ({
  * post: Se insertó el elemento en el tope de la pila.
  * @param info es de tipo T y corresponde a la información a insertar en la pila.
  */`,
-    `public void apilar(T info){`,
-    `    Nodo<T>nuevoNodo = new Nodo(info);`,
+    `public void apilar(T {0}){`,
+    `    Nodo<T> nuevoNodo = new Nodo({0});`,
     `    if(this.esVacia()) {`,
     `       this.tope = nuevoNodo;`,
     `    }`,
@@ -16,7 +16,7 @@ export const getPilaCode = (): OperationCode => ({
     `       nuevoNodo.setSig(this.tope);`,
     `       this.tope = nuevoNodo;`,
     `    }`,
-    `    this.tamanio++;`,
+    `    {1}++;`,
     `}`,
   ],
   pop: [
@@ -30,7 +30,7 @@ export const getPilaCode = (): OperationCode => ({
     `        return null;`,
     `    Nodo<T> x = this.tope;`,
     `    this.tope = tope.getSig();`,
-    `    this.tamanio--;`,
+    `    {0}--;`,
     `    return x.getInfo();`,
     `}`,
   ],
@@ -41,6 +41,9 @@ export const getPilaCode = (): OperationCode => ({
  * @return Elemento tope de la pila.
  */`,
     `public Nodo<T> getTope(){`,
+    `    if (this.tope == null) {`,
+    `        throw new RuntimeException("No fue posible obtener el elemento tope: No hay elementos en la pila.");`,
+    `    }`,
     `    return this.tope;`,
     `}`,
   ],

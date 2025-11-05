@@ -1,15 +1,21 @@
-import * as d3 from "d3";
+import { easeBounce, easeCubicInOut, easeQuad, select, Selection } from "d3";
 import { SVG_SEQUENCE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { type EventBus } from "../../events/eventBus";
+import { getSecuenciaCode } from "../../constants/pseudocode/secuenciaCode";
+import { Dispatch, SetStateAction } from "react";
+import { delay } from "../simulatorUtils";
+
+const seqCode = getSecuenciaCode();
 
 /**
  * Función encargada de renderizar la estructura base de la secuencia.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * @param svg Selección D3 del elemento SVG donde se van a renderizar los elementos.
  * @param secuencia Array de elementos a renderizar.
  * @param memoria Direcciones de memoria asociadas a cada elemento de la secuencia.
  * @param dims Dimensiones de los elementos dentro del lienzo.
  */
 export function drawBaseSequence(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   secuencia: (number | null)[],
   memoria: string[],
   dims: {
@@ -24,7 +30,7 @@ export function drawBaseSequence(
   const { margin, elementWidth, elementHeight, spacing, height } = dims;
 
   // Realizamos el data join usando el indice como key
-  const groups = svg
+  svg
     .selectAll<SVGGElement, number | null>("g.element")
     .data(secuencia, (_d, i) => i)
     .join(
@@ -40,8 +46,8 @@ export function drawBaseSequence(
             return `translate(${x}, ${y})`;
           });
 
-        // Contenedor del elemento
-        gEnter
+        // Rect principal
+        const rect = gEnter
           .append("rect")
           .attr("class", "sequence-rect")
           .attr("width", 0)
@@ -50,16 +56,20 @@ export function drawBaseSequence(
           .attr("ry", 6)
           .attr("fill", SVG_STYLE_VALUES.RECT_FILL_FIRST_COLOR)
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-          .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+          .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
+
+        // Transición "lote" de rectángulos
+        rect
           .transition()
           .duration(1000)
           .attr("width", elementWidth)
           .attr("height", elementHeight)
-          .ease(d3.easeQuad);
+          .ease(easeQuad);
 
         // Valor del elemento (NULL al crear)
-        gEnter
+        const valueText = gEnter
           .append("text")
+          .attr("class", "value")
           .attr("x", elementWidth / 2)
           .attr("y", elementHeight / 2)
           .attr("dy", ".35em")
@@ -70,13 +80,15 @@ export function drawBaseSequence(
           .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
           .style("letter-spacing", "0.5px")
           .style("opacity", 0)
+
+        valueText
           .transition()
-          .duration(2500)
+          .duration(2000)
           .style("opacity", 1)
-          .ease(d3.easeQuad);
+          .ease(easeQuad);
 
         // Bloque de dirección de memoria
-        gEnter
+        const memRect = gEnter
           .append("rect")
           .attr("class", "memory-container")
           .attr("y", elementHeight + 10)
@@ -87,14 +99,16 @@ export function drawBaseSequence(
           .attr("fill", SVG_STYLE_VALUES.MEMORY_FILL_COLOR)
           .attr("stroke", SVG_STYLE_VALUES.MEMORY_STROKE_COLOR)
           .attr("stroke-width", SVG_STYLE_VALUES.MEMORY_STROKE_WIDTH)
+
+        memRect
           .transition()
           .duration(1000)
           .attr("width", elementWidth)
           .attr("height", 20)
-          .ease(d3.easeQuad);
+          .ease(easeQuad);
 
         // Dirección de memoria
-        gEnter
+        const memText = gEnter
           .append("text")
           .attr("class", "memory")
           .attr("x", elementWidth / 2)
@@ -105,8 +119,10 @@ export function drawBaseSequence(
           .attr("fill", SVG_STYLE_VALUES.MEMORY_TEXT_COLOR)
           .style("font-size", SVG_STYLE_VALUES.MEMORY_TEXT_SIZE)
           .style("font-weight", SVG_STYLE_VALUES.MEMORY_TEXT_WEIGHT)
+
+        memText
           .transition()
-          .duration(2500)
+          .duration(2000)
           .style("opacity", 1);
 
         // Índice del elemento
@@ -122,7 +138,7 @@ export function drawBaseSequence(
           .style("font-size", SVG_SEQUENCE_VALUES.INDEX_TEXT_SIZE)
           .style("font-weight", SVG_SEQUENCE_VALUES.INDEX_TEXT_WEIGHT)
           .transition()
-          .duration(2500)
+          .duration(2000)
           .style("opacity", 1);
 
         return gEnter;
@@ -157,46 +173,45 @@ export function drawBaseSequence(
         // Transición para encoger el rectángulo principal
         exit.select("rect.sequence-rect")
           .transition()
-          .duration(600)
+          .duration(1000)
           .attr("width", 0)
           .attr("height", 0);
 
         // Transición para encoger el contenedor de memoria
         exit.select("rect.memory-container")
           .transition()
-          .duration(600)
+          .duration(1000)
           .attr("width", 0)
           .attr("height", 0);
 
         // Transición para desvanecimiento de todos los textos
         exit.selectAll("text")
           .transition()
-          .duration(500)
+          .duration(800)
           .style("opacity", 0);
 
         // Eliminación del grupo completo
         exit.transition()
-          .delay(600)
+          .delay(1200)
           .remove();
 
         return exit;
       }
     );
-
-  return groups;
 }
 
 /**
- * Función encargada de animar la inserción de un nuevo elemento a la secuencia.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * Función encargada de animar el proceso de inserción de un nuevo elemento al final de la secuencia.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionValue Valor a insertar.
- * @param insertionIndex Indice dentro de la secuencia donde se llevará a cabo la inserción.
+ * @param insertionIndex Indice donde se insertará el elemento.
  * @param dims Dimensiones de los elementos dentro del lienzo.
+ * @param bus EventBus para el registro de eventos sobre la operación.
  * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateInsertionSequence(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   insertionValue: number,
   insertionIndex: number,
   dims: {
@@ -206,207 +221,130 @@ export async function animateInsertionSequence(
     spacing: number;
     height: number;
   },
+  bus: EventBus,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> {
-  // Dimensiones del lienzo
-  const { margin, elementWidth, elementHeight, spacing, height } = dims;
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.insertLast.labels!;
 
-  // Grupo del lienzo correspondiente al elemento a insertar
-  const targetGroup = svg
-    .select<SVGGElement>(`g#e-${insertionIndex}`);
+    // Grupo del lienzo correspondiente al elemento a insertar
+    const targetGroup = svg
+      .select<SVGGElement>(`g#e-${insertionIndex}`);
 
-  // Posición de destino del nuevo elemento
-  const destX = margin.left + insertionIndex * (elementWidth + spacing);
-  const destY = (height - elementHeight) / 2;
+    // Posición de destino del nuevo elemento
+    const destX = dims.margin.left + insertionIndex * (dims.elementWidth + dims.spacing);
+    const destY = (dims.height - dims.elementHeight) / 2;
 
-  // Posición incial del nuevo elemento
-  const startX = destX + elementWidth / 2;
-  const startY = 12;
+    // Posición de animación incial del nuevo elemento
+    const startX = destX + dims.elementWidth / 2;
+    const startY = 12;
 
-  // Estado visual inicial del elemento a insertar
-  targetGroup.select("text").text("");
-  targetGroup.select("rect.sequence-rect").attr("fill", SVG_STYLE_VALUES.RECT_FILL_FIRST_COLOR);
+    // Creación de un grupo temporal para el indicador de inserción
+    const { group: insertionGroup, arrow } = createTemporaryArrowIndicator(
+      svg,
+      {
+        groupId: "insertion-group",
+        arrowClass: "insertion-arrow",
+        arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
+        fillColor: "#D72638",
+        opacity: 0,
+        initialX: destX + dims.elementWidth / 2,
+        initialY: destY - 40
+      }
+    );
 
-  // Creación de un grupo temporal para el indicador de inserción
-  const { group: insertionGroup, arrow } = createTemporaryArrowIndicator(
-    svg,
-    {
-      groupId: "insertion-group",
-      arrowClass: "insertion-arrow",
-      arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
-      fillColor: "#D72638",
-      opacity: 0,
-      initialX: destX + elementWidth / 2,
-      initialY: destY - 40
-    }
-  );
+    // Inicio de la operación
+    bus.emit("op:start", { op: "insertLast" });
+    bus.emit("step:enter", { stepId: "insert-last" });
 
-  // Aparición del indicador de inserción
-  await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
+    bus.emit("step:progress", { stepId: "insert-last", lineIndex: labels.IF_FULL });
+    await delay(1000);
 
-  // Elemento de texto que representa el valor a insertar
-  const newElement = insertionGroup
-    .append("text")
-    .attr("x", startX)
-    .attr("y", startY)
-    .attr("text-anchor", "middle")
-    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
-    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-    .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
-    .style("letter-spacing", "0.5px")
-    .text(insertionValue)
-    .style("opacity", 0);
+    bus.emit("step:progress", { stepId: "insert-last", lineIndex: labels.ELSE });
+    await delay(1000);
 
-  // Aparición del valor a insertar
-  await newElement.transition().duration(1000).style("opacity", 1).end();
+    // Paso de animación visual
+    bus.emit("step:progress", { stepId: "insert-last", lineIndex: labels.ASSIGN });
 
-  // Resaltado del contenedor del elemento a insertar
-  await targetGroup
-    .select("rect.sequence-rect")
-    .transition()
-    .duration(500)
-    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-    .attr("stroke-width", 3)
-    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-    .end();
+    // Aparición del indicador de inserción
+    await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
 
-  // Desplazamiento del nuevo elemento a la posición de destino
-  await newElement
-    .transition()
-    .duration(1500)
-    .attr("x", destX + elementWidth / 2)
-    .attr("y", destY + 38)
-    .ease(d3.easeCubicInOut)
-    .end();
+    // Grupo que representa el elemento a insertar
+    const newElement = insertionGroup
+      .append("text")
+      .attr("x", startX)
+      .attr("y", startY)
+      .attr("text-anchor", "middle")
+      .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+      .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+      .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
+      .style("letter-spacing", "0.5px")
+      .text(insertionValue)
+      .style("opacity", 0);
 
-  // Desvanecimiento del indicador de inserción
-  await arrow.transition().duration(500).style("opacity", 0).end();
+    // Aparición del elemento a insertar
+    await newElement.transition().duration(800).style("opacity", 1).end();
 
-  // Restablecimiento del valor del texto del contenedor principal
-  targetGroup.select("text").text(insertionValue);
+    // Restablecimiento de estilos para el contenedor principal
+    await targetGroup
+      .select("text.value")
+      .transition()
+      .duration(500)
+      .style("opacity", 0)
+      .end();
 
-  // Eliminación del grupo temporal de inserción
-  insertionGroup.remove();
+    await targetGroup
+      .select("rect.sequence-rect")
+      .transition()
+      .duration(500)
+      .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+      .end();
 
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
+    // Desplazamiento del nuevo elemento a la posición de destino
+    await newElement
+      .transition()
+      .duration(1500)
+      .attr("x", destX + dims.elementWidth / 2)
+      .attr("y", destY + 38)
+      .ease(easeCubicInOut)
+      .end();
 
-  // Finalización de la animación
-  setIsAnimating(false);
-}
+    // Desvanecimiento del indicador de inserción
+    await arrow.transition().duration(800).style("opacity", 0).end();
 
-/**
- * Función encargada de animar la eliminación del último elemento dentro de la secuencia.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param deletedValue Valor del elemento a eliminar.
- * @param deletedIndex Indice del elemento a eliminar.
- * @param dims Dimensiones de los elementos dentro del lienzo.
- * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- */
-export async function animateDeleteLastElementSequence(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  deletedValue: number,
-  deletedIndex: number,
-  dims: {
-    margin: { left: number; right: number };
-    elementWidth: number;
-    elementHeight: number;
-    spacing: number;
-    height: number;
-  },
-  resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> {
-  // Dimensiones del lienzo
-  const { margin, elementWidth, elementHeight, spacing, height } = dims;
+    // Puesta del nuevo elemento dentro del contenedor principal
+    targetGroup.select("text").text(insertionValue).style("opacity", 1);
 
-  // Grupo del lienzo correspondiente al ultimo elemento con valor de la secuencia
-  const targetGroup = svg
-    .select<SVGGElement>(`g#e-${deletedIndex}`);
+    // Eliminación del grupo temporal de inserción
+    insertionGroup.remove();
 
-  // Posición de animación final del elemento a eliminar
-  const destX = margin.left + deletedIndex * (elementWidth + spacing);
-  const destY = (height - elementHeight) / 2;
-
-  // Estado visual inicial del elemento a eliminar
-  targetGroup.select("text").text(deletedValue);
-  targetGroup
-    .select("rect.sequence-rect")
-    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR);
-
-  // Creación de un grupo temporal para el indicador de eliminación
-  const { group: deleteGroup, arrow } = createTemporaryArrowIndicator(
-    svg,
-    {
-      groupId: "delete-group",
-      arrowClass: "deletion-arrow",
-      arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
-      fillColor: "#D72638",
-      opacity: 0,
-      initialX: destX + elementWidth / 2,
-      initialY: destY - 40
-    }
-  );
-
-  // Aparición del indicador de eliminación
-  await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
-
-  // Desvanecimiento del texto original
-  await targetGroup
-    .select("text")
-    .transition()
-    .duration(1000)
-    .ease(d3.easeBounce)
-    .style("opacity", 0)
-    .end();
-
-  // Cambio de fondo para el contenedor del elemento eliminado
-  await targetGroup
-    .select("rect.sequence-rect")
-    .transition()
-    .duration(500)
-    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_FIRST_COLOR)
-    .end();
-
-  // Texto resultante de la operación de eliminación
-  await targetGroup.select("text")
-    .transition()
-    .duration(500)
-    .text("NULL")
-    .style("opacity", 1)
-    .end();
-
-  // Desvanecimiento del indicador de eliminación
-  await arrow.transition().duration(500).style("opacity", 0).end();
-
-  // Limpieza del grupo temporal de eliminación
-  deleteGroup.remove();
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
+    // Cierre de la operación
+    bus.emit("step:done", { stepId: "insert-last" });
+    bus.emit("op:done", { op: "insertLast" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
 }
 
 /**
  * Función encargada de animar la eliminación de un elemento que requiere el desplazamiento de otros elementos.
  * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param prevSequence Estado de la secuencia previo a la eliminación.
- * @param deletedIndexElement Indice del elemento a eliminar.
- * @param firstNullIndex Indice del elemento que termina sin valor.
+ * @param deletionData Objeto con información de la secuencia necesaria para la animación.
  * @param dims Dimensiones de los elementos dentro del lienzo.
+ * @param bus EventBus para el registro de eventos sobre la operación.
  * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
-export async function animateDeleteElementWithDisplacement(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  prevSequence: (number | null)[],
-  deletedIndexElement: number,
-  firstNullIndex: number,
+export async function animateDeleteElementSequence(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  deletionData: {
+    sequence: (number | null)[],
+    deleteIndexElement: number,
+    firstNullIndex: number
+  },
   dims: {
     margin: { left: number; right: number };
     elementWidth: number;
@@ -414,122 +352,161 @@ export async function animateDeleteElementWithDisplacement(
     spacing: number;
     height: number;
   },
+  bus: EventBus,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> {
-  // Dimensiones del lienzo
-  const { margin, elementWidth, elementHeight, spacing, height } = dims;
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Desestructuración de elementos requeridos para la animación
+    const { deleteIndexElement, firstNullIndex, sequence } = deletionData;
 
-  // Grupos afectados cuyo índice esta entre deletedIndexElement y firstNullIndex
-  const affectedGroups = svg.selectAll<SVGGElement, number | null>("g.element")
-    .filter((_d, i) => i >= deletedIndexElement && i <= firstNullIndex);
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.delete.labels!;
 
-  // Grupo correspondiente al elemento que pasa a ser nulo
-  const nullGroup = svg.select<SVGGElement>(`g#e-${firstNullIndex}`);
+    // Grupo correspondiente al elemento de la secuencia que pasa a ser nulo
+    const nullGroup = svg.select<SVGGElement>(`g#e-${firstNullIndex}`);
 
-  // Estado visual inicial de los elementos afectados
-  affectedGroups.select("text").style("opacity", 0);
+    // Creación de un grupo temporal para el indicador de eliminación
+    const { group: deletionGroup, arrow } = createTemporaryArrowIndicator(
+      svg,
+      {
+        groupId: "displacement-group",
+        arrowClass: "displacement-arrow",
+        arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
+        fillColor: "#D72638",
+        opacity: 0,
+        initialX: dims.margin.left + deleteIndexElement * (dims.elementWidth + dims.spacing) + dims.elementWidth / 2,
+        initialY: (dims.height - dims.elementHeight) / 2 - 40
+      }
+    );
 
-  // Restablecimiento del fondo para el grupo que termina sin valor
-  nullGroup
-    .select("rect")
-    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR);
+    // Inicio de la operación
+    bus.emit("op:start", { op: "delete" });
+    bus.emit("step:enter", { stepId: "delete" });
 
-  // Creación de una capa overlay para animar el desplazamiento de los elementos afectados
-  const { group: displacementGroup, arrow } = createTemporaryArrowIndicator(
-    svg,
-    {
-      groupId: "displacement-group",
-      arrowClass: "displacement-arrow",
-      arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
-      fillColor: "#D72638",
-      opacity: 0,
-      initialX: margin.left + deletedIndexElement * (elementWidth + spacing) + elementWidth / 2,
-      initialY: (height - elementHeight) / 2 - 40
+    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_EMPTY });
+    await delay(800);
+
+    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_RANGE });
+
+    // Aparición del indicador de eliminación
+    await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
+
+    // Si el elemento a eliminar corresponde con el último elemento de la secuencia
+    const yElemPos = (dims.height - dims.elementHeight) / 2 + 38;
+    const yArrowPos = (dims.height - dims.elementHeight) / 2 - 40;
+
+    deletionGroup.append("text")
+
+    // Construcción del overlay, por cada índice afectado, posicionamos un <text> en el overlay con el valor correspondiente.
+    for (let i = deleteIndexElement; i < firstNullIndex; i++) {
+      const currElementGroup = svg.select<SVGGElement>(`g#e-${i} text.value`);
+      const xCurrentElemPos = dims.margin.left + i * (dims.elementWidth + dims.spacing) + dims.elementWidth / 2;
+
+      // Paso animación visual
+      bus.emit("step:progress", { stepId: "delete", lineIndex: labels.FOR });
+
+      await arrow
+        .transition()
+        .duration(800)
+        .attr("transform", `translate(${xCurrentElemPos}, ${yArrowPos})`)
+        .ease(easeCubicInOut)
+        .end();
+
+      await currElementGroup
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .end();
+
+      const xNextElemPos = dims.margin.left + (i + 1) * (dims.elementWidth + dims.spacing) + dims.elementWidth / 2;
+      const newElementValue = sequence[i] ?? "";
+
+      deletionGroup
+        .select("text")
+        .attr("x", xNextElemPos)
+        .attr("y", yElemPos)
+        .attr("text-anchor", "middle")
+        .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+        .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+        .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
+        .text(newElementValue);
+
+      bus.emit("step:progress", { stepId: "delete", lineIndex: labels.REASSING });
+
+      // Desplazamiento de los elementos de texto dentro del overlay hacia la izquierda
+      await deletionGroup
+        .selectAll("text")
+        .transition()
+        .duration(1500)
+        .attr("x", function () {
+          return +select(this).attr("x") - (dims.elementWidth + dims.spacing);
+        })
+        .ease(easeCubicInOut)
+        .end();
+
+      currElementGroup.text(newElementValue).style("opacity", 1);
     }
-  );
 
-  // Construcción del overlay, por cada índice afectado, posicionamos un <text> en el overlay con el valor correspondiente.
-  for (let i = deletedIndexElement; i <= firstNullIndex; i++) {
-    const xPos = margin.left + i * (elementWidth + spacing) + elementWidth / 2;
-    const yPos = (height - elementHeight) / 2 + 38;
-    const value = prevSequence[i] ?? "";
-    displacementGroup
-      .append("text")
-      .attr("x", xPos)
-      .attr("y", yPos)
-      .attr("text-anchor", "middle")
-      .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
-      .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-      .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
-      .text(value);
+    if (deleteIndexElement === firstNullIndex) {
+      bus.emit("step:progress", { stepId: "delete", lineIndex: labels.FOR });
+      await delay(1000);
+    }
+
+    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.DELETE });
+
+    // Desvanecimiento del elemento a eliminar
+    await nullGroup.select("text.value")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .ease(easeBounce)
+      .end();
+
+    // Cambio de fondo para el contenedor del elemento eliminado
+    await nullGroup
+      .select("rect.sequence-rect")
+      .transition()
+      .duration(500)
+      .attr("fill", SVG_STYLE_VALUES.RECT_FILL_FIRST_COLOR)
+      .end();
+
+    // Texto resultante de la operación de eliminación
+    await nullGroup.select("text")
+      .transition()
+      .duration(500)
+      .text("NULL")
+      .style("opacity", 1)
+      .end();
+
+    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.DECREASE });
+
+    // Desvanecimiento del indicador de eliminación
+    await arrow.transition().duration(500).style("opacity", 0).end();
+
+    // Limpieza de la capa overlay de desplazamiento
+    deletionGroup.remove();
+
+    // Cierre de la operación
+    bus.emit("step:done", { stepId: "delete" });
+    bus.emit("op:done", { op: "delete" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
-
-  // Aparición del indicador de eliminación
-  await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
-
-  // Obtención del elemento de texto dentro del overlay correspondiente al elemento a eliminar
-  const textElements = displacementGroup.selectAll("text").nodes();
-  const deletedTextElement = d3.select(textElements[0]);
-
-  // Desvanecimiento del elemento a eliminar
-  await deletedTextElement
-    .transition()
-    .duration(1000)
-    .style("opacity", 0)
-    .ease(d3.easeBounce)
-    .end();
-
-  // Desplazamiento de los elementos de texto dentro del overlay hacia la izquierda
-  await displacementGroup
-    .selectAll("text")
-    .transition()
-    .duration(1500)
-    .attr("x", function () {
-      return +d3.select(this).attr("x") - (elementWidth + spacing);
-    })
-    .ease(d3.easeCubicInOut)
-    .end();
-
-  // Restablecimiento del color del contenedor del grupo que termina sin valor
-  await nullGroup
-    .select("rect")
-    .transition()
-    .duration(500)
-    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_FIRST_COLOR)
-    .ease(d3.easeBounce)
-    .end();
-
-  // Restablecimiento de la opacidad a los elementos de texto originales
-  await affectedGroups.select("text")
-    .transition()
-    .duration(500)
-    .style("opacity", 1)
-    .end();
-
-  // Desvanecimiento del indicador de eliminación
-  await arrow.transition().duration(500).style("opacity", 0).end();
-
-  // Limpieza de la capa overlay de desplazamiento
-  displacementGroup.remove();
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Fin de la animación
-  setIsAnimating(false);
 }
 
 /**
- * Función encargada de animar la obtención de un elemento en base a su posición.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * Función encargada de animar el proceso de obtención de un elemento de la secuencia dada su posición.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param elementIndexToGet Indice del elemento a obtener.
  * @param dims Dimensiones de los elementos dentro del lienzo.
+ * @param bus EventBus para el registro de eventos sobre la operación.
  * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateGetElementSequence(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   elementIndexToGet: number,
   dims: {
     margin: { left: number; right: number };
@@ -538,305 +515,369 @@ export async function animateGetElementSequence(
     spacing: number;
     height: number;
   },
+  bus: EventBus,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> {
-  // Dimensiones del lienzo
-  const { margin, elementWidth, elementHeight, spacing, height } = dims;
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.get.labels!;
 
-  // Grupo correspondiente al elemento a obtener
-  const targetGroup = svg
-    .select<SVGGElement>(`g#e-${elementIndexToGet}`);
+    // Grupo correspondiente al elemento objetivo
+    const targetGroup = svg
+      .select<SVGGElement>(`g#e-${elementIndexToGet}`);
 
-  // Posición del indicador de obtención
-  const destX = margin.left + elementIndexToGet * (elementWidth + spacing);
-  const destY = (height - elementHeight) / 2;
+    // Posición del indicador de obtención
+    const destX = dims.margin.left + elementIndexToGet * (dims.elementWidth + dims.spacing);
+    const destY = (dims.height - dims.elementHeight) / 2;
 
-  // Creación de un grupo temporal para el indicador de obtención
-  const { group: getElementGroup, arrow } = createTemporaryArrowIndicator(
-    svg,
-    {
-      groupId: "get-group",
-      arrowClass: "get-arrow",
-      arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
-      fillColor: "#D72638",
-      opacity: 0,
-      initialX: destX + elementWidth / 2,
-      initialY: destY - 40
-    }
-  );
+    // Creación de un grupo temporal para el indicador de obtención
+    const { group: getElementGroup, arrow } = createTemporaryArrowIndicator(
+      svg,
+      {
+        groupId: "get-group",
+        arrowClass: "get-arrow",
+        arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
+        fillColor: "#D72638",
+        opacity: 0,
+        initialX: destX + dims.elementWidth / 2,
+        initialY: destY - 40
+      }
+    );
 
-  // Aparición del indicador de obtención
-  await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
+    // Inicio de la operación
+    bus.emit("op:start", { op: "get" });
+    bus.emit("step:enter", { stepId: "get" });
 
-  // Resaltado del contenedor a actualizar
-  await targetGroup
-    .select("rect.sequence-rect")
-    .transition()
-    .duration(800)
-    .attr("stroke-width", 3)
-    .transition()
-    .delay(800)
-    .duration(400)
-    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-    .end();
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.IF_EMPTY });
+    await delay(1000);
 
-  // Desvanecimiento del indicador de actualización
-  await arrow.transition().duration(1000).style("opacity", 0).end();
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.IF_RANGE });
+    await delay(1000);
 
-  // Limpieza del grupo temporal de actualización
-  getElementGroup.remove();
+    // Paso de animación visual
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.RETURN_ELEM });
 
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
+    // Aparición del indicador de obtención
+    await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
 
-  // Finalización de la animación
-  setIsAnimating(false);
-}
-
-/**
- * Función encargada de animar la actualización de un elemento existente dentro de la secuencia dada su posición.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param oldValue Valor del elemento antes de ser actualizado.
- * @param newValue Valor del elemento luego de ser actualizado.
- * @param pos Indice del elemento que se va a actualizar.
- * @param dims Dimensiones de los elementos dentro del lienzo.
- * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- */
-export async function animateUpdateSequence(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  oldValue: number,
-  newValue: number,
-  pos: number,
-  dims: {
-    margin: { left: number; right: number };
-    elementWidth: number;
-    elementHeight: number;
-    spacing: number;
-    height: number;
-  },
-  resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> {
-  // Dimensiones del lienzo
-  const { margin, elementWidth, elementHeight, spacing, height } = dims;
-
-  // Grupo correspondiente al elemento a actualizar
-  const targetGroup = svg
-    .select<SVGGElement>(`g#e-${pos}`);
-
-  // Posición de destino del nuevo elemento
-  const destX = margin.left + pos * (elementWidth + spacing);
-  const destY = (height - elementHeight) / 2;
-
-  // Posición incial del nuevo elemento
-  const startX = destX + elementWidth / 2;
-  const startY = 12;
-
-  // Estado visual original del texto del contenedor donde se va a actualizar el elemento
-  targetGroup.select("text").text(oldValue);
-
-  // Creación de un grupo temporal para el indicador de actualización
-  const { group: updatedGroup, arrow } = createTemporaryArrowIndicator(
-    svg,
-    {
-      groupId: "update-group",
-      arrowClass: "update-arrow",
-      arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
-      fillColor: "#D72638",
-      opacity: 0,
-      initialX: destX + elementWidth / 2,
-      initialY: destY - 40
-    }
-  );
-
-  // Aparición del indicador de actualización
-  await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
-
-  // Elemento de texto que representa el nuevo valor del elemento,
-  // posicionado inicialmente justo arriba del indicador de actualización.
-  const newElement = updatedGroup
-    .append("text")
-    .attr("x", startX)
-    .attr("y", startY)
-    .attr("text-anchor", "middle")
-    .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
-    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-    .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
-    .style("letter-spacing", "0.5px")
-    .text(newValue.toString())
-    .style("opacity", 0);
-
-  // Aparición del texto correspondiente al nuevo valor
-  await newElement.transition().duration(500).style("opacity", 1).end();
-
-  // Resaltado del contenedor a actualizar
-  await targetGroup
-    .select("rect.sequence-rect")
-    .transition()
-    .duration(500)
-    .attr("stroke-width", 3)
-    .end();
-
-  // Desvanecimiento del texto original
-  await targetGroup
-    .select("text")
-    .transition()
-    .duration(1000)
-    .style("opacity", 0)
-    .end();
-
-  // Desplazamiento del nuevo elemento al centro de la posición de destino
-  await newElement
-    .transition()
-    .duration(1500)
-    .attr("x", destX + elementWidth / 2)
-    .attr("y", destY + 38)
-    .ease(d3.easeCubicInOut)
-    .end();
-
-  // Desvanecimiento del indicador de actualización
-  await arrow.transition().duration(500).style("opacity", 0).end();
-
-  // Restablecimiento del valor del texto del contenedor principal
-  targetGroup.select("text").text(newValue).style("opacity", 1);
-
-  // Limpieza del grupo temporal de actualización
-  updatedGroup.remove();
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
-}
-
-/**
- * Función encargada de animar la búsqueda de un elemento dentro de la secuencia.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param valueToSearch Valor a buscar.
- * @param dims Dimensiones de los elementos dentro del lienzo.
- * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- */
-export async function animateSearchSequence(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-  valueToSearch: number,
-  dims: {
-    margin: { left: number; right: number };
-    elementWidth: number;
-    elementHeight: number;
-    spacing: number;
-    height: number;
-  },
-  resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> {
-  // Dimensiones del lienzo
-  const { margin, elementWidth, elementHeight, spacing, height } = dims;
-
-  // Selección de los elementos
-  const elements = svg.selectAll("g.element");
-
-  // Restablecimiento de los bordes y fondos de los contenedores antes de iniciar la animación
-  elements
-    .select("rect.sequence-rect")
-    .attr("fill", (d) => (d === null ?
-      SVG_STYLE_VALUES.RECT_FILL_FIRST_COLOR : SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR))
-    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH);
-
-  // Posición inicial del indicador de búsqueda
-  const startX = margin.left + elementWidth / 2;
-  const startY = (height - elementHeight) / 2 - 40;
-
-  // Creación de un grupo temporal para el indicador de búsqueda
-  const { group: searchGroup, arrow } = createTemporaryArrowIndicator(
-    svg,
-    {
-      groupId: "search-group",
-      arrowClass: "search-arrow",
-      arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
-      fillColor: "#D72638",
-      opacity: 0,
-      initialX: startX,
-      initialY: startY
-    }
-  );
-
-  // Transición de aparición para el indicador de búsqueda
-  await arrow
-    .transition()
-    .delay(100)
-    .duration(700)
-    .style("opacity", 1)
-    .end();
-
-  // Variable de control
-  let found = false;
-
-  // Obtención de los nodos de los elementos en forma de array
-  const elementsNodes = elements.nodes();
-
-  // Recorremos cada elemento de forma secuencial
-  for (let i = 0; i < elementsNodes.length; i++) {
-    // Si se encuentra el elemento detenemos la ejecución
-    if (found) break;
-
-    // Calculo de la posición actual del elemento
-    const xPos = margin.left + i * (elementWidth + spacing) + elementWidth / 2;
-    const yPos = (height - elementHeight) / 2 - 40;
-
-    // Transición de la flecha indicatoria a la posición del elemento actual
-    await arrow
+    // Resaltado del contenedor del elemento objetivo
+    await targetGroup
+      .select("rect.sequence-rect")
       .transition()
       .duration(800)
-      .attr("transform", `translate(${xPos}, ${yPos})`)
-      .ease(d3.easeCubicInOut)
-      .end();
-
-    // Resaltado breve del rectángulo del elemento actual
-    const currentElement = d3.select(elementsNodes[i]);
-    await currentElement
-      .select("rect")
-      .transition()
-      .duration(500)
-      .attr("stroke", "#f87171")
       .attr("stroke-width", 3)
       .transition()
-      .duration(500)
+      .delay(800)
+      .duration(400)
       .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
       .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
       .end();
 
-    // Data vinculada al elemento actual
-    const d = currentElement.datum();
+    // Desvanecimiento del indicador de obtención
+    await arrow.transition().duration(800).style("opacity", 0).end();
 
-    if (d === valueToSearch) {
-      // Resaltado definitivo del elemento encontrado
-      await currentElement
-        .select("rect")
-        .transition()
-        .duration(500)
-        .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-        .attr("stroke-width", 3)
-        .end();
-      found = true;
-      break;
-    }
+    // Limpieza del grupo temporal de obtención
+    getElementGroup.remove();
+
+    // Cierre de la operación
+    bus.emit("step:done", { stepId: "get" });
+    bus.emit("op:done", { op: "get" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
+}
 
-  // Desvanecimiento de la flecha indicatoria y limpieza de la capa overlay
-  await arrow.transition().duration(500).style("opacity", 0).end();
-  searchGroup.remove();
+/**
+ * Función encargada de animar el proceso de actualización de un elemento existente dentro de la secuencia dada su posición.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param updateData Objeto con información de la secuencia necesaria para la animación.
+ * @param dims Dimensiones de los elementos dentro del lienzo.
+ * @param bus EventBus para el registro de eventos sobre la operación.
+ * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateUpdateSequence(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  updateData: {
+    newValue: number,
+    pos: number
+  },
+  dims: {
+    margin: { left: number; right: number };
+    elementWidth: number;
+    elementHeight: number;
+    spacing: number;
+    height: number;
+  },
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+): Promise<void> {
+  try {
+    // Desestructuración de elementos requeridos para la animación
+    const { newValue, pos } = updateData;
 
-  // Restablecimiento de las consultas del usuario
-  resetQueryValues();
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.set.labels!;
 
-  // Finalización de la animación
-  setIsAnimating(false);
+    // Grupo correspondiente al elemento a actualizar
+    const targetGroup = svg
+      .select<SVGGElement>(`g#e-${pos}`);
+
+    // Posición de destino del nuevo elemento
+    const destX = dims.margin.left + pos * (dims.elementWidth + dims.spacing);
+    const destY = (dims.height - dims.elementHeight) / 2;
+
+    // Posición incial del nuevo elemento
+    const startX = destX + dims.elementWidth / 2;
+    const startY = 12;
+
+    // Creación de un grupo temporal para el indicador de actualización
+    const { group: updatedGroup, arrow } = createTemporaryArrowIndicator(
+      svg,
+      {
+        groupId: "update-group",
+        arrowClass: "update-arrow",
+        arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
+        fillColor: "#D72638",
+        opacity: 0,
+        initialX: destX + dims.elementWidth / 2,
+        initialY: destY - 40
+      }
+    );
+
+    // Inicio de la operación
+    bus.emit("op:start", { op: "set" });
+    bus.emit("step:enter", { stepId: "set" });
+
+    bus.emit("step:progress", { stepId: "set", lineIndex: labels.IF_RANGE });
+    await delay(1000);
+
+    // Paso de animación visual
+    bus.emit("step:progress", { stepId: "get", lineIndex: labels.UPDATE });
+
+    // Aparición del indicador de actualización
+    await arrow.transition().delay(100).duration(700).style("opacity", 1).end();
+
+    // Elemento de texto que representa el nuevo valor del elemento,
+    // posicionado inicialmente justo arriba del indicador de actualización.
+    const newElement = updatedGroup
+      .append("text")
+      .attr("x", startX)
+      .attr("y", startY)
+      .attr("text-anchor", "middle")
+      .attr("fill", SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR)
+      .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+      .style("font-weight", SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT)
+      .style("letter-spacing", "0.5px")
+      .text(newValue.toString())
+      .style("opacity", 0);
+
+    // Aparición del grupo correspondiente al nuevo elemento
+    await newElement.transition().duration(500).style("opacity", 1).end();
+
+    // Desvanecimiento del texto original
+    await targetGroup
+      .select("text")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
+
+    // Desplazamiento del nuevo elemento al centro de la posición de destino
+    await newElement
+      .transition()
+      .duration(1500)
+      .attr("x", destX + dims.elementWidth / 2)
+      .attr("y", destY + 38)
+      .ease(easeCubicInOut)
+      .end();
+
+    // Desvanecimiento del indicador de actualización
+    await arrow.transition().duration(800).style("opacity", 0).end();
+
+    // Restablecimiento del valor del texto del contenedor principal
+    targetGroup.select("text").text(newValue).style("opacity", 1);
+
+    // Limpieza del grupo temporal de actualización
+    updatedGroup.remove();
+
+    // Cierre de la operación
+    bus.emit("step:done", { stepId: "set" });
+    bus.emit("op:done", { op: "set" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
+}
+
+/**
+ * Función encargada de animar el proceso de búsqueda de un elemento dentro de la secuencia.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param valueToSearch Valor a buscar.
+ * @param elements Cantidad de elementos existentes dentro de la secuencia.
+ * @param dims Dimensiones de los elementos dentro del lienzo.
+ * @param bus EventBus para el registro de eventos sobre la operación.
+ * @param resetQueryValues Función para restablecer los valores de las queries del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateSearchSequence(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  valueToSearch: number,
+  elements: number,
+  dims: {
+    margin: { left: number; right: number };
+    elementWidth: number;
+    elementHeight: number;
+    spacing: number;
+    height: number;
+  },
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.search.labels!;
+
+    // Posicionamiento inicial y creación del indicador de búsqueda
+    const startX = dims.margin.left + dims.elementWidth / 2;
+    const startY = (dims.height - dims.elementHeight) / 2 - 40;
+
+    const { group: searchGroup, arrow } = createTemporaryArrowIndicator(
+      svg,
+      {
+        groupId: "search-group",
+        arrowClass: "search-arrow",
+        arrowPathData: "M0,0 L-9.5, -10 L-4, -10 L-4, -20 L4, -20 L4, -10 L9.5, -10 Z",
+        fillColor: "#D72638",
+        opacity: 0,
+        initialX: startX,
+        initialY: startY
+      }
+    );
+
+    // Inicio de la operación
+    bus.emit("op:start", { op: "search" });
+    bus.emit("step:enter", { stepId: "search" });
+
+    // Aparición del indicador de búsqueda
+    await arrow
+      .transition()
+      .delay(100)
+      .duration(700)
+      .style("opacity", 1)
+      .end();
+
+    // Recorrido de los nodos en busca del elemento
+    let found = false;
+    for (let i = 0; i < elements; i++) {
+      if (found) break;
+
+      const currentElement = svg.select<SVGGElement>(`g#e-${i}`);
+
+      // Paso de animación visual
+      bus.emit("step:progress", { stepId: "search", lineIndex: labels.FOR });
+
+      // Resaltado del elemento en la posición actual
+      const xPos = dims.margin.left + i * (dims.elementWidth + dims.spacing) + dims.elementWidth / 2;
+      const yPos = (dims.height - dims.elementHeight) / 2 - 40;
+
+      await arrow
+        .transition()
+        .duration(800)
+        .attr("transform", `translate(${xPos}, ${yPos})`)
+        .ease(easeCubicInOut)
+        .end();
+
+      bus.emit("step:progress", { stepId: "search", lineIndex: labels.IF });
+      await delay(1000);
+
+      // Verificación del elemento
+      const d = currentElement.select("text.value").text();
+      if (parseInt(d) === valueToSearch) {
+        bus.emit("step:progress", { stepId: "search", lineIndex: labels.RETURN_TRUE });
+
+        // Resaltado definitivo del elemento encontrado
+        await currentElement
+          .select("rect")
+          .transition()
+          .duration(500)
+          .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+          .attr("stroke-width", 3)
+          .transition()
+          .duration(500)
+          .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+          .end();
+
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      bus.emit("step:progress", { stepId: "search", lineIndex: labels.FOR });
+      await delay(500);
+
+      bus.emit("step:progress", { stepId: "search", lineIndex: labels.RETURN_FALSE });
+    }
+
+    // Desvanecimiento del indicador de búsqueda y limpieza de la capa overlay
+    await arrow.transition().duration(500).style("opacity", 0).end();
+    searchGroup.remove();
+
+    bus.emit("step:done", { stepId: "search" });
+    bus.emit("op:done", { op: "search" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
+}
+
+/**
+ * Función encargada del proceso de limpieza de todos los elementos de la secuencia dentro del lienzo.
+ * @param svg Selección D3 del elemento SVG a limpiar.
+ * @param bus EventBus para el registro de eventos sobre la operación.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateClearSequence(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Etiquetas para el registro de eventos
+    const labels = seqCode.clean.labels!;
+
+    // Inicio de la operación
+    bus.emit("op:start", { op: "clean" });
+    bus.emit("step:enter", { stepId: "clean" });
+
+    // Paso de animación visual
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAN_CANT });
+    await delay(1000);
+
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAN_VECTOR });
+    // Animación de salida de los elementos
+    await svg.selectAll("g.element")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
+
+    // Eliminación de los nodos del DOM
+    svg.selectAll("g.element").remove();
+
+    bus.emit("step:done", { stepId: "clean" });
+    bus.emit("op:done", { op: "clean" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
 }
 
 /**
@@ -846,7 +887,7 @@ export async function animateSearchSequence(
  * @returns Objeto que contiene los elementos correspondientes al grupo e indicador creado.
  */
 function createTemporaryArrowIndicator(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   config: {
     groupId: string;
     arrowClass: string;
