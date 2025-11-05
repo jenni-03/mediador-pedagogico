@@ -1,3 +1,5 @@
+import img1 from "../../../assets/images/logo_seed.png";
+
 export function NavBar() {
   const handleScroll =
     (id: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -13,8 +15,15 @@ export function NavBar() {
       <div className="max-w-[1400px] m-auto px-6 py-4 flex items-center gap-3">
         {/* Logo y título */}
         <h1 className="text-2xl sm:text-3xl font-bold tracking-wide">
-          <span className="text-white">Mediador</span>
-          <span className="text-red-500">Pedagógico</span>
+          {/* <span className="text-white">Mediador</span>
+          <span className="text-red-500">Pedagógico</span> */}
+          <a href="#welcome-section" onClick={handleScroll("welcome-section")}>
+            <img
+              src={img1}
+              alt="Logo Seed"
+              className="w-full h-auto max-w-[250px] rounded-xl"
+            />
+          </a>
         </h1>
 
         {/* Enlaces */}
