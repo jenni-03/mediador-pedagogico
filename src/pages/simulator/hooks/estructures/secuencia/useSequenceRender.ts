@@ -24,12 +24,7 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
 
     // Efecto para renderizado base de la secuencia
     useEffect(() => {
-        // Verificamos que la secuencia sea válida y que la referencia al SVG se haya establecido
         if (!sequence || !svgRef.current || !query.create) return;
-
-        if (prevSequence && prevSequence.length === sequence.length) {
-            return;
-        }
 
         // Margenes para el SVG
         const margin = { left: SVG_SEQUENCE_VALUES.MARGIN_LEFT, right: SVG_SEQUENCE_VALUES.MARGIN_RIGHT };
@@ -87,11 +82,10 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
             resetQueryValues();
             setIsAnimating(false);
         })();
-    }, [sequence, query.create, prevSequence, bus, memory, resetQueryValues, setIsAnimating]);
+    }, [sequence, query.create, bus, memory, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la animación de inserción de un elemento
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || !query.toAdd) return;
 
         // Extraemos los datos de inserción de la query
@@ -123,7 +117,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
 
     // Efecto para manejar la animación de eliminación por posición
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || !query.toDelete) return;
 
         // Extraemos los datos de eliminación de la query
@@ -158,7 +151,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
 
     // Efecto para manejar la obtención de un elemento especifico 
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || query.toGet === null) return;
 
         // Extraemos los datos de obtención de la query
@@ -189,7 +181,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
 
     // Operación de actualización por posición
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || !query.toUpdate) return;
 
         // Obtenemos los datos de actualización de la query
@@ -223,7 +214,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
 
     // Operación de búsqueda
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || query.toSearch === null) return;
 
         // Selección del elemento SVG a partir de su referencia
@@ -254,7 +244,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
     }, [query.toSearch, sequence, bus, resetQueryValues, setIsAnimating]);
 
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!sequence || !svgRef.current || !query.toClear) return;
 
         // Selección del elemento SVG a partir de su referencia
