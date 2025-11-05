@@ -1,6 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { Comparator, HierarchyNodeData, RotationStep, RotationType, SplayRotationTag, SplayTrace, SplayTracePhase } from "../../../types";
+import { BSTInsertOutput, Comparator, HierarchyNodeData, RotationStep, RotationType, SplayDeleteOutput, SplayInsertOutput, SplayRotationTag, SplayTrace, SplayTracePhase } from "../../../types";
 import { NodoSplay } from "../nodes/NodoSplay";
 import { defaultComparator } from "../treeUtils";
 import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
@@ -22,14 +22,23 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que inserta un nuevo nodo en el árbol Splay. Si el elemento ya existe,
+     * Método que inserta un nuevo nodo en el árbol Splay. Si el nodo ya existe,
      * no se crea un nuevo nodo, pero se aplica Splay sobre el nodo existente.
      * @param valor Elemento a insertar.
-     * @returns Objeto con:
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `pathIds`: Lista con los IDs de los nodos visitados durante el recorrido de búsqueda, en orden.
+     *    Incluye el nodo padre donde se intentó realizar la inserción o el nodo ya existente.
+     * 
+     * - `parent`: Nodo padre bajo el cual se insertó el nuevo nodo. Será `null` en 2 casos:
+     *    1. Si el elemento ya existía en el árbol.
+     *    2. Si el nuevo nodo se insertó como raíz.
+     * 
      * - `targetNode`: Nodo asociado al elemento (nuevo o ya existente).
-     * - `inserted`: Indica si el elemento fue realmente insertado.
+     * 
+     * - `exists`: Booleano que indica si el elemento ya existía (`true`) o si se creó e insertó un nuevo nodo (`false`).
      */
-    public insertarSplay(valor: T): { targetNode: NodoSplay<T>, inserted: boolean } {
+    public insertarSplay(valor: T): SplayInsertOutput<T> {
         if (super.getTamanio() >= this.MAX_NODOS) {
             throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
         }
@@ -48,20 +57,21 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         }
 
         // Inserción BST estándar
+        const pathIds: string[] = [];
         let p: NodoSplay<T> | null = null;
-        let cur: NodoSplay<T> | null = this.getRaiz();
+        let curr: NodoSplay<T> | null = this.getRaiz();
 
-        while (cur !== null) {
-            p = cur;
-            const cmp = this.compare(valor, cur.getInfo());
+        while (curr !== null) {
+            pathIds.push(curr.getId());
+            const cmp = this.compare(valor, curr.getInfo());
             if (cmp === 0) {
-                this.splay(cur, "insertion");
-                return { targetNode: cur, inserted: false };
+                this.splay(curr, "insertion");
+                return { pathIds, parent: null, targetNode: curr, exists: true };
             }
-            cur = cmp < 0 ? cur.getIzq() : cur.getDer();
+            p = curr;
+            curr = cmp < 0 ? curr.getIzq() : curr.getDer();
         }
 
-        // Actualizar padre del nuevo nodo
         const nuevo = new NodoSplay<T>(valor);
         nuevo.setPadre(p);
 
@@ -77,19 +87,19 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         this.splay(nuevo, "insertion");
         this.setTamanio(this.getTamanio() + 1);
 
-        return { targetNode: nuevo, inserted: true };
+        return { pathIds, parent: p, targetNode: nuevo, exists: false };
     }
 
     /**
-     * Método que elimina un nodo especifico del árbol Splay. Si el elemento no existe,
+     * Método que elimina un nodo especifico del árbol Splay. Si el nodo no existe,
      * se aplica Splay sobre el nodo más cercano y no se elimina nada.
-     * @param valor Elemento a eliminar.
+     * @param valor Objeto con la siguiente información.
      * @returns Objeto con:
      * - `node`: Nodo asociado al elemento a eliminar o el último nodo vistado.
      * - `deleted`: Indica si el elemento fue realmente eliminado.
      * - `maxLeft`: Nodo máximo del subárbol izquierdo tras la operación de eliminación o null si no existía.
      */
-    public eliminarSplay(valor: T): { node: NodoSplay<T>, removed: boolean, maxLeft: NodoSplay<T> | null } {
+    public eliminarSplay(valor: T): SplayDeleteOutput<T> {
         if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
 
         // Splay(valor)
@@ -559,7 +569,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que garantiza la inicialización de la jerarquía BST en la traza de operación splay,
+     * Método que garantiza la inicialización de la jerarquía BST en la traza de operación splay.
      * Convierte la estructura actual del árbol en una representación jerárquica y asegura la disposición 
      * de un estado base del árbol antes de registrar rotaciones intermedias
      */

@@ -2,11 +2,10 @@ import { useEffect, useMemo, useRef } from "react";
 import {
   BaseQueryOperations,
   HierarchyNodeData,
-  TraversalNodeType,
-  TreeLinkData,
+  TraversalNodeType
 } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { SVG_BINARY_TREE_VALUES, SVG_RB_TREE_VALUES } from "../../../../../shared/constants/consts";
+import { RB_COLORS, SVG_BINARY_TREE_VALUES, SVG_RB_TREE_VALUES } from "../../../../../shared/constants/consts";
 import {
   animateClearTree,
   animateTreeTraversal,
@@ -14,13 +13,11 @@ import {
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import {
-  drawRBTreeNodes,
-  drawRBTreeLinks,
   animateRBInsertNode,
   animateRBDeleteNode,
   animateRBSearch,
 } from "../../../../../shared/utils/draw/RedBlackTreeDrawActions";
-import { hierarchy, type HierarchyNode, select, tree } from "d3";
+import { type HierarchyNode, select } from "d3";
 import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
 
 export function useRBTreeRender(
@@ -39,31 +36,21 @@ export function useRBTreeRender(
   const treeOffset = useRef({ x: 0, y: 0 }).current;
   const seqOffset = useRef({ x: 0, y: 0 }).current;
 
-  // Raíz jerárquica D3 (final post-operación)
-  const root = useMemo(() => (treeData ? hierarchy(treeData) : null), [treeData]);
-
-  // Nodos “reales” (sin placeholders)
-  const currentNodes = useMemo(
-    () => (root ? root.descendants().filter((d) => !d.data.isPlaceholder) : []),
-    [root]
-  );
+  // Construcción de la jerarquía e inicialización del layout del árbol
+  const { root, nodes: currentNodes, links: linksData } = useMemo(() => {
+    if (!treeData) return { root: null, nodes: [], links: [] }
+    return hierarchyFrom(
+      treeData,
+      SVG_RB_TREE_VALUES.NODE_SPACING,
+      SVG_RB_TREE_VALUES.LEVEL_SPACING
+    );
+  }, [treeData]);
 
   // Estado previo (para delete)
   const prevRoot = usePrevious(root);
 
   // Control de animación global
   const { setIsAnimating } = useAnimation();
-
-  // Enlaces actuales (sin placeholders)
-  const linksData: TreeLinkData[] = useMemo(() => {
-    if (!root) return [];
-    return root.links().reduce<TreeLinkData[]>((acc, link) => {
-      if (!link.target.data.isPlaceholder) {
-        acc.push({ sourceId: link.source.data.id, targetId: link.target.data.id })
-      }
-      return acc;
-    }, []);
-  }, [root]);
 
   // Layouts para las rotaciones del árbol
   const rbFramesLayouts = useMemo(() => {
@@ -85,15 +72,6 @@ export function useRBTreeRender(
       top: SVG_BINARY_TREE_VALUES.MARGIN_TOP,
       bottom: SVG_BINARY_TREE_VALUES.MARGIN_BOTTOM,
     };
-
-    // Separación horizontal entre nodos y vertical entre niveles
-    const nodeSpacing = SVG_RB_TREE_VALUES.NODE_SPACING;
-    const levelSpacing = SVG_RB_TREE_VALUES.LEVEL_SPACING;
-
-    // Creación del layout del árbol
-    const treeLayout = tree<HierarchyNodeData<number>>()
-      .nodeSize([nodeSpacing, levelSpacing]);
-    treeLayout(root);
 
     // Aplanar los nodos de todos los frames
     const rbFramesNodes = rbFramesLayouts.flatMap(frame => frame.nodes);
@@ -119,31 +97,29 @@ export function useRBTreeRender(
     treeOffset.x = metrics.treeOffset.x;
     treeOffset.y = metrics.treeOffset.y;
 
-    // Contenedores y capas
+    // Contenedor interno para los nodos y enlaces del árbol
     let treeG = svg.select<SVGGElement>("g.tree-container");
     if (treeG.empty()) treeG = svg.append("g").classed("tree-container", true);
     treeG.attr("transform", `translate(${treeOffset.x},${treeOffset.y})`);
 
-    // Desplazamiento para el contenedor de la secuencia de recorrido de nodos
+    // Desplazamiento para el contenedor de la secuencia de valores de recorrido
     seqOffset.x = metrics.seqOffset.x;
     seqOffset.y = metrics.seqOffset.y;
 
+    // Contenedor interno para la secuencia de valores de recorrido
     let seqG = svg.select<SVGGElement>("g.seq-container");
     if (seqG.empty()) seqG = svg.append("g").classed("seq-container", true);
     seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
-    // En caso de haber una operación que requiere rotación o recoloreo, evitamos redibujar los nodos/enlaces
-    if (query.rbTrace?.hierarchies.bst) return;
-
+    // Capas internas para nodos y enlaces
     let linksLayer = treeG.select<SVGGElement>("g.links-layer");
     if (linksLayer.empty()) linksLayer = treeG.append("g").attr("class", "links-layer");
 
     let nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
     if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("class", "nodes-layer");
 
-    // Renderizado de nodos y enlaces del árbol
-    drawRBTreeNodes(nodesLayer, currentNodes, nodePositions);
-    drawRBTreeLinks(linksLayer, linksData, nodePositions);
+    // Elevamos la capa de nodos
+    nodesLayer.raise();
   }, [root, currentNodes, treeOffset, seqOffset, prevRoot, linksData, rbFramesLayouts, query.rbTrace?.hierarchies.bst]);
 
   // Efecto para manejar la inserción de nuevos nodos
@@ -154,36 +130,28 @@ export function useRBTreeRender(
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current!);
 
+    // Extraemos los datos de inserción de la query
+    const { pathIds, parentId, targetNodeId, exists } = query.toInsert;
+
     // Obtenemos el layout inicial en caso de presentarse recoloreo o rotación
     const preLayout = query.rbTrace && query.rbTrace.hierarchies.bst ? rbFramesLayouts[0] : null;
-
-    // Ubicamos al nuevo nodo en el árbol
-    const newNode = preLayout ? preLayout.nodes.find(d => d.data.id === query.toInsert) : currentNodes.find(d => d.data.id === query.toInsert);
-    if (!newNode) return;
-
-    // Obtenemos el recorrido o ruta desde el nodo raíz hasta el nodo padre del nuevo nodo
-    let parentNode: HierarchyNode<HierarchyNodeData<number>> | null = null;
-    let pathToParent: HierarchyNode<HierarchyNodeData<number>>[] = [];
-    if (newNode.parent) {
-      parentNode = newNode.parent;
-      pathToParent = preLayout ? preLayout.root.path(parentNode) : root.path(parentNode);
-    }
 
     // Animación de inserción
     animateRBInsertNode(
       svg,
       treeOffset,
       {
-        newNodeId: newNode.data.id,
-        parentId: parentNode?.data.id ?? null,
-        nodesData: currentNodes,
-        linksData,
+        targetNodeId,
+        parentId,
+        exists,
+        currentNodes: preLayout ? preLayout.nodes : currentNodes,
+        currentLinks: preLayout ? preLayout.links : linksData,
         positions: nodePositions,
-        pathToParent,
-        bstFrame: preLayout,
+        pathToTarget: pathIds,
         actions: query.rbTrace?.actions ?? [],
         frames: rbFramesLayouts
       },
+      { highlightColor: RB_COLORS.HIGHLIGHT },
       resetQueryValues,
       setIsAnimating
     );
@@ -238,36 +206,30 @@ export function useRBTreeRender(
 
   // Efecto para manejar la búsqueda de un nodo
   useEffect(() => {
+    // Verificaciones necesarias para realizar la animación
     if (!root || !svgRef.current || !query.toSearch) return;
 
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current);
 
-    // Grupo contenedor de nodos y enlaces del árbol
-    const treeG = svg.select<SVGGElement>("g.tree-container");
-
-    // Grupo contenedor de los valores de la secuencia de recorrido
-    const seqG = svg.select<SVGGElement>("g.seq-container");
-
-    // Ubicamos al nodo a buscar en el árbol
-    const nodeToSearch = currentNodes.find(
-      (d) => d.data.value === query.toSearch
-    );
-    if (!nodeToSearch) return;
-
-    // Ruta de búsqueda del nodo
-    const pathToNode = root.path(nodeToSearch);
+    // Extraemos los datos de búsqueda de la query
+    const { pathIds, found, lastVisitedId } = query.toSearch;
 
     // Animación de búsqueda del nodo
     animateRBSearch(
-      treeG,
-      seqG,
-      nodeToSearch.data.id,
-      pathToNode,
+      svg,
+      treeOffset,
+      {
+        lastVisitedNodeId: lastVisitedId,
+        found,
+        positions: nodePositions,
+        path: pathIds
+      },
+      { highlightColor: RB_COLORS.HIGHLIGHT },
       resetQueryValues,
       setIsAnimating
     );
-  }, [root, currentNodes, query.toSearch, resetQueryValues, setIsAnimating]);
+  }, [root, currentNodes, query.toSearch, treeOffset, resetQueryValues, setIsAnimating]);
 
   // Efecto para manejar los recorridos del árbol
   useEffect(() => {

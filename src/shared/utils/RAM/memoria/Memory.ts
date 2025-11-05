@@ -1,1123 +1,931 @@
-import { MemoryValidator } from "./MemoryValidator";
+// src/shared//utils/RAM/memoria/memory.ts
+// ============================================================================
+// Memory: orquestador Stack ↔ Heap ↔ RAM (ByteStore)
+// ----------------------------------------------------------------------------
+// - No define layouts: delega TODOS los bytes a `Layout`.
+// - Mantiene refCounts en Heap cuando crea/reasigna referencias.
+// - El Stack guarda slots (valor por dirección o referencia por puntero lógico).
+// - Snapshot listo para la UI (RAM es la fuente de verdad).
+// ============================================================================
 
-/**
- * Tipos de datos primitivos que pueden almacenarse en la memoria.
- */
-type PrimitiveType =
-  | "boolean"
-  | "char"
-  | "byte"
-  | "short"
-  | "int"
-  | "long"
-  | "float"
-  | "double"
-  | "string";
-/**
- * Tipos de datos complejos en la memoria (objetos y arrays).
- */
-type ComplexType = "object" | "array";
+import { ByteStore } from "./byte-store";
+import { Layout, PrimitiveType, SIZES, sizeOf } from "./layout";
+import { Stack, Slot, isRefSlot } from "./stack";
+import {
+  Heap,
+  type ArrayRef32Meta,
+  type ArrayInlinePrimMeta,
+  type ObjectCompactMeta,
+} from "./heap";
+import { TypeMismatchError } from "./errors";
+import type { Addr } from "./byte-store";
+import type { MemType } from "./memtype";
+import { Prim, Arr, Obj, isString as isStr } from "./memtype";
 
-/**
- * Representación de una entrada en la memoria.
- */
-interface MemoryEntry {
-  type: PrimitiveType | ComplexType;
-  name: string;
-  value: any;
-  address: string;
+export interface Snapshot {
+  stack: Array<{ id: number; name: string; slots: Slot[] }>;
+  heap: ReturnType<Heap["list"]>;
+  ram: ReturnType<ByteStore["dump"]>; // legacy shape (hex). UI nueva puede usar dumpRows() directo del ByteStore si prefieres.
+  used: number;
+  capacity: number;
 }
 
-/**
- * Clase que simula la gestión de la memoria en un sistema.
- * Permite almacenar y administrar variables primitivas, arrays y objetos.
- */
-class Memory {
-  /**
-   * Contador de direcciones para cada tipo de dato en la memoria.
-   * Se usa para generar direcciones únicas.
-   */
-  private static addressCounters: Record<PrimitiveType | ComplexType, number> =
-    {
-      boolean: 0,
-      char: 0,
-      byte: 0,
-      short: 0,
-      int: 0,
-      long: 0,
-      float: 0,
-      double: 0,
-      string: 0,
-      object: 0,
-      array: 0,
-    };
+export class Memory {
+  private ram: ByteStore;
+  private stack = new Stack();
+  private heap = new Heap();
+  private readonly NULL_GUARD = 16;
 
-  /**
-   * Prefijos utilizados para identificar las direcciones de memoria de cada tipo de dato.
-   */
-  private static typePrefixes: Record<PrimitiveType | ComplexType, string> = {
-    boolean: "0x",
-    char: "1x",
-    byte: "2x",
-    short: "3x",
-    int: "4x",
-    long: "5x",
-    float: "6x",
-    double: "7x",
-    string: "8x",
-    object: "9x",
-    array: "Ax",
-  };
-  /**
-   * Segmentos de memoria organizados por tipo de dato.
-   */
-  private segments: Map<PrimitiveType | ComplexType, Map<string, MemoryEntry>> =
-    new Map();
-
-  constructor() {
-    // Inicializa los segmentos de memoria para cada tipo de dato.
-    Object.keys(Memory.typePrefixes).forEach((type) =>
-      this.segments.set(type as PrimitiveType | ComplexType, new Map())
-    );
+  constructor(sizeBytes: number = 1024 * 64) {
+    this.ram = new ByteStore(sizeBytes);
+    // Reserva inicial para representar 0x0000… como "zona inválida" (null-guard).
+    this.ram.allocAligned(this.NULL_GUARD, this.NULL_GUARD, "null guard");
+    this.stack.push("global");
   }
 
-  /**
-   * Genera una dirección de memoria única para el tipo de dato especificado.
-   * @param type Tipo de dato para el que se generará la dirección.
-   * @returns Dirección de memoria única para el tipo dado.
-   */
-  private generateAddress(type: PrimitiveType | ComplexType): string {
-    const prefix = Memory.typePrefixes[type];
-    const count = Memory.addressCounters[type]++;
-    let multiplier = 1;
-  
-    // Si es un tipo primitivo, se aplica el multiplicador respectivo.
-    if (type !== "object" && type !== "array") {
-      const multipliers: Record<PrimitiveType, number> = {
-        boolean: 1,  // 1 en 1
-        char: 2,     // 2 en 2
-        byte: 1,     // 1 en 1
-        short: 2,    // 2 en 2
-        int: 4,      // 4 en 4
-        long: 8,     // 8 en 8
-        float: 4,    // 4 en 4
-        double: 8,   // 8 en 8
-        string: 1,   // lo dejamos en 1 en 1
-      };
-      multiplier = multipliers[type as PrimitiveType];
-    }
-    // Usamos (count + 1) para que la primera dirección no quede en 000.
-    const addressOffset = (count + 1) * multiplier;
-    return `${prefix}${String(addressOffset).padStart(3, "0")}`;
-  }
-  
-
-  /**
-   * Almacena un dato primitivo en la memoria.
-   * Primero valida el nombre y luego delega la validación del valor y almacenamiento.
-   * @param type Tipo de dato (int, float, string, etc.).
-   * @param name Nombre de la variable.
-   * @param value Valor a almacenar.
-   * @param isNested Indica si es una variable dentro de un objeto o array.
-   * @returns `[true, mensaje]` si se almacena correctamente, `[false, error]` si hay un problema.
-   */
-  storePrimitive(
-    type: PrimitiveType,
-    name: string,
-    value: any,
-    isNested: boolean = false
-  ): [true, string] | [false, string] {
-    // Validar si el nombre ya existe
-    const nameValidation = MemoryValidator.validateUniqueGlobalName(
-      name,
-      isNested
-    );
-    if (nameValidation !== true) return [false, nameValidation[1]];
-
-    // Delegar la validación del valor y almacenamiento
-    return this.validateAndStorePrimitive(type, name, value);
+  // ==========================================================================
+  // Frames
+  // ==========================================================================
+  pushFrame(name: string) {
+    return this.stack.push(name);
   }
 
-  /**
-   * Valida el valor y lo almacena en memoria si es correcto.
-   * @param type Tipo de dato (int, float, string, etc.).
-   * @param name Nombre de la variable.
-   * @param value Valor a almacenar.
-   * @returns `[true, mensaje]` si se almacena correctamente, `[false, error]` si hay un problema.
-   */
-  private validateAndStorePrimitive(
-    type: PrimitiveType,
-    name: string,
-    value: any
-  ): [true, string] | [false, string] {
-    const segment = this.segments.get(type)!;
-
-    // Validar si el valor es compatible con el tipo
-    const valueValidation = MemoryValidator.validateValueByType(type, value);
-    if (valueValidation !== true) {
-      MemoryValidator.removeGlobalName(name);
-      return [false, valueValidation[1]];
-    }
-
-    // Si todo está bien, almacenamos el valor en la memoria
-    const address = this.generateAddress(type);
-    segment.set(address, { type, name, value, address });
-
-    return [true, `Variable "${name}" almacenada en dirección ${address}`];
-  }
-
-  /**
-   * Almacena un array en la memoria.
-   * @param type Tipo de los elementos del array.
-   * @param name Nombre del array.
-   * @param values Valores del array.
-   * @param isNested Indica si es un array dentro de otro objeto.
-   * @returns `[true, mensaje]` si se almacena correctamente, `[false, error]` si hay un problema.
-   */
-  storeArray(
-    type: PrimitiveType,
-    name: string,
-    values: any[],
-    isNested: boolean = false
-  ): [true, string] | [false, string] {
-    // Validar si el nombre ya existe en la memoria
-    const nameValidation = MemoryValidator.validateUniqueGlobalName(
-      name,
-      isNested
-    );
-    if (nameValidation !== true) return [false, nameValidation[1]];
-
-    // Validamos el array completo antes de almacenarlo
-    const arrayValidation = Memory.validateArray(type, values);
-    if (arrayValidation[0] === false) {
-      MemoryValidator.removeGlobalName(name);
-      return [false, `"Array ${name}": ${arrayValidation[1]}`];
-    }
-    // Si todo es válido, generamos la dirección del array y lo almacenamos
-    const arrayAddress = this.generateAddress("array");
-    const arraySegment = this.segments.get("array")!;
-
-    arraySegment.set(arrayAddress, {
-      type: "array",
-      name,
-      value: values,
-      address: arrayAddress,
-    });
-
-    //Ahora almacenamos los elementos después de validar todo
-    for (let i = 0; i < values.length; i++) {
-      const elementName = `${name}_${i}`;
-      this.validateAndStorePrimitive(type, elementName, values[i]); // Ahora sí almacena
-    }
-
-    return [true, `Array "${name}" almacenado en dirección ${arrayAddress}`];
-  }
-
-  /**
-   * Valida un array asegurándose de que todos sus valores sean correctos para el tipo especificado.
-   * @param type Tipo de los elementos del array.
-   * @param values Array de valores a validar.
-   * @returns `[true]` si el array es válido, `[false, mensaje de error]` si hay algún problema.
-   */
-  static validateArray(
-    type: PrimitiveType,
-    values: any[]
-  ): [true] | [false, string] {
-    for (let i = 0; i < values.length; i++) {
-      const validationResult = MemoryValidator.validateValueByType(
-        type,
-        values[i]
-      );
-      if (validationResult !== true) {
-        return [false, `La posición ${i} del array: ${validationResult[1]}`];
+  popFrame() {
+    const f = this.stack.pop();
+    if (!f) return;
+    // Al salir del frame: dec() de todas las referencias vivas en él.
+    for (const slot of f.slots.values()) {
+      if (
+        slot.kind === "ref" &&
+        slot.refAddr !== 0 &&
+        this.heap.has(slot.refAddr)
+      ) {
+        this.heap.dec(slot.refAddr);
       }
     }
-    return [true]; //Todos los valores son correctos
+  }
+
+  // ==========================================================================
+  // Helpers de asignación de slots en el Stack (maneja refCount)
+  // ==========================================================================
+  /** Inserta o reemplaza un slot en el frame top, manejando dec() del anterior si era ref. */
+  private upsertSlot(name: string, newSlot: Slot) {
+    const top = this.stack.top();
+    if (!top) throw new Error("No stack frame");
+    const prev = top.find(name);
+
+    // Si el anterior era referencia viva → dec
+    if (
+      prev &&
+      prev.kind === "ref" &&
+      prev.refAddr !== 0 &&
+      this.heap.has(prev.refAddr)
+    ) {
+      this.heap.dec(prev.refAddr);
+    }
+
+    // Normaliza para que el nombre del slot coincida exactamente con la variable.
+    const slotToStore: Slot = { ...newSlot, name };
+    top.upsert(slotToStore);
+  }
+
+  /** Resuelve variable por nombre recorriendo la pila (top → bottom). */
+  private resolveSlot(name: string): Slot | undefined {
+    return this.stack.resolve(name);
+  }
+
+  // ==========================================================================
+  // DECLARACIÓN (reserva sin escribir datos)
+  // ==========================================================================
+  /**
+   * Declara un primitivo como en `int x;` reservando bytes sin tocar el contenido.
+   * RAM: ocupado por `alloc` y visible en `dumpRows().allocations`.
+   */
+  declarePrimitive(name: string, type: PrimitiveType) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+    const w = Layout.allocPrimitiveReserve(this.ram, type, `prim ${name}#decl`);
+    this.upsertSlot(name, { name, kind: "prim", type, valueAddr: w.addr });
+    return [true, `decl ${type} ${name} @0x${w.addr.toString(16)}`] as const;
   }
 
   /**
-   * Almacena un objeto en la memoria.
-   * @param name Nombre del objeto.
-   * @param properties Propiedades del objeto (primitivos o arrays).
-   * @returns `[true, mensaje]` si se almacena correctamente, `[false, error]` si hay un problema.
+   * Declara un array de tamaño fijo (Java: `new T[n]`) y NO escribe datos.
+   * - elem prim no-string → inline-prim: header + bloque contiguo reservado.
+   * - string/objeto/array  → ref32: header + tabla u32 reservada (punteros 0 por defecto).
    */
+  declareArray(
+    name: string,
+    elem: MemType, // típicamente Arr(Prim("int")).elem
+    length: number,
+    mode: "auto" | "inline-prim" | "ref32" = "auto"
+  ) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+
+    const isInlinePrim =
+      mode === "inline-prim" ||
+      (mode === "auto" && elem.tag === "prim" && elem.name !== "string");
+
+    if (isInlinePrim) {
+      if (!(elem.tag === "prim" && elem.name !== "string")) {
+        throw new Error("inline-prim solo admite primitivos no-string");
+      }
+      const r = Layout.allocArrayInlinePrimReserve(
+        this.ram,
+        elem.name,
+        length,
+        `arr ${name}#decl`
+      );
+      this.heap.addArrayInlinePrim(
+        r.addr,
+        {
+          length,
+          dataPtr: r.dataPtr,
+          elemType: elem.name,
+          elemSize: sizeOf(elem.name),
+        },
+        `arr(${name})`
+      );
+      this.upsertSlot(name, { name, kind: "ref", refAddr: r.addr });
+      return [
+        true,
+        `array ${name} -> @0x${r.addr.toString(16)} (len=${length})`,
+      ] as const;
+    }
+
+    // ref32 (strings/objetos/anidados)
+    const r = Layout.allocArrayRef32Reserve(
+      this.ram,
+      length,
+      `arr ${name}#decl`
+    );
+    this.heap.addArrayRef32(
+      r.addr,
+      { length, dataPtr: r.tablePtr, elem },
+      `arr(${name})`
+    );
+    this.upsertSlot(name, { name, kind: "ref", refAddr: r.addr });
+    return [
+      true,
+      `array ${name} -> @0x${r.addr.toString(16)} (len=${length})`,
+    ] as const;
+  }
+
+  // ==========================================================================
+  // Escritura recursiva por MemType (principal)
+  // ==========================================================================
+  /**
+   * API principal para crear/actualizar una variable en el stack.
+   * Crea en RAM lo necesario (vía Layout) y registra el nodo en Heap si es compuesto.
+   * Esta ruta **sí escribe** los datos (inicializadores).
+   */
+  storeValue(
+    name: string,
+    type: MemType,
+    value: any,
+    opts?: { layout?: "compact" | "dispersed"; mustBeNew?: boolean }
+  ) {
+    if (opts?.mustBeNew && this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+    const res = this.allocDeep(type, value, `var ${name}`, opts);
+    this.upsertSlot(name, res.slot);
+    return [true, `ok ${name}`] as const;
+  }
+
+  /**
+   * Crea en RAM según el MemType (con escritura de datos).
+   * - prim no-string → PRIM slot por valor (valueAddr)
+   * - string         → header UTF-16; HEAP; REF slot a header
+   * - array          → inline-prim | ref32 (strings/objetos/nested)
+   * - object         → compacto (recomendado) o disperso (legacy)
+   */
+  private allocDeep(
+    t: MemType,
+    v: any,
+    label?: string,
+    opts?: { layout?: "compact" | "dispersed" }
+  ): { slot: Slot } {
+    // ---------- 1) PRIMITIVO NO-STRING: por VALOR ----------
+    if (t.tag === "prim" && t.name !== "string") {
+      const w = Layout.writePrimitive(this.ram, t.name, v, label);
+      return {
+        slot: {
+          name: label ?? "tmp",
+          kind: "prim",
+          type: t.name,
+          valueAddr: w.addr,
+        },
+      };
+    }
+
+    // ---------- 2) STRING: header UTF-16 + Heap + REF ----------
+    if (t.tag === "prim" && t.name === "string") {
+      const hdr = Layout.allocUtf16String(
+        this.ram,
+        String(v),
+        label ? `${label}#str` : undefined
+      );
+      const len = this.ram.readU32(hdr);
+      const dataPtr = this.ram.readU32(hdr + 4);
+      this.heap.addString(hdr, { length: len, dataPtr }, label);
+      return { slot: { name: label ?? "tmp", kind: "ref", refAddr: hdr } };
+    }
+
+    // ---------- 3) ARRAY ----------
+    if (t.tag === "array") {
+      const arrVals = Array.isArray(v) ? v : [];
+      const len = arrVals.length;
+      const mode = t.mode ?? "auto";
+      const elemT = t.elem;
+
+      // 3.a) inline-prim (auto si elem es prim no-string)
+      const useInlinePrim =
+        mode === "inline-prim" ||
+        (mode === "auto" && elemT.tag === "prim" && elemT.name !== "string");
+
+      if (useInlinePrim) {
+        if (!(elemT.tag === "prim" && elemT.name !== "string")) {
+          throw new Error("inline-prim solo admite primitivos no-string");
+        }
+        const wr = Layout.writeArrayInlinePrim(
+          this.ram,
+          elemT.name,
+          arrVals,
+          label
+        );
+        const hdr = wr.addr;
+        const dataPtr = this.ram.readU32(hdr + 4);
+        this.heap.addArrayInlinePrim(
+          hdr,
+          {
+            length: len,
+            dataPtr,
+            elemType: elemT.name,
+            elemSize: sizeOf(elemT.name),
+          },
+          label
+        );
+        return { slot: { name: label ?? "tmp", kind: "ref", refAddr: hdr } };
+      }
+
+      // 3.b) strings (ref32)
+      if (isStr(elemT)) {
+        const wr = Layout.writeArrayOfStrings(
+          this.ram,
+          arrVals.map((s) => String(s)),
+          label
+        );
+        const hdr = wr.addr;
+        const table = this.ram.readU32(hdr + 4);
+        this.heap.addArrayRef32(
+          hdr,
+          { length: len, dataPtr: table, elem: elemT },
+          label
+        );
+
+        // Registrar cada string en Heap (uno por header creado).
+        for (let i = 0; i < len; i++) {
+          const sh = this.ram.readU32(table + i * 4);
+          const slen = this.ram.readU32(sh);
+          const sdata = this.ram.readU32(sh + 4);
+          this.heap.addString(
+            sh,
+            { length: slen, dataPtr: sdata },
+            label ? `${label}[${i}]#str` : undefined
+          );
+        }
+
+        return { slot: { name: label ?? "tmp", kind: "ref", refAddr: hdr } };
+      }
+
+      // 3.c) ref32 genérico (objetos/arrays anidados)
+      const childPtrs: Addr[] = [];
+      for (let i = 0; i < len; i++) {
+        const child = this.allocDeep(
+          elemT,
+          arrVals[i],
+          label ? `${label}[${i}]` : undefined
+        );
+        childPtrs.push(isRefSlot(child.slot) ? child.slot.refAddr : 0);
+      }
+      const wr = Layout.writeArrayRef32(this.ram, childPtrs, label);
+      const hdr = wr.addr;
+      const table = this.ram.readU32(hdr + 4);
+      this.heap.addArrayRef32(
+        hdr,
+        { length: len, dataPtr: table, elem: elemT },
+        label
+      );
+      return { slot: { name: label ?? "tmp", kind: "ref", refAddr: hdr } };
+    }
+
+    // ---------- 4) OBJECT ----------
+    if (t.tag === "object") {
+      const wantCompact = t.compact ?? opts?.layout === "compact";
+      const fields = t.fields ?? [];
+
+      // 4.a) DISPERSED (legacy/explicativo solo con primitivos)
+      if (!wantCompact) {
+        const propsLegacy = fields.map(({ key, type }) => {
+          if (type.tag === "prim")
+            return { key, type: type.name as PrimitiveType, value: v?.[key] };
+          // No-prim en disperso: placeholder 0 (docente)
+          return { key, type: "int" as PrimitiveType, value: 0 };
+        });
+        const w = Layout.writeObjectDispersed(this.ram, propsLegacy, label);
+        this.heap.addObjectDispersed(
+          w.addr,
+          {
+            schema: propsLegacy.map(({ key, type }) => ({ key, type })),
+            memType: t,
+          },
+          label
+        );
+        return { slot: { name: label ?? "tmp", kind: "ref", refAddr: w.addr } };
+      }
+
+      // 4.b) COMPACTO (recomendado)
+      const fieldSpecs: Array<
+        | { kind: "prim"; key: string; type: PrimitiveType; value: any }
+        | { kind: "ptr"; key: string; ptr: Addr }
+      > = [];
+      const schema: Array<{ key: string; type: PrimitiveType | "ptr32" }> = [];
+
+      for (const f of fields) {
+        const fv = v?.[f.key];
+        if (f.type.tag === "prim") {
+          fieldSpecs.push({
+            kind: "prim",
+            key: f.key,
+            type: f.type.name,
+            value: fv,
+          });
+          schema.push({ key: f.key, type: f.type.name });
+        } else {
+          const child = this.allocDeep(
+            f.type,
+            fv,
+            label ? `${label}.${f.key}` : undefined
+          );
+          const refAddr = isRefSlot(child.slot) ? child.slot.refAddr : 0;
+          fieldSpecs.push({ kind: "ptr", key: f.key, ptr: refAddr });
+          schema.push({ key: f.key, type: "ptr32" });
+        }
+      }
+
+      const w = Layout.writeObjectCompact(this.ram, fieldSpecs, label);
+      this.heap.addObjectCompact(w.addr, { schema, memType: t }, label);
+      return { slot: { name: label ?? "tmp", kind: "ref", refAddr: w.addr } };
+    }
+
+    throw new Error("Tipo MemType no soportado en allocDeep");
+  }
+
+  // ==========================================================================
+  // Wrappers legacy (compat consola)
+  // ==========================================================================
+  /** Crea un primitivo o una string (como referencia) con mensaje clásico. */
+  storePrimitive(type: PrimitiveType, name: string, value: any) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+    if (type === "string") {
+      const hdr = Layout.allocUtf16String(
+        this.ram,
+        String(value),
+        `str ${name}`
+      );
+      const strLen = this.ram.readU32(hdr);
+      const dataPtr = this.ram.readU32(hdr + 4);
+      if (!this.heap.has(hdr))
+        this.heap.addString(hdr, { length: strLen, dataPtr }, `str(${name})`);
+      else this.heap.inc(hdr);
+      this.upsertSlot(name, { name, kind: "ref", refAddr: hdr });
+      return [true, `var string ${name} @0x${hdr.toString(16)}`] as const;
+    }
+
+    const w = Layout.writePrimitive(this.ram, type, value, `prim ${name}`);
+    this.upsertSlot(name, { name, kind: "prim", type, valueAddr: w.addr });
+    return [true, `var ${type} ${name} @0x${w.addr.toString(16)}`] as const;
+  }
+
+  storeArray(elem: PrimitiveType, name: string, values: any[]) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+    const mt = Arr(Prim(elem), "auto");
+    const r = this.storeValue(name, mt, values);
+    const slot = this.resolveSlot(name);
+    if (r[0] && slot && slot.kind === "ref") {
+      return [
+        true,
+        `array ${name} -> @0x${slot.refAddr.toString(16)} (len=${values.length})`,
+      ] as const;
+    }
+    return r;
+  }
+
   storeObject(
     name: string,
-    properties: { type: PrimitiveType; key: string; value: any }[]
-  ): [true, string] | [false, string] {
-    // Validar si el nombre del objeto ya existe
-    const nameValidation = MemoryValidator.validateUniqueGlobalName(
-      name,
-      false
+    props: Array<{ type: PrimitiveType; key: string; value: any }>,
+    options?: { compact?: boolean }
+  ) {
+    if (this.existsInCurrentFrame(name)) {
+      return [false, this.dupMsg(name)] as const;
+    }
+    const mt = Obj(
+      props.map((p) => ({ key: p.key, type: Prim(p.type) })),
+      options?.compact ?? true
     );
-    if (nameValidation !== true) return [false, nameValidation[1]];
-
-    // Validamos el objeto completo antes de almacenarlo
-    const objectValidation = Memory.validateObject(name, properties);
-    if (objectValidation[0] === false) {
-      MemoryValidator.removeGlobalName(name);
-      return [false, objectValidation[1]];
-    }
-    // Si todo es válido, generamos la dirección del objeto y lo almacenamos
-    const objectAddress = this.generateAddress("object");
-    const objectSegment = this.segments.get("object")!;
-
-    objectSegment.set(objectAddress, {
-      type: "object",
-      name,
-      value: properties,
-      address: objectAddress,
+    const value = Object.fromEntries(props.map((p) => [p.key, p.value]));
+    const r = this.storeValue(name, mt, value, {
+      layout: options?.compact ? "compact" : "dispersed",
     });
+    const slot = this.resolveSlot(name);
+    if (r[0] && slot && slot.kind === "ref") {
+      return [
+        true,
+        `object ${name} -> @0x${slot.refAddr.toString(16)} (props=${props.length}, compact=${options?.compact ?? true})`,
+      ] as const;
+    }
+    return r;
+  }
 
-    // Ahora almacenamos cada propiedad en memoria
-    for (let i = 0; i < properties.length; i++) {
-      const prop = properties[i];
-      const isArray = Array.isArray(prop.value);
+  // ==========================================================================
+  // Lecturas/Comparaciones (compat y seguras con schema completo)
+  // ==========================================================================
+  readObjectCompact(
+    varName: string,
+    schema: Array<{ key: string; type: PrimitiveType | "ptr32" }>
+  ): Record<string, unknown> | null {
+    const slot = this.resolveSlot(varName);
+    if (!slot || slot.kind !== "ref" || slot.refAddr === 0) return null;
+    return Layout.readObjectCompact(this.ram, schema, slot.refAddr);
+  }
 
-      if (isArray) {
-        this.storeArray(prop.type, `${name}_${prop.key}`, prop.value, true);
-      } else {
-        this.storePrimitive(prop.type, `${name}_${prop.key}`, prop.value, true);
+  /** Compara dos objetos compactos por el valor de sus campos PRIMITIVOS; ignora ptr32. */
+  equalsContent(a: string, b: string): [true, boolean] | [false, string] {
+    const sa = this.resolveSlot(a);
+    const sb = this.resolveSlot(b);
+    if (!sa || !sb) return [false, "Alguna variable no existe"];
+    if (sa.kind !== "ref" || sb.kind !== "ref")
+      return [false, "Alguna no es referencia"];
+    if (sa.refAddr === 0 || sb.refAddr === 0)
+      return [false, "Alguna referencia es null"];
+
+    const ea = this.heap.get(sa.refAddr);
+    const eb = this.heap.get(sb.refAddr);
+    if (!ea || !eb) return [false, "Algún heap entry no existe"];
+    if (ea.kind !== "object" || eb.kind !== "object")
+      return [false, "Alguna no es objeto"];
+
+    const ma = ea.meta as ObjectCompactMeta | undefined;
+    const mb = eb.meta as ObjectCompactMeta | undefined;
+    if (
+      !ma ||
+      ma.tag !== "object-compact" ||
+      !mb ||
+      mb.tag !== "object-compact"
+    ) {
+      return [false, "Sólo soportado para layout compacto"];
+    }
+    if (ma.schema.length !== mb.schema.length)
+      return [false, "Schemas distintos (len)"];
+    for (let i = 0; i < ma.schema.length; i++) {
+      if (
+        ma.schema[i].key !== mb.schema[i].key ||
+        ma.schema[i].type !== mb.schema[i].type
+      ) {
+        return [false, "Schemas no coinciden"];
       }
     }
 
-    return [true, `Objeto "${name}" almacenado en dirección ${objectAddress}`];
+    const objA = Layout.readObjectCompact(this.ram, ma.schema, sa.refAddr);
+    const objB = Layout.readObjectCompact(this.ram, mb.schema, sb.refAddr);
+
+    for (let i = 0; i < ma.schema.length; i++) {
+      const { key, type } = ma.schema[i];
+      if (type === "ptr32") continue; // ignoramos referencias para esta comparación
+      if ((objA as any)[key] !== (objB as any)[key]) return [true, false];
+    }
+    return [true, true];
   }
 
-  /**
-   * Valida un objeto asegurándose de que todas sus propiedades sean correctas.
-   * @param name Nombre del objeto.
-   * @param properties Lista de propiedades del objeto.
-   * @returns `[true]` si el objeto es válido, `[false, mensaje de error]` si hay un problema.
-   */
-  static validateObject(
-    name: string,
-    properties: { type: PrimitiveType; key: string; value: any }[]
-  ): [true] | [false, string] {
-    for (let i = 0; i < properties.length; i++) {
-      const prop = properties[i];
+  // ==========================================================================
+  // Asignaciones
+  // ==========================================================================
+  assignIdToId(target: string, source: string) {
+    const t = this.resolveSlot(target);
+    const s = this.resolveSlot(source);
+    if (!s) return [false, `Fuente "${source}" no existe.`] as const;
+    if (!t) return [false, `Destino "${target}" no existe.`] as const;
 
-      //Si la propiedad es un array, validamos con validateArray
-      if (Array.isArray(prop.value)) {
-        const arrayValidation = this.validateArray(prop.type, prop.value);
-        if (arrayValidation[0] === false) {
-          return [false, `Objeto "${name}.${prop.key}": ${arrayValidation[1]}`];
-        }
-      } else {
-        //Si es primitivo, validamos con validateValueByType
-        const primitiveValidation = MemoryValidator.validateValueByType(
-          prop.type,
-          prop.value
+    if (t.kind === "prim" && s.kind === "prim") {
+      if (t.type !== s.type) throw new TypeMismatchError("Tipos distintos");
+      const sz = SIZES[t.type];
+      this.ram.writeBytes(t.valueAddr, this.ram.readBytes(s.valueAddr, sz));
+      return [true, `Asignado (valor): "${target}" = "${source}"`] as const;
+    }
+
+    if (t.kind === "ref" && s.kind === "ref") {
+      // 🔒 no-op seguro
+      if (t.refAddr === s.refAddr) {
+        return [
+          true,
+          `Asignado (ref, sin cambios): "${target}" mantiene 0x${s.refAddr.toString(16)}`,
+        ] as const;
+      }
+      if (t.refAddr !== 0 && this.heap.has(t.refAddr)) this.heap.dec(t.refAddr);
+      (t as any).refAddr = s.refAddr;
+      if (s.refAddr !== 0) this.heap.inc(s.refAddr);
+      return [
+        true,
+        `Asignado (ref): "${target}" → 0x${s.refAddr.toString(16)}`,
+      ] as const;
+    }
+
+    return [false, `Tipos incompatibles para asignación.`] as const;
+  }
+
+  /** Reasignación directa de literales a primitivos. */
+  setPrimitiveLiteral(name: string, value: any) {
+    const slot = this.resolveSlot(name);
+    if (!slot) return [false, `Variable "${name}" no existe.`] as const;
+    if (slot.kind !== "prim")
+      return [false, `"${name}" no es primitivo.`] as const;
+
+    Layout.writePrimitiveAt(
+      this.ram,
+      slot.type,
+      value,
+      slot.valueAddr,
+      `prim ${name}`
+    );
+    return [
+      true,
+      `var ${slot.type} ${name} (reasignado @0x${slot.valueAddr.toString(16)})`,
+    ] as const;
+  }
+
+  /** p = null */
+  setNull(name: string) {
+    const slot = this.resolveSlot(name);
+    if (!slot) return [false, `Variable "${name}" no existe.`] as const;
+    this.upsertSlot(name, { name, kind: "ref", refAddr: 0 });
+    return [true, `${name} = null`] as const;
+  }
+
+  /** ¿Dos referencias apuntan al mismo header? (identidad) */
+  refEquals(a: string, b: string) {
+    const sa = this.resolveSlot(a),
+      sb = this.resolveSlot(b);
+    if (!sa || !sb) return [false, "Var inexistente"] as const;
+    if (sa.kind !== "ref" || sb.kind !== "ref")
+      return [false, "No son referencias"] as const;
+    return [true, sa.refAddr === sb.refAddr] as const;
+  }
+
+  // ==========================================================================
+  // Mutaciones sobre arrays (por nombre de variable)
+  // ==========================================================================
+  setArrayIndex(name: string, index: number, value: any) {
+    const slot = this.resolveSlot(name);
+    if (!slot) return [false, `Variable "${name}" no existe.`] as const;
+    if (slot.kind !== "ref" || slot.refAddr === 0)
+      return [false, `"${name}" no es una referencia válida.`] as const;
+
+    const entry = this.heap.get(slot.refAddr);
+    if (!entry || entry.kind !== "array")
+      return [false, `"${name}" no es un array.`] as const;
+
+    // array-inline-prim
+    if (entry.meta.tag === "array-inline-prim") {
+      const m = entry.meta as ArrayInlinePrimMeta;
+      const { length, elemType, elemSize, dataPtr } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango: 0..${length - 1}`] as const;
+
+      const addr = dataPtr + index * elemSize;
+      Layout.writePrimitiveAt(
+        this.ram,
+        elemType,
+        value,
+        addr,
+        `arr ${name}[${index}]`
+      );
+      return [true, `${name}[${index}] actualizado`] as const;
+    }
+
+    // array-ref32
+    if (entry.meta.tag === "array-ref32") {
+      const m = entry.meta as ArrayRef32Meta;
+      const { length, dataPtr: table, elem } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango: 0..${length - 1}`] as const;
+
+      const cell = table + index * 4;
+
+      // dec del puntero anterior si existía
+      const oldPtr = this.ram.readU32(cell);
+
+      if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
+
+      if (isStr(elem)) {
+        const sh = Layout.allocUtf16String(
+          this.ram,
+          String(value),
+          `arr ${name}[${index}]#str`
         );
-        if (primitiveValidation !== true) {
-          return [
-            false,
-            `Objeto "${name}.${prop.key}": ${primitiveValidation[1]}`,
-          ];
-        }
-      }
-    }
-    return [true];
-  }
-
-  removeByAddress(
-    address: string,
-    force: boolean = false
-  ): [true, string] | [false, string] {
-    for (const [_type, segment] of this.segments.entries()) {
-      if (!segment.has(address)) continue;
-
-      const entry = segment.get(address)!;
-      const { type: entryType, name } = entry;
-
-      // Validaciones educativas (solo si no es forzado)
-      if (!force) {
-        const isNested = name.includes("_");
-        const parentName = name.split("_")[0];
-        const parentAddress = this.getAddressByName(parentName);
-        const [parentOk, parentEntry] = parentAddress
-          ? this.getEntryByAddress(parentAddress)
-          : [false, null];
-
-        if (isNested && parentOk && parentEntry!.type === "array") {
-          return [
-            false,
-            `No puedes eliminar el valor "${name}" porque pertenece al array "${parentEntry!.name}". Elimina el array completo si deseas remover sus elementos.`,
-          ];
-        }
-
-        if (isNested && parentOk && parentEntry!.type === "object") {
-          return [
-            false,
-            `No puedes eliminar la propiedad "${name}" porque forma parte del objeto "${parentEntry!.name}". Elimina el objeto completo si deseas remover sus propiedades.`,
-          ];
-        }
-
-        if (entryType === "array" && isNested) {
-          return [
-            false,
-            `No puedes eliminar el array "${name}" porque pertenece a un objeto. Elimina el objeto completo si deseas remover también sus arrays.`,
-          ];
-        }
+        this.ram.writeU32(cell, sh);
+        const slen = this.ram.readU32(sh);
+        const sdata = this.ram.readU32(sh + 4);
+        this.heap.addString(
+          sh,
+          { length: slen, dataPtr: sdata },
+          `arr(${name})[${index}]#str`
+        );
+        return [true, `${name}[${index}] actualizado`] as const;
       }
 
-      // Iniciar mensaje
-      let message = `Eliminado: ${entryType.toUpperCase()} "${name}" en dirección ${address}.`;
-
-      // Eliminar nombre global si no es anidado
-      if (!name.includes("_")) {
-        MemoryValidator.removeGlobalName(name);
-      }
-
-      // Si es un objeto, eliminar sus propiedades internas
-      if (entryType === "object") {
-        const properties = entry.value as {
-          type: PrimitiveType;
-          key: string;
-          value: any;
-        }[];
-
-        let deletedProps: string[] = [];
-
-        for (const prop of properties) {
-          const propName = `${name}_${prop.key}`;
-          const propAddress = this.getAddressByName(propName);
-          if (propAddress) {
-            const [ok, propEntry] = this.getEntryByAddress(propAddress);
-            if (ok) {
-              // Si es array, eliminar también elementos internos
-              if (propEntry.type === "array") {
-                const length = propEntry.value.length;
-                for (let i = 0; i < length; i++) {
-                  const elementName = `${propName}_${i}`;
-                  const elementAddress = this.getAddressByName(elementName);
-                  if (elementAddress) {
-                    this.removeByAddress(elementAddress, true);
-                    deletedProps.push(`"${elementName}" eliminado.`);
-                  }
-                }
-              }
-
-              // Eliminar la propiedad en sí
-              this.removeByAddress(propAddress, true);
-              deletedProps.push(`"${propName}" eliminada.`);
-            }
-          }
-        }
-
-        if (deletedProps.length > 0) {
-          message += `\nPropiedades eliminadas:\n${deletedProps.join("\n")}`;
-        }
-      }
-
-      // Si es un array, eliminar elementos internos
-      if (entryType === "array") {
-        const elements = entry.value as any[];
-        let deletedElements: string[] = [];
-
-        for (let i = 0; i < elements.length; i++) {
-          const elementName = `${name}_${i}`;
-          const elementAddress = this.getAddressByName(elementName);
-          if (elementAddress) {
-            this.removeByAddress(elementAddress, true);
-            deletedElements.push(`"${elementName}" eliminado.`);
-          }
-        }
-
-        if (deletedElements.length > 0) {
-          message += `\nElementos del array eliminados:\n${deletedElements.join("\n")}`;
-        }
-      }
-
-      // Eliminar la entrada principal
-      segment.delete(address);
-      return [true, message];
+      const child = this.allocDeep(elem, value, `arr ${name}[${index}]`);
+      const refAddr = child.slot.kind === "ref" ? child.slot.refAddr : 0;
+      this.ram.writeU32(cell, refAddr);
+      if (refAddr !== 0) this.heap.inc(refAddr); // el array mantiene ref
+      return [true, `${name}[${index}] actualizado`] as const;
     }
 
-    return [false, `No se encontró la dirección ${address}.`];
+    return [false, `Modo de array no soportado para "${name}".`] as const;
   }
 
-  /**
-   * Busca la dirección de memoria de un dato a partir de su nombre.
-   * @param name Nombre de la variable a buscar.
-   * @returns Dirección de memoria o `null` si no se encuentra.
-   */
-  getAddressByName(name: string): string | null {
-    for (const segment of this.segments.values()) {
-      for (const [address, entry] of segment.entries()) {
-        if (entry.name === name) {
-          return address;
-        }
+  // ==========================================================================
+  // Mutaciones sobre arrays dentro de objetos compactos
+  // ==========================================================================
+  setFieldArrayIndex(objVar: string, field: string, index: number, value: any) {
+    const slot = this.resolveSlot(objVar);
+    if (!slot || slot.kind !== "ref" || slot.refAddr === 0) {
+      return [false, `Objeto "${objVar}" no existe.`] as const;
+    }
+
+    const objHdr = slot.refAddr;
+    const objE = this.heap.get(objHdr);
+    if (!objE || objE.kind !== "object")
+      return [false, `"${objVar}" no es objeto.`] as const;
+
+    const meta = objE.meta as ObjectCompactMeta | undefined;
+    if (!meta || meta.tag !== "object-compact")
+      return [false, `Sólo soportado en objeto compacto.`] as const;
+
+    const schema = meta.schema;
+    const idx = schema.findIndex((f) => f.key === field);
+    if (idx < 0)
+      return [false, `Campo "${field}" no existe en "${objVar}".`] as const;
+
+    // Calcula offset sumando tamaños inline de campos anteriores
+    let off = 0;
+    for (let i = 0; i < idx; i++) {
+      const t = schema[i].type;
+      if (t === "ptr32" || t === "string") off += 4;
+      else off += SIZES[t];
+    }
+
+    // Base de datos: justo después del header [len:u32]
+    const dataBase = objHdr + 4;
+    const fieldPtr = this.ram.readU32(dataBase + off); // debe ser puntero a header de array
+
+    const arrE = this.heap.get(fieldPtr);
+    if (!arrE || arrE.kind !== "array")
+      return [false, `"${objVar}.${field}" no es array.`] as const;
+
+    if (arrE.meta.tag === "array-inline-prim") {
+      const m = arrE.meta as ArrayInlinePrimMeta;
+      const { elemType, elemSize, dataPtr, length } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango 0..${length - 1}`] as const;
+
+      const addr = dataPtr + index * elemSize;
+      Layout.writePrimitiveAt(
+        this.ram,
+        elemType,
+        value,
+        addr,
+        `${objVar}.${field}[${index}]`
+      );
+      return [true, `${objVar}.${field}[${index}] actualizado`] as const;
+    }
+
+    if (arrE.meta.tag === "array-ref32") {
+      const m = arrE.meta as ArrayRef32Meta;
+      const table = m.dataPtr;
+      const len = m.length;
+      if (index < 0 || index >= len)
+        return [false, `Índice fuera de rango 0..${len - 1}`] as const;
+
+      const cell = table + index * 4;
+
+      // dec del puntero anterior si existía
+      const oldPtr = this.ram.readU32(cell);
+      if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
+
+      const elemT = m.elem;
+
+      if (isStr(elemT)) {
+        const sh = Layout.allocUtf16String(
+          this.ram,
+          String(value),
+          `${objVar}.${field}[${index}]#str`
+        );
+        this.ram.writeU32(cell, sh);
+        const slen = this.ram.readU32(sh);
+        const sdata = this.ram.readU32(sh + 4);
+        this.heap.addString(
+          sh,
+          { length: slen, dataPtr: sdata },
+          `${objVar}.${field}[${index}]#str`
+        );
+        return [true, `${objVar}.${field}[${index}] actualizado`] as const;
       }
+
+      const child = this.allocDeep(
+        elemT,
+        value,
+        `${objVar}.${field}[${index}]`
+      );
+      const refAddr = child.slot.kind === "ref" ? child.slot.refAddr : 0;
+      this.ram.writeU32(cell, refAddr);
+      if (refAddr !== 0) this.heap.inc(refAddr);
+      return [true, `${objVar}.${field}[${index}] actualizado`] as const;
+    }
+
+    return [false, `Modo de array no soportado.`] as const;
+  }
+
+  // ==========================================================================
+  // Snapshot (para UI)
+  // ==========================================================================
+  snapshot(): Snapshot {
+    return {
+      stack: this.stack.all().map((f) => ({
+        id: f.id,
+        name: f.name,
+        slots: Array.from(f.slots.values()).map((s) => ({ ...s })),
+      })),
+      heap: this.heap.list(),
+      ram: this.ram.dump(this.NULL_GUARD), // UI nueva puede migrar a dumpRows()
+      used: this.ram.used(),
+      capacity: this.ram.capacity(),
+    };
+  }
+
+  // ==========================================================================
+  // Soporte para UI (expansiones rápidas)
+  // ==========================================================================
+  /** Para expandir arrays inline (o strings) en una grilla de bytes. */
+  getArrayInfo(
+    addr: number
+  ): { elemType: PrimitiveType; length: number; dataPtr: number } | null {
+    const e = this.heap.get(addr);
+    if (!e) return null;
+
+    // String como arreglo de char (didáctico)
+    if (e.kind === "string" && e.meta.tag === "string") {
+      const { length, dataPtr } = e.meta;
+      return { elemType: "char", length, dataPtr };
+    }
+
+    if (e.kind === "array" && e.meta.tag === "array-inline-prim") {
+      const m = e.meta as ArrayInlinePrimMeta;
+      return { elemType: m.elemType, length: m.length, dataPtr: m.dataPtr };
+    }
+
+    return null; // ref32 no se expande como celdas contiguas de bytes
+  }
+
+  /** Devuelve layout/schema simplificado para tarjetas de objeto. */
+  getObjectInfo(addr: number): {
+    layout: "compact" | "dispersed";
+    schema: Array<{ key: string; type: PrimitiveType | "ptr32" }>;
+  } | null {
+    const e = this.heap.get(addr);
+    if (!e || e.kind !== "object") return null;
+
+    if (e.meta.tag === "object-compact") {
+      return { layout: "compact", schema: e.meta.schema };
+    }
+    if (e.meta.tag === "object-dispersed") {
+      // Legacy: puede traer PrimitiveType o MemType; simplificamos a PrimitiveType donde se pueda
+      const raw = e.meta.schema;
+      const schema = raw.map(({ key, type }) => {
+        if (typeof type === "string") return { key, type }; // PrimitiveType
+        // MemType recursivo → muéstralo como ptr32
+        return { key, type: "ptr32" as const };
+      });
+      return { layout: "dispersed", schema };
     }
     return null;
   }
 
-  /**
-   * Devuelve el estado completo de la memoria en un formato estructurado.
-   * @returns Un objeto con cada segmento de memoria y sus variables.
-   */
-  printMemory(): Record<string, any[]> {
-    const memoryState: Record<string, any[]> = {};
-
-    this.segments.forEach((segment, type) => {
-      memoryState[type] = Array.from(segment.values()).map((entry) => {
-        return {
-          ...entry,
-          value: this.serializeValue(entry.value), // Serializamos correctamente el value
-        };
-      });
-    });
-
-    return memoryState;
+  getNullGuard(): number {
+    return this.NULL_GUARD;
   }
 
-  /**
-   * Serializa valores de arrays y objetos para que se impriman correctamente.
-   * @param value Valor a serializar.
-   * @returns El valor serializado correctamente.
-   */
-  private serializeValue(value: any): any {
-    if (Array.isArray(value)) {
-      return value.map((item) => this.serializeValue(item)); // Recursión para expandir arrays anidados
-    }
+  setArrayIndexFromId(name: string, index: number, source: string) {
+    const arrSlot = this.resolveSlot(name);
+    if (!arrSlot || arrSlot.kind !== "ref" || arrSlot.refAddr === 0)
+      return [false, `"${name}" no es un array válido.`] as const;
 
-    if (typeof value === "object" && value !== null) {
-      return Object.entries(value).map(([key, val]) => ({
-        key,
-        value: this.serializeValue(val),
-      }));
-    }
+    const entry = this.heap.get(arrSlot.refAddr);
+    if (!entry || entry.kind !== "array")
+      return [false, `"${name}" no es un array.`] as const;
 
-    return value; // Si no es array ni objeto, devolver tal cual
-  }
+    const src = this.resolveSlot(source);
+    if (!src) return [false, `Fuente "${source}" no existe.`] as const;
 
-  /**
-   * Obtiene una entrada en la memoria a partir de una dirección específica.
-   * @param address Dirección de memoria a buscar.
-   * @returns `[true, objeto]` si se encuentra, `[false, mensaje]` si no existe.
-   */
-  getEntryByAddress(address: string): [true, MemoryEntry] | [false, string] {
-    for (const segment of this.segments.values()) {
-      if (segment.has(address)) {
-        return [true, segment.get(address)!];
-      }
-    }
-    return [
-      false,
-      `No se encontró ninguna entrada en la dirección ${address}.`,
-    ];
-  }
+    // 1) Array inline-prim: copiamos BYTES desde el primitivo fuente
+    if (entry.meta.tag === "array-inline-prim") {
+      const m = entry.meta;
+      const { length, elemType, elemSize, dataPtr } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango: 0..${length - 1}`] as const;
 
-  convertPrimitiveType(
-    address: string,
-    newType: PrimitiveType
-  ): [true, string] | [false, string] {
-    const [ok, entryOrError] = this.getEntryByAddress(address);
-    if (!ok) return [false, entryOrError];
-
-    const entry = entryOrError;
-    const isNested = entry.name.includes("_");
-    const parentName = entry.name.split("_")[0];
-    const parentAddress = this.getAddressByName(parentName);
-    const [parentOk, parentEntry] = parentAddress
-      ? this.getEntryByAddress(parentAddress)
-      : [false, null];
-
-    const convertibleTypes: PrimitiveType[] = [
-      "char",
-      "byte",
-      "short",
-      "int",
-      "long",
-      "float",
-      "double",
-    ];
-
-    const sizeInBits: Record<PrimitiveType, number> = {
-      boolean: 1,
-      char: 16,
-      byte: 8,
-      short: 16,
-      int: 32,
-      long: 64,
-      float: 32,
-      double: 64,
-      string: 0,
-    };
-
-    // 🚫 No se permite convertir elementos individuales de arrays
-    if (isNested && parentOk && parentEntry?.type === "array") {
-      return [
-        false,
-        `No se puede convertir "${entry.name}" porque pertenece al array "${parentEntry.name}". Debes convertir el array completo.`,
-      ];
-    }
-
-    // ✅ Conversión de un array completo
-    if (entry.type === "array") {
-      const values = entry.value as any[];
-      const firstElementName = `${entry.name}_0`;
-      const firstAddress = this.getAddressByName(firstElementName);
-      if (!firstAddress)
-        return [false, "No se encontró el primer elemento del array."];
-
-      const [okElem, elemEntry] = this.getEntryByAddress(firstAddress);
-      if (!okElem) return [false, elemEntry];
-      const oldType = elemEntry.type as PrimitiveType;
-
-      if (
-        !convertibleTypes.includes(oldType) ||
-        !convertibleTypes.includes(newType)
-      ) {
+      if (src.kind !== "prim" || src.type !== elemType)
         return [
           false,
-          `Conversión no válida. Solo se permiten tipos numéricos o char.`,
-        ];
-      }
+          `Tipos incompatibles: se esperaba ${elemType} y "${source}" es ${src.kind === "prim" ? src.type : "ref"}.`,
+        ] as const;
 
-      if (sizeInBits[newType] < sizeInBits[oldType]) {
+      const dst = dataPtr + index * elemSize;
+      const bytes = this.ram.readBytes(src.valueAddr, elemSize);
+      this.ram.writeBytes(dst, bytes);
+      return [true, `${name}[${index}] ← (bytes de ${source})`] as const;
+    }
+
+    // 2) Array ref32: escribimos PUNTERO y ajustamos refCounts
+    if (entry.meta.tag === "array-ref32") {
+      const m = entry.meta;
+      const { length, dataPtr: table } = m;
+      if (index < 0 || index >= length)
+        return [false, `Índice fuera de rango: 0..${length - 1}`] as const;
+
+      if (src.kind !== "ref")
         return [
           false,
-          `No se puede convertir de ${oldType} a ${newType} por posible pérdida de datos.`,
-        ];
+          `Tipos incompatibles: "${name}" guarda referencias y "${source}" no es referencia.`,
+        ] as const;
+
+      const cell = table + index * 4;
+      const oldPtr = this.ram.readU32(cell);
+      if (oldPtr === src.refAddr) {
+        return [true, `${name}[${index}] sin cambios`] as const; // 🔒 no-op
       }
+      if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
 
-      const converted: any[] = [];
-      for (let i = 0; i < values.length; i++) {
-        try {
-          let val = values[i];
-          let newVal: any;
-          switch (newType) {
-            case "byte":
-            case "short":
-            case "int":
-            case "long":
-              newVal = parseInt(val);
-              break;
-            case "float":
-            case "double":
-              newVal = parseFloat(val);
-              break;
-            case "char":
-              newVal = String.fromCharCode(Number(val));
-              break;
-          }
-
-          const validation = MemoryValidator.validateValueByType(
-            newType,
-            newVal
-          );
-          if (validation !== true)
-            return [false, `Error en la posición ${i}: ${validation[1]}`];
-          converted.push(newVal);
-        } catch {
-          return [false, `Error al convertir valor en la posición ${i}.`];
-        }
-      }
-
-      // 🔁 Reemplazo limpio
-      this.forceDeleteArrayWithElements(entry.name, values.length);
-      MemoryValidator.removeGlobalName(entry.name); // Elimina nombre del registro global
-      const [stored, msg] = this.storeArray(
-        newType,
-        entry.name,
-        converted,
-        isNested
-      );
-      if (!stored) return [false, msg];
-
-      // ✅ Sincronizar con objeto padre si es necesario
-      if (isNested && parentOk && parentEntry!.type === "object") {
-        const propKey = entry.name.split("_")[1];
-        const objProps = parentEntry!.value as {
-          type: PrimitiveType;
-          key: string;
-          value: any;
-        }[];
-        const prop = objProps.find((p) => p.key === propKey);
-        if (prop) {
-          prop.type = newType;
-          prop.value = converted;
-        }
-      }
-
-      return [true, `Array "${entry.name}" convertido a tipo ${newType}.`];
-    }
-
-    // ✅ Conversión de variable primitiva (incluye propiedad de objeto)
-    const originalType = entry.type as PrimitiveType;
-    if (
-      !convertibleTypes.includes(originalType) ||
-      !convertibleTypes.includes(newType)
-    ) {
-      return [false, `Conversión no permitida entre tipos no numéricos.`];
-    }
-
-    if (sizeInBits[newType] < sizeInBits[originalType]) {
-      return [
-        false,
-        `No se puede convertir de ${originalType} a ${newType} por posible pérdida de datos.`,
-      ];
-    }
-
-    let newValue: any;
-    try {
-      switch (newType) {
-        case "byte":
-        case "short":
-        case "int":
-        case "long":
-          newValue = parseInt(entry.value);
-          break;
-        case "float":
-        case "double":
-          newValue = parseFloat(entry.value);
-          break;
-        case "char":
-          newValue = String.fromCharCode(Number(entry.value));
-          break;
-      }
-    } catch {
-      return [false, `Error al intentar convertir el valor.`];
-    }
-
-    const validation = MemoryValidator.validateValueByType(newType, newValue);
-    if (validation !== true) return [false, validation[1]];
-
-    this.forceDeleteEntryByName(entry.name);
-    MemoryValidator.removeGlobalName(entry.name); // Elimina nombre del registro global
-    const [stored, msg] = this.storePrimitive(
-      newType,
-      entry.name,
-      newValue,
-      isNested
-    );
-
-    if (!stored) return [false, msg];
-
-    // ✅ Actualizar en objeto padre
-    if (isNested && parentOk && parentEntry!.type === "object") {
-      const propKey = entry.name.split("_")[1];
-      const objProps = parentEntry!.value as {
-        type: PrimitiveType;
-        key: string;
-        value: any;
-      }[];
-      const prop = objProps.find((p) => p.key === propKey);
-      if (prop) {
-        prop.type = newType;
-        prop.value = newValue;
-      }
-    }
-
-    return [
-      true,
-      `Variable "${entry.name}" de tipo ${originalType} convertida a tipo ${newType}.`,
-    ];
-  }
-
-  private forceDeleteEntryByName(name: string) {
-    for (const [_type, segment] of this.segments.entries()) {
-      for (const [address, entry] of segment.entries()) {
-        if (entry.name === name) {
-          segment.delete(address);
-          return;
-        }
-      }
-    }
-  }
-
-  private forceDeleteArrayWithElements(arrayName: string, length: number) {
-    for (let i = 0; i < length; i++) {
-      this.forceDeleteEntryByName(`${arrayName}_${i}`);
-    }
-    this.forceDeleteEntryByName(arrayName);
-  }
-
-  /**
-   * Devuelve el tamaño en memoria de una dirección específica.
-   * @param address Dirección de memoria.
-   * @returns `[true, tamaño]` o `[false, mensaje de error]`
-   */
-  getSizeByAddress(address: string): [true, string] | [false, string] {
-    const [ok, entryOrMsg] = this.getEntryByAddress(address);
-    if (!ok) return [false, entryOrMsg];
-
-    const entry = entryOrMsg;
-
-    let sizeBits: number;
-
-    if (entry.type === "object") {
-      const [ok, readable] = this.getObjectSize(entry.name, entry.value);
-      if (!ok) return [false, readable];
-      sizeBits = this.parseSizeToBits(readable);
-    } else if (entry.type === "array") {
-      const [ok, readable] = this.getArraySize(entry.name, entry.value);
-      if (!ok) return [false, readable];
-      sizeBits = this.parseSizeToBits(readable);
-    } else {
-      const [ok, readable] = this.getPrimitiveSize(
-        entry.value,
-        entry.type as PrimitiveType
-      );
-      if (!ok) return [false, readable];
-      sizeBits = this.parseSizeToBits(readable);
-    }
-
-    return [true, this.formatBitsToReadableSize(sizeBits)];
-  }
-  /**
-   * Convierte un string tipo "16 bits", "4 bytes" a cantidad de bits.
-   */
-  private parseSizeToBits(sizeStr: string): number {
-    const [numStr, unit] = sizeStr.split(" ");
-    const num = parseFloat(numStr);
-
-    switch (unit.toLowerCase()) {
-      case "bit":
-      case "bits":
-        return num;
-      case "byte":
-      case "bytes":
-        return num * 8;
-      default:
-        return 0;
-    }
-  }
-
-  /**
-   * Convierte un valor en bits a una representación legible como KB, MB, GB...
-   */
-  private formatBitsToReadableSize(bits: number): string {
-    const bytes = bits / 8;
-    const KB = 1024;
-    const MB = KB * 1024;
-    const GB = MB * 1024;
-
-    if (bytes < 1) return `${bits} bits`;
-    if (bytes < KB) return `${bytes.toFixed(2)} bytes`;
-    if (bytes < MB) return `${(bytes / KB).toFixed(2)} KB`;
-    if (bytes < GB) return `${(bytes / MB).toFixed(2)} MB`;
-    return `${(bytes / GB).toFixed(2)} GB`;
-  }
-
-  /**
-   * Calcula el tamaño de un valor primitivo.
-   */
-  private getPrimitiveSize(
-    value: any,
-    type: PrimitiveType
-  ): [true, string] | [false, string] {
-    const sizes: Record<PrimitiveType, number> = {
-      boolean: 1 / 8, // 1 bit
-      byte: 1,
-      short: 2,
-      int: 4,
-      long: 8,
-      float: 4,
-      double: 8,
-      char: 2,
-      string: 2, // por caracter
-    };
-
-    if (type === "boolean") return [true, "1 bit"];
-    if (type === "string") {
-      const length = String(value).length;
-      return [true, `${length * 2} bytes`];
-    }
-
-    const size = sizes[type];
-    return [true, `${size} ${size === 1 ? "byte" : "bytes"}`];
-  }
-
-  /**
-   * Calcula el tamaño de un array (de cualquier tipo).
-   */
-  private getArraySize(
-    arrayName: string,
-    values: any[]
-  ): [true, string] | [false, string] {
-    if (!Array.isArray(values))
-      return [false, "El valor del array no es válido."];
-
-    let totalBits = 0;
-    let failedAt: string | null = null;
-
-    for (let i = 0; i < values.length; i++) {
-      const elementName = `${arrayName}_${i}`;
-      const elementAddress = this.getAddressByName(elementName);
-      if (!elementAddress) {
-        failedAt = elementName;
-        break;
-      }
-
-      const [ok, elementEntry] = this.getEntryByAddress(elementAddress);
-      if (!ok) {
-        failedAt = elementName;
-        break;
-      }
-
-      const primitiveSize = this.getPrimitiveSize(
-        elementEntry.value,
-        elementEntry.type as PrimitiveType
-      );
-
-      if (!primitiveSize[0]) {
-        failedAt = elementName;
-        break;
-      }
-
-      const sizeStr = primitiveSize[1];
-
-      if (sizeStr.includes("bit")) {
-        totalBits += parseInt(sizeStr);
-      } else {
-        const bytes = parseInt(sizeStr);
-        totalBits += bytes * 8;
-      }
-    }
-
-    if (failedAt)
-      return [false, `No se pudo obtener tamaño del elemento ${failedAt}`];
-
-    if (totalBits % 8 === 0) {
-      return [true, `${totalBits / 8} bytes`];
-    }
-
-    return [true, `${totalBits} bits`];
-  }
-
-  /**
-   * Calcula el tamaño total de un objeto sumando sus propiedades internas.
-   */
-  private getObjectSize(
-    objectName: string,
-    properties: { type: PrimitiveType; key: string; value: any }[]
-  ): [true, string] | [false, string] {
-    let totalBits = 0;
-
-    for (const prop of properties) {
-      const propName = `${objectName}_${prop.key}`;
-      const propAddress = this.getAddressByName(propName);
-      if (!propAddress)
-        return [false, `No se encontró la propiedad ${propName}`];
-
-      const [ok, entry] = this.getEntryByAddress(propAddress);
-      if (!ok) return [false, entry];
-
-      let sizeResult: [true, string] | [false, string];
-
-      if (entry.type === "array") {
-        sizeResult = this.getArraySize(entry.name, entry.value);
-      } else {
-        sizeResult = this.getPrimitiveSize(
-          entry.value,
-          entry.type as PrimitiveType
-        );
-      }
-
-      if (!sizeResult[0]) return [false, sizeResult[1]];
-
-      const sizeStr = sizeResult[1];
-
-      if (sizeStr.includes("bit")) {
-        totalBits += parseInt(sizeStr);
-      } else {
-        const bytes = parseInt(sizeStr);
-        totalBits += bytes * 8;
-      }
-    }
-
-    if (totalBits % 8 === 0) {
-      return [true, `${totalBits / 8} bytes`];
-    }
-
-    return [true, `${totalBits} bits`];
-  }
-
-  updateValueByAddress(
-    address: string,
-    newValue: any
-  ): [true, string] | [false, string] {
-    const [ok, entryOrError] = this.getEntryByAddress(address);
-    if (!ok) return [false, entryOrError];
-
-    const entry = entryOrError;
-    const { type, name } = entry;
-
-    // Caso 1: Primitivo
-    if (type !== "array" && type !== "object") {
-      const validation = MemoryValidator.validateValueByType(
-        type as PrimitiveType,
-        newValue
-      );
-      if (validation !== true) {
-        return [false, `Error al actualizar "${name}": ${validation[1]}`];
-      }
-
-      entry.value = newValue;
-
-      // Verificar si forma parte de una estructura (array u objeto)
-      this.propagateValueToParent(name, newValue);
+      this.ram.writeU32(cell, src.refAddr >>> 0);
+      if (src.refAddr !== 0) this.heap.inc(src.refAddr);
 
       return [
         true,
-        `Valor de "${name}" actualizado correctamente a ${newValue}.`,
-      ];
+        `${name}[${index}] → 0x${src.refAddr.toString(16)}`,
+      ] as const;
     }
 
-    // Caso 2: Array
-    if (type === "array") {
-      if (!Array.isArray(newValue)) {
-        return [false, `El nuevo valor para "${name}" debe ser un array.`];
-      }
-
-      const lengthOriginal = (entry.value as any[]).length;
-      if (newValue.length !== lengthOriginal) {
-        return [
-          false,
-          `El array "${name}" debe tener exactamente ${lengthOriginal} elementos.`,
-        ];
-      }
-
-      // Validar tipo de cada elemento
-      for (let i = 0; i < newValue.length; i++) {
-        const elementName = `${name}_${i}`;
-        const elementAddress = this.getAddressByName(elementName);
-        if (!elementAddress)
-          return [false, `No se encontró el elemento ${elementName}.`];
-
-        const [ok, elementEntry] = this.getEntryByAddress(elementAddress);
-        if (!ok) return [false, elementEntry];
-
-        const elementType = elementEntry.type as PrimitiveType;
-        const validation = MemoryValidator.validateValueByType(
-          elementType,
-          newValue[i]
-        );
-        if (validation !== true) {
-          return [
-            false,
-            `Elemento ${i} inválido en "${name}": ${validation[1]}`,
-          ];
-        }
-      }
-
-      // Actualizar array y sus elementos internos
-      entry.value = newValue;
-      for (let i = 0; i < newValue.length; i++) {
-        const elementName = `${name}_${i}`;
-        const elementAddress = this.getAddressByName(elementName);
-        if (elementAddress) {
-          const [ok, elementEntry] = this.getEntryByAddress(elementAddress);
-          if (ok) elementEntry.value = newValue[i];
-        }
-      }
-
-      // Actualizar en caso de ser array dentro de un objeto
-      this.propagateValueToParent(name, newValue);
-
-      return [true, `Array "${name}" actualizado correctamente.`];
-    }
-
-    // Caso 3: Object → No permitido
-    return [
-      false,
-      `No se puede actualizar directamente un objeto completo ("${name}").`,
-    ];
+    return [false, `Modo de array no soportado para "${name}".`] as const;
   }
 
-  /**
-   * Sincroniza un cambio de valor con su estructura padre si pertenece a un objeto o array.
-   */
-  private propagateValueToParent(variableName: string, newValue: any): void {
-    const parts = variableName.split("_");
-    if (parts.length < 2) return;
-
-    const parentName = parts[0];
-    const childKey = parts[1];
-    const maybeIndex = parts[2]; // solo aplica si es array dentro de objeto
-
-    const parentAddress = this.getAddressByName(parentName);
-    if (!parentAddress) return;
-
-    const [ok, parentEntry] = this.getEntryByAddress(parentAddress);
-    if (!ok) return;
-
-    if (parentEntry.type === "array" && parts.length === 2) {
-      const index = Number(childKey);
-      if (!isNaN(index)) {
-        parentEntry.value[index] = newValue;
-      }
-    }
-
-    if (parentEntry.type === "object") {
-      const props = parentEntry.value as {
-        type: PrimitiveType;
-        key: string;
-        value: any;
-      }[];
-
-      const prop = props.find((p) => p.key === childKey);
-      if (prop) {
-        // Caso: propiedad simple
-        if (!maybeIndex) {
-          prop.value = newValue;
-        }
-        // Caso: propiedad es array y cambiaron sus elementos
-        else {
-          const index = Number(maybeIndex);
-          if (Array.isArray(prop.value)) {
-            prop.value[index] = newValue;
-          }
-        }
-      }
-    }
+  /** ¿Hay una variable con ese nombre en el frame ACTUAL (top)? */
+  private existsInCurrentFrame(name: string): boolean {
+    const top = this.stack.top();
+    return !!top && !!top.find(name);
   }
 
-  getTypeByAddress(address: string): [true, string] | [false, string] {
-    const [ok, entryOrError] = this.getEntryByAddress(address);
-    if (!ok) return [false, entryOrError];
-
-    const entry = entryOrError;
-
-    if (entry.type === "object") return [true, "null"];
-
-    if (entry.type === "array") {
-      const values = entry.value as any[];
-      if (values.length === 0) return [true, "unknown[]"];
-
-      const firstElementName = `${entry.name}_0`;
-      const firstAddress = this.getAddressByName(firstElementName);
-      if (!firstAddress)
-        return [false, `No se encontró el primer elemento del array.`];
-
-      const [ok, firstEntry] = this.getEntryByAddress(firstAddress);
-      if (!ok) return [false, firstEntry];
-
-      return [true, `${firstEntry.type}[]`];
-    }
-
-    return [true, entry.type];
+  /** Mensaje estándar para duplicados. */
+  private dupMsg(name: string) {
+    return `Variable "${name}" ya existe en este ámbito. Usa otro nombre.`;
+  }
+  // ==========================================================================
+  // Accesos directos (tests/depuración)
+  // ==========================================================================
+  getByteStore() {
+    return this.ram;
+  }
+  getHeap() {
+    return this.heap;
+  }
+  getStack() {
+    return this.stack;
   }
 
-  /**
-   * Limpia completamente toda la memoria y los nombres globales registrados.
-   */
-  clearMemory(): void {
-    // 1. Limpiar los nombres globales
-    MemoryValidator.clearGlobalNames();
-
-    // 2. Limpiar todos los segmentos de memoria
-    this.segments.forEach((segment) => segment.clear());
-
-    // 3. Reiniciar los contadores de direcciones
-    Object.keys(Memory.addressCounters).forEach((type) => {
-      Memory.addressCounters[type as PrimitiveType | ComplexType] = 0;
-    });
+  getRefOwners(addr: number): Array<{ frame: string; name: string }> {
+    const out: Array<{ frame: string; name: string }> = [];
+    for (const f of this.stack.all()) {
+      for (const s of f.slots.values()) {
+        if (s.kind === "ref" && s.refAddr === addr)
+          out.push({ frame: f.name, name: s.name });
+      }
+    }
+    return out;
   }
 }
-
-export { Memory };
-export type { PrimitiveType, ComplexType, MemoryEntry };

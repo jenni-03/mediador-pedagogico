@@ -15,12 +15,16 @@ export function getArbolSplayTour(): TourStep[] {
         {
             type: "info",
             description:
-                "🧠 Podemos verlo como una fila con *FastPass*: Cada vez que alguien es atendido, pasa al **frente**. Los clientes frecuentes permanecen cerca de la **caja** (la raíz), mientras que los que casi no aparecen se quedan **atrás** (más profundos).",
+                "⚙️ **Splaying** es el proceso de reestructuración que sube el nodo accedido a la raíz mediante rotaciones (**zig, zig-zig, zig-zag**). Esto mantiene el orden del árbol y acerca nodos relacionados a la raíz."
         },
         {
             type: "info",
             description:
-                "⚙️ **Splaying** es el proceso de reestructuración que sube el nodo accedido a la raíz mediante rotaciones (**zig, zig-zig, zig-zag**). Esto mantiene el orden del árbol y acerca nodos relacionados a la raíz. A continuación, vamos a profundizar un poco en cada uno de los casos involucrados en el proceso de splaying."
+                "🧠 Podemos verlo como una fila con *FastPass*: Cada vez que alguien es atendido, pasa al **frente**. Los clientes frecuentes permanecen cerca de la **caja** (la raíz), mientras que los que casi no aparecen se quedan **atrás** (más profundos).",
+        },
+        {
+            type: "info",
+            description: "A continuación, vamos a profundizar un poco en cada uno de los casos involucrados en el proceso de splaying."
         },
         {
             type: "info",

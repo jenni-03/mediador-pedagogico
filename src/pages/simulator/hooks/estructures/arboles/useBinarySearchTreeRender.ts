@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType, TreeLinkData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { animateClearTree, animateTreeTraversal, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
-import { computeSvgTreeMetrics } from "../../../../../shared/utils/treeUtils";
-import { hierarchy, type HierarchyNode, select, tree } from "d3";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
+import { select } from "d3";
 
 export function useBinarySearchTreeRender(
     treeData: HierarchyNodeData<number> | null,
@@ -16,42 +16,29 @@ export function useBinarySearchTreeRender(
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
-    // Mapa para guardar posiciones {x, y} de los nodos dentro del lienzo
+    // Mapas de posiciones actuales (nodos) y de la secuencia (recorridos)
     const nodePositions = useRef(new Map<string, { x: number, y: number }>()).current;
-
-    // Mapa para guardar posiciones {x, y} de los valores de secuencia dentro del lienzo
     const seqPositions = useRef(new Map<string, { x: number, y: number }>()).current;
 
-    // offsets para contenedores de árbol y secuencia
+    // Offsets para contenedores de árbol y secuencia
     const treeOffset = useRef({ x: 0, y: 0 }).current;
     const seqOffset = useRef({ x: 0, y: 0 }).current;
 
-    // Nodo raíz D3 jerárquico que representa la estructura del árbol
-    const root = useMemo(() => {
-        return treeData ? hierarchy(treeData) : null;
+    // Construcción de la jerarquía e inicialización del layout del árbol
+    const { root, nodes: currentNodes, links: linksData } = useMemo(() => {
+        if (!treeData) return { root: null, nodes: [], links: [] }
+        return hierarchyFrom(
+            treeData,
+            SVG_BINARY_TREE_VALUES.NODE_SPACING,
+            SVG_BINARY_TREE_VALUES.LEVEL_SPACING
+        );
     }, [treeData]);
-
-    // Lista de nodos actuales (sin placeholders)
-    const currentNodes = useMemo(() => {
-        return root ? root.descendants().filter(d => !d.data.isPlaceholder) : [];
-    }, [root]);
 
     // Estado previo de la raíz
     const prevRoot = usePrevious(root);
 
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
-
-    // Memo para calcular los enlaces entre nodos
-    const linksData: TreeLinkData[] = useMemo(() => {
-        if (!root) return [];
-        return root.links().reduce<TreeLinkData[]>((acc, link) => {
-            if (!link.target.data.isPlaceholder) {
-                acc.push({ sourceId: link.source.data.id, targetId: link.target.data.id })
-            }
-            return acc;
-        }, []);
-    }, [root]);
 
     // Renderizado base del árbol
     useEffect(() => {
@@ -66,15 +53,6 @@ export function useBinarySearchTreeRender(
             bottom: SVG_BINARY_TREE_VALUES.MARGIN_BOTTOM
         };
 
-        // Separación horizontal entre nodos y vertical entre niveles
-        const nodeSpacing = SVG_BINARY_TREE_VALUES.NODE_SPACING;
-        const levelSpacing = SVG_BINARY_TREE_VALUES.LEVEL_SPACING;
-
-        // Creación del layout del árbol
-        const treeLayout = tree<HierarchyNodeData<number>>()
-            .nodeSize([nodeSpacing, levelSpacing]);
-        treeLayout(root);
-
         // Cálculo de las dimensiones del lienzo y sus contenedores
         const metrics = computeSvgTreeMetrics(
             currentNodes,
@@ -82,7 +60,8 @@ export function useBinarySearchTreeRender(
             margin,
             currentNodes.length,
             SVG_BINARY_TREE_VALUES.SEQUENCE_PADDING,
-            SVG_BINARY_TREE_VALUES.SEQUENCE_HEIGHT
+            SVG_BINARY_TREE_VALUES.SEQUENCE_HEIGHT,
+            SVG_BINARY_TREE_VALUES.EXTRA_WIDTH
         );
 
         // Configuración del contenedor SVG
@@ -102,11 +81,11 @@ export function useBinarySearchTreeRender(
         }
         treeG.attr("transform", `translate(${treeOffset.x},${treeOffset.y})`);
 
-        // Desplazamiento para el contenedor de la secuencia de recorrido de nodos
+        // Desplazamiento para el contenedor de la secuencia de valores de recorrido
         seqOffset.x = metrics.seqOffset.x;
         seqOffset.y = metrics.seqOffset.y;
 
-        // Contenedor interno para la secuencia de recorrido de los nodos
+        // Contenedor interno para la secuencia de valores de recorrido
         let seqG = svg.select<SVGGElement>("g.seq-container");
         if (seqG.empty()) {
             seqG = svg.append("g").classed("seq-container", true);
@@ -140,90 +119,63 @@ export function useBinarySearchTreeRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Grupo contenedor de nodos y enlaces del árbol
-        const treeG = svg.select<SVGGElement>("g.tree-container");
-
-        // Grupo contenedor de los valores de la secuencia de recorrido
-        const seqG = svg.select<SVGGElement>("g.seq-container");
-
-        // Determinamos el ID del nuevo nodo a insertar
-        const nodeToInsert = query.toInsert;
-
-        // Ubicamos al nuevo nodo en el árbol
-        const newNode = currentNodes.find(d => d.data.id === nodeToInsert);
-        if (!newNode) return;
-
-        // Obtenemos el recorrido o ruta desde el nodo raíz hasta el nodo padre del nuevo nodo
-        let parentNode: HierarchyNode<HierarchyNodeData<number>> | null = null;
-        let pathToParent: HierarchyNode<HierarchyNodeData<number>>[] = [];
-        if (newNode.parent !== null) {
-            parentNode = newNode.parent;
-            pathToParent = root.path(parentNode);
-        }
+        // Extraemos los datos de inserción de la query
+        const { pathIds, parentId, targetNodeId, exists } = query.toInsert;
 
         // Animación de inserción del nuevo nodo
         animateInsertNode(
-            treeG,
-            seqG,
+            svg,
+            treeOffset,
             {
-                newNodeId: newNode.data.id,
-                parentId: parentNode?.data.id ?? null,
-                nodesData: currentNodes,
-                linksData,
+                targetNodeId,
+                parentId,
+                exists,
+                currentNodes,
+                currentLinks: linksData,
                 positions: nodePositions,
-                pathToParent
+                pathToTarget: pathIds
             },
+            { highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR },
             resetQueryValues,
             setIsAnimating
         );
-    }, [root, currentNodes, linksData, query.toInsert, resetQueryValues, setIsAnimating]);
+    }, [root, currentNodes, linksData, query.toInsert, treeOffset, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
         // Verificaciones necesarias para realizar la animación
         if (!prevRoot || !svgRef.current || !query.toDelete) return;
 
-        // Verificación de la estructura de la query del usuario
-        if (query.toDelete.length !== 2) return;
-
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Grupo contenedor de nodos y enlaces del árbol
-        const treeG = svg.select<SVGGElement>("g.tree-container");
-
-        // Grupo contenedor de los valores de la secuencia de recorrido
-        const seqG = svg.select<SVGGElement>("g.seq-container");
-
-        // Determinamos el ID del nodo a eliminar
-        const nodeToDeleteId = query.toDelete[0];
-
-        // Ubicamos al nodo a eliminar en el árbol
-        const nodeToDelete = prevRoot.descendants().find(d => d.data.id === nodeToDeleteId);
-        if (!nodeToDelete) return;
-
-        // Ubicamos el nodo a actualizar en el arbol (si aplica)
-        let nodeToUpdate: HierarchyNode<HierarchyNodeData<number>> | null = null;
-        if (query.toDelete[1]) {
-            nodeToUpdate = prevRoot.descendants().find(d => d.data.id === query.toDelete[1])!;
-        }
+        // Extraemos los datos de eliminación de la query
+        const operationData = query.toDelete;
 
         // Animación de eliminación de un nodo especifico
         animateDeleteNode(
-            treeG,
-            seqG,
+            svg,
+            treeOffset,
             {
-                prevRootNode: prevRoot,
-                nodeToDelete,
-                nodeToUpdate,
+                targetNodeId: operationData.targetNodeId,
+                parentId: operationData.parentId,
+                successorNodeId: operationData.successorId,
+                replacementNodeId: operationData.replacementId,
+                exists: operationData.exists,
                 remainingNodesData: currentNodes,
                 remainingLinksData: linksData,
-                positions: nodePositions
+                positions: nodePositions,
+                pathToTarget: operationData.pathToTargetIds,
+                pathToSuccessor: operationData.pathToSuccessorIds
+            },
+            {
+                highlightTargetColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR,
+                highlightSuccessorColor: SVG_BINARY_TREE_VALUES.UPDATE_STROKE_COLOR
             },
             resetQueryValues,
             setIsAnimating
         );
-    }, [prevRoot, currentNodes, linksData, query.toDelete, resetQueryValues, setIsAnimating]);
+    }, [prevRoot, currentNodes, linksData, query.toDelete, treeOffset, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la búsqueda de un nodo
     useEffect(() => {
@@ -233,22 +185,22 @@ export function useBinarySearchTreeRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Grupo contenedor de nodos y enlaces del árbol
-        const treeG = svg.select<SVGGElement>("g.tree-container");
-
-        // Grupo contenedor de los valores de la secuencia de recorrido
-        const seqG = svg.select<SVGGElement>("g.seq-container");
-
-        // Ubicamos al nodo a buscar en el árbol
-        const nodeToSearch = currentNodes.find(d => d.data.value === query.toSearch);
-        if (!nodeToSearch) return;
-
-        // Ruta de búsqueda del nodo
-        const pathToNode = root.path(nodeToSearch);
+        // Extraemos los datos de búsqueda de la query
+        const { pathIds, found, lastVisitedId } = query.toSearch;
 
         // Animación de búsqueda del nodo
-        animateSearchNode(treeG, seqG, nodeToSearch.data.id, pathToNode, resetQueryValues, setIsAnimating);
-    }, [root, currentNodes, query.toSearch, resetQueryValues, setIsAnimating]);
+        animateSearchNode(
+            svg,
+            treeOffset,
+            {
+                lastVisitedNodeId: lastVisitedId,
+                found,
+                positions: nodePositions,
+                path: pathIds
+            },
+            { highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR },
+            resetQueryValues, setIsAnimating);
+    }, [root, currentNodes, query.toSearch, treeOffset, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar los recorridos del árbol
     useEffect(() => {

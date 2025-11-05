@@ -12,7 +12,7 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Estado para manejar la operación solicitada por el usuario
     const [query, setQuery] = useState<BaseQueryOperations<"arbol_binario_busqueda">>({
         toInsert: null,
-        toDelete: [],
+        toDelete: null,
         toSearch: null,
         toGetPreOrder: [],
         toGetInOrder: [],
@@ -21,22 +21,22 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         toClear: false
     });
 
-    // Operación de inserción de un nodo en el árbol
+    // Operación para insertar un nodo en el árbol
     const insertNode = useCallback((value: number) => {
         try {
-            // Clonar el árbol para garantizar la inmutabilidad del estado
+            // Clonación del árbol para garantizar la inmutabilidad del estado
             const clonedTree = tree.clonarABB();
 
-            // Insertar el nuevo hijo derecho
-            const insertedNode = clonedTree.insertar(value);
+            // Inserción del nuevo nodo
+            const { pathIds, parent, targetNode, exists } = clonedTree.insertarABB(value);
 
-            // Actualizar el estado del árbol
+            // Actualización del estado del árbol
             setTree(clonedTree);
 
-            // Actualizar la query a partir de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toInsert: insertedNode.getId()
+                toInsert: { pathIds, parentId: parent?.getId() ?? null, targetNodeId: targetNode.getId(), exists }
             }));
 
             // Limpieza del error existente
@@ -46,22 +46,30 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         }
     }, [tree]);
 
-    // Operación de eliminar un nodo del árbol
+    // Operación para eliminar un nodo del árbol
     const deleteNode = useCallback((value: number) => {
         try {
-            // Clonar el árbol para asegurar la inmutabilidad del estado
+            // Clonación del árbol para asegurar la inmutabilidad del estado
             const clonedTree = tree.clonarABB();
 
-            // Obtener el nodo a ser eliminado para acceder a su ID
-            const deletedNodeData = clonedTree.eliminar(value);
+            // Eliminación del nodo
+            const deletedNodeData = clonedTree.eliminarABB(value);
 
-            // Actualizar el estado del árbol
+            // Actualización del estado del árbol
             setTree(clonedTree);
 
-            // Actualizar la query a partir de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toDelete: [deletedNodeData.removed!.getId(), deletedNodeData.updated?.getId() ?? null]
+                toDelete: {
+                    pathToTargetIds: deletedNodeData.pathToTargetIds,
+                    parentId: deletedNodeData.parent?.getId() ?? null,
+                    targetNodeId: deletedNodeData.targetNode.getId(),
+                    pathToSuccessorIds: deletedNodeData.pathToSuccessorIds,
+                    successorId: deletedNodeData.successor?.getId() ?? null,
+                    replacementId: deletedNodeData.replacement?.getId() ?? null,
+                    exists: deletedNodeData.exists
+                }
             }));
 
             // Limpieza del error existente
@@ -74,16 +82,18 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Operación para buscar un nodo en el árbol
     const searchNode = useCallback((value: number) => {
         try {
-            // Buscar el nodo en el árbol
-            const foundNode = tree.esta(value);
+            // Búsqueda del nodo en el árbol
+            const { pathIds, found, lastVisited } = tree.buscarABB(value);
 
-            // Verificar su existencia
-            if (!foundNode) throw new Error("No fue posible encontrar el nodo.");
+            // Verificación del proceso de búsqueda
+            if (!lastVisited) {
+                throw new Error("No fue posible buscar el nodo (El árbol se encuentra vacío)");
+            }
 
-            // Actualizar la query para informar de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toSearch: value
+                toSearch: { pathIds, found, lastVisitedId: lastVisited.getId() }
             }));
 
             // Limpieza del error existente
@@ -96,13 +106,13 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Operación para obtener el recorrido en preorden
     const getPreOrder = useCallback(() => {
         try {
-            // Obtener el recorrido en preorden del árbol
+            // Obtención del recorrido preorden del árbol
             const preorder = tree.preOrden();
 
-            // Verificar la existencia de nodos
+            // Verificación de la existencia de nodos
             if (preorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
 
-            // Actualizar la query a partir de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toGetPreOrder: preorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
@@ -118,13 +128,13 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Operación para obtener el recorrido en inorden
     const getInOrder = useCallback(() => {
         try {
-            // Obtener el recorrido en inorden del árbol
+            // Obtención del recorrido inorden del árbol
             const inorder = tree.inOrden();
 
-            // Verificar la existencia de nodos
+            // Verificación de la existencia de nodos
             if (inorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
 
-            // Actualizar la query a partir de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toGetInOrder: inorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
@@ -140,13 +150,13 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Operación para obtener el recorrido en postorden
     const getPostOrder = useCallback(() => {
         try {
-            // Obtener el recorrido en postorden del árbol
+            // Obtención del recorrido postorden del árbol
             const postorder = tree.postOrden();
 
-            // Verificar la existencia de nodos
+            // Verificación de la existencia de nodos
             if (postorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
 
-            // Actualizar la query a partir de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toGetPostOrder: postorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
@@ -162,13 +172,13 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     // Operación para obtener el recorrido por niveles
     const getLevelOrder = useCallback(() => {
         try {
-            // Obtener el recorrido por niveles del árbol
+            // Obtención del recorrido por niveles del árbol
             const levelOrder = tree.getNodosPorNiveles();
 
-            // Verificar la existencia de nodos
+            // Verificación de la existencia de nodos
             if (levelOrder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
 
-            // Actualizar la query a partir de la operación realizada
+            // Actualización de la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toGetLevelOrder: levelOrder.map(node => ({ id: node.getId(), value: node.getInfo() }))
@@ -183,16 +193,16 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
 
     // Operación para vaciar el árbol
     const clearTree = useCallback(() => {
-        // Clonar el árbol para asegurar la inmutabilidad del estado
+        // Clonación del árbol para asegurar la inmutabilidad del estado
         const cloned = tree.clonarABB();
 
         // Vaciar el árbol
         cloned.vaciar();
 
-        // Actualizar el estado del árbol
+        // Actualización del estado del árbol
         setTree(cloned);
 
-        // Actualizar la query a partir de la operación realizada
+        // Actualización de la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true
@@ -203,7 +213,7 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
     const resetQueryValues = useCallback(() => {
         setQuery({
             toInsert: null,
-            toDelete: [],
+            toDelete: null,
             toSearch: null,
             toGetPreOrder: [],
             toGetInOrder: [],

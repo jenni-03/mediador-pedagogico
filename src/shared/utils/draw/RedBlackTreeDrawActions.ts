@@ -135,10 +135,11 @@ export function drawRBTreeLinks(
 }
 
 /**
- * Función encargada de animar la inserción de un nuevo nodo en el árbol Rojo-Negro.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo en el árbol Rojo-Negro.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param treeOffset Desplazamiento del árbol dentro del SVG.
  * @param insertionData Objeto con información del árbol necesaria para la animación.
+ * @param animationOpts Objeto con opciones de animación para el proceso de inserción.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
@@ -146,158 +147,182 @@ export async function animateRBInsertNode(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   treeOffset: { x: number; y: number },
   insertionData: {
-    newNodeId: string;
+    targetNodeId: string;
     parentId: string | null;
-    nodesData: HierarchyNode<HierarchyNodeData<number>>[];
-    linksData: TreeLinkData[];
+    exists: boolean;
+    currentNodes: HierarchyNode<HierarchyNodeData<number>>[];
+    currentLinks: TreeLinkData[];
     positions: Map<string, { x: number, y: number }>;
-    pathToParent: HierarchyNode<HierarchyNodeData<number>>[];
-    bstFrame: RBFrame | null,
+    pathToTarget: string[];
     actions: RBAction[],
     frames: RBFrame[];
+  },
+  animationOpts: {
+    highlightColor: string;
   },
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-  // Elementos del árbol requeridos para la animación 
-  const { positions, bstFrame, actions, frames } = insertionData;
+  try {
+    // Elementos del árbol requeridos para la animación 
+    const { targetNodeId, parentId, positions, actions, frames, currentNodes, currentLinks } = insertionData;
 
-  // Grupo contenedor de nodos y enlaces del árbol
-  const treeG = svg.select<SVGGElement>("g.tree-container");
+    // Grupo contenedor de nodos y enlaces del árbol
+    const treeG = svg.select<SVGGElement>("g.tree-container");
 
-  // Grupo contenedor de los valores de la secuencia de recorrido
-  const seqG = svg.select<SVGGElement>("g.seq-container");
+    // Grupo contenedor de los valores de la secuencia de recorrido
+    const seqG = svg.select<SVGGElement>("g.seq-container");
 
-  // Capas de nodos y enlaces
-  const linksLayer = treeG.select<SVGGElement>("g.links-layer");
-  const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+    // Si el nodo a insertar ya se encuentra dentro del árbol
+    if (insertionData.exists) {
+      // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+      seqG.style("opacity", 0);
 
-  // Definimos los nodos a usar durante la inserción
-  const currentNodes = bstFrame ? bstFrame.nodes : insertionData.nodesData;
-  const currentLinks = bstFrame ? bstFrame.links : insertionData.linksData;
+      // Animación de recorrido hasta el nodo objetivo
+      await highlightRBTreePath(treeG, insertionData.pathToTarget, animationOpts.highlightColor);
 
-  // Renderizado del estado del árbol previo a cualquier rotación o recoloreo (si aplica)
-  if (bstFrame) {
-    drawRBTreeNodes(nodesLayer, currentNodes, positions);
-    drawRBTreeLinks(linksLayer, currentLinks, positions);
-  }
+      // Restablecimiento del estilo visual original del nodo objetivo
+      await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
+        .transition()
+        .duration(800)
+        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+        .end();
 
-  // Elevamos la capa de nodos
-  nodesLayer.raise();
-
-  // Si el nodo a insertar es el primero (nodo raíz), restablecemos su color a rojo
-  if (!insertionData.parentId) {
-    const newNodeG = treeG.select<SVGGElement>(`g#${insertionData.newNodeId}`);
-    newNodeG.select<SVGCircleElement>("circle.node-ring").attr("stroke", "url(#rbRingRed)");
-    newNodeG.select<SVGCircleElement>("circle.node-container")
-      .attr("fill", RB_COLORS.RED);
-  }
-
-  // Animación de inserción del elemento como BST
-  await animateBSTInsertCore(
-    treeG,
-    seqG,
-    {
-      newNodeId: insertionData.newNodeId,
-      parentId: insertionData.parentId,
-      nodesData: currentNodes,
-      linksData: currentLinks,
-      pathToParent: insertionData.pathToParent,
-      positions: positions
-    },
-    {
-      reposition: repositionRBTree,
-      appearNode: appearRBTreeNode,
-      highlightColor: RB_COLORS.HIGHLIGHT,
-      highlight: highlightRBTreePath
-    }
-  );
-
-  // Restablecimiento de los bordes del nodo padre del nuevo nodo (si aplica)
-  if (insertionData.parentId) {
-    await treeG.select<SVGGElement>(`g#${insertionData.parentId} circle.node-container`)
-      .transition()
-      .duration(800)
-      .attr("stroke", RB_COLORS.STROKE)
-      .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-      .end();
-    treeG.select<SVGGElement>(`g#${insertionData.parentId} circle.node-ring`).style("opacity", 0.9);
-  }
-
-  // Aplicación de recolores y rotaciones
-  let frameCount = 1;
-  for (const action of actions) {
-    if (action.kind === "recolor") {
-      // Mostrar indicador visual de acción de recoloreo
+      // Mostrar indicador visual de que el nodo ya estaba presente dentro del árbol
       await showTreeHint(
         svg,
-        { type: "node", id: action.id },
-        { label: `Colorear`, value: action.to === "BLACK" ? `${action.nodeBadge}->Negro` : `${action.nodeBadge}->Rojo` },
+        { type: "node", id: targetNodeId },
+        { label: "Nodo", value: "ya insertado" },
         positions,
         treeOffset,
         {
-          size: { width: 78, height: 35, radius: 10 },
-          typography: { labelFz: "9.8px", valueFz: "10px", labelFw: 700, valueFw: 700 },
+          size: { width: 75, height: 35 },
+          typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
           anchor: { side: "below", dx: 10, dy: -8 },
-          palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
+          palette: { bg: "#2b1d2e", stroke: "#e11d48" }
         }
       );
-
-      // Grupo del nodo a recolorear
-      const nodeToRecolor = treeG.select<SVGGElement>(`g#${action.id}`);
-
-      // Animación de recoloreo del nodo
-      await recolorRBNode(nodeToRecolor, action.to);
     } else {
-      // Rotación actual
-      const rotation = action.step;
-      const { nodes, links } = frames[frameCount];
+      // Selección de capas de nodos y enlaces
+      const linksLayer = treeG.select<SVGGElement>("g.links-layer");
+      const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
 
-      // Mostrar indicador visual de acción de rotación
-      await showTreeHint(
-        svg,
-        { type: "node", id: rotation.zId },
-        { label: "rotación", value: action.tag },
-        positions,
-        treeOffset,
-        {
-          size: { width: 52, height: 35, radius: 8 },
-          typography: { labelFz: "9px", valueFz: "9.5px", labelFw: 800, valueFw: 800 },
-          anchor: { side: "right", dx: 0.5, dy: -10 },
-          palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
-        }
-      );
+      // Renderizado de los elementos correspondientes al nuevo nodo
+      drawRBTreeNodes(nodesLayer, currentNodes, positions);
+      drawRBTreeLinks(linksLayer, currentLinks, positions);
 
-      // Renderizar los nuevos enlaces
-      drawRBTreeLinks(linksLayer, links, positions);
+      // Si el nodo a insertar es el primero (nodo raíz), restablecemos su color a rojo
+      if (!parentId) {
+        const newNodeG = treeG.select<SVGGElement>(`g#${targetNodeId}`);
+        newNodeG.select<SVGCircleElement>("circle.node-ring").attr("stroke", "url(#rbRingRed)");
+        newNodeG.select<SVGCircleElement>("circle.node-container")
+          .attr("fill", RB_COLORS.RED);
+      }
 
-      // Actualizar la posición de los nodos según el estado actual
-      drawRBTreeNodes(nodesLayer, nodes, positions);
-
-      // Animación de rotación
-      await animateEspecialBSTsRotation(
+      // Animación de inserción del elemento como BST
+      await animateBSTInsertCore(
         treeG,
-        rotation.parentOfZId ?? null,
-        rotation.zId,
-        rotation.yId,
-        rotation.BId ?? null,
-        repositionRBTree,
+        seqG,
         {
-          nodes,
-          links,
-          positions
+          newNodeId: targetNodeId,
+          parentId: parentId,
+          nodesData: currentNodes,
+          linksData: currentLinks,
+          pathToParent: insertionData.pathToTarget,
+          positions: positions
+        },
+        {
+          reposition: repositionRBTree,
+          appearNode: appearRBTreeNode,
+          highlightColor: animationOpts.highlightColor,
+          highlight: highlightRBTreePath
         }
       );
 
-      frameCount++;
+      // Restablecimiento de los bordes del nodo padre del nuevo nodo (si aplica)
+      if (parentId) {
+        await treeG.select<SVGGElement>(`g#${insertionData.parentId} circle.node-container`)
+          .transition()
+          .duration(800)
+          .attr("stroke", RB_COLORS.STROKE)
+          .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+          .end();
+        treeG.select<SVGGElement>(`g#${insertionData.parentId} circle.node-ring`).style("opacity", 0.9);
+      }
+
+      // Aplicación de recolores y rotaciones
+      let frameCount = 1;
+      for (const action of actions) {
+        if (action.kind === "recolor") {
+          // Mostrar indicador visual de acción de recoloreo
+          await showTreeHint(
+            svg,
+            { type: "node", id: action.id },
+            { label: `Colorear`, value: action.to === "BLACK" ? `${action.nodeBadge}->Negro` : `${action.nodeBadge}->Rojo` },
+            positions,
+            treeOffset,
+            {
+              size: { width: 78, height: 35, radius: 10 },
+              typography: { labelFz: "9.8px", valueFz: "10px", labelFw: 700, valueFw: 700 },
+              anchor: { side: "below", dx: 10, dy: -8 },
+              palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
+            }
+          );
+
+          // Grupo del nodo a recolorear
+          const nodeToRecolor = treeG.select<SVGGElement>(`g#${action.id}`);
+
+          // Animación de recoloreo del nodo
+          await recolorRBNode(nodeToRecolor, action.to);
+        } else {
+          // Rotación actual
+          const rotation = action.step;
+          const { nodes, links } = frames[frameCount];
+
+          // Mostrar indicador visual de acción de rotación
+          await showTreeHint(
+            svg,
+            { type: "node", id: rotation.zId },
+            { label: "rotación", value: action.tag },
+            positions,
+            treeOffset,
+            {
+              size: { width: 52, height: 35, radius: 8 },
+              typography: { labelFz: "9px", valueFz: "9.5px", labelFw: 800, valueFw: 800 },
+              anchor: { side: "right", dx: 0.5, dy: -10 },
+              palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
+            }
+          );
+
+          // Renderizar los nuevos enlaces
+          drawRBTreeLinks(linksLayer, links, positions);
+
+          // Actualizar la posición de los nodos según el estado actual
+          drawRBTreeNodes(nodesLayer, nodes, positions);
+
+          // Animación de rotación
+          await animateEspecialBSTsRotation(
+            treeG,
+            rotation.parentOfZId ?? null,
+            rotation.zId,
+            rotation.yId,
+            rotation.BId ?? null,
+            repositionRBTree,
+            {
+              nodes,
+              links,
+              positions
+            }
+          );
+
+          frameCount++;
+        }
+      }
     }
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
 }
 
 /**
@@ -312,258 +337,304 @@ export async function animateRBDeleteNode(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   treeOffset: { x: number; y: number },
   deletionData: {
-    prevRootNode: HierarchyNode<HierarchyNodeData<number>>;
-    nodeToDelete: HierarchyNode<HierarchyNodeData<number>>;
-    nodeToReposition: HierarchyNode<HierarchyNodeData<number>> | null;
-    remainingNodesData: HierarchyNode<HierarchyNodeData<number>>[];
-    remainingLinksData: TreeLinkData[];
+    targetNodeId: string;
+    parentId: string | null;
+    successorNodeId: string | null;
+    replacementNodeId: string | null;
+    exists: boolean;
+    currentNodes: HierarchyNode<HierarchyNodeData<number>>[];
+    currentLinks: TreeLinkData[];
     positions: Map<string, { x: number; y: number }>,
-    preRotationFrame: RBFrame | null;
+    pathToTarget: string[];
+    pathToSuccessor: string[];
     actions: RBAction[];
     frames: RBFrame[];
+  },
+  animationOpts: {
+    highlightTargetColor: string;
+    highlightSuccessorColor: string;
   },
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-  // Elementos del árbol requeridos para la animación 
-  const {
-    nodeToDelete,
-    prevRootNode,
-    positions,
-    nodeToReposition,
-    preRotationFrame,
-    actions,
-    frames
-  } = deletionData;
+  try {
+    // Desestructuración de elementos requeridos para la animación (con uso más frecuente)
+    const { targetNodeId, parentId, successorNodeId, positions, currentNodes, currentLinks, actions, frames } = deletionData;
 
-  // Grupo contenedor de nodos y enlaces del árbol
-  const treeG = svg.select<SVGGElement>("g.tree-container");
+    // Grupo contenedor de nodos y enlaces del árbol
+    const treeG = svg.select<SVGGElement>("g.tree-container");
 
-  // Grupo contenedor de los valores de la secuencia de recorrido
-  const seqG = svg.select<SVGGElement>("g.seq-container");
+    // Grupo contenedor de los valores de la secuencia de recorrido
+    const seqG = svg.select<SVGGElement>("g.seq-container");
 
-  // Capas de nodos y enlaces
-  const linksLayer = treeG.select<SVGGElement>("g.links-layer");
-  const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+    seqG.style("opacity", 0);
 
-  // Definimos los nodos a usar durante la eliminación (dependiendo si hay rotación o no)
-  const currentNodes = preRotationFrame ? preRotationFrame.nodes : deletionData.remainingNodesData;
-  const currentLinks = preRotationFrame ? preRotationFrame.links : deletionData.remainingLinksData;
+    // En caso de que el nodo objetivo no se encuentre dentro del árbol (no se elimina nada)
+    if (!deletionData.exists) {
+      // Animación de recorrido hasta el último nodo visitado
+      await highlightRBTreePath(treeG, deletionData.pathToTarget, animationOpts.highlightTargetColor);
 
-  // Renderizado del estado del árbol previo a cualquier rotación o recoloreo (si aplica)
-  if (preRotationFrame) {
-    drawRBTreeNodes(nodesLayer, currentNodes, positions);
-    drawRBTreeLinks(linksLayer, currentLinks, positions);
-  }
+      // Mostrar indicador visual de que el nodo no fue encontrado
+      await showTreeHint(
+        svg,
+        { type: "node", id: targetNodeId },
+        { label: "Nodo", value: "no ubicado" },
+        positions,
+        treeOffset,
+        {
+          size: { width: 80, height: 35 },
+          typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+          anchor: { side: "below", dx: 10, dy: -8 },
+          palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+        }
+      );
 
-  // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-  seqG.style("opacity", 0);
-
-  if (!nodeToReposition) {
-    // Nodo padre del nodo a eliminar
-    const parentNode = nodeToDelete.parent;
-
-    // Ruta desde el nodo raíz hasta el nodo padre del nodo a eliminar
-    const pathToParent = parentNode ? prevRootNode.path(parentNode) : [];
-
-    // Animación de eliminación para nodo hoja o nodo con único hijo
-    await animateLeafOrSingleChild(
-      treeG,
-      nodeToDelete,
-      parentNode ? parentNode.data.id : null,
-      pathToParent,
-      {
-        deleteNode: deleteRBTreeNode,
-        highlightNodePath: highlightRBTreePath,
-        highlightColor: RB_COLORS.HIGHLIGHT,
-        buildPath: curvedPath
-      }
-    );
-
-    // Restablecimiento de los bordes del nodo padre del nodo eliminado (si aplica)
-    if (parentNode) {
-      await treeG.select<SVGGElement>(`g#${parentNode.data.id} circle.node-container`)
+      // Restablecimiento del fondo original del último nodo visitado.
+      await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
         .transition()
         .duration(800)
-        .attr("stroke", RB_COLORS.STROKE)
-        .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
         .end();
-      treeG.select<SVGGElement>(`g#${parentNode.data.id} circle.node-ring`).style("opacity", 0.9);
-    }
-  } else {
-    // Ruta desde el nodo raiz hasta el nodo a eliminar
-    const pathToRemovalNode = prevRootNode.path(nodeToDelete);
+    } else {
+      // Capas de nodos y enlaces
+      const linksLayer = treeG.select<SVGGElement>("g.links-layer");
+      const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
 
-    // Ruta desde el nodo a eliminar hasta el nodo a reposicionar
-    const pathToRepositionNode = nodeToDelete.path(nodeToReposition);
+      // Renderizado de elementos posteriores a la eliminación
+      drawRBTreeNodes(nodesLayer, currentNodes, positions);
+      drawRBTreeLinks(linksLayer, currentLinks, positions);
 
-    // Animación de eliminación para nodo con 2 hijos
-    await animateRBTwoChildren(
-      treeG,
-      {
-        nodeToDelete,
-        nodeToReposition,
-        positions,
-        pathToRemovalNode,
-        pathToRepositionNode
+      // Determinamos el nodo a eliminar
+      const nodeToDeleteId = successorNodeId ? successorNodeId : targetNodeId;
+
+      if (!successorNodeId) {
+        // Animación de eliminación para nodo hoja o nodo con único hijo
+        await animateLeafOrSingleChild(
+          treeG,
+          nodeToDeleteId,
+          parentId,
+          deletionData.replacementNodeId,
+          deletionData.pathToTarget,
+          {
+            deleteNode: deleteRBTreeNode,
+            highlightNodePath: highlightRBTreePath,
+            highlightColor: animationOpts.highlightTargetColor,
+            buildPath: curvedPath
+          }
+        );
+
+        // Restablecimiento de los bordes del nodo padre del nodo eliminado (si aplica)
+        if (parentId) {
+          await treeG.select<SVGGElement>(`g#${parentId} circle.node-container`)
+            .transition()
+            .duration(800)
+            .attr("stroke", RB_COLORS.STROKE)
+            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+            .end();
+          treeG.select<SVGGElement>(`g#${parentId} circle.node-ring`).style("opacity", 0.9);
+        }
+      } else {
+        // Animación de eliminación para nodo con 2 hijos
+        await animateRBTwoChildren(
+          treeG,
+          {
+            nodeToDelete,
+            nodeToReposition,
+            positions,
+            pathToRemovalNode,
+            pathToRepositionNode
+          }
+        );
+
+        // Restablecimiento de los bordes del nodo padre del nodo reposicionado
+        await treeG.select<SVGGElement>(`g#${successorNodeId} circle.node-container`)
+          .transition()
+          .duration(800)
+          .attr("stroke", RB_COLORS.STROKE)
+          .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+          .end();
+        treeG.select<SVGGElement>(`g#${successorNodeId} circle.node-ring`).style("opacity", 0.9);
       }
-    );
 
-    // Restablecimiento de los bordes del nodo padre del nodo reposicionado
-    await treeG.select<SVGGElement>(`g#${nodeToReposition.data.id} circle.node-container`)
+      // Limpiamos el registro del nodo eliminado
+      positions.delete(targetNodeId);
+
+      // Reposicionamiento de los nodos y enlaces del árbol
+      await repositionRBTree(treeG, currentNodes, currentLinks, positions);
+
+      // Aplicación de recolores y rotaciones
+      let frameCount = 1;
+      for (const action of actions) {
+        if (action.kind === "recolor") {
+          // Mostrar indicador visual de acción de recoloreo
+          await showTreeHint(
+            svg,
+            { type: "node", id: action.id },
+            { label: `Colorear`, value: action.to === "BLACK" ? `${action.nodeBadge}->Negro` : `${action.nodeBadge}->Rojo` },
+            positions,
+            treeOffset,
+            {
+              size: { width: action.nodeBadge.length > 6 ? 88 : 78, height: 35, radius: 8 },
+              typography: { labelFz: "9.8px", valueFz: "10px", labelFw: 700, valueFw: 700 },
+              anchor: { side: "below", dx: 10, dy: -8 },
+              palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
+            }
+          );
+
+          // Grupo del nodo a recolorear
+          const nodeToRecolor = treeG.select<SVGGElement>(`g#${action.id}`);
+
+          // Animación de recoloreo del nodo
+          await recolorRBNode(nodeToRecolor, action.to);
+        } else {
+          const rotation = action.step;
+          const { nodes, links } = frames[frameCount];
+
+          // Mostrar indicador visual de acción de rotación
+          await showTreeHint(
+            svg,
+            { type: "node", id: rotation.zId },
+            { label: "rotación", value: action.tag },
+            positions,
+            treeOffset,
+            {
+              size: { width: 52, height: 35, radius: 8 },
+              typography: { labelFz: "9px", valueFz: "9.5px", labelFw: 800, valueFw: 800 },
+              anchor: { side: "right", dx: 0.5, dy: -10 },
+              palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
+            }
+          );
+
+          // Renderizar los nuevos enlaces
+          drawRBTreeLinks(linksLayer, links, positions);
+
+          // Actualizar la posición de los nodos según el estado actual
+          drawRBTreeNodes(nodesLayer, nodes, positions);
+
+          // Animación de rotación
+          await animateEspecialBSTsRotation(
+            treeG,
+            rotation.parentOfZId ?? null,
+            rotation.zId,
+            rotation.yId,
+            rotation.BId ?? null,
+            repositionRBTree,
+            {
+              nodes,
+              links,
+              positions
+            }
+          );
+
+          frameCount++;
+        }
+      }
+    }
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
+}
+
+/**
+ * Función encargada de animar el proceso de búsqueda de un nodo dentro del árbol Rojo-Negro.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param searchData Objeto con información del árbol necesaria para la animación.
+ * @param animationOpts Objeto con opciones de animación para el proceso de búsqueda.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ */
+export async function animateRBSearch(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  treeOffset: { x: number; y: number },
+  searchData: {
+    lastVisitedNodeId: string,
+    found: boolean,
+    positions: Map<string, { x: number, y: number }>;
+    path: string[],
+  },
+  animationOpts: {
+    highlightColor: string;
+  },
+  resetQueryValues: () => void,
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+  try {
+    // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
+    const { positions, lastVisitedNodeId } = searchData;
+
+    // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
+    const treeG = svg.select<SVGGElement>("g.tree-container");
+
+    // Grupo contenedor de la secuencia de valores de recorrido
+    const seqG = svg.select<SVGGElement>("g.seq-container");
+
+    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+    seqG.style("opacity", 0);
+
+    // Grupo correspondiente al último nodo visitado
+    const lastVisitedNodeGroup = treeG.select<SVGCircleElement>(`g#${lastVisitedNodeId} circle.node-container`);
+
+    // Animación de recorrido desde el nodo raíz hasta el nodo buscado
+    await highlightRBTreePath(treeG, searchData.path, animationOpts.highlightColor);
+
+    if (searchData.found) {
+      // Selección de Grupo y elementos correspondientes al nodo a buscar
+      const foundNodeCircle = lastVisitedNodeGroup.select<SVGCircleElement>("circle.node-container");
+      const foundNodeRing = lastVisitedNodeGroup.select<SVGCircleElement>("circle.node-ring");
+
+      // Resaltado final del nodo ubicado
+      const p1 = foundNodeCircle
+        .transition()
+        .duration(250)
+        .attr("r", 30)
+        .transition()
+        .duration(250)
+        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+        .end();
+
+      const p2 = foundNodeRing
+        .select("circle.node-ring")
+        .transition()
+        .duration(250)
+        .attr("r", 30 + 2.5)
+        .transition()
+        .duration(250)
+        .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2.5)
+        .end();
+
+      await Promise.all([p1, p2]);
+    } else {
+      // Mostrar indicador visual de que el nodo no fue encontrado
+      await showTreeHint(
+        svg,
+        { type: "node", id: lastVisitedNodeId },
+        { label: "Nodo", value: "no ubicado" },
+        positions,
+        treeOffset,
+        {
+          size: { width: 70, height: 35 },
+          typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+          anchor: { side: "below", dx: 10, dy: -8 },
+          palette: { bg: "#1b2330", stroke: "#14b8a6" }
+        }
+      );
+    }
+
+    // Restablecimiento de los bordes del nodo padre del nodo ubicado
+    await lastVisitedNodeGroup
       .transition()
       .duration(800)
       .attr("stroke", RB_COLORS.STROKE)
       .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
       .end();
-    treeG.select<SVGGElement>(`g#${nodeToReposition.data.id} circle.node-ring`).style("opacity", 0.9);
+    lastVisitedNodeGroup.style("opacity", 0.9);
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
-
-  // Limpiamos el registro del nodo eliminado
-  positions.delete(nodeToDelete.data.id);
-
-  // Reposicionamiento de los nodos y enlaces del árbol
-  await repositionRBTree(treeG, currentNodes, currentLinks, positions);
-
-  // Aplicación de recolores y rotaciones
-  let frameCount = 1;
-  for (const action of actions) {
-    if (action.kind === "recolor") {
-      // Mostrar indicador visual de acción de recoloreo
-      await showTreeHint(
-        svg,
-        { type: "node", id: action.id },
-        { label: `Colorear`, value: action.to === "BLACK" ? `${action.nodeBadge}->Negro` : `${action.nodeBadge}->Rojo` },
-        positions,
-        treeOffset,
-        {
-          size: { width: action.nodeBadge.length > 6 ? 88 : 78, height: 35, radius: 8 },
-          typography: { labelFz: "9.8px", valueFz: "10px", labelFw: 700, valueFw: 700 },
-          anchor: { side: "below", dx: 10, dy: -8 },
-          palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
-        }
-      );
-
-      // Grupo del nodo a recolorear
-      const nodeToRecolor = treeG.select<SVGGElement>(`g#${action.id}`);
-
-      // Animación de recoloreo del nodo
-      await recolorRBNode(nodeToRecolor, action.to);
-    } else {
-      const rotation = action.step;
-      const { nodes, links } = frames[frameCount];
-
-      // Mostrar indicador visual de acción de rotación
-      await showTreeHint(
-        svg,
-        { type: "node", id: rotation.zId },
-        { label: "rotación", value: action.tag },
-        positions,
-        treeOffset,
-        {
-          size: { width: 52, height: 35, radius: 8 },
-          typography: { labelFz: "9px", valueFz: "9.5px", labelFw: 800, valueFw: 800 },
-          anchor: { side: "right", dx: 0.5, dy: -10 },
-          palette: { bg: "#2b1d2e", stroke: "#e11d48", label: "#fecdd3", value: "#fda4af" }
-        }
-      );
-
-      // Renderizar los nuevos enlaces
-      drawRBTreeLinks(linksLayer, links, positions);
-
-      // Actualizar la posición de los nodos según el estado actual
-      drawRBTreeNodes(nodesLayer, nodes, positions);
-
-      // Animación de rotación
-      await animateEspecialBSTsRotation(
-        treeG,
-        rotation.parentOfZId ?? null,
-        rotation.zId,
-        rotation.yId,
-        rotation.BId ?? null,
-        repositionRBTree,
-        {
-          nodes,
-          links,
-          positions
-        }
-      );
-
-      frameCount++;
-    }
-  }
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
-}
-
-/**
- * Función encargada de animar la búsqueda de un nodo dentro de un árbol Rojo-Negro.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
- * @param targetNode ID del nodo a buscar.
- * @param path Array de nodos jerárquicos que representan el camino a resaltar.
- * @param resetQueryValues Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- */
-export async function animateRBSearch(
-  treeG: Selection<SVGGElement, unknown, null, undefined>,
-  seqG: Selection<SVGGElement, unknown, null, undefined>,
-  targetNode: string,
-  path: HierarchyNode<HierarchyNodeData<number>>[],
-  resetQueryValues: () => void,
-  setIsAnimating: Dispatch<SetStateAction<boolean>>
-) {
-  // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-  seqG.style("opacity", 0);
-
-  // Selección de Grupo y elementos correspondientes al nodo a buscar
-  const foundNodeGroup = treeG.select<SVGCircleElement>(`g#${targetNode}`);
-  const foundNodeCircle = foundNodeGroup.select<SVGCircleElement>("circle.node-container");
-  const foundNodeRing = foundNodeGroup.select<SVGCircleElement>("circle.node-ring");
-
-  // Animación de recorrido desde el nodo raíz hasta el nodo buscado
-  await highlightRBTreePath(treeG, path, RB_COLORS.HIGHLIGHT);
-
-  // Resaltado final del nodo ubicado
-  const p1 = foundNodeCircle
-    .transition()
-    .duration(250)
-    .attr("r", 30)
-    .transition()
-    .duration(250)
-    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-    .end();
-
-  const p2 = foundNodeRing
-    .select("circle.node-ring")
-    .transition()
-    .duration(250)
-    .attr("r", 30 + 2.5)
-    .transition()
-    .duration(250)
-    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2.5)
-    .end();
-
-  await Promise.all([p1, p2]);
-
-  // Restablecimiento de los bordes del nodo padre del nodo ubicado
-  await foundNodeCircle
-    .transition()
-    .duration(800)
-    .attr("stroke", RB_COLORS.STROKE)
-    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-    .end();
-  foundNodeRing.style("opacity", 0.9);
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
 }
 
 /**
@@ -629,20 +700,20 @@ async function deleteRBTreeNode(
 }
 
 /**
- * Función encargada de resaltar cada nodo del árbol Rojo-Negro a lo largo de un camino dado
+ * Función encargada de resaltar secuencialmente cada nodo del árbol Rojo-Negro a lo largo de un camino dado
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param path Array de nodos jerárquicos que representan el camino a resaltar.
+ * @param pathIds Array con los identificadores de los nodos que representan el camino a resaltar. El orden determina la secuencia de resaltado.
  * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
  */
 async function highlightRBTreePath(
   g: Selection<SVGGElement, unknown, null, undefined>,
-  path: HierarchyNode<HierarchyNodeData<number>>[],
+  pathIds: string[],
   highlightColor: string
 ) {
-  for (const node of path) {
+  for (const nodeId of pathIds) {
     // Selección del grupo del nodo actual
-    const nodeCircle = g.select<SVGGElement>(`g#${node.data.id} circle.node-container`);
-    const nodeRing = g.select<SVGGElement>(`g#${node.data.id} circle.node-ring`);
+    const nodeCircle = g.select<SVGGElement>(`g#${nodeId} circle.node-container`);
+    const nodeRing = g.select<SVGGElement>(`g#${nodeId} circle.node-ring`);
 
     // Color y tamaño original del borde del contenedor del nodo
     const orig_color = nodeCircle.attr("stroke");
@@ -657,8 +728,8 @@ async function highlightRBTreePath(
       .attr("stroke-width", 3.5)
       .end();
 
-    if (node.data.id !== path[path.length - 1].data.id) {
-      // Restablecimiento de los bordes originales
+    // Restablecimiento de los bordes originales (solo si no es el útlimo nodo visitado)
+    if (nodeId !== pathIds[pathIds.length - 1]) {
       await nodeCircle
         .transition()
         .duration(800)
@@ -711,42 +782,35 @@ async function recolorRBNode(
 async function animateRBTwoChildren(
   treeG: Selection<SVGGElement, unknown, null, undefined>,
   deletionData: {
-    nodeToDelete: HierarchyNode<HierarchyNodeData<number>>,
-    nodeToReposition: HierarchyNode<HierarchyNodeData<number>>,
+    nodeToDeleteId: string,
+    nodeToRepositionId: string,
+    repositionParentNodeId: string,
+    repositionChildNodeId: string | null,
     positions: Map<string, { x: number; y: number }>,
-    pathToRemovalNode: HierarchyNode<HierarchyNodeData<number>>[],
-    pathToRepositionNode: HierarchyNode<HierarchyNodeData<number>>[]
+    pathToRemovalNode: string[],
+    pathToRepositionNode: string[]
   }
 ) {
   // Elementos del árbol requeridos para la animación
-  const { nodeToDelete, nodeToReposition, positions, pathToRemovalNode, pathToRepositionNode } = deletionData;
+  const { nodeToDeleteId, nodeToRepositionId, repositionParentNodeId, repositionChildNodeId } = deletionData;
 
   // Grupo del lienzo correspondiente al nodo a eliminar
-  const removedG = treeG.select<SVGGElement>(`g#${nodeToDelete.data.id}`);
+  const removedG = treeG.select<SVGGElement>(`g#${nodeToDeleteId}`);
 
   // Grupo del lienzo correspondiente al nodo a reposicionar
-  const repositionG = treeG.select<SVGGElement>(`g#${nodeToReposition.data.id}`);
-
-  // Nodo padre del nodo a reposicionar
-  const repositionParentNode = nodeToReposition.parent!.data.id;
-
-  // Nodo padre del nodo a eliminar
-  const removalParentNode = nodeToDelete.parent ? nodeToDelete.parent.data.id : null;
-
-  // Nodo hijo del nodo a reposicionar
-  const repositionChildNode = nodeToReposition.children?.filter((node) => !node.data.isPlaceholder)[0]?.data.id;
+  const repositionG = treeG.select<SVGGElement>(`g#${nodeToRepositionId}`);
 
   // Grupo del lienzo correspondiente al enlace entre el nodo padre y el nodo a reposicionar
-  const parentRepositionNodeLinkGroup = treeG.select<SVGGElement>(`g#link-${repositionParentNode}-${nodeToReposition.data.id}`);
+  const parentRepositionNodeLinkGroup = treeG.select<SVGGElement>(`g#link-${repositionParentNodeId}-${nodeToRepositionId}`);
 
   // Grupo del lienzo correspondiente al enlace entre el nodo a reposicionar y su nodo hijo (solo si el nodo hijo esta presente)
-  const childRepositionNodeLinkGroup = repositionChildNode
-    ? treeG.select<SVGGElement>(`g#link-${nodeToReposition.data.id}-${repositionChildNode}`)
+  const childRepositionNodeLinkGroup = repositionChildNodeId
+    ? treeG.select<SVGGElement>(`g#link-${nodeToRepositionId}-${repositionChildNodeId}`)
     : null;
 
   // Grupo del lienzo correspondiente al nuevo enlace entre el nodo padre y el nodo hijo del nodo a reposicionar (solo si el nodo a reposicionar cuenta con un nodo hijo y no es hijo directo del nodo a eliminar)
-  const newParentChildRepositionNodeLinkGroup = repositionChildNode && repositionParentNode !== nodeToDelete.data.id
-    ? treeG.select<SVGGElement>(`g#link-${repositionParentNode}-${repositionChildNode}`)
+  const newParentChildRepositionNodeLinkGroup = repositionChildNodeId && repositionParentNodeId !== nodeToDeleteId
+    ? treeG.select<SVGGElement>(`g#link-${repositionParentNodeId}-${repositionChildNodeId}`)
     : null;
 
   // Estado visual inicial del nuevo enlace entre el nodo padre y el nodo hijo del nodo a reposicionar (si aplica)
