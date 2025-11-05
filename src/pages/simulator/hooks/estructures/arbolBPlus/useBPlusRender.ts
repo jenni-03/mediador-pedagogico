@@ -48,6 +48,9 @@ const HUD = {
   fontWeight: 600 as const,
 };
 
+/** Normaliza inputs que pueden venir como {value:x} | string | number */
+const toNum = (x: unknown): number => Number((x as any)?.value ?? x);
+
 /* ╔════════════════════════════════════════════════════════════════════════════╗
    ║                              Helpers locales                               ║
    ╚════════════════════════════════════════════════════════════════════════════╝*/
@@ -185,11 +188,12 @@ function cleanupGhostNodes(
 /** Busca la HOJA que contiene la clave. */
 function findLeafWithKey(
   nodes: d3.HierarchyNode<BPlusHierarchy>[],
-  value: number
+  value: number | string
 ): { node: d3.HierarchyNode<BPlusHierarchy>; keyIndex: number } | null {
+  const val = Number(value);
   for (const n of nodes) {
     if (!n.data.isLeaf) continue;
-    const idx = n.data.keys.findIndex((k: number) => k === value);
+    const idx = (n.data.keys ?? []).findIndex((k: number) => Number(k) === val);
     if (idx !== -1) return { node: n, keyIndex: idx };
   }
   return null;
@@ -353,15 +357,14 @@ export function useBPlusRender(
 
   /* ───────────────── Render base ───────────────── */
   useEffect(() => {
-    if (!root || !svgRef.current) {
-      dbg("render base: skip (no root or no svg)");
+    // 1) Necesitamos el SVG incluso si root es null, para poder limpiar.
+    const svgEl = svgRef.current;
+    if (!svgEl) {
+      dbg("render base: skip (no svg)");
       return;
     }
 
-    dbg("render base: start", {
-      nodes: root?.descendants()?.length ?? 0,
-      isAnimating,
-    });
+    const svg = d3.select(svgEl);
 
     const margin = {
       left: SVG_NARY_VALUES.MARGIN_LEFT,
@@ -370,14 +373,99 @@ export function useBPlusRender(
       bottom: SVG_NARY_VALUES.MARGIN_BOTTOM,
     };
 
+    ensureBPlusDefs(svg);
+    ensureRangeDefs(svg);
+
+    const order = treeData?.order;
+    const tVal = order && order > 0 ? Math.max(2, Math.floor(order / 2)) : 2;
+    const { w: hudW, h: hudH } = writeDegreeBadge(svg, tVal, order);
+    const SAFE_GAP = 10;
+    const extraTop = hudH + SAFE_GAP;
+    const extraRight = HUD.x + hudW + SAFE_GAP;
+
+    // Contenedores base
+    let treeG = svg.select<SVGGElement>("g.tree-container");
+    if (treeG.empty()) treeG = svg.append("g").classed("tree-container", true);
+
+    let linksLayer = treeG.select<SVGGElement>("g.links-layer");
+    if (linksLayer.empty())
+      linksLayer = treeG.append("g").attr("class", "links-layer");
+
+    let nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+    if (nodesLayer.empty())
+      nodesLayer = treeG.append("g").attr("class", "nodes-layer");
+
+    let seqG = svg.select<SVGGElement>("g.seq-container");
+    if (seqG.empty()) seqG = svg.append("g").classed("seq-container", true);
+
+    // Overlay root
+    let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
+    if (overlayRoot.empty()) {
+      overlayRoot = svg
+        .append("g")
+        .attr("class", "bp-overlays-root")
+        .style("pointer-events", "none")
+        .style("isolation", "isolate")
+        .style("mix-blend-mode", "normal")
+        .style("filter", "none")
+        .style("clip-path", "none")
+        .style("mask", "none");
+    }
+
+    // 2) Caso A: modelo nulo ⇒ limpiar todo y dimensionar mínimo
+    if (!root) {
+      // Resetea transform para evitar offsets viejos
+      treeG.attr(
+        "transform",
+        `translate(${margin.left},${margin.top + extraTop})`
+      );
+      overlayRoot.attr("transform", treeG.attr("transform") || null);
+
+      linksLayer.selectAll("*").remove();
+      nodesLayer.selectAll("*").remove();
+      seqG.selectAll("*").remove();
+
+      svg
+        .selectAll<
+          SVGGElement,
+          unknown
+        >("g.bp-insert-overlay, g.bp-delete-overlay, g.bp-search-overlay, g.bp-range-overlay, g.bp-scanfrom-overlay, g.bp-inorder-overlay, g.bp-level-overlay")
+        .interrupt()
+        .remove();
+
+      nodePositions.clear();
+      seqPositions.clear();
+
+      const width = Math.max(
+        HUD.x + hudW + SAFE_GAP,
+        margin.left + margin.right
+      );
+      const height =
+        margin.top +
+        margin.bottom +
+        extraTop +
+        SVG_NARY_VALUES.SEQUENCE_PADDING +
+        SVG_NARY_VALUES.SEQUENCE_HEIGHT;
+
+      d3.select(svgEl).attr("width", width).attr("height", height);
+      dbg("render base: modelo nulo -> purga completa y retorno");
+      return;
+    }
+
+    // 3) Caso B: hay modelo; calcular layout
+    dbg("render base: start", {
+      nodes: root?.descendants()?.length ?? 0,
+      isAnimating,
+    });
+
     const LINK_CLEARANCE = 60;
     const levelSpacing = computeNodeHeight() + LINK_CLEARANCE;
 
     const treeLayout = d3
       .tree<BPlusHierarchy>()
       .nodeSize([SVG_NARY_VALUES.NODE_SPACING, levelSpacing]);
-    const pRoot = treeLayout(root);
 
+    const pRoot = treeLayout(root);
     applySmartSpacing(pRoot as HPN, 28, 3);
 
     const nodesP = (pRoot as HPN).descendants();
@@ -385,6 +473,42 @@ export function useBPlusRender(
     pointRootRef.current = pRoot as HPN;
     pointNodesRef.current = nodesP as HPN[];
 
+    // Guard ultra-defensivo: raíz “vacía” (no debería pasar si el modelo está bien)
+    const emptyTree =
+      nodesP.length === 1 &&
+      (nodesP[0].data.keys?.length ?? 0) === 0 &&
+      (!nodesP[0].children || nodesP[0].children.length === 0);
+
+    if (emptyTree) {
+      linksLayer.selectAll("*").remove();
+      nodesLayer.selectAll("*").remove();
+      svg
+        .selectAll<
+          SVGGElement,
+          unknown
+        >("g.bp-insert-overlay, g.bp-delete-overlay, g.bp-search-overlay, g.bp-range-overlay, g.bp-scanfrom-overlay, g.bp-inorder-overlay, g.bp-level-overlay")
+        .interrupt()
+        .remove();
+      nodePositions.clear();
+      seqPositions.clear();
+
+      const width = Math.max(
+        HUD.x + hudW + SAFE_GAP,
+        margin.left + margin.right
+      );
+      const height =
+        margin.top +
+        margin.bottom +
+        extraTop +
+        SVG_NARY_VALUES.SEQUENCE_PADDING +
+        SVG_NARY_VALUES.SEQUENCE_HEIGHT;
+
+      d3.select(svgEl).attr("width", width).attr("height", height);
+      dbg("render base: árbol vacío (post-layout) -> purga y retorno");
+      return;
+    }
+
+    // Bounds y offsets
     const minXv = d3.min(
       nodesP,
       (d) => d.x - computeNodeWidth(d.data.keys ?? []) / 2
@@ -396,34 +520,60 @@ export function useBPlusRender(
     const minYv = d3.min(nodesP, (d) => d.y - nodeH / 2)!;
     const maxYv = d3.max(nodesP, (d) => d.y + nodeH / 2)!;
 
-    const svg = d3.select(svgRef.current);
-    ensureBPlusDefs(svg);
-    ensureRangeDefs(svg);
-
-    const order = treeData?.order;
-    const tVal = order && order > 0 ? Math.max(2, Math.floor(order / 2)) : 2;
-    const { w: hudW, h: hudH } = writeDegreeBadge(svg, tVal, order);
-    const SAFE_GAP = 10;
-    const extraTop = hudH + SAFE_GAP;
-    const extraRight = HUD.x + hudW + SAFE_GAP;
-
     treeOffset.x = margin.left - minXv;
     treeOffset.y = margin.top - minYv + extraTop;
 
-    // contenedores base
-    let treeG = svg.select<SVGGElement>("g.tree-container");
-    if (treeG.empty()) treeG = svg.append("g").classed("tree-container", true);
     treeG.attr("transform", `translate(${treeOffset.x},${treeOffset.y})`);
+    overlayRoot.attr("transform", treeG.attr("transform") || null);
 
-    let linksLayer = treeG.select<SVGGElement>("g.links-layer");
-    if (linksLayer.empty())
-      linksLayer = treeG.append("g").attr("class", "links-layer");
+    // Sube overlays creados en treeG (por si acaso)
+    svg
+      .selectAll<
+        SVGGElement,
+        unknown
+      >("g.bp-insert-overlay, g.bp-delete-overlay, g.bp-search-overlay, g.bp-range-overlay, g.bp-scanfrom-overlay, g.bp-inorder-overlay, g.bp-level-overlay")
+      .each(function () {
+        overlayRoot.node()?.appendChild(this as any);
+      });
 
-    let nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
-    if (nodesLayer.empty())
-      nodesLayer = treeG.append("g").attr("class", "nodes-layer");
+    // Purga SUAVE de overlays si no hay animaciones
+    if (!isAnimating) {
+      overlayRoot
+        .selectAll<SVGGElement, unknown>(
+          "g.bp-insert-overlay, g.bp-delete-overlay, g.bp-search-overlay, g.bp-range-overlay, g.bp-scanfrom-overlay, g.bp-inorder-overlay, g.bp-level-overlay"
+        )
+        .filter(function () {
+          const el = this as SVGGElement;
+          return el.childElementCount === 0 && !el.hasAttribute("data-probe");
+        })
+        .remove();
+    }
 
-    // contenedor secuencia
+    // Z-order
+    treeG.raise();
+    overlayRoot.raise();
+    seqG.lower();
+
+    // Posiciones cacheadas
+    nodePositions.clear();
+    nodesP.forEach((d) => {
+      nodePositions.set(d.data.id, { x: d.x, y: d.y });
+    });
+
+    // Dibujo base
+    drawBPlusNodesRect(nodesLayer, nodesP as any, nodePositions);
+    drawBPlusLinks(linksLayer, pRoot as any, nodePositions);
+
+    // Limpieza de fantasmas
+    const validIds = new Set(nodesP.map((d) => d.data.id));
+    cleanupGhostNodes(treeG, validIds);
+    linksLayer.lower();
+    nodesLayer.raise();
+    treeG
+      .selectAll<SVGPathElement, unknown>(".link, path.link, line.link")
+      .lower();
+
+    // Secuencia inferior
     const nSlotsAprox = nodesP.reduce(
       (acc, n) => acc + (n.data.keys?.length ?? 0),
       0
@@ -441,72 +591,9 @@ export function useBPlusRender(
       SVG_NARY_VALUES.SEQUENCE_PADDING +
       SVG_NARY_VALUES.SEQUENCE_HEIGHT;
 
-    let seqG = svg.select<SVGGElement>("g.seq-container");
-    if (seqG.empty()) seqG = svg.append("g").classed("seq-container", true);
     seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
-    // ───────────────── Overlay root en la raíz del SVG ─────────────────
-    let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
-    if (overlayRoot.empty()) {
-      overlayRoot = svg
-        .append("g")
-        .attr("class", "bp-overlays-root")
-        .style("pointer-events", "none")
-        .style("isolation", "isolate")
-        .style("mix-blend-mode", "normal")
-        .style("filter", "none")
-        .style("clip-path", "none")
-        .style("mask", "none");
-    }
-    // espejo el mismo translate que treeG, para compartir coordenadas
-    overlayRoot.attr("transform", treeG.attr("transform") || null);
-
-    // si algún overlay fue creado en treeG, súbelo a overlayRoot
-    svg
-      .selectAll<
-        SVGGElement,
-        unknown
-      >("g.bp-insert-overlay, g.bp-delete-overlay, g.bp-search-overlay, g.bp-range-overlay, g.bp-scanfrom-overlay, g.bp-inorder-overlay, g.bp-level-overlay")
-      .each(function () {
-        overlayRoot.node()?.appendChild(this as any);
-      });
-
-    // Purga SUAVE (solo cuando NO estamos animando):
-    if (!isAnimating) {
-      overlayRoot
-        .selectAll<SVGGElement, unknown>(OVERLAYS_SELECTOR)
-        .filter(function () {
-          const el = this as SVGGElement;
-          // Borra solo cáscaras (sin hijos) y que NO estén marcadas como "en uso"
-          return el.childElementCount === 0 && !el.hasAttribute("data-probe");
-        })
-        .remove();
-    }
-
-    // Z-order
-    treeG.raise();
-    overlayRoot.raise();
-    seqG.lower();
-
-    // posiciones
-    nodePositions.clear();
-    nodesP.forEach((d) => {
-      nodePositions.set(d.data.id, { x: d.x, y: d.y });
-    });
-
-    // dibujo base
-    drawBPlusNodesRect(nodesLayer, nodesP as any, nodePositions);
-    drawBPlusLinks(linksLayer, pRoot as any, nodePositions);
-
-    // limpieza de fantasmas y orden de capas
-    const validIds = new Set(nodesP.map((d) => d.data.id));
-    cleanupGhostNodes(treeG, validIds);
-    linksLayer.lower();
-    nodesLayer.raise();
-    treeG
-      .selectAll<SVGPathElement, unknown>(".link, path.link, line.link")
-      .lower();
-
+    // Tamaño del SVG
     const treeWidthVisual = maxXv - minXv + margin.left + margin.right;
     const width = Math.max(treeWidthVisual, seqWidth, extraRight);
     const height =
@@ -518,15 +605,14 @@ export function useBPlusRender(
       SVG_NARY_VALUES.SEQUENCE_PADDING +
       SVG_NARY_VALUES.SEQUENCE_HEIGHT;
 
-    d3.select(svgRef.current).attr("width", width).attr("height", height);
+    d3.select(svgEl).attr("width", width).attr("height", height);
 
     dbg("render base: done", { width, height, nodes: nodesP.length });
-  }, [root, treeData, nodePositions, seqPositions, isAnimating]);
+  }, [root, treeData?.order, nodePositions, seqPositions, isAnimating]);
 
   // Cache de nodos con coordenadas (HPN) para animaciones que lo requieren
   const pointRootRef = useRef<HPN | null>(null);
   const pointNodesRef = useRef<HPN[]>([]);
-
 
   /* ───────── Limpieza robusta ante nuevas operaciones (solo flanco de subida) ───────── */
   useEffect(() => {
@@ -626,8 +712,11 @@ export function useBPlusRender(
   /* ─────────────────────────── Inserción ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
-    const value = query.toInsert;
-    if (value == null) return;
+
+    const raw = query.toInsert;
+    if (raw == null) return;
+    const value = toNum(raw);
+    if (!Number.isFinite(value)) return;
 
     if (lastInsertRef.current === value) {
       dbg("insert: ignored (same key)", { value });
@@ -645,7 +734,6 @@ export function useBPlusRender(
     const svg = d3.select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    // asegura overlay root y probe dentro de él
     let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
     if (overlayRoot.empty()) {
       overlayRoot = svg
@@ -704,8 +792,11 @@ export function useBPlusRender(
   /* ─────────────────────────── Eliminación ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
-    const value = query.toDelete;
-    if (value == null) return;
+
+    const raw = query.toDelete;
+    if (raw == null) return;
+    const value = toNum(raw);
+    if (!Number.isFinite(value)) return;
 
     if (lastDeleteRef.current === value) {
       dbg("delete: ignored (same key)", { value });
@@ -733,13 +824,15 @@ export function useBPlusRender(
     dbg("delete: calling animateBPlusDelete", {
       leafId: hit.node.data.id,
       slotIndex: hit.keyIndex,
+      keyValue: value, // 👈 nuevo
     });
 
     animateBPlusDelete(
       treeG,
       {
         leafId: hit.node.data.id,
-        slotIndex: hit.keyIndex,
+        slotIndex: hit.keyIndex, // fallback por si hiciera falta
+        keyValue: value, // 👈 targeting estable por valor
         rootHierarchy: root as any,
         nodesData: currentNodes as any,
       },
@@ -984,11 +1077,14 @@ export function useBPlusRender(
     setAnimating,
   ]);
 
-  /* ─────────────────────────── Búsqueda (con recorrido completo) ─────────────────────────── */
+  /* ─────────────────────────── Búsqueda ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
-    const value = query.toSearch;
-    if (value == null) return;
+
+    const raw = query.toSearch;
+    if (raw == null) return;
+    const value = toNum(raw);
+    if (!Number.isFinite(value)) return;
 
     if (lastSearchRef.current === value) {
       dbg("search: ignored (same key)", { value });

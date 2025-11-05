@@ -3226,7 +3226,8 @@ export async function animateBPlusDelete(
   treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
   params: {
     leafId: string;
-    slotIndex: number | null;
+    slotIndex: number | null; // fallback legacy
+    keyValue?: number;        // 👈 NUEVO: valor exacto del slot a borrar
     rootHierarchy: HierarchyNode<BPlusHierarchy>;
     nodesData: HierarchyNode<BPlusHierarchy>[];
   },
@@ -3242,6 +3243,7 @@ export async function animateBPlusDelete(
   try {
     setIsAnimating?.(true);
 
+    // asegura layout/posiciones antes de animar
     settleBPlusNodes(
       treeG,
       params.rootHierarchy,
@@ -3258,6 +3260,7 @@ export async function animateBPlusDelete(
 
     const target = byId.get(params.leafId);
 
+    // atenuo todo
     const all = treeG.selectAll<SVGGElement, unknown>("g.node");
     await all
       .transition()
@@ -3265,6 +3268,7 @@ export async function animateBPlusDelete(
       .style("opacity", SRCH.fadeOthers)
       .end();
 
+    // ilumino el path hasta la hoja destino
     if (target) {
       const pathNodes = params.rootHierarchy.path(target);
       const buildPath = bPlusPathBuilderFactory(
@@ -3315,32 +3319,66 @@ export async function animateBPlusDelete(
       }
     }
 
-    if (typeof params.slotIndex === "number" && target) {
-      await animateSlotCrumble(treeG, params.leafId, params.slotIndex);
-    } else {
-      const gLeaf = treeG.select<SVGGElement>(`g#${cssEsc(params.leafId)}`);
-      const body =
-        gLeaf.select<SVGRectElement>("rect.bp-body").node() ||
-        gLeaf.select<SVGRectElement>("rect").node();
-      if (body) {
-        const sel = d3.select(body as SVGRectElement);
-        await sel
+    // ── BORRADO DEL SLOT ─────────────────────────────────────────────
+    if (target) {
+      let slotSel:
+        | d3.Selection<SVGGElement, unknown, null, undefined>
+        | null = null;
+
+      // 1) targeting por VALOR estable: g id = `${leafId}#k${keyValue}`
+      if (typeof params.keyValue === "number" && Number.isFinite(params.keyValue)) {
+        const slotIdByValue = `${params.leafId}#k${params.keyValue}`;
+        const byValue = treeG.select<SVGGElement>(`g#${cssEsc(slotIdByValue)}`);
+        if (!byValue.empty()) slotSel = byValue;
+      }
+
+      // 2) fallback legacy por ÍNDICE dentro de la hoja
+      if (!slotSel && typeof params.slotIndex === "number") {
+        const gLeaf = treeG.select<SVGGElement>(`g#${cssEsc(params.leafId)}`);
+        const slots = gLeaf.selectAll<SVGGElement, unknown>("g.slot");
+        const node = (slots.nodes()[params.slotIndex] as SVGGElement) ?? null;
+        if (node) slotSel = d3.select<SVGGElement, unknown>(node);
+      }
+
+      if (slotSel && !slotSel.empty()) {
+        // crumble inline y remove()
+        await slotSel
           .transition()
           .duration(220)
           .ease(BP_ANIM.easeBack)
           .attrTween("transform", () =>
-            d3.interpolateString("scale(1.0)", "scale(0.92)")
+            d3.interpolateString("scale(1)", "scale(0.85)")
           )
+          .style("opacity", 0)
           .end();
-        await sel
-          .transition()
-          .duration(200)
-          .ease(BP_ANIM.easeOut)
-          .attr("transform", "scale(1)")
-          .end();
+        slotSel.remove();
+      } else {
+        // si no encontramos el slot, pequeño “bump” en la hoja
+        const gLeaf = treeG.select<SVGGElement>(`g#${cssEsc(params.leafId)}`);
+        const body =
+          gLeaf.select<SVGRectElement>("rect.bp-body").node() ||
+          gLeaf.select<SVGRectElement>("rect").node();
+        if (body) {
+          const sel = d3.select(body as SVGRectElement);
+          await sel
+            .transition()
+            .duration(220)
+            .ease(BP_ANIM.easeBack)
+            .attrTween("transform", () =>
+              d3.interpolateString("scale(1.0)", "scale(0.92)")
+            )
+            .end();
+          await sel
+            .transition()
+            .duration(200)
+            .ease(BP_ANIM.easeOut)
+            .attr("transform", "scale(1)")
+            .end();
+        }
       }
     }
 
+    // limpiar overlay y restaurar opacidad
     overlay.selectAll("*").remove();
     await treeG
       .selectAll<SVGGElement, unknown>("g.node")
@@ -3353,6 +3391,7 @@ export async function animateBPlusDelete(
     setIsAnimating?.(false);
   }
 }
+
 
 /* ─────────────────────────── Path builder “entre claves” (B+) ─────────────────────────── */
 export function bPlusPathBuilderFactory(
@@ -3682,126 +3721,7 @@ async function animateSlotGrow(
   ]);
 }
 
-/* “Crumble & ripple & close-gap” */
-async function animateSlotCrumble(
-  treeG: d3.Selection<SVGGElement, unknown, null, undefined>,
-  nodeId: string,
-  slotIndex: number
-) {
-  const gLeaf = treeG.select<SVGGElement>(`g#${cssEsc(nodeId)}`);
-  const slotG = gLeaf.select<SVGGElement>(
-    slotGroupSelInLeaf(nodeId, slotIndex)
-  );
-  const box = slotG.select<SVGRectElement>("rect.slot-box");
-  const txt = slotG.select<SVGTextElement>("text.slot-text");
-  if (box.empty()) return;
 
-  const gw = +box.attr("width");
-  const gh = +box.attr("height");
-
-  const origW = box.attr("stroke-width");
-  await box
-    .transition()
-    .duration(120)
-    .attr("stroke", "#f87171")
-    .attr("stroke-width", (+origW || 1.1) + 1.1)
-    .end();
-
-  const cx = gw / 2;
-  const cy = gh / 2;
-  const N = 10;
-  const particles = d3.range(N).map((i) => ({
-    angle: (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.8,
-    r: 8 + Math.random() * 10,
-    size: 0.9 + Math.random() * 1.2,
-    vy: -4 - Math.random() * 4,
-  }));
-
-  const dust = slotG
-    .selectAll("circle.slot-dust")
-    .data(particles)
-    .enter()
-    .append("circle")
-    .attr("class", "slot-dust")
-    .attr("cx", cx)
-    .attr("cy", cy)
-    .attr("r", (d) => d.size)
-    .attr("fill", "#fecaca")
-    .attr("opacity", 0);
-
-  await Promise.all([
-    txt.transition().duration(160).style("opacity", 0).end(),
-    dust
-      .transition()
-      .duration(260)
-      .ease(d3.easeCubicOut)
-      .attr("opacity", 0.95)
-      .attr("cx", (d) => cx + Math.cos(d.angle) * d.r)
-      .attr("cy", (d) => cy + Math.sin(d.angle) * d.r + d.vy)
-      .end(),
-  ]);
-
-  const ripple = slotG
-    .append("circle")
-    .attr("class", "slot-ripple")
-    .attr("cx", cx)
-    .attr("cy", cy)
-    .attr("r", 0)
-    .attr("fill", "none")
-    .attr("stroke", "#f87171")
-    .attr("stroke-width", 1.4)
-    .style("opacity", 0.55);
-
-  ripple
-    .transition()
-    .duration(260)
-    .ease(d3.easeCubicOut)
-    .attr("r", Math.max(gw, gh))
-    .style("opacity", 0)
-    .remove();
-
-  await box
-    .transition()
-    .duration(220)
-    .ease(d3.easeCubicOut)
-    .attr("x", gw / 2)
-    .attr("width", 0)
-    .attr("stroke-width", 0)
-    .end();
-
-  dust.transition().duration(200).style("opacity", 0).remove();
-
-  slotG.style("opacity", 0);
-
-  const nextG = gLeaf.select<SVGGElement>(
-    slotGroupSelInLeaf(nodeId, slotIndex + 1)
-  );
-  let gap = 0;
-  if (!nextG.empty()) {
-    const { x: xCur } = getTranslateXY(slotG);
-    const { x: xNext } = getTranslateXY(nextG);
-    gap = Math.max(0, xNext - xCur - gw);
-  }
-  const dx = gw + gap;
-
-  const moves: Array<Promise<any>> = [];
-  for (let k = slotIndex + 1; ; k++) {
-    const gK = treeG.select<SVGGElement>(
-      `g#${cssEsc(nodeId)} g.slots g#${cssEsc(nodeId)}#k${k}`
-    );
-    if (gK.empty()) break;
-    const { x, y } = getTranslateXY(gK);
-    moves.push(
-      gK
-        .transition()
-        .duration(280)
-        .ease(d3.easeCubicOut)
-        .attr("transform", `translate(${x - dx}, ${y})`)
-        .end()
-    );
-  }
-  await Promise.all(moves);
-}
 
 /** bbox absoluto (coordenadas del treeG) de la banda que cubre [i0..i1] en una hoja. */
 function bandBBoxForSlotRange(

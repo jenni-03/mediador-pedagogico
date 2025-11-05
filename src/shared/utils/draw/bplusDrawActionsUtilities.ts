@@ -623,13 +623,13 @@ export function drawBPlusNodesRect(
 
     const slotSel = slotsG
       .selectAll<SVGGElement, number>("g.slot")
-      .data(keys, (_: number, i: number) => i as any);
+      .data(keys, (k: number) => `k-${k}`);
 
     const slotEnter = slotSel
       .enter()
       .append("g")
       .attr("class", "slot")
-      .attr("id", (_: number, i: number) => `${d.data.id}#k${i}`);
+      .attr("id", (k: number) => `${d.data.id}#k${k}`)
 
     slotEnter
       .append("rect")
