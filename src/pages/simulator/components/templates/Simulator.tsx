@@ -1,5 +1,5 @@
 // src/pages/simulator/components/organisms/Simulator.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../molecules/Header";
 import { ConsoleComponent } from "../atoms/ConsoleComponent";
 import { DataStructureInfo } from "../atoms/DataStructureInfo";
@@ -14,6 +14,18 @@ import { createBus } from "../../../../shared/events/eventBus";
 import { BusProvider } from "../../../../shared/context/BusProvider";
 import { delay } from "../../../../shared/utils/simulatorUtils";
 
+// tipo local laxo para error (temporal)
+type LooseError =
+  | { id: number; message: string }
+  | { id: number; message: string; op: string; planId?: string | null }
+  | null
+  | undefined;
+
+// envoltorio local que solo relaja el prop error (temporal)
+type LocalSimulatorProps<T extends string> = Omit<SimulatorProps<T>, "error"> & {
+  error?: LooseError;
+};
+
 export function Simulator<T extends string>({
     structureName,
     structureType,
@@ -21,7 +33,7 @@ export function Simulator<T extends string>({
     actions,
     error, // error proveniente del hook de la estructura.
     children,
-}: SimulatorProps<T>) {
+}: LocalSimulatorProps<T>) {
     const [executionCode, setExecutionCode] = useState<{
         id: number;
         lines: string[];
@@ -55,11 +67,15 @@ export function Simulator<T extends string>({
         [pageTitle]
     );
 
+    // última operación ejecutada para completar error.op si falta (temporal)
+    const lastOpRef = useRef<string>("unknown");
+
     const handleCommand = (command: string[], isValid: boolean) => {
         if (!isValid) return;
 
         // separar acción y argumentos
         const action = command[0];
+        lastOpRef.current = action;
         const rawArgs = command.slice(1);
 
         // aplanar si vino como único array: ['insertChild', [1,25,0]] -> [1,25,0]
@@ -169,27 +185,36 @@ export function Simulator<T extends string>({
         };
     }, [bus, operationsCode]);
 
-    useEffect(() => {
-        if (!error) return;
-        if (!error.planId) return;
+    // normaliza el error para garantizar { id, message, op, planId }
+    const normalizedError = useMemo(() => {
+        const e = error as LooseError;
+        if (!e) return null;
+        const op = (typeof (e as any).op === "string" && (e as any).op) || lastOpRef.current || "unknown";
+        const planId = (e as any).planId ?? null;
+        return { id: (e as any).id, message: (e as any).message, op, planId };
+    }, [error, lastOpRef.current]);
 
-        const script = operationsCode[error.op];
-        const plan = script?.errorPlans?.[error.planId];
+    useEffect(() => {
+        if (!normalizedError) return;
+        if (!normalizedError.planId) return;
+
+        const script = operationsCode[normalizedError.op];
+        const plan = script?.errorPlans?.[normalizedError.planId];
         if (!script || !plan) return;
 
         (async () => {
-            bus.emit("op:start", { op: error.op });
+            bus.emit("op:start", { op: normalizedError.op });
             for (const step of plan) {
                 const idx = script.labels[step.lineLabel];
                 bus.emit("step:progress", {
-                    stepId: `${error.op}:error`,
+                    stepId: `${normalizedError.op}:error`,
                     lineIndex: idx,
                 });
                 await delay(step.hold);
             }
-            bus.emit("op:done", { op: error.op });
+            bus.emit("op:done", { op: normalizedError.op });
         })();
-    }, [error?.id, bus, operationsCode]);
+    }, [normalizedError?.id, normalizedError?.planId, normalizedError?.op, bus, operationsCode]);
 
     return (
         <BusProvider bus={bus}>
@@ -253,7 +278,7 @@ export function Simulator<T extends string>({
                                 historyMaxHeight={180}
                                 structureType={structureName} // usa la clave técnica para prefijos/reglas
                                 onCommand={handleCommand}
-                                error={error}
+                                error={normalizedError}
                                 structurePrueba={structure}
                             />
 
