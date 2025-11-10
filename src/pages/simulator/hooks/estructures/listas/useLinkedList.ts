@@ -1,242 +1,186 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations, LinkedListInterface } from "../../../../../types";
 
 export function useLinkedList<T extends LinkedListInterface<number>>(structure: T) {
-    // Estado para manejar la lista
+    // Estado para gestionar la lista
     const [list, setList] = useState(structure);
 
-    // Estado para manejar el error
-    const [error, setError] = useState<{ message: string, id: number } | null>(null);
+    // Estado para gestionar el error
+    const [error, setError] = useState<{ message: string, id: number, op: string, planId?: string | null } | null>(null);
 
     // Estado para gestionar la operación solicitada por el usuario
     const [query, setQuery] = useState<BaseQueryOperations<"lista_enlazada">>({
         toAddFirst: null,
         toAddLast: null,
-        toAddAt: [],
+        toAddAt: null,
         toDeleteFirst: null,
         toDeleteLast: null,
-        toDeleteAt: [],
+        toDeleteAt: null,
         toSearch: null,
         toClear: false
     });
 
-    // Operación para añadir al inicio
-    const addElementFirst = (value: number) => {
+    // Operación para añadir un elemento al inicio
+    const addElementFirst = useCallback((value: number) => {
         try {
-            // Clonar la lista para garantizar la inmutabilidad del estado
             const clonedList = list.clonar();
-
-            // Obtener la información del nodo insertado
             const insertedNode = clonedList.insertarAlInicio(value);
-
-            // Actualizar el estado de la lista
             setList(clonedList);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toAddFirst: insertedNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "insertFirst" });
         }
-    }
+    }, [list]);
 
-    // Operación para añadir al final
-    const addElementLast = (value: number) => {
+    // Operación para añadir un elemento al final
+    const addElementLast = useCallback((value: number) => {
         try {
-            // Clonar la lista para garantizar la inmutabilidad del estado
             const clonedList = list.clonar();
-
-            // Obtener la información del nodo insertado
             const insertedNode = clonedList.insertarAlFinal(value);
-
-            // Actualizar el estado de la lista
             setList(clonedList);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toAddLast: insertedNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "insertLast" });
         }
-    }
+    }, [list]);
 
-    // Operación para añadir en una posición específica
-    const addElementAtPosition = (value: number, position: number) => {
+    // Operación para añadir un elemento en una posición específica
+    const addElementAtPosition = useCallback((value: number, position: number) => {
         try {
-            // Clonar la lista para garantizar la inmutabilidad del estado
             const clonedList = list.clonar();
-
-            // Obtener la información del nodo insertado
             const insertedNode = clonedList.insertarEnPosicion(value, position);
-
-            // Actualizar el estado de la lista
             setList(clonedList);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toAddAt: [insertedNode.getId(), position]
+                toAddAt: { nodeId: insertedNode.getId(), position }
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "insertAt", planId: error?.code ?? null });
         }
-    }
+    }, [list]);
 
-    // Operación para eliminar al inicio
-    const removeFirstElement = () => {
+    // Operación para eliminar un elemento al inicio
+    const removeFirstElement = useCallback(() => {
         try {
-            // Clonar la lista para garantizar la inmutabilidad del estado
             const clonedList = list.clonar();
-
-            // Obtener la información del nodo eliminado
             const deletedNode = clonedList.eliminarAlInicio();
-
-            // Actualizar el estado de la lista
             setList(clonedList);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toDeleteFirst: deletedNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "removeFirst", planId: error?.code ?? null });
         }
-    }
+    }, [list]);
 
-    // Operación para eliminar al final
-    const removeLastElement = () => {
+    // Operación para eliminar un elemento al final
+    const removeLastElement = useCallback(() => {
         try {
-            // Clonar la lista para garantizar la inmutabilidad del estado
             const clonedList = list.clonar();
-
-            // Obtener la información del nodo eliminado
             const deletedNode = clonedList.eliminarAlFinal();
-
-            // Actualizar el estado de la lista
             setList(clonedList);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toDeleteLast: deletedNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "removeLast", planId: error?.code ?? null });
         }
-    }
+    }, [list]);
 
-    // Operación para eliminar en una posición específica
-    const removeElementAtPosition = (position: number) => {
+    // Operación para eliminar un elemento en una posición específica
+    const removeElementAtPosition = useCallback((position: number) => {
         try {
-            // Clonar la lista para garantizar la inmutabilidad del estado
             const clonedList = list.clonar();
-
-            // Obtener la información del nodo eliminado
             const deletedNode = clonedList.eliminarEnPosicion(position);
-
-            // Actualizar el estado de la lista
             setList(clonedList);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toDeleteAt: [deletedNode.getId(), position]
+                toDeleteAt: { nodeId: deletedNode.getId(), position }
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "removeAt", planId: error?.code ?? null });
         }
-    }
+    }, [list]);
 
     // Operación para buscar un elemento
-    const searchElement = (value: number) => {
+    const searchElement = useCallback((value: number) => {
         try {
-            // Obtener la información del nodo eliminado
-            if (!list.buscar(value)) {
-                throw new Error("No se encontró el elemento en la lista.")
-            }
-
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toSearch: value
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "search" });
         }
-    }
+    }, []);
 
     // Operación para vaciar la lista
-    const clearList = () => {
-        // Clonar la cola para asegurar la inmutabilidad del estado
+    const clearList = useCallback(() => {
         const clonedList = list.clonar();
-
-        // Vaciar la cola
         clonedList.vaciar();
-
-        // Actualizar el estado de la lista
         setList(clonedList);
 
-        // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true
         }));
-    }
+    }, [list]);
 
     // Función de restablecimiento de las queries del usuario
-    const resetQueryValues = () => {
+    const resetQueryValues = useCallback(() => {
         setQuery({
             toAddFirst: null,
             toAddLast: null,
-            toAddAt: [],
+            toAddAt: null,
             toDeleteFirst: null,
             toDeleteLast: null,
-            toDeleteAt: [],
+            toDeleteAt: null,
             toSearch: null,
             toClear: false
         })
-    }
+    }, []);
+
+    // Objeto de operaciones estable
+    const operations = useMemo(() => ({
+        addElementFirst,
+        addElementLast,
+        addElementAtPosition,
+        removeFirstElement,
+        removeLastElement,
+        removeElementAtPosition,
+        searchElement,
+        clearList,
+        resetQueryValues
+    }), [
+        addElementFirst, addElementLast, addElementAtPosition, removeFirstElement,
+        removeLastElement, removeElementAtPosition, searchElement, clearList, resetQueryValues
+    ]);
 
     return {
         list,
         query,
         error,
-        operations: {
-            addElementFirst,
-            addElementLast,
-            addElementAtPosition,
-            removeFirstElement,
-            removeLastElement,
-            removeElementAtPosition,
-            searchElement,
-            clearList,
-            resetQueryValues
-        }
+        operations
     }
 }

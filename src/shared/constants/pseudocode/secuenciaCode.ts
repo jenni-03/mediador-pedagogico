@@ -105,7 +105,7 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
   delete: {
     lines: [
       `/**
- * Método que elimina el elemento de la secuencia en la posición especificadaa.
+ * Método que elimina el elemento de la secuencia en la posición especificada.
  * @param pos Índice del elemento a eliminar.
  * @throws RuntimeException si la secuencia está vacía.
  * @throws RuntimeException si la posición es inválida (menor que 0 o mayor/igual al tamaño actual).
