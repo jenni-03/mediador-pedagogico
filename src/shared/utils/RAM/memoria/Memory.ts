@@ -30,6 +30,20 @@ export interface Snapshot {
   capacity: number;
 }
 
+export type TypeLikeSummary =
+  | { category: "prim"; type: PrimitiveType }
+  | { category: "string" }
+  | { category: "array-prim"; elem: PrimitiveType }
+  | { category: "array-string" }
+  | {
+      category: "array-object";
+      schema: Array<{ key: string; type: PrimitiveType | "ptr32" }>;
+    }
+  | {
+      category: "object";
+      schema: Array<{ key: string; type: PrimitiveType | "ptr32" }>;
+    };
+
 export class Memory {
   private ram: ByteStore;
   private stack = new Stack();
@@ -916,6 +930,66 @@ export class Memory {
   }
   getStack() {
     return this.stack;
+  }
+
+  /** ¿Existe una variable (en cualquier frame visible)? */
+  hasVar(name: string): boolean {
+    return !!this.stack.resolve(name);
+  }
+
+  /** Convierte un MemType de objeto a un schema simplificado (ptr32 para no-prims) */
+  private memTypeToSchema(
+    mt: MemType
+  ): Array<{ key: string; type: PrimitiveType | "ptr32" }> | null {
+    if (mt.tag !== "object" || !Array.isArray(mt.fields)) return null;
+    const out: Array<{ key: string; type: PrimitiveType | "ptr32" }> = [];
+    for (const f of mt.fields) {
+      if (f.type.tag === "prim") out.push({ key: f.key, type: f.type.name });
+      else out.push({ key: f.key, type: "ptr32" });
+    }
+    return out;
+  }
+  /** Firma de tipo en vivo de una variable para chequeos del intérprete/UI. */
+  getVarTypeSummary(name: string): TypeLikeSummary | null {
+    const slot = this.stack.resolve(name);
+    if (!slot) return null;
+
+    if (slot.kind === "prim") {
+      return { category: "prim", type: slot.type };
+    }
+
+    // referencia
+    if (slot.refAddr === 0) return null;
+    const e = this.heap.get(slot.refAddr);
+    if (!e) return null;
+
+    if (e.kind === "string") return { category: "string" };
+
+    if (e.kind === "array") {
+      if (e.meta.tag === "array-inline-prim") {
+        return { category: "array-prim", elem: e.meta.elemType };
+      }
+      if (e.meta.tag === "array-ref32") {
+        const elem = e.meta.elem;
+        if (elem.tag === "prim" && elem.name === "string") {
+          return { category: "array-string" };
+        }
+        const schemaFromMemType = this.memTypeToSchema(elem);
+        if (schemaFromMemType) {
+          return { category: "array-object", schema: schemaFromMemType };
+        }
+        return { category: "array-object", schema: [] };
+      }
+      return null;
+    }
+
+    if (e.kind === "object") {
+      const info = this.getObjectInfo(slot.refAddr);
+      if (info) return { category: "object", schema: info.schema };
+      return { category: "object", schema: [] };
+    }
+
+    return null;
   }
 
   getRefOwners(addr: number): Array<{ frame: string; name: string }> {

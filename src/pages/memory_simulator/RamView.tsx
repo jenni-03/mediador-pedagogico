@@ -5,14 +5,14 @@ export type ByteRange = {
   start: number;
   size: number;
   label?: string;
-  tone: "header" | "data" | "slot" | "object";
-  emph?: boolean; // énfasis (selección)
+  tone: "header" | "prim" | "array" | "string" | "object" | "slot" | "data";
+  emph?: boolean;
 };
 export type UiRamSnapshot = {
   baseAddr: number;
   bytes: Uint8Array;
-  bytesPerRow: 16 | 8 | 32; // ← úsalo en vez de 16 fijo
-  groupSize: 1 | 2 | 4 | 8; // ← úsalo en vez de 4 fijo
+  bytesPerRow: 16 | 8 | 32;
+  groupSize: 1 | 2 | 4 | 8;
   ranges: ByteRange[];
   activeAddr?: number;
   used?: number;
@@ -21,8 +21,10 @@ export type UiRamSnapshot = {
 
 /* ============================== Constantes de layout ============================== */
 const ADDR_COL = "11ch";
-const CELL_RESP = "clamp(1.35rem, 1.0vw + .75rem, 2.0rem)";
 const GAP = "0.28rem";
+const ROWS_PER_CHIP = 8;
+const PINS = 48;
+const PLACEHOLDER_ROWS = 6;
 
 /* ============================== Utils ============================== */
 const toHex2 = (n: number) => n.toString(16).padStart(2, "0");
@@ -45,6 +47,26 @@ function splitRows(bytes: Uint8Array, baseAddr: number, bytesPerRow: number) {
   }
   return rows;
 }
+
+/* ---------- Prioridad local de rangos (robusto ante snapshots viejos) ---------- */
+const toneOrder = (t?: ByteRange["tone"]) => (t === "header" ? 1 : 0);
+const prioKey = (r: ByteRange) =>
+  [r.emph ? 0 : 1, r.size >>> 0, toneOrder(r.tone), r.start >>> 0] as const;
+
+function sortRanges(ranges: ByteRange[]): ByteRange[] {
+  const copy = ranges.slice();
+  copy.sort((a, b) => {
+    const A = prioKey(a);
+    const B = prioKey(b);
+    if (A[0] !== B[0]) return A[0] - B[0];
+    if (A[1] !== B[1]) return A[1] - B[1];
+    if (A[2] !== B[2]) return A[2] - B[2];
+    return A[3] - B[3];
+  });
+  return copy;
+}
+
+/* Lookup helpers siempre sobre rangos ya ordenados */
 function labelAt(addr: number, ranges: ByteRange[]): string | undefined {
   for (const r of ranges) {
     const a0 = r.start,
@@ -74,16 +96,32 @@ function emphAt(addr: number, ranges: ByteRange[]): boolean {
   return false;
 }
 
-// Fondo de columnas agrupadas: línea sutil cada `groupSize` celdas
+/* Normalizador de tono */
+type Tone = NonNullable<ByteRange["tone"]>;
+const normalizeTone = (t: ByteRange["tone"] | undefined): Tone => {
+  switch (t) {
+    case "header":
+    case "prim":
+    case "array":
+    case "string":
+    case "object":
+    case "slot":
+    case "data":
+      return t;
+    default:
+      return "slot";
+  }
+};
+
+// Fondo de columnas agrupadas
 function groupBgCSS(bytesPerRow: number, groupSize: number) {
-  // ancho de grupo en porcentaje del contenedor de 0..100%
   const w = `calc(${groupSize} * 100% / ${bytesPerRow} - 1px)`;
-  return `repeating-linear-gradient(90deg, transparent, transparent ${w}, rgba(255,255,255,.09) 0, rgba(255,255,255,.09) 1px)`;
+  return `repeating-linear-gradient(90deg, transparent, transparent ${w}, rgba(255,255,255,.08) 0, rgba(255,255,255,.08) 1px)`;
 }
 
-/* Paleta por tono (neón sutil) */
+/* Paleta por tono */
 const TONE_CLS: Record<
-  NonNullable<ByteRange["tone"]>,
+  Tone,
   { bg: string; ring: string; glow: string; text: string }
 > = {
   header: {
@@ -110,7 +148,158 @@ const TONE_CLS: Record<
     glow: "shadow-[0_0_8px_rgba(232,121,249,.35)]",
     text: "text-fuchsia-100",
   },
+  prim: {
+    bg: "bg-sky-900/35",
+    ring: "ring-sky-400/70",
+    glow: "shadow-[0_0_8px_rgba(56,189,248,.35)]",
+    text: "text-sky-100",
+  },
+  array: {
+    bg: "bg-emerald-900/35",
+    ring: "ring-emerald-400/70",
+    glow: "shadow-[0_0_8px_rgba(52,211,153,.35)]",
+    text: "text-emerald-100",
+  },
+  string: {
+    bg: "bg-indigo-900/35",
+    ring: "ring-indigo-400/70",
+    glow: "shadow-[0_0_8px_rgba(129,140,248,.35)]",
+    text: "text-indigo-100",
+  },
 };
+
+/* ============================== Decoración PCB ============================== */
+function PcbBackground() {
+  return (
+    <>
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(1200px 700px at 15% 0%, rgba(16,185,129,.10), transparent 60%), radial-gradient(1200px 700px at 85% 100%, rgba(34,197,94,.10), transparent 60%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-[0.12]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(90deg, rgba(16,185,129,.25) 0 1px, transparent 1px 24px), repeating-linear-gradient(0deg, rgba(16,185,129,.15) 0 1px, transparent 1px 24px)",
+        }}
+      />
+    </>
+  );
+}
+
+function GoldPins() {
+  return (
+    <div className="pointer-events-none absolute left-10 right-10 bottom-1 h-3 flex items-end gap-[2px]">
+      {Array.from({ length: PINS }, (_, i) => (
+        <div
+          key={i}
+          className="flex-1 h-[10px] rounded-[2px] bg-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,.6),inset_0_-1px_0_rgba(124,45,18,.5)]"
+          style={{ opacity: i % 2 === 0 ? 0.95 : 0.8, filter: "saturate(1.2)" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ============================== Empty State ============================== */
+function EmptyState({
+  baseAddr,
+  bytesPerRow,
+  groupSize,
+}: {
+  baseAddr: number;
+  bytesPerRow: number;
+  groupSize: number;
+}) {
+  return (
+    <div className="relative">
+      {/* header de columnas */}
+      <div
+        className="grid px-3 pt-2 pb-2 bg-zinc-900/70 backdrop-blur-sm"
+        style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
+      >
+        <div className="text-xs text-emerald-200/60 font-mono">Addr</div>
+        <div
+          className="grid relative pr-2"
+          style={{
+            gridTemplateColumns: `repeat(${bytesPerRow}, minmax(1rem, 1fr))`,
+            columnGap: GAP,
+          }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 right-0"
+            style={{ backgroundImage: groupBgCSS(bytesPerRow, groupSize) }}
+          />
+          {Array.from({ length: bytesPerRow }, (_, i) => (
+            <div
+              key={i}
+              className="text-[10px] md:text-[11px] font-mono text-center text-emerald-300/40"
+            >
+              {toHex2(i)}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* grid fantasma */}
+      <div className="pb-2">
+        {Array.from({ length: PLACEHOLDER_ROWS }, (_, r) => (
+          <div
+            key={r}
+            className="grid items-center px-3 py-2"
+            style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
+          >
+            <div className="font-mono text-xs">
+              <span className="inline-block px-2 py-1 rounded-lg bg-zinc-900/60 border border-emerald-900/40 text-emerald-200/50">
+                {toHex8(baseAddr + r * bytesPerRow)}
+              </span>
+            </div>
+            <div
+              className="grid pr-2"
+              style={{
+                gridTemplateColumns: `repeat(${bytesPerRow}, minmax(1rem, 1fr))`,
+                columnGap: GAP,
+              }}
+            >
+              {Array.from({ length: bytesPerRow }, (_, i) => {
+                const groupSep = i % groupSize === 0 && i !== 0;
+                return (
+                  <div
+                    key={i}
+                    className={[
+                      "h-8 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
+                      "border-emerald-900/40 text-emerald-200/25 bg-zinc-900/40",
+                      "shadow-[inset_0_1px_0_rgba(255,255,255,.04)]",
+                      groupSep ? "border-l-2 border-l-emerald-900/40" : "",
+                    ].join(" ")}
+                    aria-hidden
+                  >
+                    {toHex2(0)}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mensaje central flotante */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="rounded-xl border border-emerald-800/40 bg-zinc-950/70 px-4 py-2 shadow-lg">
+          <div className="text-sm font-mono text-emerald-200/90">
+            RAM vacía. Ejecuta un comando para ver bytes.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ============================ Componente ============================ */
 export default function RamView({ snap }: { snap: UiRamSnapshot }) {
@@ -123,53 +312,73 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
     () => splitRows(buf, baseAddr, BPR),
     [buf, baseAddr, BPR]
   );
+  const isEmpty = buf.length === 0;
 
   const usagePct =
     snap?.used != null && snap?.capacity != null
       ? clamp((snap.used / Math.max(1, snap.capacity)) * 100)
       : null;
 
+  // Rangos ordenados localmente (evita “selección de lo que no es”)
+  const sortedRanges = React.useMemo(
+    () => sortRanges(snap?.ranges ?? []),
+    [snap?.ranges]
+  );
+
+  // Agrupar filas en “chips”
+  const chips: { id: number; rows: { addr: number; slice: Uint8Array }[] }[] =
+    React.useMemo(() => {
+      if (isEmpty) return [{ id: 0, rows: [] }];
+      const out: { id: number; rows: { addr: number; slice: Uint8Array }[] }[] =
+        [];
+      for (let i = 0; i < rows.length; i += ROWS_PER_CHIP) {
+        out.push({ id: out.length, rows: rows.slice(i, i + ROWS_PER_CHIP) });
+      }
+      return out.length ? out : [{ id: 0, rows: [] }];
+    }, [rows, isEmpty]);
+
+  React.useEffect(() => {
+    if (typeof snap?.activeAddr !== "number") return;
+    const el = document.getElementById(`ram-${snap.activeAddr >>> 0}`);
+    el?.scrollIntoView({
+      block: "center",
+      inline: "nearest",
+      behavior: "smooth",
+    });
+  }, [snap?.activeAddr]);
+
   return (
     <section
       className={[
-        "w-full h-full rounded-2xl border bg-zinc-950 text-zinc-100 shadow-2xl",
-        "border-zinc-800 relative overflow-hidden",
+        "relative w-full h-full rounded-2xl border bg-emerald-950/20 text-zinc-100 shadow-2xl",
+        "border-emerald-900/60 overflow-hidden",
         "flex flex-col",
       ].join(" ")}
+      role="region"
+      aria-label="Módulo de memoria RAM"
     >
-      {/* Fondo gamer */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-screen"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px)",
-          backgroundSize: "24px 24px, 24px 24px",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, rgba(255,255,255,.22) 0px, rgba(255,255,255,.22) 1px, transparent 2px, transparent 4px)",
-        }}
-      />
+      <PcbBackground />
+      <GoldPins />
 
-      {/* Encabezado */}
-      <div className="relative z-10 p-4 pb-3 flex items-center justify-between gap-4 shrink-0">
+      {/* Encabezado del módulo */}
+      <div className="relative z-10 p-4 pb-2 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(52,211,153,.8)]" />
-          <h2 className="text-xl font-semibold tracking-tight">RAM</h2>
+          <h2 className="text-lg font-semibold tracking-tight">
+            SIMM / DIMM · RAM
+          </h2>
+          <span className="ml-2 text-[11px] text-emerald-200/90 font-mono">
+            base <span className="text-emerald-100">{toHex8(baseAddr)}</span>
+          </span>
         </div>
         {usagePct != null && (
           <div className="w-56">
-            <div className="text-[10px] text-zinc-400 text-right mb-1">
-              {usagePct.toFixed(0)}%
+            <div className="text-[10px] text-emerald-200/80 text-right mb-1">
+              uso {usagePct.toFixed(0)}%
             </div>
-            <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+            <div className="h-2 rounded-full bg-emerald-900/40 overflow-hidden ring-1 ring-emerald-700/40">
               <div
-                className="h-2 bg-gradient-to-r from-emerald-400 via-cyan-400 to-fuchsia-400 transition-all"
+                className="h-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-fuchsia-400 transition-all"
                 style={{ width: `${usagePct}%` }}
               />
             </div>
@@ -177,98 +386,135 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
         )}
       </div>
 
-      {/* Marco principal */}
-      <div className="relative z-10 px-4 pb-4 w-full flex-1 min-h-0">
-        <div className="h-full rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden flex flex-col">
-          {/* Header offsets */}
-          <div
-            className="sticky top-0 z-[1] grid px-3 pt-3 pb-2 bg-zinc-900/70 backdrop-blur-sm shrink-0"
-            style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
-          >
-            <div className="text-xs text-zinc-400 font-mono">Addr</div>
-            <div
-              className="grid relative"
-              style={{
-                gridTemplateColumns: `repeat(${BPR}, minmax(${CELL_RESP}, 1fr))`,
-                gap: GAP,
-              }}
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 left-0 right-0"
-                style={{ backgroundImage: groupBgCSS(BPR, G) }}
-              />
-              {Array.from({ length: BPR }, (_, i) => (
-                <div
-                  key={i}
-                  className="text-[10px] md:text-[11px] font-mono text-center text-zinc-400"
-                >
-                  {toHex2(i)}
-                </div>
-              ))}
+      {/* Área de bytes */}
+      <div className="relative z-10 px-4 pb-6 w-full flex-1 min-h-0">
+        <div
+          className={`h-full pr-1 ${isEmpty ? "overflow-y-auto overflow-x-hidden" : "overflow-y-auto overflow-x-hidden"}`}
+        >
+          {isEmpty ? (
+            <div className="mb-4 rounded-2xl border border-emerald-800/50 bg-zinc-950/60 shadow-[inset_0_1px_0_rgba(255,255,255,.04),0_8px_24px_rgba(0,0,0,.35)] overflow-hidden min-h-[240px]">
+              <EmptyState baseAddr={baseAddr} bytesPerRow={BPR} groupSize={G} />
             </div>
-          </div>
-
-          {/* Filas */}
-          <div className="flex-1 min-h-0 overflow-auto">
-            {rows.map((row, ridx) => {
-              const bytes = Array.from(row.slice);
-              return (
+          ) : (
+            chips.map((chip) => (
+              <div
+                key={chip.id}
+                className="mb-4 rounded-2xl border border-emerald-800/50 bg-zinc-950/60 shadow-[inset_0_1px_0_rgba(255,255,255,.04),0_8px_24px_rgba(0,0,0,.35)] overflow-hidden"
+              >
+                {/* Header de columnas */}
                 <div
-                  key={`${row.addr}-${ridx}`}
-                  className="grid items-center px-3 py-2 transition-colors hover:bg-zinc-900/55"
+                  className="grid px-3 pt-2 pb-2 bg-zinc-900/70 backdrop-blur-sm"
                   style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
                 >
-                  <div className="font-mono text-xs text-zinc-300">
-                    <span className="inline-block px-2 py-1 rounded-lg bg-zinc-900/70 border border-zinc-700/60">
-                      {toHex8(row.addr)}
-                    </span>
+                  <div className="text-xs text-emerald-200/80 font-mono">
+                    Addr
                   </div>
-
                   <div
-                    className="grid"
+                    className="grid relative pr-2"
                     style={{
-                      gridTemplateColumns: `repeat(${BPR}, minmax(${CELL_RESP}, 1fr))`,
-                      gap: GAP,
+                      gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
+                      columnGap: GAP,
                     }}
                   >
-                    {bytes.map((b, i) => {
-                      const addr = row.addr + i;
-                      const tone = toneAt(addr, snap.ranges) ?? "slot";
-                      const isEmph = emphAt(addr, snap.ranges);
-                      const isActive = snap?.activeAddr === addr;
-                      const groupSep = i % G === 0 && i !== 0;
-                      const lbl = labelAt(addr, snap.ranges);
-
-                      return (
-                        <div
-                          key={i}
-                          className={[
-                            "relative h-8 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
-                            "border-zinc-700/60 text-zinc-100",
-                            TONE_CLS[tone].bg,
-                            "shadow-[inset_0_1px_0_rgba(255,255,255,.06),0_2px_6px_rgba(0,0,0,.25)]",
-                            "transition-transform will-change-transform hover:-translate-y-[1px] active:translate-y-0",
-                            groupSep ? "border-l-2 border-l-zinc-700/60" : "",
-                            isEmph
-                              ? `ring-2 ${TONE_CLS[tone].ring} ${TONE_CLS[tone].glow}`
-                              : "",
-                            isActive
-                              ? "outline outline-2 outline-white/40"
-                              : "",
-                          ].join(" ")}
-                          title={`${toHex8(addr)}  •  dec ${b}${lbl ? `  •  ${lbl}` : ""}`}
-                        >
-                          <span className="tracking-tight">{toHex2(b)}</span>
-                          <span className="pointer-events-none absolute inset-0 rounded-lg opacity-[0.08] bg-gradient-to-b from-white/30 to-transparent" />
-                        </div>
-                      );
-                    })}
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 left-0 right-0"
+                      style={{ backgroundImage: groupBgCSS(BPR, G) }}
+                    />
+                    {Array.from({ length: BPR }, (_, i) => (
+                      <div
+                        key={i}
+                        className="text-[10px] md:text-[11px] font-mono text-center text-emerald-300/70"
+                      >
+                        {toHex2(i)}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Filas */}
+                <div className="pb-2">
+                  {chip.rows.map((row, ridx) => {
+                    const bytes = Array.from(row.slice);
+                    return (
+                      <div
+                        key={`${row.addr}-${ridx}`}
+                        className="grid items-center px-3 py-2 transition-colors hover:bg-zinc-900/55"
+                        style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
+                      >
+                        {/* Dirección */}
+                        <div className="font-mono text-xs text-emerald-100/90">
+                          <span className="inline-block px-2 py-1 rounded-lg bg-zinc-900/70 border border-emerald-800/60">
+                            {toHex8(row.addr)}
+                          </span>
+                        </div>
+
+                        {/* Bytes HEX */}
+                        <div
+                          className="grid pr-2"
+                          style={{
+                            gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
+                            columnGap: GAP,
+                          }}
+                        >
+                          {bytes.map((b, i) => {
+                            const addr = row.addr + i;
+                            const tone = normalizeTone(
+                              toneAt(addr, sortedRanges)
+                            );
+                            const isEmph = emphAt(addr, sortedRanges);
+                            const isActive = snap?.activeAddr === addr;
+                            const groupSep = i % G === 0 && i !== 0;
+                            const lbl = labelAt(addr, sortedRanges);
+                            const prevLbl = labelAt(addr - 1, sortedRanges);
+
+                            return (
+                              <div
+                                id={`ram-${addr}`}
+                                key={i}
+                                className={[
+                                  "relative h-8 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
+                                  "border-emerald-800/60 text-emerald-50",
+                                  TONE_CLS[tone].bg,
+                                  "shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_2px_6px_rgba(0,0,0,.25)]",
+                                  "transition-transform will-change-transform hover:-translate-y-[1px] active:translate-y-0",
+                                  groupSep
+                                    ? "border-l-2 border-l-emerald-800/60"
+                                    : "",
+                                  isEmph
+                                    ? `ring-2 ${TONE_CLS[tone].ring} ${TONE_CLS[tone].glow} z-10`
+                                    : "",
+                                  isActive
+                                    ? "outline outline-2 outline-white/40 z-10"
+                                    : "",
+                                ].join(" ")}
+                                title={`${toHex8(addr)}  •  dec ${b}${lbl ? `  •  ${lbl}` : ""}`}
+                              >
+                                <span className="tracking-tight">
+                                  {toHex2(b)}
+                                </span>
+
+                                {/* etiqueta al inicio del rango */}
+                                {lbl && prevLbl !== lbl && (
+                                  <span
+                                    className={`pointer-events-none absolute -top-1 -translate-y-full whitespace-nowrap rounded px-1.5 py-[1px] text-[10px] ring-1 ${TONE_CLS[tone].text} bg-zinc-950/80 ring-emerald-800/60`}
+                                  >
+                                    {lbl}
+                                  </span>
+                                )}
+
+                                <span className="pointer-events-none absolute inset-0 rounded-lg opacity-[0.06] bg-gradient-to-b from-white/30 to-transparent" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>

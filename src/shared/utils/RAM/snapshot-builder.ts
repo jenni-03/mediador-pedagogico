@@ -54,7 +54,7 @@ export type UiRamTone = {
   start: number;
   size: number;
   label?: string;
-  tone: "header" | "data" | "slot" | "object";
+  tone: "header" | "prim" | "array" | "string" | "object" | "slot";
 };
 
 // ── Previews tipados para docencia ───────────────────────────────────────────
@@ -108,6 +108,7 @@ export type UiRefSlot = {
   kind: "ref";
   refAddr: HexAddr; // dirección del puntero en stack (0x00000000 => null)
   refKind: "null" | "string" | "array" | "object" | "unknown";
+  range: ByteRange;
   preview?: StringPreview | ArrayPreview; // preview docente
 };
 
@@ -118,6 +119,63 @@ export type UiFrame = {
   name: string;
   slots: UiSlot[];
 };
+// --- Inspector para panel derecho -------------------------------------------
+export type UiInspectorArrayInlinePrim = {
+  kind: "array-inline-prim";
+  id: string; // p.ej. "heap#12:data"
+  header: HexAddr; // addr del header
+  dataPtr: HexAddr;
+  length: number;
+  elemType: PrimitiveType;
+  elemSize: number;
+  items: Array<{
+    index: number;
+    range: ByteRange; // bytes del elemento en RAM
+    preview: number | string; // valor ya decodificado
+  }>;
+};
+
+export type UiInspectorArrayRef32 = {
+  kind: "array-ref32";
+  id: string; // p.ej. "heap#12:data"
+  header: HexAddr;
+  dataPtr: HexAddr;
+  length: number;
+  items: Array<{
+    index: number;
+    ptrRange: ByteRange; // bytes del *puntero* (celda u32)
+    ptr: HexAddr; // 0x00000000 si null
+    // info del objetivo si existe (útil para un "ver destino" rápido)
+    target?: {
+      kind: "string" | "array" | "object";
+      headerRange: ByteRange;
+      dataRange?: ByteRange;
+    };
+  }>;
+};
+
+export type UiInspectorObjectCompact = {
+  kind: "object-compact";
+  id: string; // p.ej. "heap#27:header"
+  header: HexAddr;
+  fields: Array<{
+    key: string;
+    type: PrimitiveType | "string" | "ptr32";
+    inlineRange: ByteRange; // bytes del campo dentro del header
+    preview: unknown; // valor mostrado
+    // si es string/ptr32 y no-null, también el objetivo:
+    target?: {
+      kind: "string" | "array" | "object";
+      headerRange: ByteRange;
+      dataRange?: ByteRange;
+    };
+  }>;
+};
+
+export type UiInspector =
+  | UiInspectorArrayInlinePrim
+  | UiInspectorArrayRef32
+  | UiInspectorObjectCompact;
 
 // Heap normalizado a hex + rangos para colorear RAM
 export type UiHeapEntry =
@@ -135,8 +193,8 @@ export type UiHeapEntry =
         elemSize?: number;
       };
       range: ByteRange;
-      dataRange: ByteRange;
-      preview?: ArrayPrimPreview | ArrayStringPreview | ArrayRefPreview; // ← NUEVO
+      dataRange?: ByteRange; //  ← antes: dataRange: ByteRange
+      preview?: ArrayPrimPreview | ArrayStringPreview | ArrayRefPreview;
       id?: number;
     }
   | {
@@ -150,8 +208,8 @@ export type UiHeapEntry =
         dataPtr: HexAddr;
       };
       range: ByteRange;
-      dataRange: ByteRange;
-      preview?: StringPreview; // ← NUEVO
+      dataRange?: ByteRange; //  ← antes: dataRange: ByteRange
+      preview?: StringPreview;
       id?: number;
     }
   | {
@@ -161,7 +219,7 @@ export type UiHeapEntry =
       label?: string;
       meta: unknown;
       range: ByteRange;
-      preview?: ObjectPreview; // ← NUEVO
+      preview?: ObjectPreview;
       id?: number;
     };
 
@@ -179,6 +237,7 @@ export type UiSnapshot = {
   ram: UiRamView;
   ramIndex: UiRamItem[];
   ramTones: UiRamTone[];
+  inspectors: Record<string, UiInspector>; // ← NUEVO
 };
 
 // Tamaño de un campo inline dentro de objeto-compact
@@ -240,16 +299,21 @@ export function buildUiStack(mem: Memory): UiFrame[] {
           range: hexRange(s.valueAddr, primSizeOf(s.type)),
         });
       } else {
-        const refHex = toHex(s.refAddr);
-        if (s.refAddr === 0) {
+        // s.refAddr = dirección de la CELDA (u32) en el STACK
+        const cellAddr = s.refAddr;
+        const target = bs.readU32(cellAddr); // ← valor del puntero (header en heap)
+        const targetHex = toHex(target);
+
+        if (target === 0) {
           uiSlots.push({
             name: s.name,
             kind: "ref",
-            refAddr: refHex,
+            refAddr: toHex(cellAddr), // dirección de la celda en stack
             refKind: "null",
+            range: hexRange(cellAddr, 4),
           });
         } else {
-          const e = heap.get(s.refAddr);
+          const e = heap.get(target);
           const refKind: UiRefSlot["refKind"] = !e
             ? "unknown"
             : e.kind === "array"
@@ -258,16 +322,16 @@ export function buildUiStack(mem: Memory): UiFrame[] {
 
           let preview: UiRefSlot["preview"] = undefined;
 
-          // Preview para String: texto corto desde header + dataPtr
+          // Preview para String
           if (refKind === "string") {
-            const sp = readStringPreview(bs, s.refAddr);
+            const sp = readStringPreview(bs, target);
             preview = { kind: "string", len: sp.len, text: sp.text };
           }
 
-          // Preview para ARRAY de String: primeros N elementos (indirecto)
+          // Preview para ARRAY de String (array-ref32 a strings)
           if (refKind === "array" && e && isArrayOfString(e)) {
-            const length = bs.readU32(s.refAddr);
-            const dataPtr = bs.readU32(s.refAddr + 4);
+            const length = bs.readU32(target);
+            const dataPtr = bs.readU32(target + 4);
             const max = Math.min(length, ARRAY_PREVIEW_MAX);
             const items: Array<ArrayItemString | ArrayItemNull> = [];
             for (let i = 0; i < max; i++) {
@@ -297,8 +361,9 @@ export function buildUiStack(mem: Memory): UiFrame[] {
           uiSlots.push({
             name: s.name,
             kind: "ref",
-            refAddr: refHex,
+            refAddr: toHex(cellAddr), // ← dirección de la celda en STACK
             refKind,
+            range: hexRange(cellAddr, 4), // ← rango del slot (no del header)
             preview,
           });
         }
@@ -317,11 +382,24 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
   const bs = mem.getByteStore();
   const out: UiHeapEntry[] = [];
 
+  // ===== NUEVO: construir mapa headerAddr -> nombre de variable del stack =====
+  const ownerByHeader = new Map<number, string>();
+  const stk = mem.getStack();
+  for (const f of stk.all()) {
+    for (const s of f.slots.values()) {
+      if ((s as any).kind === "ref") {
+        const cell = (s as any).refAddr as number; // celda en stack (u32)
+        const target = bs.readU32(cell); // header en heap
+        if (target && !ownerByHeader.has(target)) {
+          ownerByHeader.set(target, s.name); // p.ej. 0x... → "x"
+        }
+      }
+    }
+  }
+  // ===========================================================================
+
   const toHex = (n: number): HexAddr =>
     ("0x" + (n >>> 0).toString(16).padStart(8, "0")) as HexAddr;
-
-  const STRING_PREVIEW_MAX = 64; // chars máx para preview
-  const ARRAY_PREVIEW_MAX = 16; // elementos máx para preview
 
   const readU16 = (addr: number) => readU16Safe(bs, addr);
 
@@ -372,10 +450,17 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
     const id = e.id as number | undefined;
     const addrNum = Number(e.addr ?? 0);
     const baseAddr = toHex(addrNum);
+
+    // ===== CAMBIO: elegir label => e.label || "var <nombreEnStack>" ==========
+    const owner = ownerByHeader.get(addrNum);
+    const computedLabel: string | undefined =
+      (e.label as string | undefined) ?? (owner ? `var ${owner}` : undefined);
+    // ========================================================================
+
     const baseCommon = {
       addr: baseAddr,
       refCount: Number(e.refCount ?? 0),
-      label: e.label as string | undefined,
+      label: computedLabel, // ← antes: e.label
       id,
     };
 
@@ -435,9 +520,9 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
         }[] = [];
         for (let i = 0; i < count; i++) {
           const ref = bs.readU32(dataPtrNum + i * 4);
-          if (ref === 0) {
+          if (ref === 0)
             items.push({ index: i, ref: toHex(0), len: 0, text: "" });
-          } else {
+          else {
             const sp = readStringPreviewFull(ref);
             items.push({
               index: i,
@@ -458,6 +543,8 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
         preview = { kind: "array-ref", items, truncated: length > count };
       }
 
+      const hasData = dataPtrNum > 0 && dataBytes > 0;
+
       out.push({
         kind: "array",
         ...baseCommon,
@@ -470,8 +557,15 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
           ...(meta.elemSize ? { elemSize: meta.elemSize } : {}),
         } as any,
         range: { from: baseAddr, to: toHex(addrNum + 8) },
-        dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + dataBytes) },
-        preview, // ← aquí va
+        ...(hasData
+          ? {
+              dataRange: {
+                from: dataPtrHex,
+                to: toHex(dataPtrNum + dataBytes),
+              },
+            }
+          : {}),
+        preview,
       });
       continue;
     }
@@ -484,12 +578,19 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
 
       const sp = readStringPreviewFull(addrNum);
 
+      const strBytes = length * 2;
+      const hasStrData = dataPtrNum > 0 && strBytes > 0;
+
       out.push({
         kind: "string",
         ...baseCommon,
         meta: { tag: meta.tag, length, dataPtr: dataPtrHex },
         range: { from: baseAddr, to: toHex(addrNum + 8) },
-        dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + length * 2) },
+        ...(hasStrData
+          ? {
+              dataRange: { from: dataPtrHex, to: toHex(dataPtrNum + strBytes) },
+            }
+          : {}),
         preview: {
           kind: "string",
           len: sp.len,
@@ -575,12 +676,23 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
         preview = { kind: "object", fields };
       }
 
+      // Header siempre existe (puede ser 0 si no es compact)
+      const headerFrom = addrNum;
+      const headerTo = addrNum + headerBytes;
+
+      // Para object-compact: el "data" es el payload inline (después de len:u32)
+      const payloadFrom = headerBytes > 0 ? addrNum + 4 : addrNum;
+      const hasPayload = headerBytes > 4;
+
       out.push({
         kind: "object",
         ...baseCommon,
         meta,
-        range: { from: baseAddr, to: toHex(addrNum + headerBytes) },
-        preview, // ← aquí va
+        range: { from: baseAddr, to: toHex(headerTo) }, // header
+        ...(hasPayload
+          ? { dataRange: { from: toHex(payloadFrom), to: toHex(headerTo) } }
+          : {}),
+        preview,
       });
       continue;
     }
@@ -713,8 +825,9 @@ export function buildUiSnapshot(
   const ram = buildUiRam(mem, heap, opts?.ram);
 
   const { items: ramIndex, tones: ramTones } = buildUiRamIndex(stack, heap);
+  const inspectors = buildUiInspectors(mem, heap); // ← NUEVO
 
-  return { stack, heap, ram, ramIndex, ramTones };
+  return { stack, heap, ram, ramIndex, ramTones, inspectors };
 }
 
 // -----------------------------------------------------------------------------
@@ -731,7 +844,11 @@ export function buildUiRamIndex(
   const items: UiRamItem[] = [];
   const tones: UiRamTone[] = [];
 
-  // 1) stack prims / refs (igual que lo llevas)
+  const pushTone = (t: UiRamTone) => {
+    if (t.size > 0) tones.push(t);
+  };
+
+  // 1) stack prims / refs
   for (const f of stackUi) {
     for (const s of f.slots) {
       if (s.kind === "prim") {
@@ -740,17 +857,23 @@ export function buildUiRamIndex(
         items.push({
           id,
           source: "stack-prim",
+          // etiqueta interna; la UI ya no la usa como título
           label: `${s.name}: ${s.type}`,
           type: s.type,
           range: s.range,
           bytes,
-          meta: { frameId: f.id, var: s.name, rangeKind: "data" },
+          meta: {
+            frameId: f.id,
+            var: s.name,
+            displayName: s.name, // ← CORRECCIÓN
+            rangeKind: "data",
+          },
         });
-        tones.push({
+        pushTone({
           start: hexToNum(s.range.from),
           size: bytes,
-          label: id,           // ← EXACTO igual que item.id
-          tone: "data",
+          label: id,
+          tone: "prim",
         });
       } else {
         const ref: any = s as any;
@@ -764,36 +887,49 @@ export function buildUiRamIndex(
             type: "ref32",
             range: ref.range,
             bytes,
-            meta: { frameId: f.id, var: s.name, rangeKind: "slot" },
+            meta: {
+              frameId: f.id,
+              var: s.name,
+              displayName: s.name, // ← CORRECCIÓN
+              rangeKind: "slot",
+            },
           });
-          tones.push({
-            start: hexToNum(ref.range.from),
-            size: bytes,
-            label: id,          // ← EXACTO igual que item.id
-            tone: "slot",
-          });
+          const fromNumRef = hexToNum(ref.range.from);
+          if (fromNumRef !== 0) {
+            pushTone({
+              start: fromNumRef,
+              size: bytes,
+              label: id,
+              tone: "slot",
+            });
+          }
         }
       }
     }
   }
 
-  // 2) heap headers + data (lo importante es que label === item.id)
+  // 2) heap headers + data
   for (const h of heapUi) {
     const hid = `heap#${h.id ?? hexToNum(h.addr)}`;
+    const displayName = (h.label as string | undefined) || undefined; // ← CORRECCIÓN
 
     // header
     {
       const hdrBytes = sizeOfRange(h.range);
       const itemId = `${hid}:header`;
+      const headerLabel =
+        h.kind === "string"
+          ? "String header"
+          : h.kind === "array"
+            ? "Array header"
+            : (h as any).meta?.tag === "object-compact"
+              ? "Object header (compact)"
+              : "Object header";
+
       items.push({
         id: itemId,
         source: "heap-header",
-        label:
-          h.kind === "string"
-            ? "String header"
-            : h.kind === "array"
-            ? "Array header"
-            : "Object header (compact)",
+        label: headerLabel,
         type: h.kind,
         range: h.range,
         bytes: hdrBytes,
@@ -801,23 +937,26 @@ export function buildUiRamIndex(
           heapId: h.id,
           at: h.addr,
           rangeKind: "header",
-          // extras para panel (opcionales)
-          ...(h.kind === "object" ? {
-            objTag: (h.meta as any)?.tag,
-            fieldCount: Array.isArray((h.meta as any)?.schema)
-              ? (h.meta as any).schema.length
-              : undefined,
-            objKeys: Array.isArray((h.meta as any)?.schema)
-              ? (h.meta as any).schema.map((f: any) => f.key)
-              : undefined,
-            displayName: (h.label as string) || undefined,
-          } : {}),
+          displayName, // ← CORRECCIÓN (si hay nombre, úsalo)
+          inspectorId: h.kind === "object" ? `${hid}:header` : undefined,
+          ...(h.kind === "object"
+            ? {
+                objTag: (h.meta as any)?.tag,
+                fieldCount: Array.isArray((h.meta as any)?.schema)
+                  ? (h as any).meta.schema.length
+                  : undefined,
+                objKeys: Array.isArray((h.meta as any)?.schema)
+                  ? (h as any).meta.schema.map((f: any) => f.key)
+                  : undefined,
+              }
+            : {}),
         },
       });
-      tones.push({
+
+      pushTone({
         start: hexToNum(h.range.from),
         size: hdrBytes,
-        label: itemId,      // ← EXACTO igual que item.id
+        label: itemId,
         tone: "header",
       });
     }
@@ -827,15 +966,13 @@ export function buildUiRamIndex(
     if (dr?.from && dr?.to && hexToNum(dr.to) > hexToNum(dr.from)) {
       const dataBytes = sizeOfRange(dr);
       const elemName =
-        (h as any).meta?.elem?.name ??
-        (h as any).meta?.elemType ??
-        "?";
+        (h as any).meta?.elem?.name ?? (h as any).meta?.elemType ?? "?";
       const dataLabel =
         h.kind === "string"
           ? "String data (UTF-16)"
           : h.kind === "array"
-          ? `Array<${elemName}> data`
-          : "Object data";
+            ? `Array<${elemName}> data`
+            : "Object data";
 
       const itemId = `${hid}:data`;
       items.push({
@@ -845,13 +982,27 @@ export function buildUiRamIndex(
         type: h.kind,
         range: dr,
         bytes: dataBytes,
-        meta: { heapId: h.id, at: h.addr, rangeKind: "data", elemName },
+        meta: {
+          heapId: h.id,
+          at: h.addr,
+          rangeKind: "data",
+          elemName,
+          displayName, // ← CORRECCIÓN (mismo nombre)
+          inspectorId: h.kind === "array" ? `${hid}:data` : undefined,
+        },
       });
-      tones.push({
+
+      const dataTone: UiRamTone["tone"] =
+        h.kind === "array"
+          ? "array"
+          : h.kind === "string"
+            ? "string"
+            : "object";
+      pushTone({
         start: hexToNum(dr.from),
         size: dataBytes,
-        label: itemId,      // ← EXACTO igual que item.id
-        tone: "data",
+        label: itemId,
+        tone: dataTone,
       });
     }
   }
@@ -865,6 +1016,234 @@ function toHex(n: number): HexAddr {
 
 function hexRange(addr: number, size: number): ByteRange {
   return { from: toHex(addr), to: toHex(addr + size) };
+}
+function buildUiInspectors(
+  mem: Memory,
+  heapUi: UiHeapEntry[]
+): Record<string, UiInspector> {
+  const bs = mem.getByteStore();
+  const heap = mem.getHeap();
+  const out: Record<string, UiInspector> = {};
+
+  const toH = (n: number) => toHex(n);
+  const num = (h: HexAddr) => parseInt(h, 16);
+
+  // tamaño de header según el tipo del heap entry
+  const headerRangeFor = (e: any, addr: number): ByteRange => {
+    if (e.kind === "object") {
+      const sz = compactObjectHeaderSize(e.meta);
+      return { from: toH(addr), to: toH(addr + sz) };
+    }
+    // strings y arrays: 8 bytes (len + dataPtr)
+    return { from: toH(addr), to: toH(addr + 8) };
+  };
+
+  for (const h of heapUi) {
+    const hid = `heap#${h.id ?? num(h.addr)}`;
+
+    // ---------- ARRAYS ----------
+    if (h.kind === "array") {
+      const tag = (h.meta as any)?.tag;
+      const len = Number((h.meta as any)?.length ?? 0);
+      const dataPtr = parseInt((h.meta as any)?.dataPtr as HexAddr, 16);
+      const dataId = `${hid}:data`;
+
+      if (tag === "array-inline-prim") {
+        const elemType = String((h.meta as any)?.elemType) as PrimitiveType;
+        const elemSize =
+          typeof (h.meta as any)?.elemSize === "number"
+            ? Number((h.meta as any).elemSize)
+            : primSizeOf(elemType);
+
+        const items: UiInspectorArrayInlinePrim["items"] = [];
+        let cursor = dataPtr;
+        for (let i = 0; i < len; i++) {
+          const range = { from: toH(cursor), to: toH(cursor + elemSize) };
+          const preview = ((): number | string => {
+            switch (elemType) {
+              case "boolean":
+                return (bs.readU8(cursor) & 1) === 1 ? 1 : 0;
+              case "byte":
+                return sign8(bs.readU8(cursor));
+              case "short":
+                return sign16(readU16Safe(bs, cursor));
+              case "char":
+                return readU16Safe(bs, cursor);
+              case "int":
+                return bs.readI32(cursor);
+              case "long":
+                return ((): string | number => {
+                  const bi = readLongAsBigInt(bs, cursor);
+                  return bi >= BigInt(Number.MIN_SAFE_INTEGER) &&
+                    bi <= BigInt(Number.MAX_SAFE_INTEGER)
+                    ? Number(bi)
+                    : bi.toString();
+                })();
+              case "float":
+                return bs.readF32(cursor);
+              case "double":
+                return bs.readF64(cursor);
+              default:
+                return bs.readU8(cursor);
+            }
+          })();
+          items.push({ index: i, range, preview });
+          cursor += elemSize;
+        }
+
+        out[dataId] = {
+          kind: "array-inline-prim",
+          id: dataId,
+          header: h.addr,
+          dataPtr: toH(dataPtr),
+          length: len,
+          elemType,
+          elemSize,
+          items,
+        };
+      } else if (tag === "array-ref32") {
+        const items: UiInspectorArrayRef32["items"] = [];
+        for (let i = 0; i < len; i++) {
+          const cell = dataPtr + i * 4;
+          const ptr = bs.readU32(cell);
+          const ptrRange = { from: toH(cell), to: toH(cell + 4) };
+
+          let target: UiInspectorArrayRef32["items"][number]["target"];
+          if (ptr) {
+            const e = heap.get(ptr);
+            if (e) {
+              const headerRange = headerRangeFor(e, ptr);
+              let dataRange: ByteRange | undefined;
+              if (e.kind === "string") {
+                const len = (e.meta as any).length as number;
+                const dp = (e.meta as any).dataPtr as number;
+                dataRange = { from: toH(dp), to: toH(dp + len * 2) };
+              }
+              if (e.kind === "array") {
+                const dp = (e.meta as any).dataPtr as number;
+                const tag = (e.meta as any).tag;
+                const length = (e.meta as any).length as number;
+                const bytes =
+                  tag === "array-inline-prim"
+                    ? length * Number((e.meta as any).elemSize ?? 1)
+                    : length * 4;
+                dataRange = { from: toH(dp), to: toH(dp + bytes) };
+              }
+              target = { kind: e.kind as any, headerRange, dataRange };
+            }
+          }
+
+          items.push({ index: i, ptrRange, ptr: toH(ptr), target });
+        }
+
+        out[dataId] = {
+          kind: "array-ref32",
+          id: dataId,
+          header: h.addr,
+          dataPtr: toH(dataPtr),
+          length: len,
+          items,
+        };
+      }
+
+      continue;
+    }
+
+    // ---------- OBJETO (compact) ----------
+    if (h.kind === "object" && (h.meta as any)?.tag === "object-compact") {
+      const headId = `${hid}:header`;
+      const schema = (h.meta as any).schema as Array<{
+        key: string;
+        type: PrimitiveType | "ptr32" | "string";
+      }>;
+      let cur = parseInt(h.addr, 16) + 4; // saltar len:u32
+
+      const fields: UiInspectorObjectCompact["fields"] = [];
+      for (const f of schema) {
+        const t = f.type;
+        const size = t === "ptr32" || t === "string" ? 4 : objectFieldSize(t);
+        const inlineRange = { from: toH(cur), to: toH(cur + size) };
+
+        let preview: unknown;
+        let target: UiInspectorObjectCompact["fields"][number]["target"];
+
+        switch (t) {
+          case "boolean":
+            preview = (bs.readU8(cur) & 1) === 1;
+            break;
+          case "byte":
+            preview = sign8(bs.readU8(cur));
+            break;
+          case "short":
+            preview = sign16(readU16Safe(bs, cur));
+            break;
+          case "char":
+            preview = String.fromCharCode(readU16Safe(bs, cur));
+            break;
+          case "int":
+            preview = bs.readI32(cur);
+            break;
+          case "long":
+            {
+              const bi = readLongAsBigInt(bs, cur);
+              preview =
+                bi >= BigInt(Number.MIN_SAFE_INTEGER) &&
+                bi <= BigInt(Number.MAX_SAFE_INTEGER)
+                  ? Number(bi)
+                  : bi.toString();
+            }
+            break;
+          case "float":
+            preview = bs.readF32(cur);
+            break;
+          case "double":
+            preview = bs.readF64(cur);
+            break;
+          case "string":
+          case "ptr32": {
+            const p = bs.readU32(cur);
+            preview = toH(p);
+            if (p) {
+              const e = heap.get(p);
+              if (e) {
+                const headerRange = headerRangeFor(e, p);
+                let dataRange: ByteRange | undefined;
+                if (e.kind === "string") {
+                  const len = (e.meta as any).length as number;
+                  const dp = (e.meta as any).dataPtr as number;
+                  dataRange = { from: toH(dp), to: toH(dp + len * 2) };
+                }
+                if (e.kind === "array") {
+                  const dp = (e.meta as any).dataPtr as number;
+                  const tag = (e.meta as any).tag;
+                  const length = (e.meta as any).length as number;
+                  const bytes =
+                    tag === "array-inline-prim"
+                      ? length * Number((e.meta as any).elemSize ?? 1)
+                      : length * 4;
+                  dataRange = { from: toH(dp), to: toH(dp + bytes) };
+                }
+                target = { kind: e.kind as any, headerRange, dataRange };
+              }
+            }
+            break;
+          }
+        }
+
+        fields.push({ key: f.key, type: t, inlineRange, preview, target });
+        cur += size;
+      }
+
+      out[headId] = {
+        kind: "object-compact",
+        id: headId,
+        header: h.addr,
+        fields,
+      };
+    }
+  }
+
+  return out;
 }
 
 function primSizeOf(kind: PrimitiveType): number {
@@ -1031,7 +1410,7 @@ export function formatStack(frames: UiFrame[]): string {
         const base = `    • ${v.name}: prim ${v.type} @${v.addr} = ${String(v.value)}`;
         lines.push(v.display ? `${base}  (${v.display})` : base);
       } else {
-        const base = `    • ${v.name}: ref -> ${v.refAddr} (${v.refKind})`;
+        const base = `    • ${v.name}: ref @cell=${v.refAddr} (${v.refKind})`;
         lines.push(base);
         if (v.preview?.kind === "string") {
           const pv = v.preview as StringPreview;
