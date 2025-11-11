@@ -1,7 +1,7 @@
-import { LinkData, QueueNodeData } from "../../../types";
+import { QueueNodeData } from "../../../types";
 import * as d3 from "d3";
 import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
-import { calculateLinkPath } from "./calculateLinkPath";
+// import { calculateLinkPath } from "./calculateLinkPath";
 
 /**
  * Función encargada renderizar los nodos de la cola dentro del lienzo.
