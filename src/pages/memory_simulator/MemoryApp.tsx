@@ -48,7 +48,9 @@ function AppInner() {
     [snapshot, selectedId, peekRange, highlight]
   );
 
-  const handlePick = useCallback((item: any) => setSelectedId(item.id), []);
+  const handlePick = useCallback((item: any | null) => {
+    setSelectedId(item?.id ?? null);
+  }, []);
   const handleFocusRange = useCallback(
     (r: { from: `0x${string}`; to: `0x${string}` }) => {
       const start = parseInt(r.from, 16) >>> 0;
@@ -151,11 +153,20 @@ function AppInner() {
             "
           >
             {/* Stack + Heap */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch h-[60vh] min-h-0">
-              <div className="h-full min-h-0 overflow-hidden flex">
+            <div
+              className="
+    grid gap-4 items-stretch
+    grid-cols-1 xl:grid-cols-2
+    [grid-auto-rows:minmax(0,1fr)]
+    h-[clamp(380px,60vh,680px)]  /* altura responsiva como RAM */
+  "
+            >
+              {/* IMPORTANTES: min-w-0 + min-h-0 para permitir scroll interno */}
+              <div className="min-w-0 min-h-0 overflow-hidden">
                 <StackView frames={snapshot.stack as any} />
               </div>
-              <div className="h-full min-h-0 overflow-hidden flex">
+
+              <div className="min-w-0 min-h-0 overflow-hidden">
                 <HeapView heap={snapshot.heap as any} pulseAddrs={pulseAddrs} />
               </div>
             </div>
@@ -165,7 +176,6 @@ function AppInner() {
               <RamView snap={ramSnap} />
               <RamIndexPanel
                 items={ramItems}
-                inspectors={(snapshot as any).inspectors}
                 selectedId={selectedId}
                 onPick={handlePick}
                 onFocusRange={handleFocusRange}

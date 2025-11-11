@@ -6,6 +6,9 @@ type PeekRange = { start: number; size: number } | null;
 
 const h2n = (h: `0x${string}` | string) => parseInt(String(h), 16) >>> 0;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
 function packRows(rows: UiSnapshot["ram"]["rows"]): Uint8Array {
   const out: number[] = [];
   for (const r of rows) {
@@ -15,43 +18,111 @@ function packRows(rows: UiSnapshot["ram"]["rows"]): Uint8Array {
   return new Uint8Array(out);
 }
 
+// "heap#12:header" | "heap#12:data" | "heap#12" -> "heap#12"
+const gidOf = (id?: string | null) => (id ? String(id).split(":")[0] : null);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tonos base (stack/heap) + énfasis por grupo heap#X
+// ─────────────────────────────────────────────────────────────────────────────
 function rangesFromTones(
   tones: UiSnapshot["ramTones"],
   items: UiSnapshot["ramIndex"],
   selectedId?: string | null
 ): ByteRange[] {
-  const map = new Map(items.map((it) => [String(it.id), String(it.label)]));
-  return tones.map((t) => ({
-    start: t.start >>> 0,
-    size: t.size >>> 0,
-    label: (t.label && map.get(String(t.label))) || t.label,
-    tone: t.tone as ByteRange["tone"],
-    emph: selectedId ? String(t.label) === selectedId : false,
-  }));
+  const idToPretty = new Map(
+    items.map((it) => [String(it.id), String(it.label)])
+  );
+  const selGid = gidOf(selectedId);
+
+  return tones.map((t) => {
+    const idLike = String(t.label); // en tones.label guardamos el id del item
+    const pretty = (t.label && idToPretty.get(idLike)) || t.label;
+    const thisGid = gidOf(idLike);
+
+    return {
+      start: t.start >>> 0,
+      size: t.size >>> 0,
+      label: pretty,
+      tone: t.tone as ByteRange["tone"],
+      // énfasis si coincide exacto o comparte grupo heap#X
+      emph:
+        !!selectedId &&
+        (idLike === selectedId || (!!selGid && selGid === thisGid)),
+    };
+  });
 }
 
-// Pinta campos inline de object-compact como data/slot dentro del header
+// ─────────────────────────────────────────────────────────────────────────────
+// Inspectores: pintar payload inline de object-compact y destinos seleccionados
+// (selección por grupo: cualquier id dentro de heap#X activa el bloque)
+// ─────────────────────────────────────────────────────────────────────────────
 function rangesFromInspectors(
-  inspectors: UiSnapshot["inspectors"]
+  inspectors: UiSnapshot["inspectors"],
+  selectedId?: string | null
 ): ByteRange[] {
   const out: ByteRange[] = [];
   if (!inspectors) return out;
-  for (const v of Object.values(inspectors)) {
-    if (v?.kind !== "object-compact") continue;
-    for (const f of v.fields) {
-      const a = h2n(f.inlineRange.from);
-      const b = h2n(f.inlineRange.to);
+
+  const selGid = gidOf(selectedId);
+
+  for (const ins of Object.values(inspectors)) {
+    if (ins?.kind !== "object-compact") continue;
+
+    const headerId = ins.id; // "heap#X:header"
+    const headerGid = gidOf(headerId);
+    const isSelGroup = !!selGid && selGid === headerGid;
+
+    // 0) si el grupo está seleccionado, envolver TODO el payload inline
+    if (isSelGroup && ins.fields.length) {
+      const minFrom = Math.min(
+        ...ins.fields.map((f) => parseInt(f.inlineRange.from as any, 16) >>> 0)
+      );
+      const maxTo = Math.max(
+        ...ins.fields.map((f) => parseInt(f.inlineRange.to as any, 16) >>> 0)
+      );
+      out.push({
+        start: minFrom,
+        size: Math.max(0, maxTo - minFrom),
+        label: "Object data",
+        tone: "object",
+        emph: true,
+      });
+    }
+
+    // 1) siempre: cada campo inline dentro del header
+    for (const f of ins.fields) {
+      const a = parseInt(f.inlineRange.from as any, 16) >>> 0;
+      const b = parseInt(f.inlineRange.to as any, 16) >>> 0;
+
       out.push({
         start: a,
         size: Math.max(0, b - a),
-        label: `${f.key}: ${f.type}`,
+        label: `${f.key}: ${String(f.type)}`,
         tone: f.type === "ptr32" || f.type === "string" ? "slot" : "data",
+        emph: false,
       });
+
+      // 2) si el grupo está seleccionado, resaltar también el DESTINO
+      if (isSelGroup && f.target?.dataRange) {
+        const da = parseInt(f.target.dataRange.from as any, 16) >>> 0;
+        const db = parseInt(f.target.dataRange.to as any, 16) >>> 0;
+
+        out.push({
+          start: da,
+          size: Math.max(0, db - da),
+          label: `${f.key}`,
+          tone: f.target.kind === "object" ? "object" : "data",
+          emph: true,
+        });
+      }
     }
   }
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Adaptador principal
+// ─────────────────────────────────────────────────────────────────────────────
 export function buildRamViewSnap(
   snapshot: UiSnapshot,
   opts?: {
@@ -75,9 +146,10 @@ export function buildRamViewSnap(
 
   const ranges: ByteRange[] = [
     ...rangesFromTones(snapshot.ramTones, snapshot.ramIndex, selectedId),
-    ...rangesFromInspectors(snapshot.inspectors),
+    ...rangesFromInspectors(snapshot.inspectors, selectedId),
   ];
 
+  // Peek (inspector)
   if (peekRange) {
     ranges.push({
       start: peekRange.start >>> 0,
@@ -88,28 +160,74 @@ export function buildRamViewSnap(
     });
   }
 
-  // === PRIORIDAD DE RANGOS PARA EVITAR “HEADER TAPANDO DATA” ===
-  // 1) seleccionados (emph) primero
-  // 2) más específicos (menor tamaño)
-  // 3) no-header antes que header
+  // ── BOOST: si el seleccionado pertenece a heap#X y existe el item "heap#X:data" objeto,
+  //            sobreponemos un bloque completo "Object data" (enfatizado)
+  if (selectedId) {
+    const selGid = gidOf(selectedId);
+
+    let objData =
+      snapshot.ramIndex.find(
+        (it) =>
+          it.id === selectedId &&
+          it.source === "heap-data" &&
+          it.type === "object"
+      ) ||
+      (selGid
+        ? snapshot.ramIndex.find(
+            (it) =>
+              it.source === "heap-data" &&
+              it.type === "object" &&
+              String(it.id).startsWith(`${selGid}:data`)
+          )
+        : undefined);
+
+    if (objData) {
+      const start = h2n(objData.range.from);
+      const end = h2n(objData.range.to);
+      ranges.push({
+        start,
+        size: Math.max(0, end - start),
+        label: "Object data",
+        tone: "object",
+        emph: true,
+      });
+    }
+  }
+
+  // Prioridad para que lo importante quede arriba
   const prio = (r: ByteRange) =>
-    [r.emph ? 0 : 1, r.size, r.tone === "header" ? 1 : 0, r.start] as const;
+    [
+      r.emph ? 0 : 1,
+      r.size >>> 0,
+      r.tone === "header" ? 1 : 0,
+      r.start >>> 0,
+    ] as const;
 
   ranges.sort((a, b) => {
-    const pa = prio(a);
-    const pb = prio(b);
-    if (pa[0] !== pb[0]) return pa[0] - pb[0];
-    if (pa[1] !== pb[1]) return pa[1] - pb[1];
-    if (pa[2] !== pb[2]) return pa[2] - pb[2];
-    return pa[3] - pb[3]; // estable por dirección
+    const A = prio(a),
+      B = prio(b);
+    if (A[0] !== B[0]) return A[0] - B[0];
+    if (A[1] !== B[1]) return A[1] - B[1];
+    if (A[2] !== B[2]) return A[2] - B[2];
+    return A[3] - B[3];
   });
-  // ============================================================
 
-  // Cursor activo
+  // Cursor activo: tolerante a selección por grupo (header/campo)
   let activeAddr: number | undefined = activeFromHighlight;
   if (!activeAddr && selectedId) {
-    const sel = snapshot.ramIndex.find((it) => it.id === selectedId);
-    if (sel) activeAddr = h2n(sel.range.from);
+    const selGid = gidOf(selectedId);
+    const resolved =
+      snapshot.ramIndex.find((it) => it.id === selectedId) ||
+      (selGid
+        ? snapshot.ramIndex.find((it) =>
+            String(it.id).startsWith(`${selGid}:data`)
+          ) ||
+          snapshot.ramIndex.find((it) =>
+            String(it.id).startsWith(`${selGid}:header`)
+          )
+        : undefined);
+
+    if (resolved) activeAddr = h2n(resolved.range.from);
   }
 
   return {

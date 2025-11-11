@@ -172,6 +172,41 @@ export type UiInspectorObjectCompact = {
   }>;
 };
 
+function mapHeapKindToRefKind(
+  k: unknown
+): "string" | "array" | "object" | "unknown" {
+  const s = String(k ?? "").toLowerCase();
+  if (s === "string" || s === "str" || s.includes("string")) return "string";
+  if (s === "array" || s.includes("array")) return "array";
+  if (s === "object" || s.includes("object") || s === "record") return "object";
+  return "unknown";
+}
+
+/** Construye un índice addr(header) → refKind normalizado usando Heap.list() */
+function buildHeapKindIndex(
+  mem: Memory
+): Map<number, "string" | "array" | "object" | "unknown"> {
+  const idx = new Map<number, "string" | "array" | "object" | "unknown">();
+
+  const toNum = (v: unknown) => {
+    if (v == null) return 0;
+    if (typeof v === "number") return v >>> 0;
+    const s = String(v);
+    return s.startsWith("0x") ? parseInt(s, 16) >>> 0 : Number(s) >>> 0;
+  };
+
+  for (const e of mem.getHeap().list() as any[]) {
+    const kind = mapHeapKindToRefKind(e?.kind);
+    const header = toNum(e?.addr);
+    if (header) idx.set(header, kind);
+
+    // 🔑 también indexar el dataPtr (si existe)
+    const dp = toNum(e?.meta?.dataPtr);
+    if (dp) idx.set(dp, kind);
+  }
+  return idx;
+}
+
 export type UiInspector =
   | UiInspectorArrayInlinePrim
   | UiInspectorArrayRef32
@@ -280,14 +315,23 @@ type UiRamOpts = {
 export function buildUiStack(mem: Memory): UiFrame[] {
   const bs = mem.getByteStore();
   const heap = mem.getHeap();
+
+  // Índice estable header(heap) → tipo normalizado
+  const heapKindByAddr = buildHeapKindIndex(mem);
+
+  const toH = (n: number): HexAddr =>
+    ("0x" + (n >>> 0).toString(16).padStart(8, "0")) as HexAddr;
+  const ZERO: HexAddr = toH(0);
+
   const stack = mem.getStack();
 
   const frames: UiFrame[] = stack.all().map((f) => {
     const uiSlots: UiSlot[] = [];
 
     for (const s of f.slots.values()) {
+      // ── PRIMITIVO ──────────────────────────────────────────────────────────
       if (s.kind === "prim") {
-        const addrHex = toHex(s.valueAddr);
+        const addrHex = toH(s.valueAddr);
         const decoded = decodePrimitive(bs, s.type, s.valueAddr);
         uiSlots.push({
           name: s.name,
@@ -296,78 +340,84 @@ export function buildUiStack(mem: Memory): UiFrame[] {
           addr: addrHex,
           value: decoded.value,
           display: decoded.display,
-          range: hexRange(s.valueAddr, primSizeOf(s.type)),
+          range: { from: addrHex, to: toH(s.valueAddr + primSizeOf(s.type)) },
         });
-      } else {
-        // s.refAddr = dirección de la CELDA (u32) en el STACK
-        const cellAddr = s.refAddr;
-        const target = bs.readU32(cellAddr); // ← valor del puntero (header en heap)
-        const targetHex = toHex(target);
-
-        if (target === 0) {
-          uiSlots.push({
-            name: s.name,
-            kind: "ref",
-            refAddr: toHex(cellAddr), // dirección de la celda en stack
-            refKind: "null",
-            range: hexRange(cellAddr, 4),
-          });
-        } else {
-          const e = heap.get(target);
-          const refKind: UiRefSlot["refKind"] = !e
-            ? "unknown"
-            : e.kind === "array"
-              ? "array"
-              : e.kind;
-
-          let preview: UiRefSlot["preview"] = undefined;
-
-          // Preview para String
-          if (refKind === "string") {
-            const sp = readStringPreview(bs, target);
-            preview = { kind: "string", len: sp.len, text: sp.text };
-          }
-
-          // Preview para ARRAY de String (array-ref32 a strings)
-          if (refKind === "array" && e && isArrayOfString(e)) {
-            const length = bs.readU32(target);
-            const dataPtr = bs.readU32(target + 4);
-            const max = Math.min(length, ARRAY_PREVIEW_MAX);
-            const items: Array<ArrayItemString | ArrayItemNull> = [];
-            for (let i = 0; i < max; i++) {
-              const elemRef = bs.readU32(dataPtr + i * 4);
-              if (elemRef === 0) {
-                items.push({ index: i, ref: toHex(0), kind: "null" });
-              } else {
-                const sp = readStringPreview(bs, elemRef);
-                items.push({
-                  index: i,
-                  ref: toHex(elemRef),
-                  kind: "string",
-                  len: sp.len,
-                  text: sp.text,
-                });
-              }
-            }
-            preview = {
-              kind: "array",
-              length,
-              elemType: "String",
-              items,
-              truncated: length > max,
-            };
-          }
-
-          uiSlots.push({
-            name: s.name,
-            kind: "ref",
-            refAddr: toHex(cellAddr), // ← dirección de la celda en STACK
-            refKind,
-            range: hexRange(cellAddr, 4), // ← rango del slot (no del header)
-            preview,
-          });
-        }
+        continue;
       }
+
+      // ── REFERENCIA: contrato actual → s.refAddr YA es el header en heap ──
+      const header = Number((s as any).refAddr ?? 0) >>> 0;
+      const refHex = toH(header);
+
+      if (header === 0) {
+        uiSlots.push({
+          name: s.name,
+          kind: "ref",
+          refAddr: refHex,
+          refKind: "null",
+          // rango "dummy" para satisfacer el tipo, no lo usamos en UI
+          range: { from: ZERO, to: ZERO },
+        } as UiRefSlot);
+        continue;
+      }
+
+      // Resolver tipo: heap.get() → fallback índice
+      const he =
+        typeof heap.get === "function" ? (heap.get(header) as any) : undefined;
+      let refKind: UiRefSlot["refKind"] =
+        he && he.kind
+          ? he.kind === "array"
+            ? "array"
+            : he.kind
+          : (heapKindByAddr.get(header) ?? "unknown");
+
+      // Preview mínimos (sin rangos)
+      let preview: UiRefSlot["preview"] | undefined;
+
+      // String
+      if (refKind === "string") {
+        const sp = readStringPreview(bs, header);
+        preview = { kind: "string", len: sp.len, text: sp.text };
+      }
+
+      // Array de String (array-ref32 → string)
+      if (refKind === "array" && he && isArrayOfString(he)) {
+        const length = bs.readU32(header);
+        const dataPtr = bs.readU32(header + 4);
+        const max = Math.min(length, ARRAY_PREVIEW_MAX);
+        const items: Array<ArrayItemString | ArrayItemNull> = [];
+        for (let i = 0; i < max; i++) {
+          const elemRef = bs.readU32(dataPtr + i * 4) >>> 0;
+          if (elemRef === 0) {
+            items.push({ index: i, ref: toH(0), kind: "null" });
+          } else {
+            const sp = readStringPreview(bs, elemRef);
+            items.push({
+              index: i,
+              ref: toH(elemRef),
+              kind: "string",
+              len: sp.len,
+              text: sp.text,
+            });
+          }
+        }
+        preview = {
+          kind: "array",
+          length,
+          elemType: "String",
+          items,
+          truncated: length > max,
+        };
+      }
+
+      uiSlots.push({
+        name: s.name,
+        kind: "ref",
+        refAddr: refHex, // dirección base (header en heap)
+        refKind, // tipo resuelto
+        preview, // opcional
+        range: { from: ZERO, to: ZERO }, // dummy para cumplir UiRefSlot
+      } as UiRefSlot);
     }
 
     return { id: f.id, name: f.name, slots: uiSlots };
@@ -815,7 +865,7 @@ export function buildUiRam(
   };
 }
 
-// Compositor: snapshot completo (ahora acepta opciones para RAM)
+// ── Compositor: snapshot completo (ahora genera inspectors primero) ─────────
 export function buildUiSnapshot(
   mem: Memory,
   opts?: { ram?: UiRamOpts }
@@ -824,8 +874,11 @@ export function buildUiSnapshot(
   const heap = buildUiHeap(mem);
   const ram = buildUiRam(mem, heap, opts?.ram);
 
+  // Primero: inspectors (necesarios para inferir campos)
+  const inspectors = buildUiInspectors(mem, heap);
+
+  // Luego: índice y tonos usando inspectors
   const { items: ramIndex, tones: ramTones } = buildUiRamIndex(stack, heap);
-  const inspectors = buildUiInspectors(mem, heap); // ← NUEVO
 
   return { stack, heap, ram, ramIndex, ramTones, inspectors };
 }
@@ -848,7 +901,7 @@ export function buildUiRamIndex(
     if (t.size > 0) tones.push(t);
   };
 
-  // 1) stack prims / refs
+  // 1) STACK
   for (const f of stackUi) {
     for (const s of f.slots) {
       if (s.kind === "prim") {
@@ -857,7 +910,6 @@ export function buildUiRamIndex(
         items.push({
           id,
           source: "stack-prim",
-          // etiqueta interna; la UI ya no la usa como título
           label: `${s.name}: ${s.type}`,
           type: s.type,
           range: s.range,
@@ -865,7 +917,7 @@ export function buildUiRamIndex(
           meta: {
             frameId: f.id,
             var: s.name,
-            displayName: s.name, // ← CORRECCIÓN
+            displayName: s.name,
             rangeKind: "data",
           },
         });
@@ -890,7 +942,7 @@ export function buildUiRamIndex(
             meta: {
               frameId: f.id,
               var: s.name,
-              displayName: s.name, // ← CORRECCIÓN
+              displayName: s.name,
               rangeKind: "slot",
             },
           });
@@ -908,12 +960,12 @@ export function buildUiRamIndex(
     }
   }
 
-  // 2) heap headers + data
+  // 2) HEAP
   for (const h of heapUi) {
     const hid = `heap#${h.id ?? hexToNum(h.addr)}`;
-    const displayName = (h.label as string | undefined) || undefined; // ← CORRECCIÓN
+    const displayName = (h.label as string | undefined) || undefined;
 
-    // header
+    // --- header ---
     {
       const hdrBytes = sizeOfRange(h.range);
       const itemId = `${hid}:header`;
@@ -937,7 +989,11 @@ export function buildUiRamIndex(
           heapId: h.id,
           at: h.addr,
           rangeKind: "header",
-          displayName, // ← CORRECCIÓN (si hay nombre, úsalo)
+          displayName,
+          // 🔧 vínculo de grupo
+          groupId: hid,
+          headerId: `${hid}:header`,
+          dataId: `${hid}:data`,
           inspectorId: h.kind === "object" ? `${hid}:header` : undefined,
           ...(h.kind === "object"
             ? {
@@ -961,7 +1017,7 @@ export function buildUiRamIndex(
       });
     }
 
-    // data (si aplica)
+    // --- data vía dataRange (string/array y también object si viene) ---
     const dr: any = (h as any).dataRange;
     if (dr?.from && dr?.to && hexToNum(dr.to) > hexToNum(dr.from)) {
       const dataBytes = sizeOfRange(dr);
@@ -969,7 +1025,7 @@ export function buildUiRamIndex(
         (h as any).meta?.elem?.name ?? (h as any).meta?.elemType ?? "?";
       const dataLabel =
         h.kind === "string"
-          ? "String data (UTF-16)"
+          ? "String data"
           : h.kind === "array"
             ? `Array<${elemName}> data`
             : "Object data";
@@ -987,7 +1043,11 @@ export function buildUiRamIndex(
           at: h.addr,
           rangeKind: "data",
           elemName,
-          displayName, // ← CORRECCIÓN (mismo nombre)
+          displayName,
+          // 🔧 vínculo de grupo
+          groupId: hid,
+          headerId: `${hid}:header`,
+          dataId: `${hid}:data`,
           inspectorId: h.kind === "array" ? `${hid}:data` : undefined,
         },
       });
@@ -1004,6 +1064,51 @@ export function buildUiRamIndex(
         label: itemId,
         tone: dataTone,
       });
+    }
+
+    // --- data para object-compact (si no hubo dataRange) ---
+    if (
+      h.kind === "object" &&
+      (h as any).meta?.tag === "object-compact" &&
+      h.range?.from &&
+      h.range?.to &&
+      !(h as any).dataRange
+    ) {
+      const headerFrom = hexToNum(h.range.from);
+      const headerTo = hexToNum(h.range.to);
+      const dataFrom = headerFrom + 4;
+      const dataBytes = Math.max(0, headerTo - dataFrom);
+
+      if (dataBytes > 0) {
+        const itemId = `${hid}:data`;
+        const dataRange = { from: toHex(dataFrom), to: toHex(headerTo) };
+
+        items.push({
+          id: itemId,
+          source: "heap-data",
+          label: "Object data",
+          type: "object",
+          range: dataRange,
+          bytes: dataBytes,
+          meta: {
+            heapId: h.id,
+            at: h.addr,
+            rangeKind: "data",
+            displayName,
+            // 🔧 vínculo de grupo
+            groupId: hid,
+            headerId: `${hid}:header`,
+            dataId: `${hid}:data`,
+          },
+        });
+
+        pushTone({
+          start: dataFrom,
+          size: dataBytes,
+          label: itemId,
+          tone: "object",
+        });
+      }
     }
   }
 
@@ -1150,7 +1255,7 @@ function buildUiInspectors(
     }
 
     // ---------- OBJETO (compact) ----------
-    if (h.kind === "object" && (h.meta as any)?.tag === "object-compact") {
+    if (h.kind === "object" && (h as any).meta?.tag === "object-compact") {
       const headId = `${hid}:header`;
       const schema = (h.meta as any).schema as Array<{
         key: string;
