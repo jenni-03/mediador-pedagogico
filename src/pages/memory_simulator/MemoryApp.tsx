@@ -1,5 +1,5 @@
 // src/app/MemoryApp/MemoryApp.tsx
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useMemorySimulator } from "./hooks/useMemorySimulator";
 import { StackView } from "./StackView";
 import { HeapView } from "./HeapView";
@@ -8,175 +8,55 @@ import { LogPanel } from "./LogPanel";
 import { AnchorRegistryProvider } from "./AnchorRegistry";
 import { HighlightProvider, useHighlight } from "./HighlightCtx";
 import { Header } from "../../pages/simulator/components/molecules/Header";
-import { RamIndexPanel } from "./RamIndexPanel"; // ← índice RAM
+import RamIndexPanel from "./RamIndexPanel";
+import { buildRamViewSnap } from "./ramViewAdapter";
 
-// ---- Tipado local mínimo para la grilla RAM (no acoplar a la VM)
-type ByteRange = {
-  start: number;
-  size: number;
-  label?: string;
-  tone: "header" | "data" | "slot" | "object";
-  emph?: boolean;
-};
-type UiRamSnapshot = {
-  baseAddr: number;
-  bytes: Uint8Array;
-  bytesPerRow: 16 | 8 | 32; // ← ahora coincide con RamView
-  groupSize: 1 | 2 | 4 | 8;
-  ranges: ByteRange[];
-  activeAddr?: number;
-  used?: number;
-  capacity?: number;
-};
-type LegacyRamRow = {
-  addr: `0x${string}`;
-  hex: string;
-  labels?: string[];
-  allocs?: { at: `0x${string}`; size: number; label?: string }[];
-};
-type LegacyUiRam = {
-  used: number;
-  capacity: number;
-  from: `0x${string}`;
-  to: `0x${string}`;
-  rows: LegacyRamRow[];
-};
-
-function isUint8Array(x: unknown): x is Uint8Array {
-  return x instanceof Uint8Array;
-}
-function isLegacyRam(x: any): x is LegacyUiRam {
-  return !!x && Array.isArray(x.rows) && typeof x.from === "string";
-}
-function hexRowToBytes(hex: string): number[] {
-  const clean = (hex ?? "").replace(/[^0-9a-fA-F]/g, "");
-  const out: number[] = [];
-  for (let i = 0; i < clean.length; i += 2) {
-    const b = clean.slice(i, i + 2);
-    if (b.length === 2) out.push(parseInt(b, 16));
-  }
-  return out;
-}
-const hexToNum = (h: `0x${string}`) => parseInt(h, 16);
-
-// Asegura UiRamSnapshot: si viene shape nuevo se respeta; si viene legado, se convierte.
-function ensureUiRamSnapshot(ram: any): UiRamSnapshot {
-  // Shape nuevo
-  if (ram && isUint8Array(ram.bytes)) {
-    return {
-      baseAddr: Number(ram.baseAddr ?? 0) >>> 0,
-      bytes: ram.bytes,
-      bytesPerRow:
-        typeof ram.bytesPerRow === "number"
-          ? (ram.bytesPerRow as 16 | 8 | 32)
-          : 16,
-      groupSize:
-        typeof ram.groupSize === "number"
-          ? (ram.groupSize as 1 | 2 | 4 | 8)
-          : 4,
-      ranges: Array.isArray(ram.ranges) ? ram.ranges : [],
-      activeAddr:
-        typeof ram.activeAddr === "number" ? ram.activeAddr >>> 0 : undefined,
-      used: typeof ram.used === "number" ? ram.used : undefined,
-      capacity: typeof ram.capacity === "number" ? ram.capacity : undefined,
-    };
-  }
-
-  // Shape legado
-  if (isLegacyRam(ram)) {
-    let base = parseInt(ram.from, 16);
-    const bytes: number[] = [];
-    for (const row of ram.rows) {
-      const addr = parseInt(row.addr, 16);
-      if (bytes.length === 0) base = addr;
-      bytes.push(...hexRowToBytes(row.hex));
-    }
-    return {
-      baseAddr: base >>> 0,
-      bytes: new Uint8Array(bytes),
-      bytesPerRow: 16,
-      groupSize: 4,
-      ranges: [], // en esta vista básica ignoramos overlays
-      used: ram.used,
-      capacity: ram.capacity,
-    };
-  }
-
-  // Fallback vacío para no romper
-  console.warn(
-    "[MemoryApp] snapshot.ram no es UiRamSnapshot ni legacy; usando snapshot vacío."
-  );
-  return {
-    baseAddr: 0,
-    bytes: new Uint8Array(0),
-    bytesPerRow: 16,
-    groupSize: 4,
-    ranges: [],
-  };
-}
-
+/* ───────────────────────────────── App ───────────────────────────────── */
 function AppInner() {
   const { snapshot, logs, animEvents, actions } = useMemorySimulator(1024 * 8);
   const { highlight } = useHighlight();
 
-  // Selección desde el panel de índice
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [peekRange, setPeekRange] = useState<{
+    start: number;
+    size: number;
+  } | null>(null);
 
-  // Ítems para el panel lateral (los necesitamos antes para mapear labels)
-  const ramItems = useMemo(() => {
-    return Array.isArray((snapshot as any).ramIndex)
-      ? (snapshot as any).ramIndex
-      : [];
-  }, [snapshot]);
+  const ramItems = useMemo(
+    () =>
+      Array.isArray((snapshot as any).ramIndex)
+        ? (snapshot as any).ramIndex
+        : [],
+    [snapshot]
+  );
 
-  // Proyección de tones → ranges con énfasis si coincide el selectedId
-  const baseRanges: ByteRange[] = useMemo(() => {
-    const tones = (snapshot as any).ramTones as
-      | {
-          start: number;
-          size: number;
-          label?: string;
-          tone: ByteRange["tone"];
-        }[]
-      | undefined;
+  useEffect(() => {
+    if (!peekRange) return;
+    const t = setTimeout(() => setPeekRange(null), 1200);
+    return () => clearTimeout(t);
+  }, [peekRange]);
 
-    if (!Array.isArray(tones)) return [];
+  const ramSnap = useMemo(
+    () =>
+      buildRamViewSnap(snapshot as any, {
+        selectedId,
+        peekRange,
+        activeFromHighlight: highlight?.ranges?.[0]?.start,
+        bytesPerRow: 16,
+        groupSize: 4,
+      }),
+    [snapshot, selectedId, peekRange, highlight]
+  );
 
-    const labelById = new Map<string, string>(
-      ramItems.map((it: any) => [String(it.id), String(it.label)])
-    );
-
-    return tones.map((t) => ({
-      start: t.start >>> 0,
-      size: t.size >>> 0,
-      label: (t.label && labelById.get(String(t.label))) || t.label,
-      tone: t.tone,
-      emph: selectedId ? String(t.label) === selectedId : false,
-    }));
-  }, [snapshot, ramItems, selectedId]);
-
-  // Normalizamos lo que venga en snapshot.ram y le inyectamos ranges + activeAddr
-  const ramSnap = useMemo(() => {
-    const snap = ensureUiRamSnapshot((snapshot as any).ram);
-
-    // dirección activa desde highlight o desde el ítem seleccionado
-    const activeFromHighlight = highlight?.ranges?.[0]?.start;
-    const sel = selectedId
-      ? ramItems.find((it: any) => it.id === selectedId)
-      : null;
-    const selectedStart = sel ? hexToNum(sel.range.from) >>> 0 : undefined;
-
-    const active = (activeFromHighlight ?? selectedStart ?? snap.activeAddr) as
-      | number
-      | undefined;
-
-    return { ...snap, ranges: baseRanges, activeAddr: active };
-  }, [snapshot, highlight, baseRanges, ramItems, selectedId]);
-
-  // Selección desde el panel
-  const handlePick = useCallback((item: any) => {
-    setSelectedId(item.id); // el énfasis lo aplica baseRanges al coincidir label===id
-  }, []);
+  const handlePick = useCallback((item: any) => setSelectedId(item.id), []);
+  const handleFocusRange = useCallback(
+    (r: { from: `0x${string}`; to: `0x${string}` }) => {
+      const start = parseInt(r.from, 16) >>> 0;
+      const end = parseInt(r.to, 16) >>> 0;
+      setPeekRange({ start, size: Math.max(0, end - start) });
+    },
+    []
+  );
 
   const pulseAddrs = useMemo(
     () =>
@@ -191,31 +71,108 @@ function AppInner() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+      {/* Fondo pastel más claro, con degradado colorido y grid */}
+      <div
+        className="
+          relative isolate min-h-screen overflow-hidden
+          text-[#E6E6E6] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40
+          before:content-[''] before:absolute before:inset-0 before:-z-10
+          after:content-['']  after:absolute  after:inset-0  after:-z-10
+        "
+      >
+        <style>{`
+          .isolate:before{
+            background:
+              radial-gradient(1200px 420px at 20% -10%, rgba(186,230,253,.25), transparent 55%),
+              radial-gradient(1000px 480px at 120% 120%, rgba(244,114,182,.18), transparent 55%),
+              linear-gradient(180deg, #191a1e 0%, #141519 50%, #101115 100%);
+          }
+          .isolate:after{
+            opacity: .05;
+            background:
+              repeating-linear-gradient(0deg, #ffffff 0 1px, transparent 1px 28px),
+              repeating-linear-gradient(90deg, #ffffff 0 1px, transparent 1px 28px);
+            -webkit-mask-image: linear-gradient(#000, rgba(0,0,0,.25));
+                    mask-image: linear-gradient(#000, rgba(0,0,0,.25));
+          }
+        `}</style>
+        <style>{`
+  /* Firefox */
+  .stk-scroll{
+    scrollbar-width: thin;                /* thin | auto | none */
+    scrollbar-color: rgba(167,139,250,.55) rgba(255,255,255,.06); /* thumb | track */
+    scrollbar-gutter: stable both-edges;  /* evita saltos de layout */
+  }
+
+  /* Chrome / Edge / Safari */
+  .stk-scroll::-webkit-scrollbar{
+    width: 12px;            /* grosor vertical */
+    height: 12px;           /* grosor horizontal (si aplica) */
+  }
+  .stk-scroll::-webkit-scrollbar-track{
+    background: linear-gradient(180deg, rgba(10,10,15,.35), rgba(10,10,15,.18));
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .stk-scroll::-webkit-scrollbar-thumb{
+    background: linear-gradient(180deg,
+                  rgba(167,139,250,.65),
+                  rgba(244,114,182,.60) 55%,
+                  rgba(251,191,36,.55));
+    border-radius: 10px;
+    border: 2px solid rgba(16,16,20,.9); /* aro oscuro para que “flote” */
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18),
+                0 0 0 1px rgba(255,255,255,.06);
+  }
+  .stk-scroll::-webkit-scrollbar-thumb:hover{
+    background: linear-gradient(180deg,
+                  rgba(167,139,250,.85),
+                  rgba(244,114,182,.80) 55%,
+                  rgba(251,191,36,.75));
+  }
+  .stk-scroll::-webkit-scrollbar-corner{
+    background: transparent;
+  }
+`}</style>
+
         <div className="flex w-full flex-col gap-6">
           <h1
             data-tour="structure-title"
             className="mt-2 mb-6 bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] bg-clip-text text-center text-2xl font-extrabold uppercase tracking-wide text-transparent sm:text-4xl drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)]"
           >
-            SIMULADOR
-            <span className="text-[#D72638]">&lt;RAM&gt;</span>
+            SIMULADOR <span className="text-[#D72638]">&lt;RAM&gt;</span>
           </h1>
-          <div className="w-full rounded-2xl border border-[#2E2E2E] bg-[#1A1A1F] px-4 py-6 shadow-xl shadow-black/40 space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              <StackView frames={snapshot.stack as any} />
-              <HeapView heap={snapshot.heap as any} pulseAddrs={pulseAddrs} />
+
+          <div
+            className="
+              w-full rounded-2xl border border-neutral-700/40 bg-neutral-900/60 px-4 py-6
+              shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)]
+              backdrop-saturate-150 space-y-6
+            "
+          >
+            {/* Stack + Heap */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch h-[60vh] min-h-0">
+              <div className="h-full min-h-0 overflow-hidden flex">
+                <StackView frames={snapshot.stack as any} />
+              </div>
+              <div className="h-full min-h-0 overflow-hidden flex">
+                <HeapView heap={snapshot.heap as any} pulseAddrs={pulseAddrs} />
+              </div>
             </div>
 
-            {/* RAM + Índice lado a lado */}
+            {/* RAM + Índice */}
             <div className="grid gap-4 md:grid-cols-2 items-stretch content-stretch">
               <RamView snap={ramSnap} />
               <RamIndexPanel
                 items={ramItems}
-                onPick={handlePick}
+                inspectors={(snapshot as any).inspectors}
                 selectedId={selectedId}
+                onPick={handlePick}
+                onFocusRange={handleFocusRange}
               />
             </div>
 
+            {/* Consola */}
             <div className="mt-4">
               <LogPanel logs={logs} onCommand={actions.executeCommand} />
             </div>

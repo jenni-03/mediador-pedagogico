@@ -27,7 +27,10 @@ export type ExecOutcome =
 export class CommandExecutor {
   constructor(
     private readonly memory: Memory,
-    private readonly interpreter = new CommandInterpreter(),
+    private readonly interpreter = new CommandInterpreter(SchemaRegistry, {
+      hasVar: (name: string) => !!this.memory.getStack().resolve(name),
+      getVarTypeSummary: (name: string) => this.memory.getVarTypeSummary(name),
+    }),
     private readonly schemas = SchemaRegistry
   ) {}
 
@@ -99,7 +102,42 @@ export class CommandExecutor {
           : { ok: false, message: r[1] };
       }
 
-      // Declaración con inicializador de valor → store (nombre debe ser nuevo)
+      // ⬇️⬇️ NUEVO: Declaración con inicializador por identificador (int y = x;)
+      if (ast.init.kind === "ident") {
+        const from = ast.init.name;
+
+        // Caso soportado ahora: PRIMITIVOS (copia por valor)
+        if (!ast.isArray && isPrimOrString && typeName !== "String") {
+          const prim = typeName as any; // ya validado por el intérprete
+          const rDecl = this.memory.declarePrimitive(ast.name, prim);
+          if (!rDecl[0]) return { ok: false, message: rDecl[1] };
+
+          const rAssign = this.memory.assignIdToId(ast.name, from);
+          return rAssign[0]
+            ? {
+                ok: true,
+                message: `${check.message}\n🧠 Inicializado desde ${from} (copia de valor).`,
+              }
+            : { ok: false, message: rAssign[1] };
+        }
+
+        // Aún no implementado: String / objetos / arreglos (requiere declarar slot ref y enlazar)
+        const destino = ast.isArray
+          ? `arreglos`
+          : typeName === "String"
+            ? `String`
+            : `objetos`;
+        return {
+          ok: false,
+          message:
+            `❌ Inicialización por identificador no implementada para ${destino}. ` +
+            `Declara y luego asigna:\n` +
+            `• ${typeName}${ast.isArray ? "[]" : ""} ${ast.name};\n` +
+            `• ${ast.name} = ${from};`,
+        };
+      }
+
+      // Declaración con inicializador literal/objeto/array → store (nombre debe ser nuevo)
       const valueJs = exprToJs(ast.init);
       const memType = this.toMemType(typeName, ast.isArray);
       const r = this.memory.storeValue(ast.name, memType, valueJs, {

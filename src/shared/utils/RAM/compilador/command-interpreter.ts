@@ -19,7 +19,8 @@ import {
 import { ArrayValueValidator } from "./array-value-validator";
 import { ObjectValueValidator } from "./object-value-validator";
 import type { ObjectSchema } from "./object-value-validator";
-
+import type { PrimitiveType } from "../memoria/layout";
+import type { TypeLikeSummary } from "../memoria/Memory";
 // Re-export para tests que importan desde aquí
 export type { ObjectSchema } from "./object-value-validator";
 
@@ -58,6 +59,23 @@ export type Expr =
   | { kind: "newArray"; length: number } // ← NUEVO
   | { kind: "absent" }
   | { kind: "ident"; name: string };
+
+// --- Soporte local para consultar tipos de variables existentes (sin acoplar rutas) ---
+type FieldSig = { key: string; type: PrimitiveType | "ptr32" };
+
+type MemoryLike = {
+  hasVar(name: string): boolean;
+  getVarTypeSummary(name: string): TypeLikeSummary | null;
+};
+
+// comparación estricta de schemas (mismo orden, misma aridad, mismas claves/tipos)
+function sameSchema(a: FieldSig[], b: FieldSig[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].key !== b[i].key || a[i].type !== b[i].type) return false;
+  }
+  return true;
+}
 
 // ======== Registro de esquemas para objetos ========
 /** Intenta parsear:   class|record|struct  TypeName ( fieldList ) ; */
@@ -710,7 +728,8 @@ export type EvalResult =
 
 export class CommandInterpreter {
   constructor(
-    private readonly schema: typeof SchemaRegistry = SchemaRegistry
+    private readonly schema: typeof SchemaRegistry = SchemaRegistry,
+    private readonly memory?: MemoryLike
   ) {}
 
   /** Valida una declaración: usa el validador adecuado según tipo. */
@@ -771,7 +790,178 @@ export class CommandInterpreter {
       };
     }
 
-    // Resto: igual que antes (validadores de valores)
+    // 1c) NUEVO: inicializar desde otra variable: int x = y;  Persona p2 = p;  int[] b = a; ...
+    if (ast.init.kind === "ident") {
+      const from = ast.init.name;
+
+      if (!this.memory) {
+        return {
+          ok: false,
+          message:
+            "❌ No puedo resolver inicializadores por identificador sin un contexto de memoria.",
+        };
+      }
+      const sum = this.memory.getVarTypeSummary(from);
+      if (!sum) {
+        return {
+          ok: false,
+          message: `❌ Variable fuente "${from}" no existe o es null.`,
+        };
+      }
+
+      // Caso NO array
+      if (!ast.isArray) {
+        if (isPrimOrString) {
+          // Primitivo o String
+          if (typeName === "String") {
+            if (sum.category === "string") {
+              return {
+                ok: true,
+                message: `✅ ${typeName} ${ast.name} inicializado desde ${from}.`,
+              };
+            }
+            return {
+              ok: false,
+              message: `❌ Tipos incompatibles: declaraste String pero "${from}" no es String.`,
+            };
+          } else {
+            // primitivo exacto (sin promociones por ahora)
+            if (
+              sum.category === "prim" &&
+              sum.type === (typeName as PrimitiveLike)
+            ) {
+              return {
+                ok: true,
+                message: `✅ ${typeName} ${ast.name} inicializado desde ${from}.`,
+              };
+            }
+            const got =
+              sum.category === "prim"
+                ? sum.type
+                : sum.category === "string"
+                  ? "String"
+                  : "no-prim";
+            return {
+              ok: false,
+              message: `❌ Tipos incompatibles: declaraste ${typeName} pero "${from}" es ${got}.`,
+            };
+          }
+        } else {
+          // Objeto con schema
+          if (!this.schema.has(typeName)) {
+            return {
+              ok: false,
+              message: `❌ Tipo desconocido: "${typeName}". Regístralo en SchemaRegistry.`,
+            };
+          }
+          const { schema } = this.schema.get(typeName);
+          const target: FieldSig[] = Object.entries(schema).map(([key, def]) =>
+            def.kind === "prim"
+              ? {
+                  key,
+                  type: (def.type === "String"
+                    ? "string"
+                    : def.type) as PrimitiveType,
+                }
+              : { key, type: "ptr32" as const }
+          );
+
+          if (sum.category !== "object") {
+            return {
+              ok: false,
+              message: `❌ Tipos incompatibles: declaraste ${typeName} (objeto) pero "${from}" no es objeto.`,
+            };
+          }
+          if (!sameSchema(target, sum.schema)) {
+            return {
+              ok: false,
+              message: `❌ Schema incompatible entre ${typeName} y "${from}".`,
+            };
+          }
+          return {
+            ok: true,
+            message: `✅ ${typeName} ${ast.name} inicializado desde ${from}.`,
+          };
+        }
+      }
+
+      // Caso ARRAY
+      if (ast.isArray) {
+        if (isPrimOrString) {
+          // Arreglo de primitivos o de String
+          if (typeName === "String") {
+            if (sum.category === "array-string") {
+              return {
+                ok: true,
+                message: `✅ ${typeName}[] ${ast.name} inicializado desde ${from}.`,
+              };
+            }
+            return {
+              ok: false,
+              message: `❌ Arreglo incompatible: esperabas String[] y "${from}" no es String[].`,
+            };
+          } else {
+            if (
+              sum.category === "array-prim" &&
+              sum.elem === (typeName as PrimitiveLike)
+            ) {
+              return {
+                ok: true,
+                message: `✅ ${typeName}[] ${ast.name} inicializado desde ${from}.`,
+              };
+            }
+            const got =
+              sum.category === "array-prim"
+                ? `${sum.elem}[]`
+                : sum.category === "array-string"
+                  ? "String[]"
+                  : "no-array-prim";
+            return {
+              ok: false,
+              message: `❌ Arreglo incompatible: esperabas ${typeName}[] y "${from}" es ${got}.`,
+            };
+          }
+        } else {
+          // Arreglo de objetos
+          if (!this.schema.has(typeName)) {
+            return {
+              ok: false,
+              message: `❌ Tipo desconocido: "${typeName}". Regístralo en SchemaRegistry.`,
+            };
+          }
+          const { schema } = this.schema.get(typeName);
+          const elemSig: FieldSig[] = Object.entries(schema).map(
+            ([key, def]) =>
+              def.kind === "prim"
+                ? {
+                    key,
+                    type: (def.type === "String"
+                      ? "string"
+                      : def.type) as PrimitiveType,
+                  }
+                : { key, type: "ptr32" as const }
+          );
+
+          if (sum.category !== "array-object") {
+            return {
+              ok: false,
+              message: `❌ Arreglo incompatible: esperabas ${typeName}[] y "${from}" no es arreglo de objetos.`,
+            };
+          }
+          if (!sameSchema(elemSig, sum.schema)) {
+            return {
+              ok: false,
+              message: `❌ Arreglo incompatible: schema de ${typeName} no coincide con el de "${from}".`,
+            };
+          }
+          return {
+            ok: true,
+            message: `✅ ${typeName}[] ${ast.name} inicializado desde ${from}.`,
+          };
+        }
+      }
+    }
+
     try {
       if (!ast.isArray) {
         if (isPrimOrString) {

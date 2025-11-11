@@ -5,20 +5,23 @@ import {
   HintOptions,
   HintTarget,
   IndicatorPositioningConfig,
-  LinkData,
+  ListLinkData,
   LinkPathFn,
   ListNodeData,
   TraversalNodeType,
   TreeLinkData,
-  TreeTraversalAnimOptions,
+  TreeTraversalAnimOptions
 } from "../../../types";
 import {
   SVG_BINARY_TREE_VALUES,
+  SVG_LINKED_LIST_VALUES,
   SVG_STYLE_VALUES,
 } from "../../constants/consts";
-import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 import { type HierarchyNode, type Selection, easePolyInOut } from "d3";
 import { straightPath } from "../treeUtils";
+import { buildListPath } from "../listUtils";
+import { type EventBus } from "../../events/eventBus";
+import { delay } from "../simulatorUtils";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
@@ -90,8 +93,6 @@ export function drawArrowIndicator(
         // Establecimiento de la posición inicial del grupo
         gEnter
           .transition()
-          .duration(1200)
-          .style("opacity", 1)
           .attr("transform", (d) =>
             groupPositioningTransform.calculateTransform(d, dims)
           );
@@ -99,7 +100,7 @@ export function drawArrowIndicator(
         return gEnter;
       },
       (update) => update,
-      (exit) => exit.transition().duration(1000).style("opacity", 0).remove()
+      (exit) => exit
     );
 }
 
@@ -183,7 +184,7 @@ export function drawTreeLinks(
   positions: Map<string, { x: number, y: number }>,
 ) {
   // Data join para la creación de los enlaces entre nodos
-  g.selectAll<SVGGElement, LinkData>("g.link")
+  g.selectAll<SVGGElement, TreeLinkData>("g.link")
     .data(linksData, d => `link-${d.sourceId}-${d.targetId}`)
     .join(
       enter => {
@@ -214,13 +215,13 @@ export function drawTreeLinks(
 
 /**
  * Función encargada de renderizar los nodos de una lista dentro del lienzo.
- * @param svg Selección D3 del elemento SVG donde se van a renderizar los nodos de la lista.
+ * @param nodesLayer Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los nodos de la lista.
  * @param listNodes Array con información de los nodos a renderizar.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param dims Dimensiones del lienzo y sus elementos.
  */
 export function drawListNodes(
-  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
   listNodes: ListNodeData<number>[],
   positions: Map<string, { x: number; y: number }>,
   dims: {
@@ -235,8 +236,7 @@ export function drawListNodes(
   const { margin, elementWidth, elementHeight, nodeSpacing, height } = dims;
 
   // Data join para la creación de los nodos
-  svg
-    .selectAll<SVGGElement, ListNodeData<number>>("g.node")
+  nodesLayer.selectAll<SVGGElement, ListNodeData<number>>("g.node")
     .data(listNodes, (d) => d.id)
     .join(
       enter => {
@@ -329,22 +329,21 @@ export function drawListNodes(
 
 /**
  * Función encargada de renderizar los enlaces pertenecientes a los nodos de una lista.
- * @param svg Selección D3 del elemento SVG donde se van a renderizar los enlaces de la lista.
+ * @param linksLayer Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los enlaces de la lista.
  * @param linksData Array con información de los enlaces a renderizar.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param elementWidth Ancho del nodo.
  * @param elementHeight Alto del nodo.
  */
 export function drawListLinks(
-  svg: Selection<SVGSVGElement, unknown, null, undefined>,
-  linksData: LinkData[],
+  linksLayer: Selection<SVGGElement, unknown, null, undefined>,
+  linksData: ListLinkData[],
   positions: Map<string, { x: number; y: number }>,
   elementWidth: number,
   elementHeight: number
 ) {
   // Data join para la creación de los enlaces entre nodos
-  svg
-    .selectAll<SVGGElement, LinkData>("g.link")
+  linksLayer.selectAll<SVGGElement, ListLinkData>("g.link")
     .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`)
     .join(
       enter => {
@@ -362,16 +361,17 @@ export function drawListLinks(
           .attr("stroke-width", 1.5)
           .attr("fill", "none")
           .attr("marker-end", "url(#arrowhead)")
-          .attr("d", (d) =>
-            d.type === "next" || d.type === "prev"
-              ? calculateLinkPath(d, positions, elementWidth, elementHeight)
-              : calculateCircularLPath(
-                d,
-                positions,
-                elementWidth,
-                elementHeight
-              )
-          );
+          .attr("d", (d) => {
+            const sourcePos = positions.get(d.sourceId);
+            const targetPos = positions.get(d.targetId);
+            return buildListPath(
+              d.type,
+              sourcePos ?? null,
+              targetPos ?? null,
+              elementWidth,
+              elementHeight
+            );
+          });
 
         return gLink;
       },
@@ -524,7 +524,8 @@ export function animateHighlightNode(
 
 /**
  * Función encargada de eliminar todos los nodos y enlaces dentro del lienzo.
- * @param svg Selección D3 del elemento SVG a limpiar.
+ * @param nodesG Selección D3 del grupo <g> que contiene los nodos de la lista enlazada.
+ * @param linksG Selección D3 del grupo <g> que contiene los enlaces entre nodos.
  * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
@@ -532,37 +533,40 @@ export function animateHighlightNode(
 export async function animateClearList(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodePositions: Map<string, { x: number; y: number }>,
+  bus: EventBus,
+  labels: {
+    CLEAR_HEAD: number,
+    RESET_SIZE: number
+  },
+  stepId: string,
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-  // Animación de salida de los enlaces
-  await svg
-    .selectAll("g.link")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "clean" });
 
-  // Animación de salida de los nodos
-  await svg
-    .selectAll("g.node")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+    // Animación de salida de los elementos del lienzo
+    bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_HEAD });
+    await svg.selectAll("*")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .remove()
+      .end();
 
-  // Eliminación de los nodos y enlaces del DOM
-  svg.selectAll("g.node").remove();
-  svg.selectAll("g.link").remove();
+    // Liempiza del mapa de posiciones
+    nodePositions.clear();
 
-  // Liempiza del mapa de posiciones
-  nodePositions.clear();
+    bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
+    await delay(400);
 
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
+    // Fin de la operación
+    bus.emit("op:done", { op: "clean" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
 }
 
 /**
@@ -623,6 +627,113 @@ export async function animateClearTree(
 
   // Finalización de la animación
   setIsAnimating(false);
+}
+
+/**
+ * Función encargada de reposicionar los nodos de una lista, sus enlaces de conexión e indicadores de cabeza/cola opcionales.
+ * @param svg Selección D3 del elemento SVG que contiene los nodos y enlaces de la lista.
+ * @param nodes Array de objetos de datos de nodos que representan la estructura de la lista.
+ * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
+ * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param buildPath Función para construir el SVG path del enlace entre 2 posiciones.
+ * @param repositionOptions Opciones para el reposicionamiento de los indicadores auxiliares.
+ * @returns Una promesa que se resuelve una vez todas las transiciones se han completado (nodos, enlaces, indicadores).
+ */
+export async function repositionList(
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
+  nodes: ListNodeData<number>[],
+  linksData: ListLinkData[],
+  positions: Map<string, { x: number; y: number }>,
+  repositionOptions: {
+    headIndicator: Selection<SVGGElement, unknown, null, undefined> | null;
+    tailIndicator: Selection<SVGGElement, unknown, null, undefined> | null;
+    headNodeId: string | null;
+    tailNodeId: string | null;
+  }
+) {
+  const { headIndicator, headNodeId, tailIndicator, tailNodeId } = repositionOptions;
+  const promises: Promise<void>[] = [];
+
+  // Selección de nodos a desplazar (re-vinculación de datos)
+  const nodesSel = svg
+    .selectAll<SVGGElement, ListNodeData<number>>("g.node")
+    .data(nodes, (d) => d.id);
+
+  // Promesa para desplazamiento de nodos
+  promises.push(
+    nodesSel
+      .transition()
+      .duration(1500)
+      .ease(easePolyInOut)
+      .attr("transform", (d) => {
+        const p = positions.get(d.id)!;
+        return `translate(${p.x}, ${p.y})`;
+      })
+      .end()
+  );
+
+  // Selección de enlaces a ajustar (re-vinculación de datos)
+  const linksSel = svg
+    .selectAll<SVGGElement, ListLinkData>("g.link")
+    .data(
+      linksData,
+      (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
+    );
+
+  // Promesa para ajuste de enlaces
+  promises.push(
+    linksSel
+      .select("path.node-link")
+      .transition()
+      .duration(1500)
+      .ease(easePolyInOut)
+      .attr("d", (d) => {
+        const sourcePos = positions.get(d.sourceId) ?? null;
+        const targetPos = positions.get(d.targetId) ?? null;
+        return buildListPath(d.type, sourcePos, targetPos, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT)
+      })
+      .end()
+  );
+
+  // Promesa para desplazamiento de indicador cabeza
+  if (headIndicator && headNodeId) {
+    const headPos = positions.get(headNodeId);
+    if (headPos) {
+      promises.push(
+        headIndicator
+          .transition()
+          .duration(1500)
+          .ease(easePolyInOut)
+          .attr("transform", () => {
+            const finalX = headPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = headPos.y;
+            return `translate(${finalX}, ${finalY})`;
+          })
+          .end()
+      );
+    }
+  }
+
+  // Promesa para desplazamiento de indicador cola
+  if (tailIndicator && tailNodeId) {
+    const tailPos = positions.get(tailNodeId);
+    if (tailPos) {
+      promises.push(
+        tailIndicator
+          .transition()
+          .duration(1500)
+          .ease(easePolyInOut)
+          .attr("transform", () => {
+            const finalX = tailPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = tailPos.y;
+            return `translate(${finalX}, ${finalY})`;
+          })
+          .end()
+      );
+    }
+  }
+
+  return Promise.all(promises).then(() => { });
 }
 
 /**
@@ -689,7 +800,7 @@ export async function repositionTree(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @param opts Opciones para la animación del recorrido.
  */
-export async function   animateTreeTraversal(
+export async function animateTreeTraversal(
   treeG: Selection<SVGGElement, unknown, null, undefined>,
   seqG: Selection<SVGGElement, unknown, null, undefined>,
   targetNodes: TraversalNodeType[],

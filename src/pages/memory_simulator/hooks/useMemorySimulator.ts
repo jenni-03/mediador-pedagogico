@@ -1,9 +1,8 @@
 // src/app/MemoryApp/hooks/useMemorySimulator.ts
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Memory } from "../../../shared/utils/RAM/memoria/Memory";
 import { VmController } from "../../../shared/utils/RAM/vm-controller";
 import type { UiSnapshot } from "../../../shared/utils/RAM/snapshot-builder";
-import { buildUiSnapshot } from "../../../shared/utils/RAM/snapshot-builder";
 
 function normErr(e: unknown) {
   if (e instanceof Error) return e.message || String(e);
@@ -11,43 +10,62 @@ function normErr(e: unknown) {
 }
 
 export function useMemorySimulator(sizeBytes = 64 * 1024) {
+  // Fuente de verdad del modelo
   const memory = useMemo(() => new Memory(sizeBytes), [sizeBytes]);
   const vm = useMemo(() => new VmController(memory), [memory]);
 
+  // Opciones de RAM (oculta guards y "padding" siempre)
+  const ramOpts = useMemo(
+    () => ({
+      ram: { hideGuards: true, extraHiddenLabels: ["padding"] as string[] },
+    }),
+    []
+  );
+
+  // Estado UI
   const [snapshot, setSnapshot] = useState<UiSnapshot>(() =>
-    buildUiSnapshot(memory, {
-      ram: { hideGuards: true, extraHiddenLabels: ["padding"] },
-    })
+    vm.getSnapshot(ramOpts)
   );
   const [logs, setLogs] = useState<string[]>([]);
-  const [animEvents] = useState<any[]>([]); // opcional
+  const [animEvents] = useState<unknown[]>([]); // placeholder: cuando definas eventos, tipa esto
+
+  // Si cambia memory/vm (p.ej. por sizeBytes), resincroniza snapshot
+  useEffect(() => {
+    setSnapshot(vm.getSnapshot(ramOpts));
+    // opcional: limpiar logs para un arranque "limpio"
+    setLogs([]);
+  }, [vm, ramOpts]);
 
   const executeCommand = useCallback(
     (cmd: string) => {
-      // Log del comando ejecutado
-      setLogs((L) => [...L, `▶ ${cmd}`].slice(-500));
+      const c = cmd.trim();
+      if (!c) return;
+
+      // Log del comando
+      setLogs((L) => [...L, `▶ ${c}`].slice(-500));
 
       try {
-        const res = vm.run(cmd); // ya viene con try/catch interno, pero este try protege el propio hook
-        setSnapshot(buildUiSnapshot(memory, { ram: { hideGuards: true, extraHiddenLabels: ["padding"] } }));
+        // Ejecuta y usa el snapshot que ya construye VmController con opciones
+        const res = vm.run(c, ramOpts);
+        setSnapshot(res.snapshot);
 
-        // Prefijo aquí (no en VmController) para no duplicar iconos
+        // Mensaje (los íconos los pones aquí, el mensaje de VmController es neutro)
         const line = res.ok ? `✅ ${res.message}` : `❌ ${res.message}`;
         setLogs((L) => [...L, line].slice(-500));
       } catch (e) {
-        // Si algo se escapó, no caigas: logea y deja snapshot como estaba
+        // Cualquier fuga: log sin romper la UI
         setLogs((L) => [...L, `❌ ${normErr(e)}`].slice(-500));
       }
     },
-    [vm]
+    [vm, ramOpts]
   );
 
   const clearLogs = useCallback(() => setLogs([]), []);
 
   return {
     memory,
-    snapshot,
     vm,
+    snapshot,
     logs,
     animEvents,
     actions: { executeCommand, clearLogs },

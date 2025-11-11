@@ -68,15 +68,14 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
                 { margin, elementWidth, elementHeight, spacing, height }
             );
 
-            await delay(1000);
+            await delay(600);
             bus.emit("step:progress", { stepId: "create", lineIndex: labels.CANT0 });
 
-            await delay(1000);
+            await delay(600);
             bus.emit("step:progress", { stepId: "create", lineIndex: labels.ASSIGN });
-            await delay(1000);
+            await delay(600);
 
-            // Cierre de la operación
-            bus.emit("step:done", { stepId: "create" });
+            // Fin de la operación
             bus.emit("op:done", { op: "create" });
 
             resetQueryValues();
@@ -106,8 +105,10 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
         // Animación de inserción del nuevo elemento
         animateInsertionSequence(
             svg,
-            element,
-            index,
+            {
+                insertionValue: element,
+                insertionIndex: index,
+            },
             dims,
             bus,
             resetQueryValues,

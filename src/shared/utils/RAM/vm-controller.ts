@@ -18,9 +18,9 @@ import {
 /** Resultado estándar para la UI (usa UiSnapshot). */
 export type RunResult = {
   ok: boolean;
-  message: string;       // ← mensaje neutro (sin emojis)
-  snapshot: UiSnapshot;  // ← snapshot listo para frontend
-  raw?: RawSnapshot;     // ← opcional: compat con Memory
+  message: string; // ← mensaje neutro (sin emojis)
+  snapshot: UiSnapshot; // ← snapshot listo para frontend
+  raw?: RawSnapshot; // ← opcional: compat con Memory
 };
 
 function normalizeError(e: unknown): string {
@@ -38,23 +38,27 @@ export class VmController {
   }
 
   /** Ejecuta un comando y devuelve el snapshot “bonito” para la UI. */
-  run(cmd: string): RunResult {
+  run(
+    cmd: string,
+    opts?: { ram?: { hideGuards?: boolean; extraHiddenLabels?: string[] } }
+  ): RunResult {
     try {
-      const res = this.exec.execute(cmd);          // puede lanzar
-      const uiSnap = buildUiSnapshot(this.mem);
+      const res = this.exec.execute(cmd);
+      const uiSnap = buildUiSnapshot(this.mem, opts);
       const raw = this.mem.snapshot();
       return { ok: res.ok, message: res.message, snapshot: uiSnap, raw };
     } catch (e) {
-      // No rompas la UI: devuelve snapshot ACTUAL y el error normalizado
-      const uiSnap = buildUiSnapshot(this.mem);
+      const uiSnap = buildUiSnapshot(this.mem, opts);
       const raw = this.mem.snapshot();
       return { ok: false, message: normalizeError(e), snapshot: uiSnap, raw };
     }
   }
 
   /** Snapshot completo para la UI (sin ejecutar nada). */
-  getSnapshot(): UiSnapshot {
-    return buildUiSnapshot(this.mem);
+  getSnapshot(opts?: {
+    ram?: { hideGuards?: boolean; extraHiddenLabels?: string[] };
+  }): UiSnapshot {
+    return buildUiSnapshot(this.mem, opts);
   }
 
   /** Compatibilidad: snapshot crudo de Memory. */
@@ -73,8 +77,12 @@ export class VmController {
     return buildUiHeap(this.mem);
   }
 
-  getUiRam(): UiRamView {
-    return buildUiRam(this.mem);
+  getUiRam(opts?: {
+    hideGuards?: boolean;
+    extraHiddenLabels?: string[];
+  }): UiRamView {
+    const heapUi = buildUiHeap(this.mem);
+    return buildUiRam(this.mem, heapUi, opts);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -88,7 +96,13 @@ export class VmController {
     return fmtHeap(this.getUiHeap());
   }
 
-  formatRam(opts?: { from?: number; to?: number; maxRows?: number }): string {
-    return fmtRam(this.getUiRam(), opts);
+  formatRam(
+    opts?: { from?: number; to?: number; maxRows?: number } & {
+      hideGuards?: boolean;
+      extraHiddenLabels?: string[];
+    }
+  ): string {
+    const { hideGuards, extraHiddenLabels, ...pp } = opts ?? {};
+    return fmtRam(this.getUiRam({ hideGuards, extraHiddenLabels }), pp);
   }
 }

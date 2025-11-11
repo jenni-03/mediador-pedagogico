@@ -62,6 +62,21 @@ export interface LinkedListInterface<T> {
   getTamanio(): number;
 }
 
+export type ListLinkPathFn = (
+  direction: "prev" | "next" | "circular-prev" | "circular-next",
+  sourcePos: { x: number; y: number } | null,
+  targetPos: { x: number; y: number } | null,
+  elementWidth: number,
+  elementHeight: number
+) => string;
+
+
+export type ListLinkData = {
+  sourceId: string;
+  targetId: string;
+  type: "next" | "prev" | "circular-next" | "circular-prev";
+};
+
 export type ListNodeData<T = unknown> = {
   id: string;
   value: T;
@@ -79,12 +94,6 @@ export type QueueNodeData = {
 
 export type PriorityQueueNodeData = QueueNodeData & {
   priority: number;
-};
-
-export type LinkData = {
-  sourceId: string;
-  targetId: string;
-  type: "next" | "prev" | "circular-next" | "circular-prev";
 };
 
 export type StackNodeData = {
@@ -535,10 +544,10 @@ export type BaseQueryOperations<
   ? {
     toAddFirst: string | null;
     toAddLast: string | null;
-    toAddAt: [string, number] | [];
+    toAddAt: { nodeId: string, position: number } | null;
     toDeleteFirst: string | null;
     toDeleteLast: string | null;
-    toDeleteAt: [string, number] | [];
+    toDeleteAt: { nodeId: string, position: number } | null;
     toSearch: number | null;
     toClear: boolean;
   }
