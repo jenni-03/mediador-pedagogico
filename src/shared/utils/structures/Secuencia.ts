@@ -47,7 +47,7 @@ export class Secuencia<T> {
   }
 
   /**
-   * Método que inserta un elemento al final de la secuencia sin realizar recolocación.
+   * Método que inserta un nuevo elemento al final de la secuencia sin realizar recolocación.
    * @param elem Elemento a insertar.
    * @returns Índice en el que se insertó el elemento.
    */
@@ -61,7 +61,7 @@ export class Secuencia<T> {
   }
 
   /**
-   * Método que elimina el elemento en la posición especificada de la secuencia.
+   * Método que elimina el elemento de la secuencia en la posición especificada.
    * Realiza un corrimiento de los elementos a la derecha de la posición hacia la izquierda,
    * y deja la última casilla en null.
    * @param pos Índice del elemento a eliminar.
@@ -99,9 +99,9 @@ export class Secuencia<T> {
   }
 
   /**
-   * Método que retorna el elemento en la posición indicada.
-   * @param i Posición del elemento.
-   * @returns El elemento indicado o null si la posición es inválida.
+   * Método que obtiene el elemento de la secuencia en la posición especificada.
+   * @param i Índice del elemento en la secuencia.
+   * @returns Elemento en la posición indicada.
    */
   public get(i: number): T | null {
     if (this.cant === 0) {
@@ -114,9 +114,9 @@ export class Secuencia<T> {
   }
 
   /**
-   * Método que cambia el elemento en la posición indicada por otro.
-   * @param i Posición a modificar.
-   * @param nuevo Nuevo elemento a insertar.
+   * Método que reemplaza el elemento de la secuencia en la posición indicada por un nuevo valor.
+   * @param i Índice del elemento en la secuencia que se va a reemplazar.
+   * @param nuevo Nuevo elemento que reemplazará al existente.
    */
   public set(i: number, nuevo: T) {
     if (i < 0 || i >= this.cant) {
@@ -129,9 +129,9 @@ export class Secuencia<T> {
   }
 
   /**
-   * Método que comprueba si el elemento se encuentra en la secuencia.
+   * Método que comprueba si un elemento existe en la secuencia.
    * @param elem Elemento a buscar.
-   * @returns true si se encuentra, false en caso contrario.
+   * @returns true si el elemento existe en la secuencia, false en caso contrario.
    */
   public esta(elem: T): boolean {
     return this.vector.includes(elem);
