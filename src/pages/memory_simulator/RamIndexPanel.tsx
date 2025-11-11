@@ -6,13 +6,12 @@ const fmtBytes = (n: number) =>
   n >= 1024 ? `${(n / 1024).toFixed(1)}K` : String(n);
 const ZERO = "0x00000000" as HexAddr;
 
-/** quita prefijos docentes como "var " del nombre mostrado */
 function cleanOwnerName(s: string | undefined | null): string | undefined {
-  return typeof s === "string" ? s.replace(/^\s*var\s+/i, "").trim() : undefined;
+  return typeof s === "string"
+    ? s.replace(/^\s*var\s+/i, "").trim()
+    : undefined;
 }
 
-
-/** Lee en orden la primera propiedad string disponible */
 function pickMetaStr(
   meta: Record<string, unknown> | undefined,
   keys: string[]
@@ -25,9 +24,7 @@ function pickMetaStr(
   return undefined;
 }
 
-/** nombre “variable” más generoso: cubre varios nombres posibles */
-function varFromMeta(meta?: Record<string, unknown>): string | undefined {
-  // prioriza nombres “bonitos”, luego variantes comunes que suelen usar los builders
+function varFromMeta(meta?: Record<string, unknown>) {
   return (
     pickMetaStr(meta, [
       "displayName",
@@ -45,8 +42,7 @@ function varFromMeta(meta?: Record<string, unknown>): string | undefined {
   );
 }
 
-/** si existe, intenta obtener un id/grupo para cruzar entre header/data y su dueño */
-function groupIdFromMeta(meta?: Record<string, unknown>): string | undefined {
+function groupIdFromMeta(meta?: Record<string, unknown>) {
   return (
     pickMetaStr(meta, [
       "groupId",
@@ -63,7 +59,26 @@ function groupIdFromMeta(meta?: Record<string, unknown>): string | undefined {
   );
 }
 
-/** etiqueta de “segmento” (sólo para title/tooltip si hace falta) */
+function fieldKeyFromMeta(meta?: Record<string, unknown>) {
+  return pickMetaStr(meta, ["fieldKey", "key", "field", "prop"]);
+}
+
+/** dedupe robusto por (source,type,from,bytes,groupId) */
+function dedupeItems(items: UiRamItem[]): UiRamItem[] {
+  const seen = new Set<string>();
+  const out: UiRamItem[] = [];
+  for (const it of items) {
+    const gid = groupIdFromMeta(it.meta) ?? "";
+    const key = `${it.source}|${it.type}|${it.range.from}|${(it as any).bytes ?? ""}|${gid}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(it);
+    }
+  }
+  return out;
+}
+
+/** etiqueta de “segmento” (tooltip) */
 function segmentLabel(it: UiRamItem): string {
   const m = (it.meta ?? {}) as any;
   switch (it.source) {
@@ -89,7 +104,6 @@ function segmentLabel(it: UiRamItem): string {
   }
 }
 
-/** pill por tipo semántico (array/string/object/prim) */
 function kindPill(it: UiRamItem): { label: string; cls: string } {
   if (it.type === "array")
     return {
@@ -112,7 +126,6 @@ function kindPill(it: UiRamItem): { label: string; cls: string } {
   };
 }
 
-/** Chip corta sin repetir ubicación (stack/heap) */
 function chipLabelBySource(
   src: UiRamItem["source"]
 ): "ref" | "prim" | "header" | "data" {
@@ -182,7 +195,7 @@ function IndexBackdrop() {
   );
 }
 
-/* =================== Card horizontal (creativa + responsive + toggle) =================== */
+/* =================== Card =================== */
 function ItemCard({
   it,
   pressed,
@@ -190,17 +203,18 @@ function ItemCard({
   onHoverRange,
   onLeaveRange,
   heapOwnerName,
+  attrChips,
 }: {
   it: UiRamItem;
   pressed: boolean;
   onToggle: () => void;
   onHoverRange?: (r: ByteRange) => void;
   onLeaveRange?: () => void;
-  /** nombre inferido para headers/data (array x, object p, String nombre -> aquí solo “x”, “p”, “nombre”) */
   heapOwnerName?: string;
+  /** chips tipo p.id, p.nombre (solo objetos en heap-data) */
+  attrChips?: string[];
 }) {
   const theme = srcTheme(it.source)!;
-  const chipShort = chipLabelBySource(it.source);
   const pill = kindPill(it);
   const seg = segmentLabel(it);
 
@@ -208,17 +222,16 @@ function ItemCard({
   const isStackRef = it.source === "stack-ref";
   const isHeap = it.source === "heap-header" || it.source === "heap-data";
 
-  // Título (según reglas)
-  let titleText = "";
-  if (isStackPrim) {
-    titleText = varFromMeta(it.meta) ?? (it.type || "prim");
-  } else if (isStackRef) {
-    titleText = varFromMeta(it.meta) ?? "ref";
-  } else {
-    // heap: nombre del dueño (sin "var ")
-    titleText =
-      cleanOwnerName(heapOwnerName ?? varFromMeta(it.meta)) ?? "sin nombre";
-  }
+  // título: para campos muestra owner.field
+  const owner = cleanOwnerName(heapOwnerName ?? varFromMeta(it.meta));
+  const fieldKey = fieldKeyFromMeta(it.meta);
+  let titleText = isStackPrim
+    ? (varFromMeta(it.meta) ?? (it.type || "prim"))
+    : isStackRef
+      ? (varFromMeta(it.meta) ?? "ref")
+      : fieldKey && owner
+        ? `${owner}.${fieldKey}`
+        : (owner ?? "sin nombre");
 
   return (
     <div
@@ -284,14 +297,11 @@ function ItemCard({
               theme.chip,
             ].join(" ")}
           >
-            {chipShort}
+            {chipLabelBySource(it.source)}
           </span>
         )}
 
-        {/* pill de tipo:
-          - stack-prim: SÍ
-          - stack-ref:  NO
-          - heap:       SÍ (array/object/string) */}
+        {/* pill tipo */}
         {!isStackRef && (
           <span
             className={["icq-chip border text-[10px] shrink-0", pill.cls].join(
@@ -308,22 +318,48 @@ function ItemCard({
             <div className="icq-title truncate font-semibold tracking-tight text-neutral-100">
               {titleText}
             </div>
+            {/* chips de atributos (p.id, p.nombre) */}
+            {attrChips && attrChips.length > 0 && (
+              <div className="hidden sm:flex flex-wrap gap-1">
+                {attrChips.map((c) => (
+                  <span
+                    key={c}
+                    className="icq-badge border border-neutral-800 bg-neutral-900/50 text-[10px] text-neutral-300"
+                    title={c}
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* métricas:
-            - stack (prim/ref): solo DIRECCIÓN
-            - heap (header/data): BYTES + DIRECCIÓN */}
+        {/* métricas */}
         <div className="icq-metrics shrink-0">
           {(it.source === "heap-header" || it.source === "heap-data") && (
             <span className="icq-badge border border-neutral-800 bg-neutral-900/60 text-neutral-300 text-[11px] tabular-nums">
-              {fmtBytes(it.bytes)}
+              {fmtBytes((it as any).bytes ?? 0)}
             </span>
           )}
           <span className="icq-badge border border-neutral-800 bg-neutral-900/60 text-neutral-300 text-[11px] font-mono tabular-nums">
             {it.range.from}
           </span>
         </div>
+
+        {/* chips en móviles */}
+        {attrChips && attrChips.length > 0 && (
+          <div className="sm:hidden basis-full pt-1 flex flex-wrap gap-1">
+            {attrChips.map((c) => (
+              <span
+                key={c}
+                className="icq-badge border border-neutral-800 bg-neutral-900/50 text-[10px] text-neutral-300"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -336,6 +372,41 @@ type Groups = {
   heapHdr: UiRamItem[];
   heapData: UiRamItem[];
 };
+
+/** Colapsa campos de objetos si existe el ítem grupo `heap#X:data` */
+function collapseHeapObjectData(items: UiRamItem[]): UiRamItem[] {
+  const buckets = new Map<string, UiRamItem[]>();
+  const noGroup: UiRamItem[] = [];
+
+  for (const it of items) {
+    if (it.source !== "heap-data") continue;
+    const gid = groupIdFromMeta(it.meta);
+    if (!gid) {
+      noGroup.push(it);
+      continue;
+    }
+    const arr = buckets.get(gid) ?? [];
+    arr.push(it);
+    buckets.set(gid, arr);
+  }
+
+  const result: UiRamItem[] = [];
+  for (const [gid, arr] of buckets) {
+    const groupItem = arr.find(
+      (x) => x.id === `${gid}:data` && x.type === "object"
+    );
+    if (groupItem) {
+      result.push(groupItem);
+    } else {
+      // no hay ítem grupo -> deja los campos
+      result.push(...arr);
+    }
+  }
+  // añade heap-data sin grupo (strings/arrays top-level)
+  result.push(...noGroup);
+  return result;
+}
+
 function groupItems(items: UiRamItem[]): Groups {
   const g: Groups = { stackPrim: [], stackRef: [], heapHdr: [], heapData: [] };
   for (const it of items) {
@@ -344,6 +415,10 @@ function groupItems(items: UiRamItem[]): Groups {
     else if (it.source === "heap-header") g.heapHdr.push(it);
     else g.heapData.push(it);
   }
+
+  // colapsa heap-data de objetos
+  g.heapData = collapseHeapObjectData(g.heapData);
+
   const byAddr = (a: UiRamItem, b: UiRamItem) =>
     parseInt(a.range.from, 16) - parseInt(b.range.from, 16);
   g.stackPrim.sort(byAddr);
@@ -353,51 +428,74 @@ function groupItems(items: UiRamItem[]): Groups {
   return g;
 }
 
-/** Índice de nombres para items de heap (mejor “sin nombre”) */
+/** Índice de nombres para items de heap */
 function buildHeapOwnerNameIndex(items: UiRamItem[]) {
   const nameByGroup = new Map<string, string>();
-
-  // 1) si el propio header/data trae nombre
   for (const it of items) {
     const gid = groupIdFromMeta(it.meta);
     const own = cleanOwnerName(varFromMeta(it.meta));
-    if (gid && own) nameByGroup.set(gid, own);      // <-- solo set si hay string
+    if (gid && own) nameByGroup.set(gid, own);
   }
-
-  // 2) heredar entre pares con el mismo groupId
   for (const it of items) {
     const gid = groupIdFromMeta(it.meta);
     if (!gid || nameByGroup.has(gid)) continue;
-
     const peer = items.find(
       (x) => x !== it && groupIdFromMeta(x.meta) === gid && varFromMeta(x.meta)
     );
-    const nm = cleanOwnerName(peer && varFromMeta(peer.meta));
-    if (gid && nm) nameByGroup.set(gid, nm);         // <-- solo set si hay string
+    const nm = cleanOwnerName(peer && varFromMeta(peer?.meta));
+    if (gid && nm) nameByGroup.set(gid, nm);
   }
-
   return (it: UiRamItem): string | undefined => {
     const gid = groupIdFromMeta(it.meta);
     return gid ? nameByGroup.get(gid) : undefined;
   };
 }
 
+/** Id canónico para selección (colapsa campos → heap#X:data) */
+function canonicalSelectId(it: UiRamItem): string {
+  const gid = groupIdFromMeta(it.meta);
+  if (it.source === "heap-data" && gid) return `${gid}:data`;
+  if (it.source === "heap-header" && gid) return `${gid}:header`;
+  return it.id;
+}
+
+/** Busca un rango representativo para un id canónico (usa todos los items) */
+function rangeForSelectId(
+  selId: string,
+  itemsAll: UiRamItem[]
+): ByteRange | undefined {
+  // 1) exacto
+  const exact = itemsAll.find((x) => x.id === selId);
+  if (exact) return exact.range;
+
+  // 2) por groupId
+  const gid = selId.split(":").slice(0, 2).join(":"); // heap#N
+  const any =
+    itemsAll.find(
+      (x) => groupIdFromMeta(x.meta) === gid && x.source === "heap-data"
+    ) ?? itemsAll.find((x) => groupIdFromMeta(x.meta) === gid);
+  return any?.range;
+}
 
 /* =================== Columna =================== */
 function Column({
   title,
   items,
+  allItems,
   selectedId,
   onToggleItem,
   onFocusRange,
   heapOwnerNameOf,
+  attrsOf,
 }: {
   title: string;
   items: UiRamItem[];
+  allItems: UiRamItem[]; // <- NUEVO: todas las filas para resolver rangos por id canónico
   selectedId: string | null;
   onToggleItem: (it: UiRamItem) => void;
   onFocusRange: (r: ByteRange) => void;
   heapOwnerNameOf: (it: UiRamItem) => string | undefined;
+  attrsOf: (it: UiRamItem) => string[];
 }) {
   return (
     <div className="min-h-0 flex flex-col rounded-xl border border-emerald-900/40 bg-neutral-900/30">
@@ -420,7 +518,8 @@ function Column({
           </div>
         ) : (
           items.map((it) => {
-            const pressed = selectedId === it.id;
+            const canonicalId = canonicalSelectId(it);
+            const pressed = selectedId === canonicalId;
             const ownerName =
               it.source === "heap-header" || it.source === "heap-data"
                 ? heapOwnerNameOf(it)
@@ -432,14 +531,16 @@ function Column({
                 it={it}
                 pressed={pressed}
                 heapOwnerName={ownerName}
+                attrChips={attrsOf(it)}
                 onToggle={() => {
                   const willSelect = !pressed;
                   onToggleItem(it);
                   onFocusRange(
-                    willSelect ? it.range : { from: ZERO, to: ZERO }
+                    willSelect
+                      ? (rangeForSelectId(canonicalId, allItems) ?? it.range)
+                      : { from: ZERO, to: ZERO }
                   );
                 }}
-                // hover solo si no está seleccionada
                 onHoverRange={(r) => {
                   if (!pressed) onFocusRange(r);
                 }}
@@ -455,41 +556,83 @@ function Column({
   );
 }
 
-/* =================== Panel principal (sin inspector, toggle local + foco persistente) =================== */
+/* =================== Panel principal (controlable) =================== */
 export default function RamIndexPanel({
   items,
   onFocusRange,
   selectedId,
+  onPick,
 }: {
   items: UiRamItem[];
   onFocusRange?: (range: ByteRange) => void;
   selectedId?: string | null;
+  onPick?: (item: UiRamItem | null) => void;
 }) {
-  const groups = React.useMemo(() => groupItems(items), [items]);
+  // 1) dedupe
+  const itemsClean = React.useMemo(() => dedupeItems(items), [items]);
 
-  // índice para mejorar nombres en heap (evitar “sin nombre”)
+  // 2) agrupar + colapsar heap-data objetos
+  const groups = React.useMemo(() => groupItems(itemsClean), [itemsClean]);
+
+  // 3) índice de nombres para owner
   const heapOwnerNameOf = React.useMemo(
-    () => buildHeapOwnerNameIndex(items),
-    [items]
+    () => buildHeapOwnerNameIndex(itemsClean),
+    [itemsClean]
   );
 
-  // selección local con compat de estado inicial
-  const [selId, setSelId] = React.useState<string | null>(selectedId ?? null);
+  // 4) chips de atributos
+  const attrsOf = React.useCallback(
+    (it: UiRamItem) => {
+      if (it.source !== "heap-data") return [];
 
-  // foco en RAM sincronizado con selección
+      const owner = heapOwnerNameOf(it) ?? "";
+      const fk = fieldKeyFromMeta(it.meta);
+      if (fk) return [`${owner}.${fk}`];
+
+      if (it.type === "object") {
+        const gid = groupIdFromMeta(it.meta);
+        const header = itemsClean.find(
+          (x) => x.source === "heap-header" && groupIdFromMeta(x.meta) === gid
+        );
+        const keys =
+          ((header?.meta as any)?.objKeys as string[] | undefined) ?? [];
+        return keys.map((k) => `${owner}.${k}`);
+      }
+      return [];
+    },
+    [itemsClean]
+  );
+
+  // 5) selección controlada / no controlada (usa id canónico)
+  const isControlled = selectedId !== undefined;
+  const [localSel, setLocalSel] = React.useState<string | null>(
+    selectedId ?? null
+  );
+  React.useEffect(() => {
+    if (isControlled) setLocalSel(selectedId ?? null);
+  }, [isControlled, selectedId]);
+  const selId = isControlled ? (selectedId ?? null) : localSel;
+
+  // 6) foco en RAM por id canónico (usa todos los items)
   React.useEffect(() => {
     if (!onFocusRange) return;
     if (selId) {
-      const it = items.find((x) => x.id === selId);
-      if (it) onFocusRange(it.range);
+      const r = rangeForSelectId(selId, itemsClean);
+      if (r) onFocusRange(r);
     } else {
       onFocusRange({ from: ZERO, to: ZERO });
     }
-  }, [selId, items, onFocusRange]);
+  }, [selId, itemsClean, onFocusRange]);
 
-  const toggle = React.useCallback((it: UiRamItem) => {
-    setSelId((prev) => (prev === it.id ? null : it.id));
-  }, []);
+  const toggle = React.useCallback(
+    (it: UiRamItem) => {
+      const canonicalId = canonicalSelectId(it);
+      const nextId = selId === canonicalId ? null : canonicalId;
+      if (!isControlled) setLocalSel(nextId);
+      onPick?.(nextId ? it : null);
+    },
+    [isControlled, selId, onPick]
+  );
 
   return (
     <section
@@ -516,28 +659,34 @@ export default function RamIndexPanel({
           <div className="flex-1 min-w-0 p-3 sm:p-4 overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 h-full">
               <Column
-                title="Stack"
+                title="STACK"
                 items={[...groups.stackRef, ...groups.stackPrim]}
+                allItems={itemsClean}
                 selectedId={selId}
                 onToggleItem={toggle}
                 onFocusRange={(r) => onFocusRange?.(r)}
                 heapOwnerNameOf={heapOwnerNameOf}
+                attrsOf={attrsOf}
               />
               <Column
-                title="Heap · headers"
+                title="HEAP · HEADERS"
                 items={groups.heapHdr}
+                allItems={itemsClean}
                 selectedId={selId}
                 onToggleItem={toggle}
                 onFocusRange={(r) => onFocusRange?.(r)}
                 heapOwnerNameOf={heapOwnerNameOf}
+                attrsOf={attrsOf}
               />
               <Column
-                title="Heap · data"
+                title="HEAP · DATA"
                 items={groups.heapData}
+                allItems={itemsClean}
                 selectedId={selId}
                 onToggleItem={toggle}
                 onFocusRange={(r) => onFocusRange?.(r)}
                 heapOwnerNameOf={heapOwnerNameOf}
+                attrsOf={attrsOf}
               />
             </div>
           </div>

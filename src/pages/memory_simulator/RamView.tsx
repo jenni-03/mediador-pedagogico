@@ -66,52 +66,62 @@ function sortRanges(ranges: ByteRange[]): ByteRange[] {
   return copy;
 }
 
-/* Lookup helpers siempre sobre rangos ya ordenados */
-function labelAt(addr: number, ranges: ByteRange[]): string | undefined {
-  for (const r of ranges) {
-    const a0 = r.start,
-      a1 = r.start + r.size;
-    if (addr >= a0 && addr < a1) return r.label;
+/* ---------- Resolución de solapamientos (núcleo nuevo) ---------- */
+
+// Normalizador de tono
+type Tone = NonNullable<ByteRange["tone"]>;
+const normalizeTone = (t: ByteRange["tone"] | undefined): Tone =>
+  t === "header" ||
+  t === "prim" ||
+  t === "array" ||
+  t === "string" ||
+  t === "object" ||
+  t === "slot" ||
+  t === "data"
+    ? t
+    : "slot";
+
+const inRange = (addr: number, r: ByteRange) =>
+  addr >= r.start && addr < r.start + r.size;
+
+const toneWeight: Record<Tone, number> = {
+  data: 5,
+  header: 4,
+  prim: 3,
+  array: 3,
+  string: 3,
+  object: 3,
+  slot: 2,
+};
+
+/** Devuelve el rango enfatizado activo (si existe): el que contiene activeAddr; si no hay, el *emph* más pequeño. */
+function pickActiveEmphRange(ranges: ByteRange[], activeAddr?: number) {
+  const emphs = ranges.filter((r) => r.emph);
+  if (!emphs.length) return null;
+  if (typeof activeAddr === "number") {
+    const hit = emphs.find((r) => inRange(activeAddr, r));
+    if (hit) return hit;
   }
-  return undefined;
-}
-function toneAt(
-  addr: number,
-  ranges: ByteRange[]
-): ByteRange["tone"] | undefined {
-  for (const r of ranges) {
-    const a0 = r.start,
-      a1 = r.start + r.size;
-    if (addr >= a0 && addr < a1) return r.tone;
-  }
-  return undefined;
-}
-function emphAt(addr: number, ranges: ByteRange[]): boolean {
-  for (const r of ranges) {
-    if (!r.emph) continue;
-    const a0 = r.start,
-      a1 = r.start + r.size;
-    if (addr >= a0 && addr < a1) return true;
-  }
-  return false;
+  return emphs.slice().sort((a, b) => a.size - b.size)[0] ?? null;
 }
 
-/* Normalizador de tono */
-type Tone = NonNullable<ByteRange["tone"]>;
-const normalizeTone = (t: ByteRange["tone"] | undefined): Tone => {
-  switch (t) {
-    case "header":
-    case "prim":
-    case "array":
-    case "string":
-    case "object":
-    case "slot":
-    case "data":
-      return t;
-    default:
-      return "slot";
-  }
-};
+/** Elige el mejor rango que cubre `addr` (prioriza el activo → menor tamaño → mayor prioridad de tono). */
+function pickBestRangeAt(
+  addr: number,
+  ranges: ByteRange[],
+  prefer?: ByteRange | null
+): ByteRange | null {
+  const candidates = ranges.filter((r) => inRange(addr, r));
+  if (!candidates.length) return null;
+  if (prefer && inRange(addr, prefer)) return prefer;
+  return candidates.slice().sort((a, b) => {
+    if (!!b.emph !== !!a.emph) return (b.emph ? 1 : 0) - (a.emph ? 1 : 0);
+    if (a.size !== b.size) return a.size - b.size;
+    return (
+      toneWeight[normalizeTone(b.tone)] - toneWeight[normalizeTone(a.tone)]
+    );
+  })[0];
+}
 
 // Fondo de columnas agrupadas
 function groupBgCSS(bytesPerRow: number, groupSize: number) {
@@ -319,10 +329,14 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
       ? clamp((snap.used / Math.max(1, snap.capacity)) * 100)
       : null;
 
-  // Rangos ordenados localmente (evita “selección de lo que no es”)
+  // Rangos ordenados localmente + rango activo enfatizado
   const sortedRanges = React.useMemo(
     () => sortRanges(snap?.ranges ?? []),
     [snap?.ranges]
+  );
+  const activeEmphRange = React.useMemo(
+    () => pickActiveEmphRange(sortedRanges, snap?.activeAddr),
+    [sortedRanges, snap?.activeAddr]
   );
 
   // Agrupar filas en “chips”
@@ -459,14 +473,31 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                         >
                           {bytes.map((b, i) => {
                             const addr = row.addr + i;
-                            const tone = normalizeTone(
-                              toneAt(addr, sortedRanges)
+
+                            // Rango “mejor” para este byte
+                            const best = pickBestRangeAt(
+                              addr,
+                              sortedRanges,
+                              activeEmphRange
                             );
-                            const isEmph = emphAt(addr, sortedRanges);
+                            const tone = normalizeTone(best?.tone);
+                            const lbl = best?.label;
+
+                            // Emph sólo si cae dentro del rango enfatizado activo
+                            const isEmph = !!(
+                              activeEmphRange && inRange(addr, activeEmphRange)
+                            );
                             const isActive = snap?.activeAddr === addr;
                             const groupSep = i % G === 0 && i !== 0;
-                            const lbl = labelAt(addr, sortedRanges);
-                            const prevLbl = labelAt(addr - 1, sortedRanges);
+
+                            // etiqueta sólo en el primer byte del mismo rango elegido
+                            const prevBest = pickBestRangeAt(
+                              addr - 1,
+                              sortedRanges,
+                              activeEmphRange
+                            );
+                            const showLabelHere =
+                              lbl && (!prevBest || prevBest.label !== lbl);
 
                             return (
                               <div
@@ -494,8 +525,7 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                                   {toHex2(b)}
                                 </span>
 
-                                {/* etiqueta al inicio del rango */}
-                                {lbl && prevLbl !== lbl && (
+                                {showLabelHere && (
                                   <span
                                     className={`pointer-events-none absolute -top-1 -translate-y-full whitespace-nowrap rounded px-1.5 py-[1px] text-[10px] ring-1 ${TONE_CLS[tone].text} bg-zinc-950/80 ring-emerald-800/60`}
                                   >

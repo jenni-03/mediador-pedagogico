@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// StackView (modo estudiante) — sin “cristal” detrás de las flechas
+// StackView (modo estudiante) — responsive como RAM/Índice
 // Contrato intacto: recibe UiFrame[]. Solo cambia la presentación.
 // -----------------------------------------------------------------------------
 
@@ -56,8 +56,9 @@ type UiPrimSlot = {
 type UiRefSlot = {
   name: string;
   kind: "ref";
-  refAddr: HexAddr;
+  refAddr: HexAddr; // dirección de la celda u32 en el STACK
   refKind: "null" | "string" | "array" | "object" | "unknown";
+  range: ByteRange; // rango del slot (la celda u32)
   preview?: StringPreview | ArrayPreview;
 };
 
@@ -128,6 +129,42 @@ function Rail({ cls }: { cls: string }) {
   );
 }
 
+/* ───────── helpers del shell ───────── */
+function useScrollInfo(ref: React.RefObject<HTMLDivElement>) {
+  const [st, setSt] = React.useState({ pct: 0, atTop: true, atBottom: false });
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      const max = Math.max(1, scrollHeight - clientHeight);
+      const pct = Math.min(1, Math.max(0, scrollTop / max));
+      setSt({ pct, atTop: scrollTop <= 0, atBottom: scrollTop >= max - 1 });
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [ref]);
+  return st;
+}
+
+/* Hook: mide ancho del contenedor para ajustar flecha y paddings */
+function useContainerWidth<T extends HTMLElement>() {
+  const ref = React.useRef<T | null>(null);
+  const [w, setW] = React.useState(0);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r) setW(r.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return { ref, width: w };
+}
+
 /* ============================================================
    StackView — shell sólido (sin blur ni panel translúcido)
    ============================================================ */
@@ -144,36 +181,37 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
   const { pct, atTop, atBottom } = useScrollInfo(scrollRef);
 
   return (
-    <section className="relative h-full min-h-0">
+    <section className="relative h-full min-h-0 min-w-0">
       {/* Marco exterior con borde y glow (sin cristal) */}
       <div
         className="absolute inset-0 -z-10 rounded-3xl pointer-events-none"
         style={{
-          border: "1px solid rgba(236,72,153,.38)", // rosa-500 ≈ #ec4899
+          border: "1px solid rgba(236,72,153,.38)",
           boxShadow:
-            "inset 0 0 0 1px rgba(255,255,255,.05)," + // filo interno tenue
-            "0 0 24px 4px rgba(236,72,153,.10)", // glow exterior
+            "inset 0 0 0 1px rgba(255,255,255,.05), 0 0 24px 4px rgba(236,72,153,.10)",
         }}
       />
 
-      {/* Cuerpo: 🔴 sin backdrop-blur y sin fondo semitransparente */}
-      <div className="relative h-full min-h-0 flex flex-col rounded-3xl p-3 overflow-hidden">
-        {/* Header */}
-        <div className="mb-2 flex items-center gap-3">
-          <div className="flex items-center gap-2">
+      {/* Cuerpo */}
+      <div className="relative h-full min-h-0 min-w-0 flex flex-col rounded-3xl p-3 overflow-hidden">
+        {/* Header responsivo */}
+        <div className="mb-2 flex flex-wrap items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="grid place-items-center h-7 w-7 rounded-full bg-white/6 ring-1 ring-white/10 shadow-inner">
               🧱
             </span>
-            <h2 className="text-lg font-semibold tracking-wide">Stack</h2>
+            <h2 className="text-lg sm:text-xl font-semibold tracking-wide truncate">
+              Stack
+            </h2>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <Tag className="bg-amber-900/45 text-amber-100 ring-amber-700/50">
               🔢 prim → vive aquí
             </Tag>
-            <Tag className="bg-violet-900/45 text-violet-100 ring-violet-700/50">
+            <Tag className="bg-violet-900/45 text-violet-100 ring-violet-700/50 hidden sm:inline-flex">
               🧭 ref → apunta al heap
             </Tag>
-            <Tag className="bg-sky-900/40 text-sky-100 ring-sky-700/40">
+            <Tag className="bg-sky-900/40 text-sky-100 ring-sky-700/40 hidden md:inline-flex">
               📦 bytes = tamaño en RAM
             </Tag>
           </div>
@@ -187,7 +225,7 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
           />
         </div>
 
-        {/* Contenedor scrolleable + borde (resultado) que sí llena */}
+        {/* Contenedor scrolleable + borde (fades anclados) */}
         <div
           className="relative mt-2 rounded-2xl p-[1px] flex-1 min-h-0"
           style={{
@@ -198,7 +236,7 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
         >
           <div
             ref={scrollRef}
-            className="h-full min-h-0 overflow-auto rounded-2xl p-2 stk-scroll"
+            className="relative h-full min-h-0 overflow-auto rounded-2xl p-2 stk-scroll"
           >
             <ScrollFades showTop={!atTop} showBottom={!atBottom} />
 
@@ -229,25 +267,6 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
       </div>
     </section>
   );
-}
-
-/* ───────── helpers del shell ───────── */
-function useScrollInfo(ref: React.RefObject<HTMLDivElement>) {
-  const [st, setSt] = React.useState({ pct: 0, atTop: true, atBottom: false });
-  React.useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      const max = Math.max(1, scrollHeight - clientHeight);
-      const pct = Math.min(1, Math.max(0, scrollTop / max));
-      setSt({ pct, atTop: scrollTop <= 0, atBottom: scrollTop >= max - 1 });
-    };
-    onScroll();
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [ref]);
-  return st;
 }
 
 function ScrollFades({
@@ -459,26 +478,6 @@ function CharCell({
   );
 }
 
-/* ——— Dims de flecha por tipo (string = compacto) ——— */
-function arrowDims(kind: UiRefSlot["refKind"]) {
-  if (kind === "string") {
-    return {
-      HEAD: 42,
-      BORDER: 2,
-      SAFE_RIGHT: 42 + 18,
-      PAD_X: "p-2.5",
-      BUS_H: 10,
-    };
-  }
-  return {
-    HEAD: 62,
-    BORDER: 2,
-    SAFE_RIGHT: 62 + 22,
-    PAD_X: "p-3 sm:p-3.5",
-    BUS_H: 12,
-  };
-}
-
 /* ——— Meta chips ——— */
 function MetaChip({
   children,
@@ -499,7 +498,7 @@ function MetaChip({
 
 /* ——— Preview string ——— */
 function StringCompact({ s }: { s: StringPreview }) {
-  const totalBytes = s.len * 2;
+  const totalBytes = s.len * 2; // UTF-16LE: 2B por char
   return (
     <div className="mt-2 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -590,47 +589,6 @@ function StringViz({ s }: { s: StringPreview }) {
   );
 }
 
-/* ───────────────────── Tema por tipo ───────────────────── */
-function refTheme(kind: UiRefSlot["refKind"]) {
-  switch (kind) {
-    case "string":
-      return {
-        badge: "bg-pink-900/60 text-pink-100 ring-pink-700/60",
-        edge: "rgb(244,114,182)",
-        fillA: "rgba(244,114,182,.16)",
-        fillB: "rgba(244,114,182,.06)",
-      };
-    case "array":
-      return {
-        badge: "bg-sky-900/60 text-sky-100 ring-sky-700/60",
-        edge: "rgb(56,189,248)",
-        fillA: "rgba(56,189,248,.16)",
-        fillB: "rgba(56,189,248,.06)",
-      };
-    case "object":
-      return {
-        badge: "bg-emerald-900/60 text-emerald-100 ring-emerald-700/60",
-        edge: "rgb(52,211,153)",
-        fillA: "rgba(52,211,153,.16)",
-        fillB: "rgba(52,211,153,.06)",
-      };
-    case "null":
-      return {
-        badge: "bg-neutral-800/70 text-neutral-200 ring-neutral-700/60",
-        edge: "rgb(156,163,175)",
-        fillA: "rgba(156,163,175,.14)",
-        fillB: "rgba(156,163,175,.06)",
-      };
-    default:
-      return {
-        badge: "bg-violet-900/60 text-violet-100 ring-violet-700/60",
-        edge: "rgb(167,139,250)",
-        fillA: "rgba(167,139,250,.16)",
-        fillB: "rgba(167,139,250,.06)",
-      };
-  }
-}
-
 /* util: polígono de flecha */
 const makeArrow = (head: number, inset: number) =>
   `polygon(${inset}px ${inset}px,
@@ -639,14 +597,21 @@ const makeArrow = (head: number, inset: number) =>
            calc(100% - ${head + inset}px) calc(100% - ${inset}px),
            ${inset}px calc(100% - ${inset}px))`;
 
-/* ───────────────────── Tarjeta REFERENCIA ─────────────────── */
+/* ───────────────────── Tarjeta REFERENCIA (flecha responsiva) ─────────────────── */
 function RefSlotCard({ slot }: { slot: UiRefSlot }) {
   const t = refTheme(slot.refKind);
   const isNull = slot.refKind === "null";
-  const dims = arrowDims(slot.refKind);
-  const HEAD = dims.HEAD;
+
+  // Medimos ancho del contenedor para adaptar HEAD, padding y bus
+  const { ref: hostRef, width } = useContainerWidth<HTMLDivElement>();
+
+  const headMin = slot.refKind === "string" ? 34 : 44;
+  const headMax = slot.refKind === "string" ? 56 : 76;
+  const HEAD = Math.max(headMin, Math.min(headMax, Math.round(width * 0.12)));
   const BORDER = 2;
-  const SAFE_RIGHT = dims.SAFE_RIGHT;
+  const SAFE_RIGHT = HEAD + (slot.refKind === "string" ? 18 : 24);
+  const PAD_X = width < 420 ? "p-2" : width < 640 ? "p-2.5" : "p-3.5";
+  const BUS_H = width < 420 ? 8 : 12;
 
   const CenterBanner = () => (
     <span
@@ -661,7 +626,7 @@ function RefSlotCard({ slot }: { slot: UiRefSlot }) {
   );
 
   return (
-    <div className="relative">
+    <div ref={hostRef} className="relative min-w-0">
       {/* Borde/fondo de la flecha */}
       <div
         className="absolute inset-0 -z-10"
@@ -676,7 +641,7 @@ function RefSlotCard({ slot }: { slot: UiRefSlot }) {
 
       {/* Cuerpo */}
       <div
-        className={`relative ${dims.PAD_X} isolate pl-[6px]`}
+        className={`relative ${PAD_X} isolate pl-[6px]`}
         style={{
           clipPath: makeArrow(HEAD - 10, BORDER + 4),
           background:
@@ -692,7 +657,7 @@ function RefSlotCard({ slot }: { slot: UiRefSlot }) {
           }}
         />
 
-        {/* Header */}
+        {/* Header truncable */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <Tag className={t.badge}>🧭 ref</Tag>
@@ -703,7 +668,7 @@ function RefSlotCard({ slot }: { slot: UiRefSlot }) {
               {slot.refKind}
             </span>
           </div>
-          <div className="justify-self-center">
+          <div className="justify-self-center hidden sm:block">
             <CenterBanner />
           </div>
           <div className="justify-self-end">
@@ -717,7 +682,7 @@ function RefSlotCard({ slot }: { slot: UiRefSlot }) {
             <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] bg-neutral-900/70 ring-1 ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,.12)] text-neutral-300">
               puntero
             </span>
-            <div className="relative flex-1" style={{ height: dims.BUS_H }}>
+            <div className="relative flex-1" style={{ height: BUS_H }}>
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -770,4 +735,45 @@ function RefSlotCard({ slot }: { slot: UiRefSlot }) {
       </div>
     </div>
   );
+}
+
+/* ───────────────────── Tema por tipo ───────────────────── */
+function refTheme(kind: UiRefSlot["refKind"]) {
+  switch (kind) {
+    case "string":
+      return {
+        badge: "bg-pink-900/60 text-pink-100 ring-pink-700/60",
+        edge: "rgb(244,114,182)",
+        fillA: "rgba(244,114,182,.16)",
+        fillB: "rgba(244,114,182,.06)",
+      };
+    case "array":
+      return {
+        badge: "bg-sky-900/60 text-sky-100 ring-sky-700/60",
+        edge: "rgb(56,189,248)",
+        fillA: "rgba(56,189,248,.16)",
+        fillB: "rgba(56,189,248,.06)",
+      };
+    case "object":
+      return {
+        badge: "bg-emerald-900/60 text-emerald-100 ring-emerald-700/60",
+        edge: "rgb(52,211,153)",
+        fillA: "rgba(52,211,153,.16)",
+        fillB: "rgba(52,211,153,.06)",
+      };
+    case "null":
+      return {
+        badge: "bg-neutral-800/70 text-neutral-200 ring-neutral-700/60",
+        edge: "rgb(156,163,175)",
+        fillA: "rgba(156,163,175,.14)",
+        fillB: "rgba(156,163,175,.06)",
+      };
+    default:
+      return {
+        badge: "bg-violet-900/60 text-violet-100 ring-violet-700/60",
+        edge: "rgb(167,139,250)",
+        fillA: "rgba(167,139,250,.16)",
+        fillB: "rgba(167,139,250,.06)",
+      };
+  }
 }

@@ -19,6 +19,10 @@ const fmtB = (n: number) =>
       ? `${(n / 1024).toFixed(1)} KB`
       : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
+// nombre sin "var "
+const prettyName = (s?: string) =>
+  (s ?? "").replace(/^\s*var\s+/i, "").trim() || "";
+
 /* ───────── tema por tipo (coherente con el stack) ───────── */
 function kindTheme(kind: HeapEntry["kind"]) {
   switch (kind) {
@@ -98,7 +102,30 @@ function AddrBtn({ hex }: { hex: HeapEntry["addr"] }) {
   );
 }
 
-/* ───────── Shell con progreso + fades como el Stack ───────── */
+/* Nombre destacado */
+function NameBadge({ name, kind }: { name?: string; kind: HeapEntry["kind"] }) {
+  if (!name) return null;
+  const tone =
+    kind === "array"
+      ? "from-sky-400/14 to-sky-300/6"
+      : kind === "string"
+        ? "from-pink-400/14 to-pink-300/6"
+        : kind === "object"
+          ? "from-emerald-400/14 to-emerald-300/6"
+          : "from-white/10 to-white/5";
+  return (
+    <span
+      className={`text-[12px] sm:text-[13px] font-semibold tracking-wide
+                  rounded-md px-2.5 py-0.5 ring-1 ring-white/12
+                  bg-gradient-to-b ${tone} text-neutral-50`}
+      title="nombre de la variable (si viene del stack)"
+    >
+      {name}
+    </span>
+  );
+}
+
+/* ───────── Shell con progreso + fades (sin modo guía) ───────── */
 function useScrollInfo(ref: React.RefObject<HTMLDivElement>) {
   const [st, setSt] = useState({ pct: 0, atTop: true, atBottom: false });
   useEffect(() => {
@@ -155,7 +182,6 @@ export function HeapView({
   pulseAddrs?: number[];
 }) {
   const [inspect, setInspect] = useState<HeapEntry | null>(null);
-  const [guide, setGuide] = useState(true); // Modo guía pedagógico
   const pulseSet = useMemo(() => new Set(pulseAddrs ?? []), [pulseAddrs]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -187,40 +213,10 @@ export function HeapView({
             </span>
             <h2 className="text-lg font-semibold tracking-wide">Heap</h2>
           </div>
-
-          {/* Toggle modo guía */}
-          <button
-            onClick={() => setGuide((v) => !v)}
-            className={`ml-auto text-[11px] rounded-full px-3 py-1 ring-1 ring-white/10 ${
-              guide
-                ? "bg-emerald-900/40 text-emerald-100"
-                : "bg-white/8 text-neutral-200"
-            }`}
-            title="Activa/desactiva explicaciones"
-          >
-            {guide ? "Modo guía: ON" : "Modo guía: OFF"}
-          </button>
-
-          <div className="text-xs text-neutral-400">{heap.length} items</div>
-        </div>
-
-        {/* leyenda pedagógica */}
-        {guide && (
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-neutral-300">
-            <span className="rounded px-2 py-0.5 ring-1 ring-white/10 bg-white/6">
-              Cada tarjeta es un bloque del heap
-            </span>
-            <span className="rounded px-2 py-0.5 ring-1 ring-white/10 bg-white/6">
-              Header = metadatos
-            </span>
-            <span className="rounded px-2 py-0.5 ring-1 ring-white/10 bg-white/6">
-              Data = contenido (si aplica)
-            </span>
-            <span className="rounded px-2 py-0.5 ring-1 ring-white/10 bg-white/6">
-              refCount = cuántos punteros lo usan
-            </span>
+          <div className="ml-auto text-xs text-neutral-400">
+            {heap.length} items
           </div>
-        )}
+        </div>
 
         {/* progreso scroll */}
         <div className="mb-2 h-1 rounded-full bg-white/[0.06] ring-1 ring-white/10 overflow-hidden">
@@ -249,7 +245,6 @@ export function HeapView({
                   entry={e}
                   pulse={pulseSet.has(hexToNum(e.addr))}
                   onInspect={() => setInspect(e)}
-                  guide={guide}
                 />
               ))}
             </div>
@@ -266,11 +261,11 @@ export function HeapView({
   );
 }
 
-/* ───────── resumen amigable por tarjeta ───────── */
+/* ───────── resumen amigable por tarjeta (conciso) ───────── */
 function friendlySummary(e: HeapEntry) {
   if (e.kind === "string") {
     const m = e.meta as any;
-    return `Texto (len=${m.length}). El header guarda el tamaño y el puntero; las letras viven en data desde ${m.dataPtr}.`;
+    return `Texto (len=${m.length}). Header = tamaño y puntero; el contenido vive en data desde ${m.dataPtr}.`;
   }
   if (e.kind === "array") {
     const m = e.meta as any;
@@ -278,14 +273,14 @@ function friendlySummary(e: HeapEntry) {
       m?.elem?.name ??
       m?.elemType ??
       (typeof m?.elem === "string" ? m.elem : "?");
-    return `Arreglo de ${elem} con ${m.length} elemento(s). El header indica tamaño/tipo y data apunta a los elementos desde ${m.dataPtr}.`;
+    return `Arreglo de ${elem} con ${m.length} elemento(s). Header guarda longitud y dataPtr (${m.dataPtr}).`;
   }
   if (e.kind === "object") {
     const m = e.meta as any;
     if (m?.tag === "object-compact" && Array.isArray(m?.schema)) {
-      return `Objeto compacto con ${m.schema.length} campo(s). El header trae el tipo y la forma (schema).`;
+      return `Objeto compacto con ${m.schema.length} campo(s).`;
     }
-    return `Objeto en heap. El header describe el tipo; las propiedades se ven en el inspector.`;
+    return `Objeto en heap.`;
   }
   return `Bloque en heap.`;
 }
@@ -295,12 +290,10 @@ function HeapCard({
   entry,
   pulse,
   onInspect,
-  guide = true,
 }: {
   entry: HeapEntry;
   pulse?: boolean;
   onInspect: () => void;
-  guide?: boolean;
 }) {
   const t = kindTheme(entry.kind);
   const { bind } = useAnchors();
@@ -322,12 +315,11 @@ function HeapCard({
         id={`heap-${entry.addr}`}
         className="pointer-events-none absolute -left-2 top-4 h-4 w-4"
       />
-      {/* stripe de color (sin duplicar className) */}
+      {/* stripe de color */}
       <div
         className={`absolute left-0 top-0 h-full w-[6px] rounded-l-2xl bg-gradient-to-b ${t.stripe}`}
         aria-hidden
       />
-
       {/* bisel superior */}
       <div
         className="absolute left-0 top-0 h-[3px] w-[72%] rounded-r"
@@ -337,7 +329,7 @@ function HeapCard({
         }}
       />
 
-      {/* header meta */}
+      {/* header meta (compacto y sin duplicados) */}
       <div className="flex flex-wrap items-center gap-2 pl-1">
         <Tag className={t.badge}>
           <span className={`inline-block h-2.5 w-2.5 rounded-full ${t.dot}`} />
@@ -346,48 +338,33 @@ function HeapCard({
           {entry.kind}
         </span>
 
-        <AddrBtn hex={entry.addr} />
+        <NameBadge name={prettyName(entry.label)} kind={entry.kind} />
 
-        <RefCountPill count={entry.refCount} pulse={pulse} />
+        <div className="ml-auto flex items-center gap-2">
+          <AddrBtn hex={entry.addr} />
+          <RefCountPill count={entry.refCount} pulse={pulse} />
+        </div>
 
+        {/* Extras del header:
+            - ARRAY → nada (tag/elemSize se ven en meta abajo)
+            - OBJECT → sólo tag si aporta (e.g. object-compact)
+            - STRING → nada */}
         <KindTagExtras entry={entry} />
-
-        {entry.label && (
-          <span className="text-[11px] rounded-md px-1.5 py-0.5 bg-white/8 text-neutral-200 ring-1 ring-white/10">
-            {entry.label}
-          </span>
-        )}
-
-        <span className="ml-auto text-[11px] text-neutral-400">
-          hdr:{fmtB(headerBytes)}
-          {dataBytes > 0 ? <> · data:{fmtB(dataBytes)}</> : null}
-        </span>
-
-        <button
-          onClick={onInspect}
-          className="ml-1 rounded-md px-2 py-1 text-[12px] bg-white/10 hover:bg-white/16 ring-1 ring-white/12"
-        >
-          inspeccionar
-        </button>
       </div>
 
-      {/* resumen pedagógico */}
-      {guide && (
-        <p className="mt-1 text-[12px] text-neutral-300">
-          {friendlySummary(entry)}
-        </p>
-      )}
+      {/* resumen corto */}
+      <p className="mt-1 text-[12px] text-neutral-300">
+        {friendlySummary(entry)}
+      </p>
 
-      {/* MemoryBar proporcional con rótulos */}
+      {/* MemoryBar proporcional */}
       <div className="mt-2">
         <div className="relative h-5 w-full rounded-full ring-1 ring-white/10 bg-neutral-950/40 overflow-hidden">
           {/* header */}
           <div
             className={`absolute left-0 top-0 h-full bg-gradient-to-r ${t.bar}`}
             style={{ width: `${pctHeader * 100}%` }}
-            title={`header · ${fmtB(headerBytes)} (${Math.round(
-              pctHeader * 100
-            )}%)`}
+            title={`header · ${fmtB(headerBytes)} (${Math.round(pctHeader * 100)}%)`}
           />
           {/* data */}
           <div
@@ -450,51 +427,30 @@ function HeapCard({
         </div>
       </div>
 
-      {/* meta por tipo (sin leer RAM) */}
+      {/* meta por tipo (limpia, sin repetir info del header) */}
       <div className="mt-2 text-xs text-neutral-200">
-        {entry.kind === "string" && (
-          <StringMeta meta={entry.meta} guide={guide} />
-        )}
-        {entry.kind === "array" && (
-          <ArrayMeta meta={entry.meta} guide={guide} />
-        )}
-        {entry.kind === "object" && (
-          <ObjectMeta meta={entry.meta} guide={guide} />
-        )}
+        {entry.kind === "string" && <StringMeta meta={entry.meta} />}
+        {entry.kind === "array" && <ArrayMeta meta={entry.meta} />}
+        {entry.kind === "object" && <ObjectMeta meta={entry.meta} />}
+      </div>
+
+      {/* botón inspector */}
+      <div className="mt-2">
+        <button
+          onClick={onInspect}
+          className="rounded-md px-2 py-1 text-[12px] bg-white/10 hover:bg-white/16 ring-1 ring-white/12"
+        >
+          inspeccionar
+        </button>
       </div>
     </div>
   );
 }
 
-/* ───────── extras rápidos en el header (tag, elem, etc.) ───────── */
+/* ───────── extras rápidos en el header (sin tag/elemSize para arrays) ───────── */
 function KindTagExtras({ entry }: { entry: HeapEntry }) {
   if (entry.kind === "array") {
-    const meta = entry.meta as any;
-    const tag = meta?.tag;
-    const elem =
-      meta?.elem?.name ??
-      meta?.elemType ??
-      (typeof meta?.elem === "string" ? meta.elem : undefined);
-    const elemSize =
-      typeof meta?.elemSize === "number" ? meta.elemSize : undefined;
-
-    return (
-      <>
-        {tag && (
-          <Tag className="bg-white/8 text-neutral-200 ring-white/10">{tag}</Tag>
-        )}
-        {elem && (
-          <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-            elem=<Mono>{elem}</Mono>
-          </Tag>
-        )}
-        {elemSize !== undefined && (
-          <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-            elemSize={elemSize}
-          </Tag>
-        )}
-      </>
-    );
+    return null; // no duplicamos tag ni elemSize en el header
   }
   if (entry.kind === "object") {
     const tag = (entry.meta as any)?.tag;
@@ -502,89 +458,64 @@ function KindTagExtras({ entry }: { entry: HeapEntry }) {
       <Tag className="bg-white/8 text-neutral-200 ring-white/10">{tag}</Tag>
     ) : null;
   }
-  return null;
+  return null; // string → nada
 }
 
-/* ───────── Metas por tipo (amables) ───────── */
+/* ───────── Metas por tipo (amables y sin duplicados) ───────── */
 function StringMeta({
   meta,
-  guide = true,
 }: {
   meta: Extract<HeapEntry, { kind: "string" }>["meta"];
-  guide?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-neutral-400">string</span>
       <Tag className="bg-white/8 text-neutral-200 ring-white/10">
         len={meta.length}
       </Tag>
       <Tag className="bg-white/8 text-neutral-200 ring-white/10">
         dataPtr=<Mono>{meta.dataPtr}</Mono>
       </Tag>
-      {guide && (
-        <span className="text-[11px] text-neutral-400">
-          2B por carácter (UTF-16LE)
-        </span>
-      )}
+      <span className="text-[11px] text-neutral-400">
+        2B por carácter (UTF-16LE)
+      </span>
     </div>
   );
 }
 
 function ArrayMeta({
   meta,
-  guide = true,
 }: {
   meta: Extract<HeapEntry, { kind: "array" }>["meta"];
-  guide?: boolean;
 }) {
-  const tag = (meta as any).tag ?? "";
   const elem =
     (meta as any).elem?.name ??
     (meta as any).elemType ??
     (typeof (meta as any).elem === "string" ? (meta as any).elem : undefined);
-  const elemSize =
-    typeof (meta as any).elemSize === "number"
-      ? (meta as any).elemSize
-      : undefined;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-neutral-400">array</span>
       <Tag className="bg-white/8 text-neutral-200 ring-white/10">
         length={meta.length}
       </Tag>
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-        dataPtr=<Mono>{meta.dataPtr}</Mono>
-      </Tag>
-      {tag && (
-        <Tag className="bg-white/8 text-neutral-200 ring-white/10">{tag}</Tag>
-      )}
       {elem && (
         <Tag className="bg-white/8 text-neutral-200 ring-white/10">
           elem=<Mono>{elem}</Mono>
         </Tag>
       )}
-      {elemSize !== undefined && (
-        <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-          elemSize={elemSize}
-        </Tag>
-      )}
-      {guide && (
-        <span className="text-[11px] text-neutral-400">
-          Los elementos viven en “data”.
-        </span>
-      )}
+      <Tag className="bg-white/8 text-neutral-200 ring-white/10">
+        dataPtr=<Mono>{meta.dataPtr}</Mono>
+      </Tag>
+      <span className="text-[11px] text-neutral-400">
+        Los elementos viven en “data”.
+      </span>
     </div>
   );
 }
 
 function ObjectMeta({
   meta,
-  guide = true,
 }: {
   meta: Extract<HeapEntry, { kind: "object" }>["meta"];
-  guide?: boolean;
 }) {
   const tag = (meta as any)?.tag;
   const schema = (meta as any)?.schema as
@@ -595,18 +526,12 @@ function ObjectMeta({
     return (
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="text-neutral-400">object</span>
           <Tag className="bg-white/8 text-neutral-200 ring-white/10">
             object-compact
           </Tag>
           <Tag className="bg-white/8 text-neutral-200 ring-white/10">
             fields={schema.length}
           </Tag>
-          {guide && (
-            <span className="text-[11px] text-neutral-400">
-              Campos fijos, sin punteros por propiedad.
-            </span>
-          )}
         </div>
         <div className="mt-1 flex flex-wrap gap-1">
           {schema.map((f) => (
@@ -623,19 +548,10 @@ function ObjectMeta({
     );
   }
 
-  // fallback: meta cruda
+  // fallback minimal
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-neutral-400">object</span>
-      {guide && (
-        <span className="text-[11px] text-neutral-400">
-          Estructura no compacta. Revisa el inspector para ver sus punteros
-          internos.
-        </span>
-      )}
-      <pre className="text-xs whitespace-pre-wrap break-words text-neutral-200 bg-neutral-900/40 rounded p-2 ring-1 ring-white/10">
-        {JSON.stringify(meta, null, 2)}
-      </pre>
+    <div className="flex items-center gap-2">
+      <Tag className="bg-white/8 text-neutral-200 ring-white/10">object</Tag>
     </div>
   );
 }
