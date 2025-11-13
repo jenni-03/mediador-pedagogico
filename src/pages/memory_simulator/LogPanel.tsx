@@ -16,6 +16,16 @@ import {
   Info,
 } from "lucide-react";
 
+/* ───────────────────────── Paleta gamer sólida ───────────────────────── */
+const C = {
+  panel: "#202734",
+  panelSoft: "#242E3B",
+  panelInner: "#1C2430",
+  ring: "#2E3948",
+  text: "text-zinc-100",
+  label: "text-[11px] text-zinc-300",
+};
+
 /* ───────────────────────── Tipos ───────────────────────── */
 type LogPanelProps = {
   logs: string[];
@@ -29,7 +39,6 @@ type LineKind = "info" | "ok" | "error" | "warn";
 type OutputLine = {
   kind: LineKind;
   raw: string;
-  // Campos pedagógicos detectados
   expected?: string;
   received?: string;
   rule?: string;
@@ -38,15 +47,14 @@ type OutputLine = {
 
 type CmdBlock = {
   id: string;
-  cmd: string; // texto del comando (sin "▶")
-  lines: OutputLine[]; // feedback asociado
+  cmd: string;
+  lines: OutputLine[];
   status: "ok" | "error" | "mixed" | "info";
   when: number;
 };
 
-/* ───────────────────────── Utilidades de parsing ───────────────────────── */
+/* ───────────────────────── Utilidades ───────────────────────── */
 
-// Clasifica una sola línea
 const classifyLine = (s: string): LineKind => {
   const t = s.trim();
   if (t.startsWith("❌")) return "error";
@@ -56,10 +64,7 @@ const classifyLine = (s: string): LineKind => {
   return "info";
 };
 
-// Extrae “esperado / recibido / regla / pista” si vienen en el texto
 const extractPedagogy = (raw: string) => {
-  // Normalizamos bullets "• ..." o " - ..." y buscamos patrones.
-  // Acepta tanto "esperado:" como "Esperado:" etc.
   const lower = raw;
   const grab = (label: string) => {
     const re = new RegExp(`${label}\\s*:\\s*([^•\\n]+)`, "i");
@@ -74,7 +79,6 @@ const extractPedagogy = (raw: string) => {
   };
 };
 
-// Parte el vector de logs plano en bloques por comando ▶
 const buildBlocks = (logs: string[]): CmdBlock[] => {
   const blocks: CmdBlock[] = [];
   let current: CmdBlock | null = null;
@@ -82,9 +86,10 @@ const buildBlocks = (logs: string[]): CmdBlock[] => {
   for (const raw of logs) {
     const s = raw.trim();
     if (s.startsWith("▶")) {
-      // comienza un bloque nuevo
       current = {
-        id: `${Date.now()}-${blocks.length}-${Math.random().toString(36).slice(2, 7)}`,
+        id: `${Date.now()}-${blocks.length}-${Math.random()
+          .toString(36)
+          .slice(2, 7)}`,
         cmd: s.replace(/^▶\s*/, ""),
         lines: [],
         status: "info",
@@ -94,7 +99,6 @@ const buildBlocks = (logs: string[]): CmdBlock[] => {
       continue;
     }
     if (!current) {
-      // línea suelta previa a un ▶ — la colocamos en un bloque "anónimo"
       current = {
         id: `${Date.now()}-pre-${Math.random().toString(36).slice(2, 7)}`,
         cmd: "(sistema)",
@@ -110,7 +114,6 @@ const buildBlocks = (logs: string[]): CmdBlock[] => {
 
     current.lines.push({ kind, raw: s, ...pedagogy });
 
-    // recalcular status del bloque
     const hasErr = current.lines.some((l) => l.kind === "error");
     const hasOk = current.lines.some((l) => l.kind === "ok");
     current.status = hasErr
@@ -136,12 +139,12 @@ const Pill = ({
 }) => {
   const cls =
     tone === "ok"
-      ? "bg-emerald-600/15 text-emerald-200 ring-emerald-700/40"
+      ? "bg-emerald-600/20 text-emerald-100 ring-emerald-400/35"
       : tone === "error"
-        ? "bg-rose-600/15 text-rose-200 ring-rose-700/40"
+        ? "bg-rose-600/20 text-rose-100 ring-rose-400/35"
         : tone === "warn"
-          ? "bg-amber-500/15 text-amber-200 ring-amber-700/40"
-          : "bg-neutral-600/15 text-neutral-200 ring-neutral-700/40";
+          ? "bg-amber-500/20 text-amber-100 ring-amber-300/35"
+          : "bg-[#2F394B] text-zinc-100 ring-[#3B4659]";
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] ring-1 ${cls}`}
@@ -155,23 +158,31 @@ const Badge = ({ status }: { status: CmdBlock["status"] }) => {
   const map = {
     ok: {
       text: "OK",
-      cls: "bg-emerald-600/15 text-emerald-200 ring-emerald-700/40",
+      cls: "bg-emerald-600/20 text-emerald-100 ring-emerald-400/35",
       icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+      bar: "linear-gradient(90deg, #34d399, transparent)",
+      border: "#2dd4bf",
     },
     error: {
       text: "ERROR",
-      cls: "bg-rose-600/15 text-rose-200 ring-rose-700/40",
+      cls: "bg-rose-600/20 text-rose-100 ring-rose-400/35",
       icon: <XCircle className="h-3.5 w-3.5" />,
+      bar: "linear-gradient(90deg, #f43f5e, transparent)",
+      border: "#f43f5e",
     },
     mixed: {
       text: "MIXTO",
-      cls: "bg-purple-600/15 text-purple-200 ring-purple-700/40",
+      cls: "bg-fuchsia-600/20 text-fuchsia-100 ring-fuchsia-400/35",
       icon: <Info className="h-3.5 w-3.5" />,
+      bar: "linear-gradient(90deg, #a78bfa, transparent)",
+      border: "#a78bfa",
     },
     info: {
       text: "INFO",
-      cls: "bg-neutral-600/15 text-neutral-200 ring-neutral-700/40",
+      cls: "bg-[#2F394B] text-zinc-100 ring-[#3B4659]",
       icon: <Info className="h-3.5 w-3.5" />,
+      bar: "linear-gradient(90deg, #94a3b8, transparent)",
+      border: "#3B4659",
     },
   } as const;
   const { text, cls, icon } = map[status];
@@ -188,8 +199,8 @@ const Badge = ({ status }: { status: CmdBlock["status"] }) => {
 const CopyBtn = ({ text, title }: { text: string; title: string }) => (
   <button
     onClick={() => navigator?.clipboard?.writeText?.(text)}
-    className="ml-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px]
-               bg-neutral-800 text-neutral-200 ring-1 ring-neutral-700 hover:bg-neutral-700 active:translate-y-px"
+    className="ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px]
+               bg-[#2F394B] text-zinc-100 ring-1 ring-[#3B4659] hover:bg-[#324057] active:translate-y-px"
     title={title}
   >
     copiar
@@ -204,37 +215,39 @@ const CopyBtn = ({ text, title }: { text: string; title: string }) => (
   </button>
 );
 
-/* Callout pedagógico para una línea con “esperado/recibido/…” */
 const PedagogicCallout = ({ line }: { line: OutputLine }) => {
   const tone =
     line.kind === "error"
-      ? "border-rose-500/40 bg-rose-500/10"
-      : "border-emerald-500/30 bg-emerald-500/10";
+      ? { border: "rgba(244,63,94,.35)", bg: "rgba(244,63,94,.10)" }
+      : { border: "rgba(52,211,153,.35)", bg: "rgba(52,211,153,.10)" };
   return (
-    <div className={`mt-2 rounded-lg border ${tone} px-3 py-2`}>
+    <div
+      className="mt-2 rounded-lg px-3 py-2"
+      style={{ border: `1px solid ${tone.border}`, background: tone.bg }}
+    >
       <div className="grid gap-1 sm:grid-cols-2">
         {line.expected && (
           <div className="text-[12px]">
-            <span className="text-neutral-400">Esperado:</span>{" "}
-            <span className="font-mono text-neutral-100">{line.expected}</span>
+            <span className="text-zinc-300/80">Esperado:</span>{" "}
+            <span className="font-mono text-zinc-50">{line.expected}</span>
           </div>
         )}
         {line.received && (
           <div className="text-[12px]">
-            <span className="text-neutral-400">Recibido:</span>{" "}
-            <span className="font-mono text-neutral-100">{line.received}</span>
+            <span className="text-zinc-300/80">Recibido:</span>{" "}
+            <span className="font-mono text-zinc-50">{line.received}</span>
           </div>
         )}
         {line.rule && (
           <div className="text-[12px] sm:col-span-2">
-            <span className="text-neutral-400">Regla:</span>{" "}
-            <span className="text-neutral-100">{line.rule}</span>
+            <span className="text-zinc-300/80">Regla:</span>{" "}
+            <span className="text-zinc-50">{line.rule}</span>
           </div>
         )}
         {line.hint && (
           <div className="text-[12px] sm:col-span-2">
-            <span className="text-neutral-400">Pista:</span>{" "}
-            <span className="text-neutral-100">{line.hint}</span>
+            <span className="text-zinc-300/80">Pista:</span>{" "}
+            <span className="text-zinc-50">{line.hint}</span>
           </div>
         )}
       </div>
@@ -242,21 +255,20 @@ const PedagogicCallout = ({ line }: { line: OutputLine }) => {
   );
 };
 
-/* Una línea de salida estilizada */
 const OutputRow = ({ line }: { line: OutputLine }) => {
   const icon =
     line.kind === "error" ? (
-      <XCircle className="h-4 w-4 text-rose-400" />
+      <XCircle className="h-4 w-4 text-rose-300" />
     ) : line.kind === "ok" ? (
-      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
     ) : line.kind === "warn" ? (
       <Info className="h-4 w-4 text-amber-300" />
     ) : (
-      <Info className="h-4 w-4 text-neutral-400" />
+      <Info className="h-4 w-4 text-zinc-300" />
     );
 
   const baseText = line.raw
-    .replace(/^([✅❌]\s*)+/, "") // limpia emojis repetidos al inicio
+    .replace(/^([✅❌]\s*)+/, "")
     .replace(/^LOG\s*:?/i, "")
     .trim();
 
@@ -264,7 +276,7 @@ const OutputRow = ({ line }: { line: OutputLine }) => {
     <div className="mt-1">
       <div className="flex items-start gap-2">
         {icon}
-        <div className="text-[13px] leading-5 text-neutral-200">{baseText}</div>
+        <div className="text-[13px] leading-5 text-zinc-100">{baseText}</div>
       </div>
       {(line.expected || line.received || line.rule || line.hint) && (
         <PedagogicCallout line={line} />
@@ -273,25 +285,48 @@ const OutputRow = ({ line }: { line: OutputLine }) => {
   );
 };
 
-/* Tarjeta de un bloque comando+feedback */
+/* estado→tema para el bloque */
+function statusTheme(status: CmdBlock["status"]) {
+  switch (status) {
+    case "error":
+      return {
+        border: "#f43f5e66",
+        bar: "linear-gradient(90deg,#f43f5e,transparent)",
+      };
+    case "ok":
+      return {
+        border: "#22c55e66",
+        bar: "linear-gradient(90deg,#22c55e,transparent)",
+      };
+    case "mixed":
+      return {
+        border: "#a78bfacc",
+        bar: "linear-gradient(90deg,#a78bfa,transparent)",
+      };
+    default:
+      return {
+        border: C.ring,
+        bar: "linear-gradient(90deg,#94a3b8,transparent)",
+      };
+  }
+}
+
 const CommandBlock = ({ b }: { b: CmdBlock }) => {
+  const t = statusTheme(b.status);
   return (
     <div
-      className={`rounded-xl border px-3 py-2 ${
-        b.status === "error"
-          ? "border-rose-900/70 bg-[#180c0e]"
-          : b.status === "ok"
-            ? "border-emerald-900/60 bg-[#0e1511]"
-            : b.status === "mixed"
-              ? "border-purple-900/60 bg-[#130f16]"
-              : "border-neutral-800 bg-[#0d0e11]"
-      }`}
+      className="rounded-xl px-3 py-2 relative"
+      style={{ background: C.panelSoft, border: `1px solid ${t.border}` }}
     >
+      <div
+        className="absolute left-0 top-0 h-[3px] w-full rounded-t-xl"
+        style={{ background: t.bar as any }}
+      />
       <div className="flex items-center gap-2">
         <Badge status={b.status} />
-        <code className="font-mono text-[12px] text-neutral-100">{b.cmd}</code>
+        <code className="font-mono text-[12px] text-zinc-50">{b.cmd}</code>
         <CopyBtn text={b.cmd} title="Copiar comando" />
-        <span className="ml-auto text-[10px] text-neutral-500">
+        <span className="ml-auto text-[10px] text-zinc-300/70">
           {new Date(b.when).toLocaleTimeString()}
         </span>
       </div>
@@ -320,13 +355,10 @@ export function LogPanel({
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  /* Ejecutar */
   const run = useCallback(() => {
     const raw = cmd;
     const trimmed = raw.trim();
     if (!trimmed) return;
-
-    // permite pegar varias líneas
     const lines = raw
       .split(/\r?\n/)
       .map((s) => s.trim())
@@ -335,18 +367,15 @@ export function LogPanel({
       try {
         onCommand(line);
       } catch (e) {
-        // no romper UI
         console.error(e);
       }
     }
-
     setHistory((h) => (h[h.length - 1] === raw ? h : [...h, raw]).slice(-100));
     setHistIdx(-1);
     setCmd("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }, [cmd, onCommand]);
 
-  /* Teclado */
   const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (
       (e.key === "Enter" && !e.shiftKey) ||
@@ -394,15 +423,12 @@ export function LogPanel({
     }
   };
 
-  /* Autoscroll */
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  /* Construye bloques pedagógicos */
   const blocks = useMemo(() => buildBlocks(logs), [logs]);
 
-  /* Hint */
   const hint = useMemo(
     () =>
       placeholder ??
@@ -410,18 +436,32 @@ export function LogPanel({
     [placeholder]
   );
 
-  /* Render */
   return (
-    <section className="rounded-2xl border border-[#2E2E2E] bg-[#0E0F12]/80 backdrop-blur-sm shadow-lg shadow-black/30 overflow-hidden">
+    <section
+      className="relative overflow-hidden rounded-2xl"
+      style={{
+        background: C.panel,
+        border: `1px solid ${C.ring}`,
+        boxShadow: "0 8px 30px -12px rgba(0,0,0,.35)",
+      }}
+    >
+      {/* barra energética superior */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-amber-300" />
+
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#1F1F22] bg-[#0B0C0F]/80">
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ background: C.panelSoft, borderBottom: `1px solid ${C.ring}` }}
+      >
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full bg-[#D72638]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#F6C90E]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#4ECB71]" />
           </div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#E0E0E0]">
+          <div
+            className={`flex items-center gap-2 text-sm font-semibold ${C.text}`}
+          >
             <Terminal className="h-4 w-4 text-[#D72638]" />
             <span>CONSOLA</span>
           </div>
@@ -441,7 +481,8 @@ export function LogPanel({
                 /* no-op */
               }
             }}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#16171C] px-2 py-1 text-xs text-[#E0E0E0] hover:bg-[#1F2026] border border-[#2B2C31]"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs
+                       bg-[#2F394B] text-zinc-100 ring-1 ring-[#3B4659] hover:bg-[#324057]"
             title="Copiar todos los logs"
           >
             <CopyIcon className="h-3.5 w-3.5" />
@@ -452,7 +493,8 @@ export function LogPanel({
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex items-center gap-1 rounded-lg bg-[#1A0C0C] px-2 py-1 text-xs text-[#F2B5B5] hover:bg-[#250E0E] border border-[#7B2222]/50"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs
+                         bg-rose-600/15 text-rose-100 ring-1 ring-rose-400/35 hover:bg-rose-600/25"
               title="Limpiar consola"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -462,8 +504,20 @@ export function LogPanel({
         </div>
       </div>
 
-      {/* Área pedagógica agrupada */}
-      <div className="max-h-[260px] overflow-auto bg-gradient-to-b from-[#0E0F12] to-[#09090B] px-3 py-3 scrollbar-thin scrollbar-thumb-[#D72638]/40 scrollbar-track-transparent">
+      {/* Área de logs: sólido + micro-grid */}
+      <div
+        className="relative max-h-[260px] overflow-auto px-3 py-3 stk-scroll"
+        style={{ background: C.panelInner }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background:
+              "radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)",
+            backgroundSize: "16px 16px",
+          }}
+        />
         {blocks.length ? (
           <div className="space-y-2">
             {blocks.map((b) => (
@@ -471,7 +525,7 @@ export function LogPanel({
             ))}
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-[#4F5056]">
+          <div className="flex items-center gap-2 text-zinc-400">
             <History className="h-3.5 w-3.5" />
             <span>Sin logs.</span>
           </div>
@@ -480,14 +534,22 @@ export function LogPanel({
       </div>
 
       {/* Prompt */}
-      <div className="border-t border-[#1F1F22] bg-[#0B0C0F]/80 px-3 py-3">
+      <div
+        className="px-3 py-3"
+        style={{ background: C.panelSoft, borderTop: `1px solid ${C.ring}` }}
+      >
         <div className="flex items-center gap-2">
-          <span className="select-none rounded-md bg-[#D72638]/10 px-2 py-1 font-mono text-xs text-[#F9DDE1]">
+          <span className="select-none rounded-md bg-rose-600/20 px-2 py-1 font-mono text-xs text-rose-100 ring-1 ring-rose-400/35">
             &gt;
           </span>
           <input
             ref={inputRef}
-            className="flex-1 rounded-lg border border-[#2E2E2E] bg-[#121316] px-3 py-2 font-mono text-sm text-[#EAEAEA] placeholder:text-[#5E5F63] focus:outline-none focus:ring-2 focus:ring-[#D72638]/70 focus:border-transparent"
+            className="flex-1 rounded-lg px-3 py-2 font-mono text-sm text-zinc-50 placeholder:text-zinc-300/70 focus:outline-none"
+            style={{
+              background: C.panelInner,
+              border: `1px solid ${C.ring}`,
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,.04)",
+            }}
             placeholder={hint}
             value={cmd}
             onChange={(e) => setCmd(e.target.value)}
@@ -497,12 +559,12 @@ export function LogPanel({
           <button
             onClick={run}
             disabled={!cmd.trim()}
-            className="rounded-lg bg-gradient-to-r from-[#D72638] to-[#A11421] px-3 py-2 text-sm font-semibold text-white shadow-md shadow-[#D72638]/40 hover:brightness-105 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 px-3 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-8px_rgba(215,38,56,.55)] hover:brightness-105 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Ejecutar
           </button>
         </div>
-        <p className="mt-2 text-[10px] text-[#5E5F63]">
+        <p className="mt-2 text-[10px] text-zinc-300/70">
           Usa ↑/↓ para navegar el historial. Tab inserta 2 espacios.
         </p>
       </div>
