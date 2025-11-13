@@ -21,7 +21,7 @@ export type UiRamSnapshot = {
 
 /* ============================== Constantes de layout ============================== */
 const ADDR_COL = "11ch";
-const GAP = "0.28rem";
+const GAP = "0.32rem";
 const ROWS_PER_CHIP = 8;
 const PINS = 48;
 const PLACEHOLDER_ROWS = 6;
@@ -34,21 +34,18 @@ const toU8 = (x: unknown): Uint8Array =>
   x instanceof Uint8Array
     ? x
     : Array.isArray(x)
-      ? new Uint8Array(x as number[])
-      : new Uint8Array(0);
+    ? new Uint8Array(x as number[])
+    : new Uint8Array(0);
 
 function splitRows(bytes: Uint8Array, baseAddr: number, bytesPerRow: number) {
   const rows: { addr: number; slice: Uint8Array }[] = [];
   for (let i = 0; i < bytes.length; i += bytesPerRow) {
-    rows.push({
-      addr: baseAddr + i,
-      slice: bytes.subarray(i, i + bytesPerRow),
-    });
+    rows.push({ addr: baseAddr + i, slice: bytes.subarray(i, i + bytesPerRow) });
   }
   return rows;
 }
 
-/* ---------- Prioridad local de rangos (robusto ante snapshots viejos) ---------- */
+/* ---------- Prioridad local de rangos ---------- */
 const toneOrder = (t?: ByteRange["tone"]) => (t === "header" ? 1 : 0);
 const prioKey = (r: ByteRange) =>
   [r.emph ? 0 : 1, r.size >>> 0, toneOrder(r.tone), r.start >>> 0] as const;
@@ -66,9 +63,7 @@ function sortRanges(ranges: ByteRange[]): ByteRange[] {
   return copy;
 }
 
-/* ---------- Resolución de solapamientos (núcleo nuevo) ---------- */
-
-// Normalizador de tono
+/* ---------- Resolución de solapamientos ---------- */
 type Tone = NonNullable<ByteRange["tone"]>;
 const normalizeTone = (t: ByteRange["tone"] | undefined): Tone =>
   t === "header" ||
@@ -80,10 +75,8 @@ const normalizeTone = (t: ByteRange["tone"] | undefined): Tone =>
   t === "data"
     ? t
     : "slot";
-
 const inRange = (addr: number, r: ByteRange) =>
   addr >= r.start && addr < r.start + r.size;
-
 const toneWeight: Record<Tone, number> = {
   data: 5,
   header: 4,
@@ -94,7 +87,6 @@ const toneWeight: Record<Tone, number> = {
   slot: 2,
 };
 
-/** Devuelve el rango enfatizado activo (si existe): el que contiene activeAddr; si no hay, el *emph* más pequeño. */
 function pickActiveEmphRange(ranges: ByteRange[], activeAddr?: number) {
   const emphs = ranges.filter((r) => r.emph);
   if (!emphs.length) return null;
@@ -105,7 +97,6 @@ function pickActiveEmphRange(ranges: ByteRange[], activeAddr?: number) {
   return emphs.slice().sort((a, b) => a.size - b.size)[0] ?? null;
 }
 
-/** Elige el mejor rango que cubre `addr` (prioriza el activo → menor tamaño → mayor prioridad de tono). */
 function pickBestRangeAt(
   addr: number,
   ranges: ByteRange[],
@@ -114,16 +105,17 @@ function pickBestRangeAt(
   const candidates = ranges.filter((r) => inRange(addr, r));
   if (!candidates.length) return null;
   if (prefer && inRange(addr, prefer)) return prefer;
-  return candidates.slice().sort((a, b) => {
-    if (!!b.emph !== !!a.emph) return (b.emph ? 1 : 0) - (a.emph ? 1 : 0);
-    if (a.size !== b.size) return a.size - b.size;
-    return (
-      toneWeight[normalizeTone(b.tone)] - toneWeight[normalizeTone(a.tone)]
-    );
-  })[0];
+  return candidates
+    .slice()
+    .sort((a, b) => {
+      if (!!b.emph !== !!a.emph) return (b.emph ? 1 : 0) - (a.emph ? 1 : 0);
+      if (a.size !== b.size) return a.size - b.size;
+      return (
+        toneWeight[normalizeTone(b.tone)] - toneWeight[normalizeTone(a.tone)]
+      );
+    })[0];
 }
 
-// Fondo de columnas agrupadas
 function groupBgCSS(bytesPerRow: number, groupSize: number) {
   const w = `calc(${groupSize} * 100% / ${bytesPerRow} - 1px)`;
   return `repeating-linear-gradient(90deg, transparent, transparent ${w}, rgba(255,255,255,.08) 0, rgba(255,255,255,.08) 1px)`;
@@ -178,8 +170,8 @@ const TONE_CLS: Record<
   },
 };
 
-/* ============================== Decoración PCB ============================== */
-function PcbBackground() {
+/* ============================== PCB / Decoración ============================== */
+function PcbBoard() {
   return (
     <>
       <div
@@ -187,18 +179,65 @@ function PcbBackground() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(1200px 700px at 15% 0%, rgba(16,185,129,.10), transparent 60%), radial-gradient(1200px 700px at 85% 100%, rgba(34,197,94,.10), transparent 60%)",
+            "radial-gradient(1200px 700px at 15% -10%, rgba(16,185,129,.11), transparent 62%), radial-gradient(1200px 700px at 85% 110%, rgba(34,197,94,.12), transparent 62%)",
         }}
       />
       <div
         aria-hidden
-        className="absolute inset-0 opacity-[0.12]"
+        className="absolute inset-0 opacity-[0.10]"
         style={{
           backgroundImage:
-            "repeating-linear-gradient(90deg, rgba(16,185,129,.25) 0 1px, transparent 1px 24px), repeating-linear-gradient(0deg, rgba(16,185,129,.15) 0 1px, transparent 1px 24px)",
+            "repeating-linear-gradient(90deg, rgba(16,185,129,.22) 0 1px, transparent 1px 22px), repeating-linear-gradient(0deg, rgba(16,185,129,.14) 0 1px, transparent 1px 22px)",
         }}
       />
+      <svg
+        className="absolute inset-0 opacity-40"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="trace" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(74,222,128,.35)" />
+            <stop offset="100%" stopColor="rgba(45,212,191,.25)" />
+          </linearGradient>
+        </defs>
+        {Array.from({ length: 7 }, (_, i) => (
+          <path
+            key={i}
+            d={`M ${-10 + i * 18} 0 C ${10 + i * 18} 25, ${
+              -10 + i * 18
+            } 75, ${10 + i * 18} 100`}
+            fill="none"
+            stroke="url(#trace)"
+            strokeWidth="0.6"
+          />
+        ))}
+        {Array.from({ length: 18 }, (_, i) => (
+          <circle
+            key={`v${i}`}
+            cx={(i * 100) / 17}
+            cy={(i * 70) % 100}
+            r="1.2"
+            fill="rgba(250,250,250,.06)"
+          />
+        ))}
+      </svg>
     </>
+  );
+}
+
+function ModuleNotch() {
+  return (
+    <div
+      aria-hidden
+      className="absolute left-1/2 -translate-x-1/2 top-0 w-24 h-3 rounded-b-2xl bg-emerald-900/70"
+      style={{
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,.15)",
+        border: "1px solid rgba(6,95,70,.6)",
+        borderTop: "none",
+      }}
+    />
   );
 }
 
@@ -216,6 +255,67 @@ function GoldPins() {
   );
 }
 
+/* ===== Burbuja centrada para spans ===== */
+function RowLabel({ tone, text }: { tone: Tone; text: string }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center px-2 py-[2px] text-[10px] rounded-md ring-1 ${TONE_CLS[tone].text}`}
+      style={{
+        background: "rgba(5,10,12,.92)",
+        borderColor: "rgba(16,185,129,.45)",
+        letterSpacing: ".015em",
+        position: "relative",
+      }}
+    >
+      {text}
+      <span
+        aria-hidden
+        className="absolute left-1/2 -translate-x-1/2 bottom-[-7px] h-2 w-2 rotate-45"
+        style={{
+          background: "rgba(5,10,12,.92)",
+          borderLeft: "1px solid rgba(16,185,129,.45)",
+          borderBottom: "1px solid rgba(16,185,129,.45)",
+        }}
+      />
+    </span>
+  );
+}
+
+/* ===== Cálculo de spans por fila (label centrada) ===== */
+type LabelSpan = { start: number; end: number; text: string; tone: Tone };
+function computeLabelSpans(
+  rowAddr: number,
+  count: number,
+  ranges: ByteRange[],
+  prefer?: ByteRange | null
+): LabelSpan[] {
+  const spans: LabelSpan[] = [];
+  let current: LabelSpan | null = null;
+
+  for (let i = 0; i < count; i++) {
+    const addr = rowAddr + i;
+    const best = pickBestRangeAt(addr, ranges, prefer);
+    const text = best?.label?.trim();
+    const tone = normalizeTone(best?.tone);
+
+    if (text) {
+      if (current && current.text === text && current.tone === tone) {
+        current.end = i;
+      } else {
+        if (current) spans.push(current);
+        current = { start: i, end: i, text, tone };
+      }
+    } else {
+      if (current) {
+        spans.push(current);
+        current = null;
+      }
+    }
+  }
+  if (current) spans.push(current);
+  return spans;
+}
+
 /* ============================== Empty State ============================== */
 function EmptyState({
   baseAddr,
@@ -228,9 +328,8 @@ function EmptyState({
 }) {
   return (
     <div className="relative">
-      {/* header de columnas */}
       <div
-        className="grid px-3 pt-2 pb-2 bg-zinc-900/70 backdrop-blur-sm"
+        className="grid px-3 pt-2 pb-2 bg-zinc-900/70"
         style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
       >
         <div className="text-xs text-emerald-200/60 font-mono">Addr</div>
@@ -257,12 +356,11 @@ function EmptyState({
         </div>
       </div>
 
-      {/* grid fantasma */}
       <div className="pb-2">
         {Array.from({ length: PLACEHOLDER_ROWS }, (_, r) => (
           <div
             key={r}
-            className="grid items-center px-3 py-2"
+            className="grid items-center px-3 py-2.5"
             style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
           >
             <div className="font-mono text-xs">
@@ -283,7 +381,7 @@ function EmptyState({
                   <div
                     key={i}
                     className={[
-                      "h-8 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
+                      "h-10 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
                       "border-emerald-900/40 text-emerald-200/25 bg-zinc-900/40",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,.04)]",
                       groupSep ? "border-l-2 border-l-emerald-900/40" : "",
@@ -299,7 +397,6 @@ function EmptyState({
         ))}
       </div>
 
-      {/* Mensaje central flotante */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div className="rounded-xl border border-emerald-800/40 bg-zinc-950/70 px-4 py-2 shadow-lg">
           <div className="text-sm font-mono text-emerald-200/90">
@@ -329,7 +426,6 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
       ? clamp((snap.used / Math.max(1, snap.capacity)) * 100)
       : null;
 
-  // Rangos ordenados localmente + rango activo enfatizado
   const sortedRanges = React.useMemo(
     () => sortRanges(snap?.ranges ?? []),
     [snap?.ranges]
@@ -339,42 +435,38 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
     [sortedRanges, snap?.activeAddr]
   );
 
-  // Agrupar filas en “chips”
   const chips: { id: number; rows: { addr: number; slice: Uint8Array }[] }[] =
     React.useMemo(() => {
       if (isEmpty) return [{ id: 0, rows: [] }];
-      const out: { id: number; rows: { addr: number; slice: Uint8Array }[] }[] =
-        [];
-      for (let i = 0; i < rows.length; i += ROWS_PER_CHIP) {
+      const out: {
+        id: number;
+        rows: { addr: number; slice: Uint8Array }[];
+      }[] = [];
+      for (let i = 0; i < rows.length; i += ROWS_PER_CHIP)
         out.push({ id: out.length, rows: rows.slice(i, i + ROWS_PER_CHIP) });
-      }
       return out.length ? out : [{ id: 0, rows: [] }];
     }, [rows, isEmpty]);
 
   React.useEffect(() => {
     if (typeof snap?.activeAddr !== "number") return;
     const el = document.getElementById(`ram-${snap.activeAddr >>> 0}`);
-    el?.scrollIntoView({
-      block: "center",
-      inline: "nearest",
-      behavior: "smooth",
-    });
+    el?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
   }, [snap?.activeAddr]);
 
   return (
     <section
       className={[
         "relative w-full h-full rounded-2xl border bg-emerald-950/20 text-zinc-100 shadow-2xl",
-        "border-emerald-900/60 overflow-hidden",
-        "flex flex-col",
+        "border-emerald-900/60 overflow-hidden flex flex-col",
       ].join(" ")}
       role="region"
       aria-label="Módulo de memoria RAM"
     >
-      <PcbBackground />
+      <PcbBoard />
+      <ModuleNotch />
       <GoldPins />
 
-      {/* Encabezado del módulo */}
+      {/* Header */}
       <div className="relative z-10 p-4 pb-2 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(52,211,153,.8)]" />
@@ -402,12 +494,14 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
 
       {/* Área de bytes */}
       <div className="relative z-10 px-4 pb-6 w-full flex-1 min-h-0">
-        <div
-          className={`h-full pr-1 ${isEmpty ? "overflow-y-auto overflow-x-hidden" : "overflow-y-auto overflow-x-hidden"}`}
-        >
+        <div className="h-full pr-1 overflow-y-auto overflow-x-hidden">
           {isEmpty ? (
             <div className="mb-4 rounded-2xl border border-emerald-800/50 bg-zinc-950/60 shadow-[inset_0_1px_0_rgba(255,255,255,.04),0_8px_24px_rgba(0,0,0,.35)] overflow-hidden min-h-[240px]">
-              <EmptyState baseAddr={baseAddr} bytesPerRow={BPR} groupSize={G} />
+              <EmptyState
+                baseAddr={baseAddr}
+                bytesPerRow={BPR}
+                groupSize={G}
+              />
             </div>
           ) : (
             chips.map((chip) => (
@@ -415,9 +509,9 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                 key={chip.id}
                 className="mb-4 rounded-2xl border border-emerald-800/50 bg-zinc-950/60 shadow-[inset_0_1px_0_rgba(255,255,255,.04),0_8px_24px_rgba(0,0,0,.35)] overflow-hidden"
               >
-                {/* Header de columnas */}
+                {/* encabezado columnas */}
                 <div
-                  className="grid px-3 pt-2 pb-2 bg-zinc-900/70 backdrop-blur-sm"
+                  className="grid px-3 pt-2 pb-3 bg-zinc-900/70"
                   style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
                 >
                   <div className="text-xs text-emerald-200/80 font-mono">
@@ -446,65 +540,80 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                   </div>
                 </div>
 
-                {/* Filas */}
-                <div className="pb-2">
+                {/* filas */}
+                <div className="pt-2 pb-2">
                   {chip.rows.map((row, ridx) => {
                     const bytes = Array.from(row.slice);
+                    const spans = computeLabelSpans(
+                      row.addr,
+                      bytes.length,
+                      sortedRanges,
+                      activeEmphRange
+                    );
+
                     return (
                       <div
                         key={`${row.addr}-${ridx}`}
-                        className="grid items-center px-3 py-2 transition-colors hover:bg-zinc-900/55"
+                        className="grid items-center px-3 py-2.5 transition-colors hover:bg-zinc-900/55"
                         style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
                       >
-                        {/* Dirección */}
+                        {/* dirección */}
                         <div className="font-mono text-xs text-emerald-100/90">
                           <span className="inline-block px-2 py-1 rounded-lg bg-zinc-900/70 border border-emerald-800/60">
                             {toHex8(row.addr)}
                           </span>
                         </div>
 
-                        {/* Bytes HEX */}
+                        {/* celdas + capa de etiquetas centradas */}
                         <div
-                          className="grid pr-2"
+                          className="relative grid pr-2 overflow-visible"
                           style={{
                             gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
                             columnGap: GAP,
                           }}
                         >
+                          {/* overlay de labels (centradas por span) */}
+                          <div
+                            className="pointer-events-none absolute left-0 right-0 -top-3.5 translate-y-[-12px] grid"
+                            style={{
+                              gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
+                              columnGap: GAP,
+                            }}
+                          >
+                            {spans.map((s, i) => (
+                              <div
+                                key={i}
+                                style={{
+                                  gridColumn: `${s.start + 1} / ${s.end + 2}`,
+                                }}
+                                className="justify-self-center"
+                              >
+                                <RowLabel tone={s.tone} text={s.text} />
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* bytes */}
                           {bytes.map((b, i) => {
                             const addr = row.addr + i;
-
-                            // Rango “mejor” para este byte
                             const best = pickBestRangeAt(
                               addr,
                               sortedRanges,
                               activeEmphRange
                             );
                             const tone = normalizeTone(best?.tone);
-                            const lbl = best?.label;
-
-                            // Emph sólo si cae dentro del rango enfatizado activo
                             const isEmph = !!(
                               activeEmphRange && inRange(addr, activeEmphRange)
                             );
                             const isActive = snap?.activeAddr === addr;
                             const groupSep = i % G === 0 && i !== 0;
 
-                            // etiqueta sólo en el primer byte del mismo rango elegido
-                            const prevBest = pickBestRangeAt(
-                              addr - 1,
-                              sortedRanges,
-                              activeEmphRange
-                            );
-                            const showLabelHere =
-                              lbl && (!prevBest || prevBest.label !== lbl);
-
                             return (
                               <div
                                 id={`ram-${addr}`}
                                 key={i}
                                 className={[
-                                  "relative h-8 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
+                                  "relative h-10 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
                                   "border-emerald-800/60 text-emerald-50",
                                   TONE_CLS[tone].bg,
                                   "shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_2px_6px_rgba(0,0,0,.25)]",
@@ -519,20 +628,13 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                                     ? "outline outline-2 outline-white/40 z-10"
                                     : "",
                                 ].join(" ")}
-                                title={`${toHex8(addr)}  •  dec ${b}${lbl ? `  •  ${lbl}` : ""}`}
+                                title={`${toHex8(addr)}  •  dec ${b}${
+                                  best?.label ? `  •  ${best.label}` : ""
+                                }`}
                               >
                                 <span className="tracking-tight">
                                   {toHex2(b)}
                                 </span>
-
-                                {showLabelHere && (
-                                  <span
-                                    className={`pointer-events-none absolute -top-1 -translate-y-full whitespace-nowrap rounded px-1.5 py-[1px] text-[10px] ring-1 ${TONE_CLS[tone].text} bg-zinc-950/80 ring-emerald-800/60`}
-                                  >
-                                    {lbl}
-                                  </span>
-                                )}
-
                                 <span className="pointer-events-none absolute inset-0 rounded-lg opacity-[0.06] bg-gradient-to-b from-white/30 to-transparent" />
                               </div>
                             );

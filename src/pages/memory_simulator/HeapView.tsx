@@ -5,6 +5,18 @@ import {
   type UiHeapEntry as HeapEntry,
 } from "./components/HeapInspectorModal";
 
+/* ───────── Tokens del tema (mismos que Stack) ───────── */
+const C = {
+  panel: "#202734",
+  panelSoft: "#242E3B",
+  panelInner: "#1C2430",
+  ring: "#2E3948",
+  text: "text-zinc-100",
+  label: "text-[11px] text-zinc-300",
+};
+const KBD =
+  "px-1.5 py-0.5 rounded font-mono text-[11px] bg-[#2F394B] text-zinc-100 ring-1 ring-[#3B4659]";
+
 /* ───────── utils ───────── */
 const hexToNum = (h: `0x${string}` | string): number =>
   typeof h === "string" ? parseInt(h, 16) : 0;
@@ -16,48 +28,44 @@ const fmtB = (n: number) =>
   n < 1024
     ? `${n} B`
     : n < 1024 * 1024
-      ? `${(n / 1024).toFixed(1)} KB`
-      : `${(n / 1024 / 1024).toFixed(1)} MB`;
+    ? `${(n / 1024).toFixed(1)} KB`
+    : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
 // nombre sin "var "
 const prettyName = (s?: string) =>
   (s ?? "").replace(/^\s*var\s+/i, "").trim() || "";
 
-/* ───────── tema por tipo (coherente con el stack) ───────── */
+/* ───────── tema por tipo (alineado a Stack) ───────── */
 function kindTheme(kind: HeapEntry["kind"]) {
   switch (kind) {
     case "string":
       return {
-        badge: "bg-pink-900/60 text-pink-100 ring-pink-700/60",
-        stripe: "from-pink-300/70 to-pink-400/40",
-        bar: "from-pink-400/70 to-pink-300/40",
-        dot: "bg-pink-400",
+        badge: "bg-pink-700/30 text-pink-100 ring-pink-400/40",
+        rail: "from-pink-300/80 to-pink-200/60",
+        meter: "#f472b6",
       };
     case "array":
       return {
-        badge: "bg-sky-900/60 text-sky-100 ring-sky-700/60",
-        stripe: "from-sky-300/70 to-sky-400/40",
-        bar: "from-sky-400/70 to-sky-300/40",
-        dot: "bg-sky-400",
+        badge: "bg-sky-700/30 text-sky-100 ring-sky-400/40",
+        rail: "from-sky-300/80 to-sky-200/60",
+        meter: "#38bdf8",
       };
     case "object":
       return {
-        badge: "bg-emerald-900/60 text-emerald-100 ring-emerald-700/60",
-        stripe: "from-emerald-300/70 to-emerald-400/40",
-        bar: "from-emerald-400/70 to-emerald-300/40",
-        dot: "bg-emerald-400",
+        badge: "bg-emerald-700/30 text-emerald-100 ring-emerald-400/40",
+        rail: "from-emerald-300/80 to-emerald-200/60",
+        meter: "#34d399",
       };
     default:
       return {
-        badge: "bg-neutral-800/70 text-neutral-200 ring-neutral-700/60",
-        stripe: "from-zinc-300/60 to-zinc-400/30",
-        bar: "from-zinc-400/60 to-zinc-300/30",
-        dot: "bg-zinc-300",
+        badge: "bg-zinc-600/30 text-zinc-100 ring-zinc-400/35",
+        rail: "from-zinc-300/70 to-zinc-200/50",
+        meter: "#a1a1aa",
       };
   }
 }
 
-/* ───────── chips comunes ───────── */
+/* ───────── chips comunes (matching Stack) ───────── */
 function Tag({
   className = "",
   children,
@@ -85,13 +93,12 @@ function AddrBtn({ hex }: { hex: HeapEntry["addr"] }) {
     <button
       type="button"
       onClick={() => navigator?.clipboard?.writeText?.(hex)}
-      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[11px]
-                 bg-white/8 text-neutral-200 ring-1 ring-white/10 hover:bg-white/14"
+      className={`${KBD} hover:bg-[#324057] active:scale-[.98] transition`}
       title="Copiar dirección"
     >
       {hex}
       <svg
-        className="h-3.5 w-3.5 opacity-70"
+        className="h-3.5 w-3.5 opacity-80"
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden
@@ -102,22 +109,15 @@ function AddrBtn({ hex }: { hex: HeapEntry["addr"] }) {
   );
 }
 
-/* Nombre destacado */
+/* Nombre destacado (como NamePill) */
 function NameBadge({ name, kind }: { name?: string; kind: HeapEntry["kind"] }) {
   if (!name) return null;
-  const tone =
-    kind === "array"
-      ? "from-sky-400/14 to-sky-300/6"
-      : kind === "string"
-        ? "from-pink-400/14 to-pink-300/6"
-        : kind === "object"
-          ? "from-emerald-400/14 to-emerald-300/6"
-          : "from-white/10 to-white/5";
   return (
     <span
-      className={`text-[12px] sm:text-[13px] font-semibold tracking-wide
-                  rounded-md px-2.5 py-0.5 ring-1 ring-white/12
-                  bg-gradient-to-b ${tone} text-neutral-50`}
+      className="inline-flex items-center rounded-md px-2 py-0.5
+                 text-[13px] font-semibold text-zinc-100
+                 bg-[#2D3747] ring-1 ring-[#3B4659]
+                 max-w-[min(56ch,60vw)] truncate"
       title="nombre de la variable (si viene del stack)"
     >
       {name}
@@ -125,7 +125,7 @@ function NameBadge({ name, kind }: { name?: string; kind: HeapEntry["kind"] }) {
   );
 }
 
-/* ───────── Shell con progreso + fades (sin modo guía) ───────── */
+/* ───────── scroll info ───────── */
 function useScrollInfo(ref: React.RefObject<HTMLDivElement>) {
   const [st, setSt] = useState({ pct: 0, atTop: true, atBottom: false });
   useEffect(() => {
@@ -155,17 +155,17 @@ function ScrollFades({
     <>
       {showTop && (
         <div
-          className="pointer-events-none absolute left-0 right-0 top-0 h-6 rounded-t-2xl"
+          className="pointer-events-none absolute left-0 right-0 top-0 h-6"
           style={{
-            background: "linear-gradient(180deg, rgba(0,0,0,.45), transparent)",
+            background: "linear-gradient(180deg, rgba(0,0,0,.28), transparent)",
           }}
         />
       )}
       {showBottom && (
         <div
-          className="pointer-events-none absolute left-0 right-0 bottom-0 h-6 rounded-b-2xl"
+          className="pointer-events-none absolute left-0 right-0 bottom-0 h-6"
           style={{
-            background: "linear-gradient(0deg, rgba(0,0,0,.45), transparent)",
+            background: "linear-gradient(0deg, rgba(0,0,0,.28), transparent)",
           }}
         />
       )}
@@ -173,7 +173,7 @@ function ScrollFades({
   );
 }
 
-/* ───────── Vista principal del Heap ───────── */
+/* ───────── Vista principal ───────── */
 export function HeapView({
   heap,
   pulseAddrs = [],
@@ -189,52 +189,68 @@ export function HeapView({
 
   return (
     <section className="relative h-full min-h-0">
-      {/* borde glam */}
+      {/* Marco exterior sólido (igual a Stack) */}
       <div
-        className="absolute inset-0 -z-10 rounded-3xl"
+        className="absolute inset-0 -z-10 rounded-3xl pointer-events-none"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(56,189,248,.12), rgba(244,114,182,.10) 40%, rgba(52,211,153,.10))",
-          boxShadow:
-            "0 18px 40px -20px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.04)",
+          border: `1px solid ${C.ring}`,
+          boxShadow: "0 0 20px rgba(56,189,248,.10)",
         }}
       />
-      <div className="relative h-full min-h-0 rounded-3xl bg-neutral-950/35 ring-1 ring-white/8 backdrop-blur-sm p-3 flex flex-col">
-        <div
-          className="pointer-events-none absolute inset-0 rounded-3xl opacity-60"
-          style={{ boxShadow: "inset 0 0 120px rgba(56,189,248,.05)" }}
-        />
-
-        {/* header */}
+      {/* Cuerpo sólido */}
+      <div
+        className="relative h-full min-h-0 rounded-3xl p-3 flex flex-col overflow-hidden"
+        style={{ background: C.panel }}
+      >
+        {/* Header */}
         <div className="mb-2 flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="grid place-items-center h-7 w-7 rounded-full bg-white/6 ring-1 ring-white/10 shadow-inner">
+            <span
+              className="grid place-items-center h-7 w-7 rounded-full"
+              style={{ background: "#2D3747", border: `1px solid ${C.ring}` }}
+            >
               🧰
             </span>
-            <h2 className="text-lg font-semibold tracking-wide">Heap</h2>
+            <h2 className={`text-lg font-semibold tracking-wide ${C.text}`}>
+              Heap
+            </h2>
           </div>
-          <div className="ml-auto text-xs text-neutral-400">
-            {heap.length} items
-          </div>
+          <div className="ml-auto text-xs text-zinc-300">{heap.length} items</div>
         </div>
 
-        {/* progreso scroll */}
-        <div className="mb-2 h-1 rounded-full bg-white/[0.06] ring-1 ring-white/10 overflow-hidden">
+        {/* barra de progreso del scroll (idéntica a Stack) */}
+        <div
+          className="mb-2 h-1 rounded-full overflow-hidden"
+          style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
+        >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-sky-400/60 via-pink-400/60 to-emerald-400/60"
+            className="h-full rounded-full bg-gradient-to-r from-violet-400 via-fuchsia-400 to-amber-300"
             style={{ width: `${Math.round(pct * 100)}%` }}
           />
         </div>
 
-        {/* contenedor scrollable */}
+        {/* Contenedor scrolleable con micro-grid tenue */}
         <div
           ref={scrollRef}
-          className="relative flex-1 min-h-0 overflow-auto rounded-2xl bg-neutral-950/25 ring-1 ring-white/8 p-2 stk-scroll"
+          className="relative flex-1 min-h-0 overflow-auto rounded-2xl p-2 stk-scroll"
+          style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
         >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10"
+            style={{
+              background:
+                "radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)",
+              backgroundSize: "18px 18px",
+            }}
+          />
           <ScrollFades showTop={!atTop} showBottom={!atBottom} />
 
           {heap.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-neutral-700 p-6 text-center text-sm text-neutral-400">
+            <div
+              className="rounded-xl border border-dashed p-6 text-center text-sm"
+              style={{ borderColor: C.ring, color: "#9aa3af", background: C.panelInner }}
+            >
               Heap vacío.
             </div>
           ) : (
@@ -261,31 +277,73 @@ export function HeapView({
   );
 }
 
-/* ───────── resumen amigable por tarjeta (conciso) ───────── */
-function friendlySummary(e: HeapEntry) {
-  if (e.kind === "string") {
-    const m = e.meta as any;
-    return `Texto (len=${m.length}). Header = tamaño y puntero; el contenido vive en data desde ${m.dataPtr}.`;
-  }
-  if (e.kind === "array") {
-    const m = e.meta as any;
-    const elem =
-      m?.elem?.name ??
-      m?.elemType ??
-      (typeof m?.elem === "string" ? m.elem : "?");
-    return `Arreglo de ${elem} con ${m.length} elemento(s). Header guarda longitud y dataPtr (${m.dataPtr}).`;
-  }
-  if (e.kind === "object") {
-    const m = e.meta as any;
-    if (m?.tag === "object-compact" && Array.isArray(m?.schema)) {
-      return `Objeto compacto con ${m.schema.length} campo(s).`;
-    }
-    return `Objeto en heap.`;
-  }
-  return `Bloque en heap.`;
+/* ───────── Donut + barra (sólidos) ───────── */
+function MemoryMeter({
+  headerBytes,
+  dataBytes,
+  color,
+}: {
+  headerBytes: number;
+  dataBytes: number;
+  color: string;
+}) {
+  const total = Math.max(1, headerBytes + Math.max(0, dataBytes));
+  const pctH = Math.round((headerBytes / total) * 100);
+  const pctD = Math.round((dataBytes / total) * 100);
+
+  const donut = {
+    backgroundImage: `conic-gradient(${color} 0 ${pctH}%, rgba(255,255,255,.18) ${pctH}% 100%)`,
+  } as React.CSSProperties;
+
+  return (
+    <div className="grid grid-cols-[64px,1fr] gap-2 items-center">
+      <div className="relative h-16 w-16">
+        <div className="absolute inset-0 rounded-full" style={donut} aria-hidden />
+        <div
+          className="absolute inset-1 rounded-full grid place-items-center"
+          style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
+        >
+          <div className="text-[10px] leading-tight text-zinc-200 text-center">
+            <div className="font-semibold">{pctH}%</div>
+            <div className="opacity-70">hdr</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="relative h-5 w-full rounded-full overflow-hidden"
+        style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
+      >
+        <div
+          className="absolute left-0 top-0 h-full"
+          style={{
+            width: `${pctH}%`,
+            background:
+              "linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.08))",
+            boxShadow: `inset 0 0 0 9999px ${color}1F`,
+          }}
+        />
+        <div
+          className="absolute top-0 h-full"
+          style={{
+            left: `${pctH}%`,
+            width: `${pctD}%`,
+            background:
+              "linear-gradient(90deg, rgba(255,255,255,.14), rgba(255,255,255,.06))",
+          }}
+        />
+        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-200/90">
+          header
+        </span>
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-200/90">
+          {dataBytes > 0 ? "data" : "sin data"}
+        </span>
+      </div>
+    </div>
+  );
 }
 
-/* ───────── Tarjeta de bloque en heap ───────── */
+/* ───────── Card ───────── */
 function HeapCard({
   entry,
   pulse,
@@ -303,185 +361,114 @@ function HeapCard({
     | { from?: `0x${string}`; to?: `0x${string}` }
     | undefined;
   const dataBytes = dataRange ? bytesBetween(dataRange.from, dataRange.to) : 0;
-  const totalBytes = headerBytes + dataBytes || 1;
-  const pctHeader = Math.max(0, Math.min(1, headerBytes / totalBytes));
-  const pctData = Math.max(0, Math.min(1, dataBytes / totalBytes));
 
   return (
-    <div className="relative overflow-hidden rounded-2xl p-2.5 bg-neutral-900/55 ring-1 ring-white/8 hover:bg-white/[0.03] transition">
-      {/* ancla */}
+    <div
+      className="relative overflow-hidden rounded-2xl p-3 transition"
+      style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
+    >
       <span
         ref={bind(`heap-${entry.addr}`)}
         id={`heap-${entry.addr}`}
         className="pointer-events-none absolute -left-2 top-4 h-4 w-4"
       />
-      {/* stripe de color */}
+      {/* Rail a la izquierda (como Stack) */}
       <div
-        className={`absolute left-0 top-0 h-full w-[6px] rounded-l-2xl bg-gradient-to-b ${t.stripe}`}
+        className={`absolute left-0 top-0 h-full w-[5px] bg-gradient-to-b ${t.rail}`}
         aria-hidden
       />
-      {/* bisel superior */}
-      <div
-        className="absolute left-0 top-0 h-[3px] w-[72%] rounded-r"
-        style={{
-          background:
-            "linear-gradient(90deg, rgba(255,255,255,.18), transparent)",
-        }}
-      />
 
-      {/* header meta (compacto y sin duplicados) */}
-      <div className="flex flex-wrap items-center gap-2 pl-1">
-        <Tag className={t.badge}>
-          <span className={`inline-block h-2.5 w-2.5 rounded-full ${t.dot}`} />
-        </Tag>
-        <span className="text-[12px] text-neutral-200 capitalize">
-          {entry.kind}
-        </span>
-
+      {/* CABECERA */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Tag className={t.badge}>kind</Tag>
+        <span className="text-[12px] text-zinc-200 capitalize">{entry.kind}</span>
         <NameBadge name={prettyName(entry.label)} kind={entry.kind} />
-
         <div className="ml-auto flex items-center gap-2">
           <AddrBtn hex={entry.addr} />
           <RefCountPill count={entry.refCount} pulse={pulse} />
         </div>
-
-        {/* Extras del header:
-            - ARRAY → nada (tag/elemSize se ven en meta abajo)
-            - OBJECT → sólo tag si aporta (e.g. object-compact)
-            - STRING → nada */}
-        <KindTagExtras entry={entry} />
       </div>
 
-      {/* resumen corto */}
-      <p className="mt-1 text-[12px] text-neutral-300">
-        {friendlySummary(entry)}
-      </p>
+      {/* CONTENIDO */}
+      <div className="mt-2 grid gap-3 md:grid-cols-[minmax(0,1fr),auto]">
+        <div className="grid gap-2">
+          <MemoryMeter headerBytes={headerBytes} dataBytes={dataBytes} color={t.meter} />
 
-      {/* MemoryBar proporcional */}
-      <div className="mt-2">
-        <div className="relative h-5 w-full rounded-full ring-1 ring-white/10 bg-neutral-950/40 overflow-hidden">
-          {/* header */}
-          <div
-            className={`absolute left-0 top-0 h-full bg-gradient-to-r ${t.bar}`}
-            style={{ width: `${pctHeader * 100}%` }}
-            title={`header · ${fmtB(headerBytes)} (${Math.round(pctHeader * 100)}%)`}
-          />
-          {/* data */}
-          <div
-            className="absolute top-0 h-full"
-            style={{
-              left: `${pctHeader * 100}%`,
-              width: `${pctData * 100}%`,
-              background:
-                dataBytes > 0
-                  ? "linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.08))"
-                  : "transparent",
-            }}
-            title={
-              dataBytes > 0
-                ? `data · ${fmtB(dataBytes)} (${Math.round(pctData * 100)}%)`
-                : "sin data"
-            }
-          />
-          {/* marcas */}
-          <div
-            className="absolute inset-0 mix-blend-screen opacity-40"
-            style={{
-              background:
-                "repeating-linear-gradient(90deg, rgba(255,255,255,.16) 0 10px, transparent 10px 20px)",
-            }}
-          />
-          {/* rótulos */}
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-neutral-200/90">
-            header <span className="opacity-70">(metadatos)</span>
-          </span>
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-neutral-200/90">
-            {dataBytes > 0 ? (
-              <>
-                data <span className="opacity-70">(contenido)</span>
-              </>
-            ) : (
-              "sin data"
-            )}
-          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-300">
+            <div
+              className="rounded-lg px-2 py-1"
+              style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
+            >
+              <div className="opacity-80">header</div>
+              <div className="flex items-center justify-between">
+                <span className="font-mono">
+                  [{entry.range.from} .. {entry.range.to})
+                </span>
+                <span className="opacity-90">{fmtB(headerBytes)}</span>
+              </div>
+            </div>
+
+            <div
+              className="rounded-lg px-2 py-1"
+              style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
+            >
+              <div className="opacity-80">data</div>
+              {dataRange?.from && dataRange?.to ? (
+                <div className="flex items-center justify-between">
+                  <span className="font-mono">
+                    [{dataRange.from} .. {dataRange.to})
+                  </span>
+                  <span className="opacity-90">{fmtB(dataBytes)}</span>
+                </div>
+              ) : (
+                <div className="text-zinc-400">sin data</div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* rangos */}
-        <div className="mt-1 flex items-center justify-between text-[11px] text-neutral-400">
-          <span>
-            header:{" "}
-            <Mono>
-              [{entry.range.from} .. {entry.range.to})
-            </Mono>
-          </span>
-          {dataRange?.from && dataRange?.to ? (
-            <span>
-              data:{" "}
-              <Mono>
-                [{dataRange.from} .. {dataRange.to})
-              </Mono>
-            </span>
-          ) : (
-            <span className="opacity-60">sin data</span>
-          )}
+        {/* meta compacta por tipo */}
+        <div className="md:w-64">
+          {entry.kind === "string" && <StringMeta meta={entry.meta} />}
+          {entry.kind === "array" && <ArrayMeta meta={entry.meta} />}
+          {entry.kind === "object" && <ObjectMeta meta={entry.meta} />}
+          <div className="mt-3">
+            <button
+              onClick={onInspect}
+              className="w-full md:w-auto rounded-md px-3 py-1.5 text-[12px]"
+              style={{ background: "#2D3747", border: `1px solid ${C.ring}` }}
+            >
+              Ver Data
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* meta por tipo (limpia, sin repetir info del header) */}
-      <div className="mt-2 text-xs text-neutral-200">
-        {entry.kind === "string" && <StringMeta meta={entry.meta} />}
-        {entry.kind === "array" && <ArrayMeta meta={entry.meta} />}
-        {entry.kind === "object" && <ObjectMeta meta={entry.meta} />}
-      </div>
-
-      {/* botón inspector */}
-      <div className="mt-2">
-        <button
-          onClick={onInspect}
-          className="rounded-md px-2 py-1 text-[12px] bg-white/10 hover:bg-white/16 ring-1 ring-white/12"
-        >
-          inspeccionar
-        </button>
       </div>
     </div>
   );
 }
 
-/* ───────── extras rápidos en el header (sin tag/elemSize para arrays) ───────── */
-function KindTagExtras({ entry }: { entry: HeapEntry }) {
-  if (entry.kind === "array") {
-    return null; // no duplicamos tag ni elemSize en el header
-  }
-  if (entry.kind === "object") {
-    const tag = (entry.meta as any)?.tag;
-    return tag ? (
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">{tag}</Tag>
-    ) : null;
-  }
-  return null; // string → nada
-}
+/* ───────── Metas por tipo (sólidas) ───────── */
 
-/* ───────── Metas por tipo (amables y sin duplicados) ───────── */
+// STRING
 function StringMeta({
   meta,
 }: {
   meta: Extract<HeapEntry, { kind: "string" }>["meta"];
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-        len={meta.length}
-      </Tag>
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-        dataPtr=<Mono>{meta.dataPtr}</Mono>
-      </Tag>
-      <span className="text-[11px] text-neutral-400">
-        2B por carácter (UTF-16LE)
-      </span>
+    <div
+      className="rounded-xl p-2"
+      style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
+    >
+      <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-200">
+        <Tag className="bg-[#2F394B] text-zinc-100 ring-[#3B4659]">len={meta.length}</Tag>
+        <span className="text-[11px] text-zinc-300">2B por carácter (UTF-16LE)</span>
+      </div>
     </div>
   );
 }
 
+// ARRAY
 function ArrayMeta({
   meta,
 }: {
@@ -493,51 +480,51 @@ function ArrayMeta({
     (typeof (meta as any).elem === "string" ? (meta as any).elem : undefined);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-        length={meta.length}
-      </Tag>
-      {elem && (
-        <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-          elem=<Mono>{elem}</Mono>
+    <div
+      className="rounded-xl p-2"
+      style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
+    >
+      <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-200">
+        <Tag className="bg-[#2F394B] text-zinc-100 ring-[#3B4659]">
+          tamaño={meta.length}
         </Tag>
-      )}
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-        dataPtr=<Mono>{meta.dataPtr}</Mono>
-      </Tag>
-      <span className="text-[11px] text-neutral-400">
-        Los elementos viven en “data”.
-      </span>
+        {elem && (
+          <Tag className="bg-[#2F394B] text-zinc-100 ring-[#3B4659]">
+            tipo = <Mono>{elem}</Mono>
+          </Tag>
+        )}
+      </div>
     </div>
   );
 }
 
+// OBJECT
 function ObjectMeta({
   meta,
 }: {
   meta: Extract<HeapEntry, { kind: "object" }>["meta"];
 }) {
-  const tag = (meta as any)?.tag;
   const schema = (meta as any)?.schema as
     | Array<{ key: string; type: string }>
     | undefined;
 
-  if (tag === "object-compact" && Array.isArray(schema)) {
+  if (Array.isArray(schema)) {
     return (
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-            object-compact
-          </Tag>
-          <Tag className="bg-white/8 text-neutral-200 ring-white/10">
-            fields={schema.length}
+      <div
+        className="rounded-xl p-2"
+        style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
+      >
+        <div className="flex items-center gap-2 text-xs text-zinc-200">
+          <Tag className="bg-[#2F394B] text-zinc-100 ring-[#3B4659]">
+            atributos={schema.length}
           </Tag>
         </div>
-        <div className="mt-1 flex flex-wrap gap-1">
+        <div className="mt-2 grid grid-cols-2 gap-1">
           {schema.map((f) => (
             <span
               key={f.key}
-              className="text-[11px] rounded px-1 py-0.5 ring-1 bg-white/8 text-neutral-200 ring-white/10"
+              className="text-[11px] rounded px-1 py-0.5 ring-1"
+              style={{ background: "#2F394B", color: "#e5e7eb", borderColor: "#3B4659" }}
               title={`${f.key}: ${f.type}`}
             >
               {f.key}: <Mono>{f.type}</Mono>
@@ -548,18 +535,22 @@ function ObjectMeta({
     );
   }
 
-  // fallback minimal
   return (
-    <div className="flex items-center gap-2">
-      <Tag className="bg-white/8 text-neutral-200 ring-white/10">object</Tag>
+    <div
+      className="rounded-xl p-2"
+      style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
+    >
+      <Tag className="bg-[#2F394B] text-zinc-100 ring-[#3B4659]">
+        atributos=?
+      </Tag>
     </div>
   );
 }
 
 /* ───────── UI atómica ───────── */
 function RefCountPill({ count, pulse }: { count: number; pulse?: boolean }) {
-  let cls = "bg-white/10 text-neutral-200 ring-1 ring-white/12";
-  if (count <= 0) cls = "bg-red-900/40 text-red-200 ring-1 ring-red-700/50";
+  let cls = "bg-[#2D3747] text-zinc-100 ring-1 ring-[#3B4659]";
+  if (count <= 0) cls = "bg-rose-900/40 text-rose-200 ring-1 ring-rose-700/50";
   if (count >= 8)
     cls = "bg-emerald-900/40 text-emerald-200 ring-1 ring-emerald-700/50";
 
