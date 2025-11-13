@@ -1,4 +1,5 @@
 import { EqualityFn, LinkedListInterface } from "../../../types";
+import { DomainError } from "../error/DomainError";
 import { linkedListToArray } from "../listUtils";
 import { NodoD } from "../nodes/NodoD";
 
@@ -46,7 +47,6 @@ export class ListaDoble<T> implements LinkedListInterface<T> {
       );
 
     const nuevoNodo = new NodoD(valor);
-
     if (this.esVacia()) {
       this.cabeza = nuevoNodo;
       this.cola = nuevoNodo;
@@ -89,13 +89,14 @@ export class ListaDoble<T> implements LinkedListInterface<T> {
   /**
    * Método que inserta un nuevo elemento en una posición especifica de la lista doble.
    * @param valor Elemento a insertar.
-   * @param posicion Posición en la que se desea insertar el elemento.
+   * @param posicion Índice en el que se desea insertar el elemento.
    * @return Nodo insertado en la posición especificada.
    */
   public insertarEnPosicion(valor: T, posicion: number): NodoD<T> {
     if (posicion < 0 || posicion > this.tamanio) {
-      throw new Error(
-        `No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Doble.`
+      throw new DomainError(
+        `No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Doble.`,
+        "OUT_OF_BOUNDS"
       );
     }
 
@@ -128,18 +129,18 @@ export class ListaDoble<T> implements LinkedListInterface<T> {
   }
 
   /**
-   * Método que elimina el primer nodo de la lista doble.
-   * @returns Nodo inicial eliminado.
+   * Método que elimina el primer elemento de la lista doble.
+   * @returns Nodo eliminado que ocupaba la primera posición.
    */
   public eliminarAlInicio(): NodoD<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
 
     const nodoEliminado = this.cabeza!;
     this.cabeza = this.cabeza!.getSiguiente();
-
     if (this.cabeza) {
       this.cabeza.setAnterior(null);
     } else {
@@ -152,12 +153,13 @@ export class ListaDoble<T> implements LinkedListInterface<T> {
 
   /**
    * Método que elimina el último nodo de la lista doble.
-   * @returns Nodo final eliminado.
+   * @returns Nodo eliminado que ocupaba la última posición.
    */
   public eliminarAlFinal(): NodoD<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
 
     const nodoEliminado = this.cola!;
@@ -174,19 +176,21 @@ export class ListaDoble<T> implements LinkedListInterface<T> {
   }
 
   /**
-   * Método que elimina un nodo en una posición especifica de la lista doble.
-   * @param posicion Posición del nodo a eliminar.
-   * @returns Nodo eliminado.
+   * Método que elimina el elemento en la posición específicada de la lista doble.
+   * @param posicion Índice del elemento a eliminar.
+   * @returns Nodo eliminado en la posición indicada.
    */
   public eliminarEnPosicion(posicion: number): NodoD<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
 
     if (posicion < 0 || posicion >= this.tamanio) {
-      throw new Error(
-        `No fue posible eliminar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Doble.`
+      throw new DomainError(
+        `No fue posible eliminar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Doble.`,
+        "OUT_OF_BOUNDS"
       );
     }
 

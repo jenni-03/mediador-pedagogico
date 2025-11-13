@@ -21,10 +21,10 @@ import { type HierarchyNode, type Selection, easePolyInOut } from "d3";
 import { straightPath } from "../treeUtils";
 import { buildListPath } from "../listUtils";
 import { type EventBus } from "../../events/eventBus";
-import { delay } from "../simulatorUtils";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
+ * El indicador se crea inicialmente oculto (opacity = 0)
  * @param svg Selección D3 del elemento SVG donde se va a renderizar el indicador.
  * @param indicatorId Identificador del indicador.
  * @param indicatorClass Selector de clase del indicador.
@@ -535,8 +535,9 @@ export async function animateClearList(
   nodePositions: Map<string, { x: number; y: number }>,
   bus: EventBus,
   labels: {
-    CLEAR_HEAD: number,
-    RESET_SIZE: number
+    CLEAR_TAIL?: number;
+    CLEAR_HEAD: number;
+    RESET_SIZE: number;
   },
   stepId: string,
   resetQueryValues: () => void,
@@ -546,20 +547,52 @@ export async function animateClearList(
     // Inicio de la operación
     bus.emit("op:start", { op: "clean" });
 
-    // Animación de salida de los elementos del lienzo
+    // Elementos dentro del lienzo
+    const headIndicatorG = svg.select<SVGGElement>("g#head-indicator");
+    const nodesG = svg.select<SVGGElement>("g#nodes-layer");
+    const linksG = svg.select<SVGGElement>("g#links-layer");
+
+    // Salida del indicador de cabeza
     bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_HEAD });
-    await svg.selectAll("*")
+    await headIndicatorG
       .transition()
-      .duration(1000)
+      .duration(500)
+      .style("opacity", 0)
+      .remove()
+      .end();
+
+    // Salida del indicador de cola
+    if (labels.CLEAR_TAIL) {
+      const tailIndicatorG = svg.select<SVGGElement>("g#tail-indicator");
+
+      bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_TAIL });
+      await tailIndicatorG
+        .transition()
+        .duration(500)
+        .style("opacity", 0)
+        .remove()
+        .end();
+    }
+
+    // salida de los enlaces
+    bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
+    await linksG
+      .transition()
+      .duration(500)
+      .style("opacity", 0)
+      .remove()
+      .end();
+
+    // salida de los nodos
+    await nodesG
+      .transition()
+      .duration(500)
       .style("opacity", 0)
       .remove()
       .end();
 
     // Liempiza del mapa de posiciones
     nodePositions.clear();
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
-    await delay(400);
 
     // Fin de la operación
     bus.emit("op:done", { op: "clean" });
