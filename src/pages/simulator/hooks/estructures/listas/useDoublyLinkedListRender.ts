@@ -193,18 +193,18 @@ export function useDoublyLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del nuevo último nodo
-        const newLastNodeId = query.toAddLast;
+        // Id del nuevo nodo cola
+        const newTailNodeId = query.toAddLast;
 
-        // Id del último nodo actual de la lista (anterior a la inserción)
-        const currLastNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
+        // Id del actual nodo cola de la lista (anterior a la inserción)
+        const currTailNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
 
         // Animación de inserción del nodo como último elemento de la lista
         animateDoublyInsertLast(
             svg,
             {
-                newLastNodeId,
-                currLastNodeId,
+                newTailNodeId,
+                currTailNodeId,
                 nodesData: listNodes,
                 positions: nodePositions
             },
@@ -284,18 +284,18 @@ export function useDoublyLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del último nodo actual previo a la eliminación (nodo a eliminar)
-        const currLastNodeId = query.toDeleteLast;
+        // Id del actual nodo cola previo a la eliminación (nodo a eliminar)
+        const currTailNodeId = query.toDeleteLast;
 
-        // Id del nuevo último nodo
-        const newLastNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+        // Id del nuevo nodo cola
+        const newTailNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
         // Animación de eliminación del último nodo de la lista
         animateDoublyDeleteLast(
             svg,
             {
-                currLastNodeId,
-                newLastNodeId,
+                currTailNodeId,
+                newTailNodeId,
                 remainingNodesData: listNodes,
                 positions: nodePositions
             },
@@ -325,7 +325,7 @@ export function useDoublyLinkedListRender(
         animateDoublyDeleteAt(
             svg,
             {
-                nodeToRemoveId: nodeId,
+                removalNodeId: nodeId,
                 prevNodeId,
                 nextNodeId,
                 deletePosition: position,
@@ -341,7 +341,7 @@ export function useDoublyLinkedListRender(
 
     // Efecto para manejar la búsqueda de un nodo
     useEffect(() => {
-        if (!listNodes || !svgRef.current || !query.toSearch) return;
+        if (!listNodes || !svgRef.current || query.toSearch === null) return;
 
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
@@ -349,12 +349,27 @@ export function useDoublyLinkedListRender(
         // Obtenemos el elemento de la lista a buscar
         const targetElement = query.toSearch;
 
+        // Código y labels de la operación
+        const listaDobleCode = getListaDoblementeEnlazadaCode();
+        const labels = listaDobleCode.search.labels!;
+
+        // Grupo contenedor de los nodos de la lista
+        const nodesG = svg.select<SVGGElement>("g#nodes-layer");
+
         // Animación de búsqueda del elemento especificado
         animateSearchElement(
-            svg,
+            nodesG,
             targetElement,
             listNodes,
             bus,
+            {
+                INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
+                WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
+                IF_MATCH: labels.IF_MATCH,
+                RETURN_TRUE: labels.RETURN_TRUE,
+                ADVANCE_NODE: labels.ADVANCE_NODE,
+                RETURN_FALSE: labels.RETURN_FALSE
+            },
             resetQueryValues,
             setIsAnimating
         );

@@ -6,10 +6,10 @@ import { useBus } from "../../../../../shared/hooks/useBus";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { select } from "d3";
 import { animateClearList, drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateSearchElement, animateSimpleDeleteAt, animateSimpleDeleteFirst, animateSimpleDeleteLast, animateSimpleInsertAt, animateSimpleInsertFirst, animateSimpleInsertLast } from "../../../../../shared/utils/draw/simpleLinkedListDrawActions";
-import { getListaSimplementeEnlazadaCode } from "../../../../../shared/constants/pseudocode/listaSimplementeEnlazadaCode";
+import { animateCircularSearchElement, animateSimpleCircularDeleteAt, animateSimpleCircularDeleteFirst, animateSimpleCircularDeleteLast, animateSimpleCircularInsertAt, animateSimpleCircularInsertFirst, animateSimpleCircularInsertLast } from "../../../../../shared/utils/draw/circularSimpleLinkedListDrawActions";
+import { getListaCircularSimplementeEnlazadaCode } from "../../../../../shared/constants/pseudocode/listaCircularSimplementeEnlazadaCode";
 
-export function useSimpleLinkedListRender(
+export function useCircularSimpleLinkedListRender(
     listNodes: ListNodeData<number>[],
     query: BaseQueryOperations<"lista_enlazada">,
     resetQueryValues: () => void
@@ -33,17 +33,23 @@ export function useSimpleLinkedListRender(
     const linksData = useMemo<ListLinkData[]>(() => {
         const links: ListLinkData[] = [];
 
-        listNodes.forEach((n) => {
+        listNodes.forEach((n, i, arr) => {
             if (n.next) {
+                const isCircularNext =
+                    i === arr.length - 1 &&
+                    n.next === arr[0].id;
+
                 links.push({
                     sourceId: n.id,
                     targetId: n.next,
-                    type: "next"
+                    type: isCircularNext ? "circular-next" : "next"
                 });
             }
         });
         return links;
     }, [listNodes]);
+
+    console.log(linksData);
 
     // Renderizado base de la lista
     useEffect(() => {
@@ -120,6 +126,33 @@ export function useSimpleLinkedListRender(
             { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
             { elementWidth: SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, elementHeight: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT }
         );
+
+        // Creación de indicador para elemento cola
+        const tailId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+        const tailPos = tailId ? nodePositions.get(tailId)! : null;
+
+        // Configuración de estilos y de posicionamiento para el indicador del elemento cola
+        const tailStyleConfig = {
+            text: "COLA",
+            textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
+            arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
+            fontSize: "14px",
+            fontWeight: "bold",
+            arrowPathData: "M0,0 L-9.5,10 L-4,10 L-4,20 L4,20 L4,10 L9.5,10 Z",
+            textRelativeY: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT + 70,
+            arrowTransform: `translate(0, ${SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT + 35})`
+        }
+
+        // Renderizado del indicador de cola
+        drawArrowIndicator(
+            svg,
+            "tail-indicator",
+            "tail-indicator-group",
+            tailPos,
+            tailStyleConfig,
+            { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
+            { elementWidth: SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, elementHeight: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT }
+        );
     }, [listNodes, linksData, prevNodes?.length]);
 
     // Efecto para manejar la inserción de un nuevo nodo al inicio
@@ -132,15 +165,19 @@ export function useSimpleLinkedListRender(
         // Id del nuevo nodo cabeza
         const newHeadNodeId = query.toAddFirst;
 
-        // Id del nodo cabeza actual de la lista (anterior a la inserción)
+        // Id del actual nodo cabeza de la lista (anterior a la inserción)
         const currHeadNodeId = listNodes.length > 1 ? listNodes[1].id : null;
 
+        // Id del nodo cola de la lista
+        const tailNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 1].id : null;
+
         // Animación de inserción del nodo como primer elemento de la lista
-        animateSimpleInsertFirst(
+        animateSimpleCircularInsertFirst(
             svg,
             {
                 newHeadNodeId,
                 currHeadNodeId,
+                tailNodeId,
                 nodesData: listNodes,
                 linksData,
                 positions: nodePositions
@@ -158,18 +195,22 @@ export function useSimpleLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del nuevo último nodo
-        const newLastNodeId = query.toAddLast;
+        // Id del nuevo nodo cola
+        const newTailNodeId = query.toAddLast;
 
-        // Id del último nodo actual de la lista (anterior a la inserción)
-        const currLastNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
+        // Id del actual nodo cola de la lista (anterior a la inserción)
+        const currTailNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
+
+        // Id del nodo cabeza de la lista
+        const headNodeId = listNodes.length > 1 ? listNodes[0].id : null
 
         // Animación de inserción del nodo como último elemento de la lista
-        animateSimpleInsertLast(
+        animateSimpleCircularInsertLast(
             svg,
             {
-                newLastNodeId,
-                currLastNodeId,
+                newTailNodeId,
+                currTailNodeId,
+                headNodeId,
                 nodesData: listNodes,
                 positions: nodePositions
             },
@@ -196,7 +237,7 @@ export function useSimpleLinkedListRender(
         const nextNodeId = position !== listNodes.length - 1 ? listNodes[position + 1].id : null;
 
         // Animación de inserción del nodo en una posición especifica
-        animateSimpleInsertAt(
+        animateSimpleCircularInsertAt(
             svg,
             {
                 newNodeId: nodeId,
@@ -220,18 +261,22 @@ export function useSimpleLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del nodo cabeza actual previo a la eliminación (nodo a eliminar)
+        // Id del actual nodo cabeza previo a la eliminación (nodo a eliminar)
         const currHeadNodeId = query.toDeleteFirst;
 
         // Id del nuevo nodo cabeza
         const newHeadNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
+        // Id del nodo cola de la lista
+        const tailNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+
         // Animación de eliminación del primer nodo de la lista
-        animateSimpleDeleteFirst(
+        animateSimpleCircularDeleteFirst(
             svg,
             {
                 currHeadNodeId,
                 newHeadNodeId,
+                tailNodeId,
                 remainingNodesData: listNodes,
                 remainingLinksData: linksData,
                 positions: nodePositions
@@ -249,18 +294,22 @@ export function useSimpleLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del último nodo actual previo a la eliminación (nodo a eliminar)
-        const currLastNodeId = query.toDeleteLast;
+        // Id del actual nodo cola previo a la eliminación (nodo a eliminar)
+        const currTailNodeId = query.toDeleteLast;
 
-        // Id del nuevo último nodo
-        const newLastNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+        // Id del nuevo nodo cola
+        const newTailNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+
+        // Id del nodo cabeza
+        const headNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
         // Animación de eliminación del último nodo de la lista
-        animateSimpleDeleteLast(
+        animateSimpleCircularDeleteLast(
             svg,
             {
-                currLastNodeId,
-                newLastNodeId,
+                currTailNodeId,
+                newTailNodeId,
+                headNodeId,
                 remainingNodesData: listNodes,
                 positions: nodePositions
             },
@@ -287,7 +336,7 @@ export function useSimpleLinkedListRender(
         const nextNodeId = position !== prevNodes.length - 1 ? prevNodes[position + 1].id : null;
 
         // Animación de eliminación del nodo en una posición especifica
-        animateSimpleDeleteAt(
+        animateSimpleCircularDeleteAt(
             svg,
             {
                 removalNodeId: nodeId,
@@ -315,25 +364,28 @@ export function useSimpleLinkedListRender(
         const targetElement = query.toSearch;
 
         // Código y labels de la operación
-        const listaSimpleCode = getListaSimplementeEnlazadaCode();
-        const labels = listaSimpleCode.search.labels!;
+        const listaSimpleCircularCode = getListaCircularSimplementeEnlazadaCode();
+        const labels = listaSimpleCircularCode.search.labels!;
 
         // Grupo contenedor de los nodos de la lista
         const nodesG = svg.select<SVGGElement>("g#nodes-layer");
 
         // Animación de búsqueda del elemento especificado
-        animateSearchElement(
+        animateCircularSearchElement(
             nodesG,
             targetElement,
             listNodes,
             bus,
             {
+                VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
+                RETURN_FALSE_EMPTY: labels.RETURN_FALSE_EMPTY,
                 INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
-                WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
+                DO_SEARCH_LOOP: labels.DO_SEARCH_LOOP,
                 IF_MATCH: labels.IF_MATCH,
-                RETURN_TRUE: labels.RETURN_TRUE,
+                RETURN_TRUE_FOUND: labels.RETURN_TRUE_FOUND,
                 ADVANCE_NODE: labels.ADVANCE_NODE,
-                RETURN_FALSE: labels.RETURN_FALSE
+                WHILE_NOT_HEAD: labels.WHILE_NOT_HEAD,
+                RETURN_FALSE_NOT_FOUND: labels.RETURN_FALSE_NOT_FOUND
             },
             resetQueryValues,
             setIsAnimating
@@ -349,8 +401,8 @@ export function useSimpleLinkedListRender(
         const svg = select(svgRef.current);
 
         // Código y labels de la operación
-        const listaSimpleCode = getListaSimplementeEnlazadaCode();
-        const labels = listaSimpleCode.clean.labels!;
+        const listaSimpleCircularCode = getListaCircularSimplementeEnlazadaCode();
+        const labels = listaSimpleCircularCode.clean.labels!;
 
         // Animación de limpieza de la lista
         animateClearList(
@@ -359,6 +411,7 @@ export function useSimpleLinkedListRender(
             bus,
             {
                 CLEAR_HEAD: labels.CLEAR_HEAD,
+                CLEAR_TAIL: labels.CLEAR_TAIL,
                 RESET_SIZE: labels.RESET_SIZE
             },
             "clean",

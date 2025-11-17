@@ -73,7 +73,7 @@ export const getListaDoblementeEnlazadaCode = (): Record<string, OperationCode> 
  */`,
       `public void insertAt(T {0}, int {1}) {`,
       `    if ({1} < 0 || {1} > {2}) {`,
-      `        throw new IndexOutOfBoundsException("No fue posible insertar el nodo en la posición especificada: La posición " + {1} + " no existe dentro de la Lista Doble.");`,
+      `        throw new IndexOutOfBoundsException("No fue posible insertar el nodo en la posición específicada: La posición " + {1} + " no existe dentro de la lista doble.");`,
       `    }`,
       `    NodoD<T> nuevoNodo = new NodoD<>({0});`,
       `    if (this.cabeza == null) {`,
@@ -249,10 +249,10 @@ export const getListaDoblementeEnlazadaCode = (): Record<string, OperationCode> 
  */`,
       `public T removeAt(int {0}) {`,
       `    if (this.cabeza == null) {`,
-      `        throw new RuntimeException("No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).");`,
+      `        throw new RuntimeException("No fue posible eliminar el nodo en la posición específicada: La lista se encuentra vacía (tamaño actual: 0).");`,
       `    }`,
       `    if ({0} < 0 || {0} >= {1}) {`,
-      `        throw new IndexOutOfBoundsException("No fue posible eliminar el nodo en la posición especificada: La posición " + {0} + " no existe dentro de la Lista Doble.");`,
+      `        throw new IndexOutOfBoundsException("No fue posible eliminar el nodo en la posición específicada: La posición " + {0} + " no existe dentro de la lista doble.");`,
       `    }`,
       `    NodoD<T> nodoEliminado;`,
       `    if (this.cabeza == this.cola) {`,
@@ -345,7 +345,7 @@ export const getListaDoblementeEnlazadaCode = (): Record<string, OperationCode> 
  * @param elem Elemento a buscar.
  * @return true si el elemento existe en la lista, false en caso contrario.
  */`,
-      `public boolean buscar(T {0}) {`,
+      `public boolean search(T {0}) {`,
       `    NodoD<T> nodoActual = this.cabeza;`,
       `    while (nodoActual != null) {`,
       `        if (nodoActual.info.equals({0})) {`,
@@ -370,7 +370,7 @@ export const getListaDoblementeEnlazadaCode = (): Record<string, OperationCode> 
       `/**
  * Método que permite eliminar todos los nodos de la lista doble.
  */`,
-      `public void vaciar() {`,
+      `public void clean() {`,
       `    this.cabeza = null;`,
       `    this.cola = null;`,
       `    this.tamanio = 0;`,

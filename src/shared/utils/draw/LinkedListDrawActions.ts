@@ -3,7 +3,7 @@ import {
   SVG_LINKED_LIST_VALUES,
   SVG_STYLE_VALUES,
 } from "../../constants/consts";
-import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
+// import { calculateCircularLPath, calculateLinkPath } from "./calculateLinkPath";
 import * as d3 from "d3";
 
 /**
