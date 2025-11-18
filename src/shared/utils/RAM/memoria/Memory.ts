@@ -371,7 +371,9 @@ export class Memory {
 
       for (const f of fields) {
         const fv = v?.[f.key];
-        if (f.type.tag === "prim") {
+
+        // --- 1) primitivos NO-string → inline como antes ---
+        if (f.type.tag === "prim" && f.type.name !== "string") {
           fieldSpecs.push({
             kind: "prim",
             key: f.key,
@@ -379,16 +381,42 @@ export class Memory {
             value: fv,
           });
           schema.push({ key: f.key, type: f.type.name });
-        } else {
-          const child = this.allocDeep(
-            f.type,
-            fv,
+          continue;
+        }
+
+        // --- 2) String en campos de objeto → nodo propio en Heap + ptr ---
+        if (f.type.tag === "prim" && f.type.name === "string") {
+          const hdr = Layout.allocUtf16String(
+            this.ram,
+            String(fv ?? ""),
+            label ? `${label}.${f.key}#str` : undefined
+          );
+          const len = this.ram.readU32(hdr);
+          const dataPtr = this.ram.readU32(hdr + 4);
+
+          this.heap.addString(
+            hdr,
+            { length: len, dataPtr },
             label ? `${label}.${f.key}` : undefined
           );
-          const refAddr = isRefSlot(child.slot) ? child.slot.refAddr : 0;
-          fieldSpecs.push({ kind: "ptr", key: f.key, ptr: refAddr });
-          schema.push({ key: f.key, type: "ptr32" });
+
+          // Guardamos un puntero en el objeto
+          fieldSpecs.push({ kind: "ptr", key: f.key, ptr: hdr });
+          // En el schema sigue siendo "string" para que readObjectCompact
+          // lea el texto (sabe que hay un puntero ahí).
+          schema.push({ key: f.key, type: "string" });
+          continue;
         }
+
+        // --- 3) arrays / objetos anidados → ref32 como ya tenías ---
+        const child = this.allocDeep(
+          f.type,
+          fv,
+          label ? `${label}.${f.key}` : undefined
+        );
+        const refAddr = isRefSlot(child.slot) ? child.slot.refAddr : 0;
+        fieldSpecs.push({ kind: "ptr", key: f.key, ptr: refAddr });
+        schema.push({ key: f.key, type: "ptr32" });
       }
 
       const w = Layout.writeObjectCompact(this.ram, fieldSpecs, label);
@@ -422,9 +450,16 @@ export class Memory {
       return [true, `var string ${name} @0x${hdr.toString(16)}`] as const;
     }
 
-    const w = Layout.writePrimitive(this.ram, type, value, `prim ${name}`);
-    this.upsertSlot(name, { name, kind: "prim", type, valueAddr: w.addr });
-    return [true, `var ${type} ${name} @0x${w.addr.toString(16)}`] as const;
+    try {
+      const w = Layout.writePrimitive(this.ram, type, value, `prim ${name}`);
+      this.upsertSlot(name, { name, kind: "prim", type, valueAddr: w.addr });
+      return [true, `var ${type} ${name} @0x${w.addr.toString(16)}`] as const;
+    } catch (err) {
+      if (err instanceof RangeError) {
+        return [false, (err as Error).message] as const;
+      }
+      throw err;
+    }
   }
 
   storeArray(elem: PrimitiveType, name: string, values: any[]) {
@@ -572,13 +607,21 @@ export class Memory {
     if (slot.kind !== "prim")
       return [false, `"${name}" no es primitivo.`] as const;
 
-    Layout.writePrimitiveAt(
-      this.ram,
-      slot.type,
-      value,
-      slot.valueAddr,
-      `prim ${name}`
-    );
+    try {
+      Layout.writePrimitiveAt(
+        this.ram,
+        slot.type,
+        value,
+        slot.valueAddr,
+        `prim ${name}`
+      );
+    } catch (err) {
+      if (err instanceof RangeError) {
+        return [false, (err as Error).message] as const;
+      }
+      throw err; // otros errores sí son bug
+    }
+
     return [
       true,
       `var ${slot.type} ${name} (reasignado @0x${slot.valueAddr.toString(16)})`,
@@ -589,7 +632,23 @@ export class Memory {
   setNull(name: string) {
     const slot = this.resolveSlot(name);
     if (!slot) return [false, `Variable "${name}" no existe.`] as const;
-    this.upsertSlot(name, { name, kind: "ref", refAddr: 0 });
+
+    // 1) null NO es válido para primitivos
+    if (slot.kind === "prim") {
+      return [
+        false,
+        `No puedes asignar null a un primitivo (${slot.type}). ` +
+          `Solo referencias (arrays, objetos, strings) pueden ser null.`,
+      ] as const;
+    }
+
+    // 2) Si la ref actual apunta a algo, ajusta refCount
+    if (slot.refAddr !== 0 && this.heap.has(slot.refAddr)) {
+      this.heap.dec(slot.refAddr);
+    }
+
+    // 3) Marcar la referencia como puntero nulo (0)
+    slot.refAddr = 0;
     return [true, `${name} = null`] as const;
   }
 

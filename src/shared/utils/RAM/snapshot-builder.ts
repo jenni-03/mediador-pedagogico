@@ -438,14 +438,15 @@ export function buildUiHeap(mem: Memory): UiHeapEntry[] {
   for (const f of stk.all()) {
     for (const s of f.slots.values()) {
       if ((s as any).kind === "ref") {
-        const cell = (s as any).refAddr as number; // celda en stack (u32)
-        const target = bs.readU32(cell); // header en heap
-        if (target && !ownerByHeader.has(target)) {
-          ownerByHeader.set(target, s.name); // p.ej. 0x... → "x"
+        // En el MODELO 1, refAddr YA ES el header del heap
+        const header = (s as any).refAddr as number;
+        if (header && !ownerByHeader.has(header)) {
+          ownerByHeader.set(header, s.name); // p.ej. 0x0100 → "x"
         }
       }
     }
   }
+
   // ===========================================================================
 
   const toHex = (n: number): HexAddr =>
@@ -1370,7 +1371,7 @@ function primSizeOf(kind: PrimitiveType): number {
     case "double":
       return 8;
     case "string":
-      return 8; // header expuesto por compatibilidad (len+ptr)
+      return 4; // header expuesto por compatibilidad (len+ptr)
   }
 }
 
