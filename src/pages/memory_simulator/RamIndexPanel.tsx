@@ -250,12 +250,14 @@ function TabButton({
   count,
   tone,
   onClick,
+  tourId,
 }: {
   active: boolean;
   label: string;
   count: number;
   tone: "amber" | "sky" | "cyan" | "emerald";
   onClick: () => void;
+  tourId?: string;
 }) {
   const base =
     "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium tracking-wide transition-all";
@@ -266,16 +268,17 @@ function TabButton({
     tone === "amber"
       ? "bg-amber-400"
       : tone === "sky"
-      ? "bg-sky-400"
-      : tone === "cyan"
-      ? "bg-cyan-400"
-      : "bg-emerald-400";
+        ? "bg-sky-400"
+        : tone === "cyan"
+          ? "bg-cyan-400"
+          : "bg-emerald-400";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`${base} ${common}`}
+      data-tour={tourId}
     >
       <span
         className={`h-2 w-2 rounded-full ${dotColor} shadow-[0_0_8px_rgba(250,250,250,.9)]`}
@@ -304,7 +307,6 @@ function ItemCard({
   onHoverRange?: (r: ByteRange) => void;
   onLeaveRange?: () => void;
   heapOwnerName?: string;
-  /** chips tipo p.id, p.nombre (solo objetos en heap-data) */
   attrChips?: string[];
 }) {
   const theme = srcTheme(it.source)!;
@@ -318,12 +320,12 @@ function ItemCard({
   const owner = cleanOwnerName(heapOwnerName ?? varFromMeta(it.meta));
   const fieldKey = fieldKeyFromMeta(it.meta);
   let titleText = isStackPrim
-    ? varFromMeta(it.meta) ?? (it.type || "prim")
+    ? (varFromMeta(it.meta) ?? (it.type || "prim"))
     : isStackRef
-    ? varFromMeta(it.meta) ?? "ref"
-    : fieldKey && owner
-    ? `${owner}.${fieldKey}`
-    : owner ?? "sin nombre";
+      ? (varFromMeta(it.meta) ?? "ref")
+      : fieldKey && owner
+        ? `${owner}.${fieldKey}`
+        : (owner ?? "sin nombre");
 
   return (
     <div
@@ -379,21 +381,16 @@ function ItemCard({
         ].join(" ")}
         title={`${titleText}${isHeap ? ` • ${seg}` : ""}`}
       >
-        {/* chip corta (ref/prim) — ocultar en heap */}
         {!(it.source === "heap-header" || it.source === "heap-data") && (
           <span className={["icq-chip", theme.chip].join(" ")}>
             {chipLabelBySource(it.source)}
           </span>
         )}
 
-        {/* pill tipo */}
         {!isStackRef && (
-          <span className={["icq-chip", pill.cls].join(" ")}>
-            {pill.label}
-          </span>
+          <span className={["icq-chip", pill.cls].join(" ")}>{pill.label}</span>
         )}
 
-        {/* título */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 min-w-0">
             <div
@@ -401,7 +398,6 @@ function ItemCard({
             >
               {titleText}
             </div>
-            {/* chips de atributos */}
             {attrChips && attrChips.length > 0 && (
               <div className="hidden sm:flex flex-wrap gap-1">
                 {attrChips.map((c) => (
@@ -416,13 +412,11 @@ function ItemCard({
               </div>
             )}
           </div>
-          {/* subtítulo de segmento para HEAP (claridad) */}
           {isHeap && (
             <div className={`mt-0.5 text-[11px] ${C.subtext}`}>{seg}</div>
           )}
         </div>
 
-        {/* métricas */}
         <div className="icq-metrics shrink-0">
           {(it.source === "heap-header" || it.source === "heap-data") && (
             <span className="icq-badge bg-[#2D3747] text-zinc-100 ring-1 ring-[#3B4659] tabular-nums">
@@ -434,7 +428,6 @@ function ItemCard({
           </span>
         </div>
 
-        {/* chips móviles */}
         {attrChips && attrChips.length > 0 && (
           <div className="sm:hidden basis-full pt-1 flex flex-wrap gap-1">
             {attrChips.map((c) => (
@@ -460,13 +453,11 @@ type Groups = {
   heapData: UiRamItem[];
 };
 
-/** Colapsa campos de objetos si existe el ítem grupo `heap#X:data` */
 function collapseHeapObjectData(items: UiRamItem[]): UiRamItem[] {
   const buckets = new Map<string, UiRamItem[]>();
   const noGroup: UiRamItem[] = [];
 
   for (const it of items) {
-    // 1) solo queremos colapsar heap-data de OBJETOS
     if (it.source !== "heap-data") {
       noGroup.push(it);
       continue;
@@ -474,13 +465,11 @@ function collapseHeapObjectData(items: UiRamItem[]): UiRamItem[] {
 
     const gid = groupIdFromMeta(it.meta);
 
-    // 2) Strings (y cualquier cosa sin groupId) NO se colapsan
     if (!gid || it.type === "string") {
       noGroup.push(it);
       continue;
     }
 
-    // 3) resto de heap-data (campos del objeto) sí se agrupa
     const arr = buckets.get(gid) ?? [];
     arr.push(it);
     buckets.set(gid, arr);
@@ -529,10 +518,7 @@ function buildHeapOwnerNameIndex(items: UiRamItem[]) {
     const gid = groupIdFromMeta(it.meta);
     if (!gid || nameByGroup.has(gid)) continue;
     const peer = items.find(
-      (x) =>
-        x !== it &&
-        groupIdFromMeta(x.meta) === gid &&
-        varFromMeta(x.meta)
+      (x) => x !== it && groupIdFromMeta(x.meta) === gid && varFromMeta(x.meta)
     );
     const nm = cleanOwnerName(peer && varFromMeta(peer?.meta));
     if (gid && nm) nameByGroup.set(gid, nm);
@@ -638,7 +624,7 @@ function Column({
                   onToggleItem(it);
                   onFocusRange(
                     willSelect
-                      ? rangeForSelectId(canonicalId, allItems) ?? it.range
+                      ? (rangeForSelectId(canonicalId, allItems) ?? it.range)
                       : { from: ZERO, to: ZERO }
                   );
                 }}
@@ -663,11 +649,13 @@ export default function RamIndexPanel({
   onFocusRange,
   selectedId,
   onPick,
+  onClearAll, // 👈 NUEVO
 }: {
   items: UiRamItem[];
   onFocusRange?: (range: ByteRange) => void;
   selectedId?: string | null;
   onPick?: (item: UiRamItem | null) => void;
+  onClearAll?: () => void; // 👈 NUEVO
 }) {
   // 1) dedupe
   const itemsClean = React.useMemo(() => dedupeItems(items), [items]);
@@ -702,7 +690,7 @@ export default function RamIndexPanel({
     [itemsClean, heapOwnerNameOf]
   );
 
-  // 5) selección controlada / no controlada (usa id canónico)
+  // 5) selección controlada / no controlada
   const isControlled = selectedId !== undefined;
   const [localSel, setLocalSel] = React.useState<string | null>(
     selectedId ?? null
@@ -710,9 +698,9 @@ export default function RamIndexPanel({
   React.useEffect(() => {
     if (isControlled) setLocalSel(selectedId ?? null);
   }, [isControlled, selectedId]);
-  const selId = isControlled ? selectedId ?? null : localSel;
+  const selId = isControlled ? (selectedId ?? null) : localSel;
 
-  // 6) foco en RAM cuando cambia selección (desde fuera)
+  // 6) foco en RAM cuando cambia selección
   React.useEffect(() => {
     if (!onFocusRange) return;
     if (selId) {
@@ -764,6 +752,7 @@ export default function RamIndexPanel({
   return (
     <section
       className="relative w-full rounded-2xl overflow-hidden"
+      data-tour="panelRamIndex"
       style={{
         height: "clamp(360px,48vh,680px)",
         color: "white",
@@ -824,44 +813,69 @@ export default function RamIndexPanel({
           className="relative h-full rounded-xl overflow-hidden flex flex-col min-h-0"
           style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
         >
-            <div className="flex-1 min-w-0 min-h-0 p-3 sm:p-4 flex">
-    <Column
-      title={currentTitle}
-      items={currentItems}
-      allItems={itemsClean}
-      selectedId={selId}
-      onToggleItem={toggle}
-      onFocusRange={(r) => onFocusRange?.(r)}
-      heapOwnerNameOf={heapOwnerNameOf}
-      attrsOf={attrsOf}
-    />
-  </div>
+          <div className="flex-1 min-w-0 min-h-0 p-3 sm:p-4 flex">
+            <Column
+              title={currentTitle}
+              items={currentItems}
+              allItems={itemsClean}
+              selectedId={selId}
+              onToggleItem={toggle}
+              onFocusRange={(r) => onFocusRange?.(r)}
+              heapOwnerNameOf={heapOwnerNameOf}
+              attrsOf={attrsOf}
+            />
+          </div>
 
+          {/* barra de pestañas + botón Limpiar RAM */}
+          <div
+            className="shrink-0 px-3 sm:px-4 pb-3 pt-2 border-t border-[rgba(148,163,184,0.35)] bg-gradient-to-t from-black/45 via-black/15 to-transparent"
+            data-tour="tabsRamIndex"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+              {onClearAll && (
+                <button
+                  type="button"
+                  onClick={onClearAll}
+                  data-tour="limpiar"
+                  className="inline-flex items-center gap-2 rounded-full border border-rose-400/80 bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-50 shadow-[0_0_0_1px_rgba(248,113,113,0.7),0_0_18px_rgba(248,113,113,0.7)] hover:bg-rose-500/30 hover:border-rose-200/90 hover:shadow-[0_0_0_1px_rgba(254,202,202,0.9),0_0_22px_rgba(248,113,113,0.95)] transition-colors"
+                  title="Borrar todas las estructuras de la memoria"
+                >
+                  <span className="text-sm">🧹</span>
+                  <span>Limpiar RAM</span>
+                  <span className="hidden sm:inline text-[9px] px-1.5 py-[1px] rounded-full bg-black/40 font-mono uppercase tracking-wide">
+                    Reset total
+                  </span>
+                </button>
+              )}
 
-          {/* barra de pestañas */}
-          <div className="shrink-0 px-3 sm:px-4 pb-3 pt-2 border-t border-[rgba(148,163,184,0.35)] bg-gradient-to-t from-black/45 via-black/15 to-transparent">
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <TabButton
-                active={tab === "stack"}
-                label="STACK"
-                count={counts.stack}
-                tone="amber"
-                onClick={() => setTab("stack")}
-              />
-              <TabButton
-                active={tab === "headers"}
-                label="HEADERS"
-                count={counts.headers}
-                tone="cyan"
-                onClick={() => setTab("headers")}
-              />
-              <TabButton
-                active={tab === "data"}
-                label="DATA"
-                count={counts.data}
-                tone="emerald"
-                onClick={() => setTab("data")}
-              />
+              <div className="flex-1 flex justify-center">
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                  <TabButton
+                    tourId="tabRamStack"
+                    active={tab === "stack"}
+                    label="STACK"
+                    count={counts.stack}
+                    tone="amber"
+                    onClick={() => setTab("stack")}
+                  />
+                  <TabButton
+                    tourId="tabRamHeaders"
+                    active={tab === "headers"}
+                    label="HEADERS"
+                    count={counts.headers}
+                    tone="cyan"
+                    onClick={() => setTab("headers")}
+                  />
+                  <TabButton
+                    tourId="tabRamData"
+                    active={tab === "data"}
+                    label="DATA"
+                    count={counts.data}
+                    tone="emerald"
+                    onClick={() => setTab("data")}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -871,4 +885,3 @@ export default function RamIndexPanel({
     </section>
   );
 }
-

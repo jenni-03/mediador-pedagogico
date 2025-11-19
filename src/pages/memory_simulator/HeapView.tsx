@@ -200,6 +200,7 @@ export function HeapView({
       {/* Cuerpo sólido */}
       <div
         className="relative h-full min-h-0 rounded-3xl p-3 flex flex-col overflow-hidden"
+        data-tour="panelHeap"
         style={{ background: C.panel }}
       >
         {/* Header */}

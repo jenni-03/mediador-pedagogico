@@ -50,10 +50,28 @@ export class Memory {
   private heap = new Heap();
   private readonly NULL_GUARD = 16;
 
-  constructor(sizeBytes: number = 1024 * 64) {
+    constructor(sizeBytes: number = 1024 * 64) {
     this.ram = new ByteStore(sizeBytes);
     // Reserva inicial para representar 0x0000… como "zona inválida" (null-guard).
     this.ram.allocAligned(this.NULL_GUARD, this.NULL_GUARD, "null guard");
+    this.stack.push("global");
+  }
+
+    /** 🔴 Limpia completamente la memoria: RAM, Stack y Heap, y vuelve al estado inicial. */
+  clearAll() {
+    const size = this.ram.capacity();
+
+    // Recrear RAM con mismo tamaño
+    this.ram = new ByteStore(size);
+
+    // Resetear estructuras de alto nivel
+    this.stack = new Stack();
+    this.heap = new Heap();
+
+    // Volver a reservar el null-guard
+    this.ram.allocAligned(this.NULL_GUARD, this.NULL_GUARD, "null guard");
+
+    // Volver a crear el frame global
     this.stack.push("global");
   }
 

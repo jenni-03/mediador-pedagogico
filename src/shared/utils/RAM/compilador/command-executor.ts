@@ -39,6 +39,18 @@ export class CommandExecutor {
    * Retorna el mismo mensaje del intérprete y, si aplica, una nota de "almacenado".
    */
   execute(line: string): ExecOutcome {
+
+    const trimmed = line.trim();
+
+    // 🔴 COMANDO ESPECIAL: clear → limpiar TODA la memoria
+    if (trimmed.toLowerCase() === "clear") {
+      this.memory.clearAll();
+      return {
+        ok: true,
+        message: "🧹 Memoria reiniciada: stack, heap y RAM han sido limpiados.",
+      };
+    }
+    
     // -1) ¿Definición de tipo? (class | record | struct)
     const def = defineType(line);
     if ("matched" in def && def.matched) {

@@ -1,215 +1,358 @@
 import { TourStep } from "../typesTour";
 
 export const getMemoriaTour = (): TourStep[] => [
+  /* ===================== 1. BIENVENIDA ===================== */
   {
     type: "info",
     description:
-      "👋 ¡Hola! Bienvenido al **Simulador de Memoria RAM**. Aquí aprenderás de forma visual y práctica cómo se almacenan las **variables, arrays y objetos** en Java. ¡Prepárate para ver la memoria como nunca antes! 🧠",
+      "👋 ¡Hola! Bienvenido al **Simulador de Memoria RAM**. Aquí vas a ver cómo se reparten en memoria las **variables, arrays y objetos** de Java: **stack**, **heap** y los bytes reales de la **RAM**. Vamos a recorrerlo paso a paso. 🧠",
   },
+
+  /* ===================== 2. VISTA GENERAL ===================== */
   {
-    id: "casosPrueba",
-    description:
-      "📦 Desde este panel podrás **crear, editar y ejecutar comandos de prueba**. Ideal para simular operaciones reales en la memoria y ver cómo cambian los datos.",
+    id: "structure-title",
     type: "element",
+    description:
+      "🔭 Esta es la vista principal del simulador. Debajo del título encontrarás tres áreas clave: **STACK**, **HEAP** y la combinación de **RAM física + RAM · Índice**, además de la consola y el historial.",
+  },
+
+  /* ===================== 3. STACK VIEW ===================== */
+  {
+    id: "panelStack",
+    type: "element",
+    description:
+      "📚 Este panel muestra el **STACK**. Cada tarjeta representa un **frame de activación** (una llamada a método) con sus **variables locales**. Los **primitivos** viven aquí; las **referencias** son punteros lógicos que apuntan al heap.",
+  },
+
+  /* ===================== 4. HEAP VIEW ===================== */
+  {
+    id: "panelHeap",
+    type: "element",
+    description:
+      "🏗️ Este es el **HEAP**. Aquí se almacenan los **objetos, arrays y strings**. Cada tarjeta muestra su **dirección base**, su tipo y la estructura interna (campos o elementos).",
+  },
+
+  /* ===================== 5. RAM FÍSICA (SIMM / DIMM) ===================== */
+  {
+    id: "panelRamView",
+    type: "element",
+    description:
+      "💾 Este módulo representa un **módulo de RAM físico**. Cada cuadrito es un **byte real**. Los colores indican si el byte pertenece a un **header**, a **datos primitivos**, a **strings**, **arrays** u **objetos**.",
   },
   {
-    id: "casosPrueba",
+    id: "panelRamView",
+    type: "element",
+    description:
+      "ℹ️ En la parte superior verás la **dirección base**, el **uso de memoria** y una **leyenda de colores**. Si pasas el cursor sobre un byte, puedes ver su dirección, su valor y a qué estructura pertenece.",
+  },
+
+  /* ===================== 6. RAM · ÍNDICE ===================== */
+  {
+    id: "panelRamIndex",
+    type: "element",
+    description:
+      "📖 Aquí tienes el panel **RAM · Índice**. Resume el contenido de la memoria en forma de **tarjetas legibles**: referencias del stack, headers del heap y bloques de datos.",
+  },
+  {
+    id: "panelRamIndex",
+    type: "element",
+    description:
+      "🧷 Cada tarjeta del índice está conectada con uno o varios bytes de la RAM física. Al seleccionarla, el simulador resalta el **rango de bytes** correspondiente en el módulo de memoria.",
+  },
+
+  /* ===================== 7. PESTAÑAS DEL ÍNDICE ===================== */
+  {
+    id: "tabsRamIndex",
+    type: "element",
+    description:
+      "🔎 Usa estas pestañas para elegir qué quieres explorar dentro del índice: **STACK**, **HEADERS** del heap o **DATA** (bloques de datos de objetos, arrays y strings).",
+  },
+  {
+    id: "tabRamStack",
+    type: "element",
+    description:
+      "📌 En la pestaña **STACK** verás las entradas del índice relacionadas con **variables y referencias** que viven en el stack.",
+  },
+  {
+    id: "tabRamHeaders",
+    type: "element",
+    description:
+      "📦 En **HEADERS** se listan las **cabeceras** de objetos, arrays y strings en el heap: tipo, tamaño y otros metadatos.",
+  },
+  {
+    id: "tabRamData",
+    type: "element",
+    description:
+      "🧬 En **DATA** aparecen los **bloques de datos**: el contenido real de arrays, strings y objetos compactados.",
+  },
+  {
+    id: "tabRamData",
     type: "action",
   },
   {
-    id: "inputCasos",
-    description:
-      "✍️ Aquí escribes tu comando. Es como una pequeña consola donde defines variables, arrays u objetos tal como lo harías en Java.",
+    id: "panelRamIndex",
     type: "element",
-  },
-  {
-    id: "inputCasos",
-    text: "int arrayTest[] = {23,12,43,23};",
-    type: "write",
-  },
-  {
-    id: "inputCasos",
     description:
-      "🎯 Ya escribimos un comando para crear un **array de enteros**. Esto se convertirá en una nueva estructura en memoria.",
-    type: "element",
+      "🎯 Prueba a seleccionar diferentes tarjetas del índice. Verás cómo se **iluminan los bytes correspondientes en la RAM**, conectando la vista lógica (variables, arrays, objetos) con la vista física (bytes).",
   },
+
+  /* ===================== 8. LOGS / HISTORIAL ===================== */
   {
-    id: "botonAñadirCasos",
+    id: "panelLogs",
+    type: "element",
     description:
-      "➕ Presiona este botón para **añadir el comando a la lista** de pruebas. Así podrás ejecutarlo junto con otros comandos más adelante.",
-    type: "element",
+      "🛰️ En este panel puedes ver el **historial de acciones y mensajes**: comandos ejecutados, errores y explicaciones generadas por el simulador.",
   },
-  {
-    id: "botonAñadirCasos",
-    type: "action",
-  },
-  {
-    id: "comandoCreado.1",
-    description:
-      "✅ ¡Perfecto! El comando fue añadido. Aquí puedes ver que ya hace parte de la lista de pruebas.",
-    type: "element",
-  },
-  {
-    id: "lapiz,equis",
-    description:
-      "✏️ Usa el **ícono de lápiz** para editar un comando. ❌ Usa el de la equis para eliminarlo si cometiste un error. ¡Todo bajo control!",
-    type: "element",
-  },
-  {
-    id: "botonCargarPruebas",
-    description:
-      "🚀 ¿No quieres escribir todo manualmente? Presiona este botón para **cargar comandos predefinidos** automáticamente.",
-    type: "element",
-  },
-  {
-    id: "botonCargarPruebas",
-    type: "action",
-  },
-  {
-    id: "comandoCreado.[1,2,3,4]",
-    description:
-      "🔁 Se añadieron múltiples comandos. Puedes hacer clic sobre ellos para **seleccionarlos** y ejecutarlos juntos.",
-    type: "element",
-  },
-  {
-    id: "botonSeleccionarPruebas",
-    description:
-      "☑️ Si quieres **seleccionar todos los comandos de una sola vez**, este botón es tu mejor aliado.",
-    type: "element",
-  },
-  {
-    id: "botonSeleccionarPruebas",
-    type: "action",
-  },
-  {
-    id: "botonEjecutarPruebas",
-    description:
-      "🧪 Ya tienes los comandos listos. ¡Es momento de ejecutarlos y ver cómo se transforman en estructuras dentro de la memoria!",
-    type: "element",
-  },
-  {
-    id: "botonEjecutarPruebas",
-    type: "action",
-  },
-  {
-    id: "resultadosComandos",
-    description:
-      "📋 Aquí verás el resultado de cada comando: **verde si fue exitoso** ✅ o **rojo si tuvo errores** ❌. ¡Ideal para aprender de tus intentos!",
-    type: "element",
-  },
-  {
-    id: "cerrarModalPruebas",
-    type: "action",
-  },
-  {
-    id: "visualizacionVariables",
-    description:
-      "🧩 Este panel muestra el **estado actual de la memoria RAM**. Cada tarjeta representa una variable u objeto almacenado.",
-    type: "element",
-  },
-  {
-    id: "divObjeto.[1,2,3]",
-    description:
-      "🧱 Estas tarjetas representan objetos almacenados. Observa su dirección, nombre y atributos internos.",
-    type: "element",
-  },
-  {
-    id: "engranajeObjeto.[1,2,3]",
-    description:
-      "⚙️ Usa este engranaje para **cambiar el tipo de dato** (casting). En Java no puedes cambiar el tipo de objetos, pero sí arrays y primitivos.",
-    type: "element",
-  },
-  {
-    id: "eliminarObjeto.[1,2,3]",
-    description:
-      "🗑️ Usa este botón para **eliminar objetos de la memoria**. ¡Pero cuidado! Algunas estructuras están ligadas a otras, como en POO.",
-    type: "element",
-  },
-  {
-    id: "segment-buttons",
-    description:
-      "🧠 Usa estos botones para **explorar diferentes segmentos** de la memoria: variables, arrays y objetos.",
-    type: "element",
-  },
-  {
-    id: "botonArray",
-    description:
-      "🔍 Vamos a analizar los arrays. Presiona este botón para cambiar al segmento correspondiente.",
-    type: "element",
-  },
-  {
-    id: "botonArray",
-    type: "action",
-  },
-  {
-    id: "visualizacionVariables",
-    description:
-      "📊 Ahora ves los **arrays activos**. Cada uno muestra su tipo, tamaño y elementos almacenados.",
-    type: "element",
-  },
+
+  /* ===================== 9. BOTÓN LIMPIAR / REINICIAR ===================== */
   {
     id: "limpiar",
-    description:
-      "🧹 Usa este botón para **limpiar toda la memoria**. Es como reiniciar la simulación desde cero.",
     type: "element",
+    description:
+      "🧹 Este botón limpia **toda la memoria simulada**: stack, heap, RAM y el índice vuelven a un estado inicial. Es como reiniciar la máquina sin cerrar el simulador.",
   },
-  {
-    id: "limpiar",
-    type: "action",
-  },
+
+  /* ===================== 10. CONSOLA: INTRODUCCIÓN ===================== */
   {
     id: "consola",
-    description:
-      "🧠 En la **consola** puedes escribir comandos de texto para interactuar con la memoria. Es como una caja mágica donde puedes declarar, borrar, cambiar tipos y más.",
     type: "element",
+    description:
+      "🧠 La **consola** es tu puente entre el código y la memoria. Aquí puedes escribir comandos parecidos a Java para **declarar variables**, crear **arrays**, **objetos**, y ejecutar operaciones sobre ellos.",
   },
   {
     id: "divInputConsola",
-    description:
-      "⌨️ Aquí es donde vas a **escribir tus comandos**. Puedes usar instrucciones como `delete address`, `convert type`, `address of`, entre muchas otras. ¡Todo comienza escribiendo!",
     type: "element",
+    description:
+      "⌨️ En este input escribes tus comandos. El simulador entiende declaraciones, asignaciones y algunas operaciones especiales (como el comando `clear`).",
   },
+
+  /* ===================== 11. EJEMPLO 1: PRIMITIVO EN EL STACK ===================== */
   {
     id: "inputConsola",
-    text: "int arrayTest[] = {10,20,30,40};",
     type: "write",
+    text: "int a = 10;",
   },
   {
     id: "divInputConsola",
-    description:
-      "📥 Hemos ingresado un comando para **crear un array** llamado `arrayTest`. Ahora lo vamos a ejecutar y ver qué pasa.",
     type: "element",
+    description:
+      "👣 Empezamos con algo sencillo: un **primitivo**. El comando `int a = 10;` declara una variable `a` de tipo `int` y la inicializa con el valor 10.",
   },
   {
     id: "inputConsola",
     type: "enter",
   },
   {
-    id: "divInputConsola",
-    description:
-      "✅ ¡Listo! El comando se ejecutó **sin errores**, lo que significa que el array fue creado correctamente.",
+    id: "panelStack",
     type: "element",
+    description:
+      "📍 En el **STACK** verás ahora la variable `a`. Los primitivos se guardan **directamente** en el stack: el slot de `a` tiene el valor 10 (aunque internamente se guarda como bytes).",
   },
   {
-    id: "visualizacionVariables",
-    description:
-      "🧩 Ahora verás los **elementos del array** representados como tarjetas. Cada una muestra su **dirección de memoria**, **tipo de dato** y el **espacio que ocupa**.",
+    id: "panelRamView",
     type: "element",
+    description:
+      "🔬 En la **RAM física** se han reservado algunos bytes para `a`. Si exploras el índice y la RAM, verás que hay un bloque de bytes marcado como dato primitivo.",
   },
+  {
+    id: "panelRamIndex",
+    type: "element",
+    description:
+      "📑 En **RAM · Índice** aparece una entrada asociada a `a`. Al seleccionarla, la RAM resalta los bytes concretos que representan ese `int`.",
+  },
+
+  /* ===================== 12. EJEMPLO 2: ARRAY x ===================== */
+  {
+    id: "inputConsola",
+    type: "write",
+    text: "int[] x = new int[]{1,2,3};",
+  },
+  {
+    id: "divInputConsola",
+    type: "element",
+    description:
+      "🚀 Ahora vamos con un **array**. El comando `int[] x = new int[]{1,2,3};` crea un arreglo de tres enteros y una referencia `x` que apunta a ese arreglo.",
+  },
+  {
+    id: "inputConsola",
+    type: "enter",
+  },
+  {
+    id: "panelStack",
+    type: "element",
+    description:
+      "📌 En el **STACK** aparece `x` como una **referencia**: no guarda los 1,2,3 directamente, sino una **dirección** que apunta al header del array en el heap.",
+  },
+  {
+    id: "panelHeap",
+    type: "element",
+    description:
+      "🧱 En el **HEAP** verás una tarjeta que representa el array: su **header** indica el tamaño (`length = 3`) y el tipo de elementos (`int`), seguida de los datos 1, 2 y 3.",
+  },
+  {
+    id: "panelRamView",
+    type: "element",
+    description:
+      "🧬 En la **RAM física** puedes localizar el bloque donde viven esos 3 enteros. Están en una zona contigua de bytes, marcados como datos de array.",
+  },
+  {
+    id: "panelRamIndex",
+    type: "element",
+    description:
+      "📖 En **RAM · Índice**, verás al menos dos tarjetas relacionadas: una para el **header del array** y otra para el **bloque de datos** (1, 2, 3). Al seleccionarlas, la RAM resalta los bytes correspondientes.",
+  },
+
+  /* ===================== 13. EJEMPLO 3: ARRAY y ===================== */
+  {
+    id: "inputConsola",
+    type: "write",
+    text: "int[] y = new int[]{4,5,6};",
+  },
+  {
+    id: "divInputConsola",
+    type: "element",
+    description:
+      "🔁 Creamos otro array: `int[] y = new int[]{4,5,6};`. Así podrás comparar en memoria dos arreglos distintos, cada uno con su propio header y su propio bloque de datos.",
+  },
+  {
+    id: "inputConsola",
+    type: "enter",
+  },
+  {
+    id: "panelStack",
+    type: "element",
+    description:
+      "📍 En el **STACK** aparece ahora `y`, otra referencia a un array distinto. `x` y `y` apuntan a estructuras separadas en el heap.",
+  },
+  {
+    id: "panelHeap",
+    type: "element",
+    description:
+      "🧊 En el **HEAP** verás **dos arrays**: uno para `x` (1,2,3) y otro para `y` (4,5,6). Cada uno con su header y sus datos.",
+  },
+  {
+    id: "panelRamIndex",
+    type: "element",
+    description:
+      "🧭 En **RAM · Índice** podrás distinguir las tarjetas correspondientes a `x` y `y`. Selecciona cada una para ver qué bytes pertenecen a cada array.",
+  },
+
+  /* ===================== 14. DEFINICIÓN DE TIPO: Persona ===================== */
+  {
+    id: "inputConsola",
+    type: "write",
+    text: "class Persona(int id, String nombre);",
+  },
+  {
+    id: "divInputConsola",
+    type: "element",
+    description:
+      "🏷️ Ahora definimos un **tipo de objeto**. El comando `class Persona(int id, String nombre);` registra un tipo `Persona` con dos campos: un `int` y un `String`.",
+  },
+  {
+    id: "inputConsola",
+    type: "enter",
+  },
+  {
+    id: "panelLogs",
+    type: "element",
+    description:
+      "ℹ️ La definición de tipo normalmente **no reserva memoria** en stack ni heap. Sólo registra el esquema para que luego puedas crear instancias de `Persona`.",
+  },
+
+  /* ===================== 15. EJEMPLO 4: Objeto Persona p ===================== */
+  {
+    id: "inputConsola",
+    type: "write",
+    text: 'Persona p = new Persona(7, "Ana");',
+  },
+  {
+    id: "divInputConsola",
+    type: "element",
+    description:
+      '👤 Ahora creamos una instancia: `Persona p = new Persona(7, "Ana");`. Esto crea un objeto con `id = 7` y `nombre = "Ana"` y una referencia `p` que apunta a ese objeto.',
+  },
+  {
+    id: "inputConsola",
+    type: "enter",
+  },
+  {
+    id: "panelStack",
+    type: "element",
+    description:
+      "📌 En el **STACK** aparece `p` como referencia. Igual que con los arrays, `p` no guarda directamente el objeto, sino la **dirección** del header del objeto en el heap.",
+  },
+  {
+    id: "panelHeap",
+    type: "element",
+    description:
+      "🏠 En el **HEAP** verás una tarjeta que representa el objeto `Persona`. Dentro se muestran los campos `id` y `nombre`. El `String` suele estar a su vez almacenado como estructura aparte en el heap.",
+  },
+  {
+    id: "panelRamIndex",
+    type: "element",
+    description:
+      "📐 En **RAM · Índice** el objeto `Persona` aparece con al menos dos niveles: el **header del objeto** y sus **datos compactados** (incluyendo un puntero hacia el string \"Ana\").",
+  },
+  {
+    id: "panelRamView",
+    type: "element",
+    description:
+      "🧫 En la **RAM física** puedes rastrear el objeto completo: bytes para el header, bytes para el campo `id`, un puntero (o bytes) para `nombre` y, en otra zona, los bytes que componen el texto \"Ana\".",
+  },
+
+  /* ===================== 16. AYUDA DE COMANDOS ===================== */
   {
     id: "comandos",
-    description:
-      "📚 Si necesitas ayuda, aquí tienes la lista de **comandos disponibles**, cada uno con su descripción y ejemplo. ¡Úsalo como referencia rápida!",
     type: "element",
+    description:
+      "📚 En esta sección encontrarás la lista de **comandos disponibles**, cada uno con su descripción y ejemplo. Úsalo como referencia para seguir experimentando con primitivos, arrays y objetos.",
+  },
+
+  /* ===================== 17. COMANDO clear ===================== */
+  {
+    id: "inputConsola",
+    type: "write",
+    text: "clear",
+  },
+  {
+    id: "divInputConsola",
+    type: "element",
+    description:
+      "🧨 El comando `clear` borra todo el contenido de la simulación: **stack**, **heap** y RAM vuelven a un estado casi vacío, conservando sólo la zona protegida y el frame global.",
+  },
+  {
+    id: "inputConsola",
+    type: "enter",
+  },
+  {
+    id: "panelStack",
+    type: "element",
+    description:
+      "🧼 Tras `clear`, el **STACK** vuelve a estar prácticamente vacío (sólo queda el frame global sin variables).",
+  },
+  {
+    id: "panelHeap",
+    type: "element",
+    description:
+      "🧼 El **HEAP** también se reinicia: desaparecen los arrays, los objetos y los strings creados durante la sesión.",
+  },
+  {
+    id: "panelRamView",
+    type: "element",
+    description:
+      "🧼 La **RAM física** muestra ahora sólo las reservas mínimas internas del simulador (como la zona de null-guard). El resto vuelve a estar libre.",
+  },
+
+  /* ===================== 18. CIERRE ===================== */
+  {
+    type: "info",
+    description:
+      "🛠️ Ya viste cómo se crean **primitivos**, **arrays** y **objetos**, y cómo cada uno ocupa espacio en **stack**, **heap** y **RAM**. Recuerda que el índice te ayuda a conectar las tarjetas con los bytes reales.",
   },
   {
     type: "info",
     description:
-      "🛠️ Recuerda: puedes **modificar valores**, **eliminar variables**, **insertar arrays u objetos**, e incluso **convertir tipos** si es válido. ¡Explora sin miedo!",
-  },
-  {
-    type: "info",
-    description:
-      "🔄 Todo lo que haces se **refleja en tiempo real**. Aprovecha esta herramienta para entender cómo funciona la memoria de manera **visual, interactiva y divertida**.",
+      "🔄 Ahora es tu turno: prueba tus propios comandos, observa qué cambia en cada panel, rompe cosas y usa `clear` o el botón de limpiar para empezar otra vez. Así es como se entiende de verdad cómo se organiza la memoria en Java. 🚀",
   },
 ];

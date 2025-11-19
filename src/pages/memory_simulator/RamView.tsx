@@ -532,6 +532,7 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
         "relative w-full rounded-2xl border bg-emerald-950/20 text-zinc-100 shadow-2xl",
         "border-emerald-900/60 overflow-hidden flex flex-col",
       ].join(" ")}
+      data-tour="panelRamView"
       style={{
         height: "clamp(360px,48vh,680px)", // 💡 misma altura que RamIndexPanel
       }}
