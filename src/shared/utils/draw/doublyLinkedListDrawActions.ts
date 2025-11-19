@@ -1,17 +1,18 @@
-import { Dispatch, SetStateAction } from "react";
-import { Selection } from "d3";
 import { ListLinkData, ListNodeData } from "../../../types";
+import { getListaDoblementeEnlazadaCode } from "../../constants/pseudocode/listDoblementeEnlazadaCode";
+import { Selection } from "d3";
+import { type EventBus } from "../../events/eventBus";
+import { Dispatch, SetStateAction } from "react";
+import { delay } from "../simulatorUtils";
+import { animateAppearListNode, animateExitListNode, animateGetListNodePos } from "./simpleLinkedListDrawActions";
+import { SVG_LINKED_LIST_VALUES } from "../../constants/consts";
 import { repositionList } from "./drawActionsUtilities";
 import { buildListPath } from "../listUtils";
-import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
-import { type EventBus } from "../../events/eventBus";
-import { getListaSimplementeEnlazadaCode } from "../../constants/pseudocode/listaSimplementeEnlazadaCode";
-import { delay } from "../simulatorUtils";
 
-const listaSimpleCode = getListaSimplementeEnlazadaCode();
+const listaDobleCode = getListaDoblementeEnlazadaCode();
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo al inicio de la lista simple.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo al inicio de la lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la lista necesaria para la animación.
@@ -20,7 +21,7 @@ const listaSimpleCode = getListaSimplementeEnlazadaCode();
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSimpleInsertFirst(
+export async function animateDoublyInsertFirst(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     insertionData: {
         newHeadNodeId: string;
@@ -34,7 +35,7 @@ export async function animateSimpleInsertFirst(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Etiquetas para el registro de eventos
-    const labels = listaSimpleCode.insertFirst.labels!;
+    const labels = listaDobleCode.insertFirst.labels!;
 
     // Nodos implicados en la inserción
     const { newHeadNodeId, currHeadNodeId } = insertionData;
@@ -52,7 +53,8 @@ export async function animateSimpleInsertFirst(
                 {
                     CREATE_NODE: labels.CREATE_NODE,
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
-                    ASSIGN_HEAD_EMPTY: labels.ASSIGN_HEAD_EMPTY
+                    SET_HEAD_EMPTY: labels.SET_HEAD_EMPTY,
+                    SET_TAIL_EMPTY: labels.SET_TAIL_EMPTY
                 }
             );
         } else {
@@ -70,7 +72,8 @@ export async function animateSimpleInsertFirst(
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
                     ELSE_EMPTY: labels.ELSE_EMPTY,
                     LINK_NEW_TO_HEAD: labels.LINK_NEW_TO_HEAD,
-                    ASSIGN_NEW_HEAD: labels.ASSIGN_NEW_HEAD
+                    LINK_HEAD_TO_NEW: labels.LINK_HEAD_TO_NEW,
+                    UPDATE_HEAD: labels.UPDATE_HEAD
                 },
                 () => repositionList(
                     svg,
@@ -80,8 +83,8 @@ export async function animateSimpleInsertFirst(
                     {
                         headIndicator: svg.select<SVGGElement>("g#head-indicator"),
                         headNodeId: currHeadNodeId,
-                        tailIndicator: null,
-                        tailNodeId: null,
+                        tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
+                        tailNodeId: insertionData.nodesData[insertionData.nodesData.length - 1].id
                     }
                 )
             );
@@ -98,7 +101,7 @@ export async function animateSimpleInsertFirst(
 }
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo al final de la lista simple.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo al final de la lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la lista necesaria para la animación.
@@ -107,11 +110,11 @@ export async function animateSimpleInsertFirst(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSimpleInsertLast(
+export async function animateDoublyInsertLast(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     insertionData: {
-        newLastNodeId: string;
-        currLastNodeId: string | null;
+        newTailNodeId: string;
+        currTailNodeId: string | null;
         nodesData: ListNodeData<number>[];
         positions: Map<string, { x: number; y: number }>;
     },
@@ -120,35 +123,35 @@ export async function animateSimpleInsertLast(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Etiquetas para el registro de eventos
-    const labels = listaSimpleCode.insertLast.labels!;
+    const labels = listaDobleCode.insertLast.labels!;
 
     // Nodos implicados en la inserción
-    const { newLastNodeId, currLastNodeId } = insertionData;
+    const { newTailNodeId, currTailNodeId } = insertionData;
 
     try {
         // Inicio de la operación
         bus.emit("op:start", { op: "insertLast" });
 
-        if (!currLastNodeId) {
+        if (!currTailNodeId) {
             await animateInsertInEmptyList(
                 svg,
                 bus,
-                newLastNodeId,
+                newTailNodeId,
                 "insertLast",
                 {
                     CREATE_NODE: labels.CREATE_NODE,
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
-                    ASSIGN_HEAD_EMPTY: labels.ASSIGN_NEW_HEAD
+                    SET_HEAD_EMPTY: labels.SET_HEAD_EMPTY,
+                    SET_TAIL_EMPTY: labels.SET_TAIL_EMPTY
                 }
             );
         } else {
             await animateInsertAtTailNonEmpty(
                 svg,
                 {
-                    newNodeId: newLastNodeId,
-                    lastNodeId: currLastNodeId,
+                    newNodeId: newTailNodeId,
+                    tailNodeId: currTailNodeId,
                     positions: insertionData.positions,
-                    pathNodes: insertionData.nodesData.slice(0, -1)
                 },
                 bus,
                 "insertLast",
@@ -156,16 +159,10 @@ export async function animateSimpleInsertLast(
                     CREATE_NODE: labels.CREATE_NODE,
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
                     ELSE_EMPTY: labels.ELSE_EMPTY,
-                    GET_LAST_NODE: labels.GET_LAST_NODE,
-                    LINK_NODE_END: labels.LINK_NODE_END
+                    LINK_TAIL_TO_NEW: labels.LINK_TAIL_TO_NEW,
+                    LINK_NEW_TO_TAIL: labels.LINK_NEW_TO_TAIL,
+                    UPDATE_TAIL: labels.UPDATE_TAIL
                 },
-                {
-                    INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
-                    WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
-                    ADVANCE_NODE: labels.ADVANCE_NODE,
-                    DEC_POS: labels.DEC_POS,
-                    RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
-                }
             );
         }
         bus.emit("step:progress", { stepId: "insertLast", lineIndex: labels.INC_SIZE });
@@ -180,7 +177,7 @@ export async function animateSimpleInsertLast(
 }
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo en una posición especifica de la lista simple.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo en una posición especifica de la lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la lista necesaria para la animación.
@@ -189,7 +186,7 @@ export async function animateSimpleInsertLast(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSimpleInsertAt(
+export async function animateDoublyInsertAt(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     insertionData: {
         newNodeId: string;
@@ -205,7 +202,7 @@ export async function animateSimpleInsertAt(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Etiquetas para el registro de eventos
-    const labels = listaSimpleCode.insertAt.labels!;
+    const labels = listaDobleCode.insertAt.labels!;
 
     // Nodos implicados en la inserción
     const { newNodeId, prevNodeId, nextNodeId } = insertionData;
@@ -223,9 +220,9 @@ export async function animateSimpleInsertAt(
                 {
                     VALIDATE_POSITION: labels.VALIDATE_POSITION,
                     CREATE_NODE: labels.CREATE_NODE,
-                    VALIDATE_EMPTY: labels.VALIDATE_HEAD,
-                    LINK_NEW_TO_HEAD: labels.LINK_NEW_TO_HEAD,
-                    ASSIGN_HEAD_EMPTY: labels.ASSIGN_NEW_HEAD
+                    VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
+                    SET_HEAD_EMPTY: labels.SET_HEAD_EMPTY,
+                    SET_TAIL_EMPTY: labels.SET_TAIL_EMPTY
                 }
             );
         } else if (!prevNodeId && nextNodeId) {
@@ -242,9 +239,11 @@ export async function animateSimpleInsertAt(
                 {
                     VALIDATE_POSITION: labels.VALIDATE_POSITION,
                     CREATE_NODE: labels.CREATE_NODE,
-                    VALIDATE_EMPTY: labels.VALIDATE_HEAD,
+                    VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
+                    ELSE_EMPTY: labels.ELSE_IF_HEAD,
                     LINK_NEW_TO_HEAD: labels.LINK_NEW_TO_HEAD,
-                    ASSIGN_NEW_HEAD: labels.ASSIGN_NEW_HEAD
+                    LINK_HEAD_TO_NEW: labels.LINK_HEAD_TO_NEW,
+                    UPDATE_HEAD: labels.UPDATE_HEAD
                 },
                 () => repositionList(
                     svg,
@@ -254,8 +253,8 @@ export async function animateSimpleInsertAt(
                     {
                         headIndicator: svg.select<SVGGElement>("g#head-indicator"),
                         headNodeId: nextNodeId,
-                        tailIndicator: null,
-                        tailNodeId: null,
+                        tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
+                        tailNodeId: insertionData.nodesData[insertionData.nodesData.length - 1].id,
                     }
                 )
             );
@@ -265,27 +264,20 @@ export async function animateSimpleInsertAt(
                 svg,
                 {
                     newNodeId,
-                    lastNodeId: prevNodeId,
-                    positions: insertionData.positions,
-                    pathNodes: insertionData.nodesData.slice(0, -1)
+                    tailNodeId: prevNodeId,
+                    positions: insertionData.positions
                 },
                 bus,
                 "insertAt",
                 {
                     VALIDATE_POSITION: labels.VALIDATE_POSITION,
                     CREATE_NODE: labels.CREATE_NODE,
-                    VALIDATE_EMPTY: labels.VALIDATE_HEAD,
-                    ELSE_EMPTY: labels.ELSE_GENERAL,
-                    GET_LAST_NODE: labels.GET_PREV_NODE,
-                    LINK_NODE_END: labels.LINK_NEW_TO_NEXT,
-                    LINK_PREV_TO_NEW: labels.LINK_PREV_TO_NEW
-                },
-                {
-                    INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
-                    WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
-                    ADVANCE_NODE: labels.ADVANCE_NODE,
-                    DEC_POS: labels.DEC_POS,
-                    RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
+                    VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
+                    ELSE_IF_HEAD: labels.ELSE_IF_HEAD,
+                    ELSE_IF_TAIL: labels.ELSE_IF_TAIL,
+                    LINK_TAIL_TO_NEW: labels.LINK_TAIL_TO_NEW,
+                    LINK_NEW_TO_TAIL: labels.LINK_NEW_TO_TAIL,
+                    UPDATE_TAIL: labels.UPDATE_TAIL
                 }
             );
         } else {
@@ -305,10 +297,20 @@ export async function animateSimpleInsertAt(
             );
             prevNodeNewNextLinkGroup.style("opacity", 0);
 
+            const newNodePrevLinkGroup = linksG.select<SVGGElement>(
+                `g#link-${newNodeId}-${prevNodeId}-prev`
+            );
+            newNodePrevLinkGroup.style("opacity", 0);
+
             const newNodeNextLinkGroup = linksG.select<SVGGElement>(
                 `g#link-${newNodeId}-${nextNodeId}-next`
             );
             newNodeNextLinkGroup.style("opacity", 0);
+
+            const nextNodeNewPrevLinkGroup = linksG.select<SVGGElement>(
+                `g#link-${nextNodeId}-${newNodeId}-prev`
+            );
+            nextNodeNewPrevLinkGroup.style("opacity", 0);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.VALIDATE_POSITION });
             await delay(500);
@@ -316,10 +318,16 @@ export async function animateSimpleInsertAt(
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.CREATE_NODE });
             await delay(500);
 
-            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.VALIDATE_HEAD });
+            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.VALIDATE_EMPTY });
             await delay(500);
 
-            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_GENERAL });
+            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_IF_HEAD });
+            await delay(500);
+
+            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_IF_TAIL });
+            await delay(500);
+
+            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_INSERT });
             await delay(500);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.GET_PREV_NODE });
@@ -342,8 +350,8 @@ export async function animateSimpleInsertAt(
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.GET_PREV_NODE });
             await delay(400);
 
-            // Nodos a desplazar y enlaces a ajustar para la inclusión del nuevo nodo (incluyendo el actual enlace siguiente
-            // entre el nodo previo y siguiente del nuevo nodo)
+            // Nodos a desplazar y enlaces a ajustar para la inclusión del nuevo nodo
+            // (incluidos los actuales enlaces siguiente y previo entre los nodos previo y siguiente)
             const nodesToMove = nodesData.slice(
                 insertionPosition,
                 nodesData.length
@@ -353,6 +361,7 @@ export async function animateSimpleInsertAt(
                 linksData.length
             );
             linksToMove.push({ sourceId: prevNodeId!, targetId: nextNodeId!, type: "next" });
+            linksToMove.push({ sourceId: nextNodeId!, targetId: prevNodeId!, type: "prev" });
 
             // Reposicionamiento de los elementos indicados de la lista a su posición final
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.LINK_NEW_TO_NEXT });
@@ -363,8 +372,8 @@ export async function animateSimpleInsertAt(
                 {
                     headIndicator: null,
                     headNodeId: null,
-                    tailIndicator: null,
-                    tailNodeId: null
+                    tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
+                    tailNodeId: insertionData.nodesData[insertionData.nodesData.length - 1].id
                 }
             );
 
@@ -384,6 +393,17 @@ export async function animateSimpleInsertAt(
                 .select("path.node-link")
                 .attr("d", initialPrevNodeNewNextLink);
 
+            const initialNewNodePrevLink = buildListPath(
+                "prev",
+                initialNewNodePos,
+                insertionData.positions.get(prevNodeId!) ?? null,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+            newNodePrevLinkGroup
+                .select("path.node-link")
+                .attr("d", initialNewNodePrevLink);
+
             const initialNewNodeNextLink = buildListPath(
                 "next",
                 initialNewNodePos,
@@ -395,6 +415,17 @@ export async function animateSimpleInsertAt(
                 .select("path.node-link")
                 .attr("d", initialNewNodeNextLink);
 
+            const initialNextNodeNewPrevLink = buildListPath(
+                "prev",
+                insertionData.positions.get(nextNodeId!) ?? null,
+                initialNewNodePos,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+            nextNodeNewPrevLinkGroup
+                .select("path.node-link")
+                .attr("d", initialNextNodeNewPrevLink);
+
             // Aparición y posicionamiento inicial del nuevo nodo
             await animateAppearListNode(newNodeGroup, initialNewNodePos);
 
@@ -405,7 +436,31 @@ export async function animateSimpleInsertAt(
                 .style("opacity", 1)
                 .end();
 
-            // Desconexión del actual enlace siguiente entre el nodo previo y siguiente al nuevo nodo
+            // Establecimiento del enlace anterior del nuevo nodo
+            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.LINK_NEW_TO_PREV });
+            await newNodePrevLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+
+            // Desconexión del actual enlace anterior del nodo siguiente al nuevo nodo
+            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.LINK_NEXT_TO_NEW });
+            await linksG.select<SVGGElement>(`g#link-${nextNodeId}-${prevNodeId}-prev`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
+            // Establecimiento del nuevo enlace anterior del nodo siguiente al nuevo nodo
+            await nextNodeNewPrevLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+
+            // Desconexión del actual enlace siguiente del nodo previo al nuevo nodo
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.LINK_PREV_TO_NEW });
             await linksG.select<SVGGElement>(`g#link-${prevNodeId}-${nextNodeId}-next`)
                 .transition()
@@ -414,7 +469,7 @@ export async function animateSimpleInsertAt(
                 .remove()
                 .end();
 
-            // Establecimiento del nuevo enlace siguiente del nodo previo que apunta al nuevo nodo
+            // Establecimiento del nuevo enlace siguiente del nodo previo al nuevo nodo
             await prevNodeNewNextLinkGroup
                 .transition()
                 .duration(1000)
@@ -429,10 +484,24 @@ export async function animateSimpleInsertAt(
                 SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
                 SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
             );
+            const finalNewNodePrevLink = buildListPath(
+                "prev",
+                newNodePos,
+                insertionData.positions.get(prevNodeId!) ?? null,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
             const finalNewNodeNextLink = buildListPath(
                 "next",
                 newNodePos,
                 insertionData.positions.get(nextNodeId!) ?? null,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+            const finalNextNodeNewPrevLink = buildListPath(
+                "prev",
+                insertionData.positions.get(nextNodeId!) ?? null,
+                newNodePos,
                 SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
                 SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
             );
@@ -460,11 +529,29 @@ export async function animateSimpleInsertAt(
             );
 
             shiftPromises.push(
+                newNodePrevLinkGroup
+                    .select("path.node-link")
+                    .transition()
+                    .duration(1000)
+                    .attr("d", finalNewNodePrevLink)
+                    .end()
+            );
+
+            shiftPromises.push(
                 newNodeNextLinkGroup
                     .select("path.node-link")
                     .transition()
                     .duration(1000)
                     .attr("d", finalNewNodeNextLink)
+                    .end()
+            );
+
+            shiftPromises.push(
+                nextNodeNewPrevLinkGroup
+                    .select("path.node-link")
+                    .transition()
+                    .duration(1000)
+                    .attr("d", finalNextNodeNewPrevLink)
                     .end()
             );
 
@@ -482,7 +569,7 @@ export async function animateSimpleInsertAt(
 }
 
 /**
- * Función encargada de animar el proceso de eliminación de un nodo al inicio de la lista simple.
+ * Función encargada de animar el proceso de eliminación de un nodo al inicio de la lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la lista necesaria para la animación.
@@ -491,7 +578,7 @@ export async function animateSimpleInsertAt(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSimpleDeleteFirst(
+export async function animateDoublyDeleteFirst(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     deletionData: {
         currHeadNodeId: string;
@@ -505,7 +592,7 @@ export async function animateSimpleDeleteFirst(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Etiquetas para el registro de eventos
-    const labels = listaSimpleCode.removeFirst.labels!;
+    const labels = listaDobleCode.removeFirst.labels!;
 
     // Nodos implicados en la eliminación
     const { currHeadNodeId, newHeadNodeId } = deletionData;
@@ -522,8 +609,10 @@ export async function animateSimpleDeleteFirst(
                 "removeFirst",
                 {
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
-                    SAVE_HEAD: labels.SAVE_HEAD,
-                    CLEAR_HEAD: labels.MOVE_HEAD
+                    DECLARE_REMOVED_NODE: labels.SAVE_REMOVED_NODE,
+                    VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
+                    CLEAR_HEAD: labels.CLEAR_HEAD,
+                    CLEAR_TAIL: labels.CLEAR_TAIL
                 }
             );
         } else {
@@ -538,8 +627,11 @@ export async function animateSimpleDeleteFirst(
                 "removeFirst",
                 {
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
-                    SAVE_HEAD: labels.SAVE_HEAD,
-                    MOVE_HEAD: labels.MOVE_HEAD
+                    DECLARE_REMOVED_NODE: labels.SAVE_REMOVED_NODE,
+                    VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
+                    ELSE_SINGLE_NODE: labels.ELSE_SINGLE_NODE,
+                    MOVE_HEAD: labels.MOVE_HEAD,
+                    CLEAR_PREV_LINK: labels.CLEAR_PREV_LINK
                 },
                 () => repositionList(
                     svg,
@@ -547,10 +639,10 @@ export async function animateSimpleDeleteFirst(
                     deletionData.remainingLinksData,
                     deletionData.positions,
                     {
-                        headIndicator: null,
-                        headNodeId: null,
-                        tailIndicator: null,
-                        tailNodeId: null,
+                        headIndicator: svg.select<SVGGElement>("g#head-indicator"),
+                        headNodeId: currHeadNodeId,
+                        tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
+                        tailNodeId: deletionData.remainingNodesData[deletionData.remainingNodesData.length - 1].id
                     }
                 )
             );
@@ -573,7 +665,7 @@ export async function animateSimpleDeleteFirst(
 }
 
 /**
- * Función encargada de animar el proceso de eliminación de un nodo al final de la lista simple.
+ * Función encargada de animar el proceso de eliminación de un nodo al final de la lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la lista necesaria para la animación.
@@ -582,11 +674,11 @@ export async function animateSimpleDeleteFirst(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSimpleDeleteLast(
+export async function animateDoublyDeleteLast(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     deletionData: {
-        currLastNodeId: string;
-        newLastNodeId: string | null;
+        currTailNodeId: string;
+        newTailNodeId: string | null;
         remainingNodesData: ListNodeData<number>[];
         positions: Map<string, { x: number; y: number }>;
     },
@@ -595,55 +687,46 @@ export async function animateSimpleDeleteLast(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Etiquetas para el registro de eventos
-    const labels = listaSimpleCode.removeLast.labels!;
+    const labels = listaDobleCode.removeLast.labels!;
 
     // Nodos implicados en la eliminación
-    const { currLastNodeId, newLastNodeId } = deletionData;
+    const { currTailNodeId, newTailNodeId } = deletionData;
 
     try {
         // Inicio de la operación
         bus.emit("op:start", { op: "removeLast" });
 
-        if (!newLastNodeId) {
+        if (!newTailNodeId) {
             await animateDeleteOneElementList(
                 svg,
                 bus,
-                currLastNodeId,
+                currTailNodeId,
                 "removeLast",
                 {
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
-                    DECLARE_REMOVED_NODE: labels.DECLARE_REMOVED_NODE,
+                    DECLARE_REMOVED_NODE: labels.SAVE_REMOVED_NODE,
                     VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
-                    SAVE_HEAD: labels.SAVE_HEAD,
-                    CLEAR_HEAD: labels.CLEAR_HEAD
+                    CLEAR_HEAD: labels.CLEAR_HEAD,
+                    CLEAR_TAIL: labels.CLEAR_TAIL,
                 }
             );
         } else {
             await animateDeleteAtTailNonEmpty(
                 svg,
                 {
-                    removalNodeId: currLastNodeId,
-                    newLastNodeId,
-                    positions: deletionData.positions,
-                    pathNodes: deletionData.remainingNodesData
+                    removalNodeId: currTailNodeId,
+                    newTailNodeId,
+                    positions: deletionData.positions
                 },
                 bus,
                 "removeLast",
                 {
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
-                    DECLARE_REMOVED_NODE: labels.DECLARE_REMOVED_NODE,
+                    DECLARE_REMOVED_NODE: labels.SAVE_REMOVED_NODE,
                     VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
                     ELSE_SINGLE_NODE: labels.ELSE_SINGLE_NODE,
-                    GET_PREV_NODE: labels.GET_PREV_NODE,
-                    SAVE_LAST_NODE: labels.SAVE_LAST_NODE,
-                    UNLINK_LAST_NODE: labels.UNLINK_LAST_NODE
-                },
-                {
-                    INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
-                    WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
-                    ADVANCE_NODE: labels.ADVANCE_NODE,
-                    DEC_POS: labels.DEC_POS,
-                    RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
+                    MOVE_TAIL: labels.MOVE_TAIL,
+                    CLEAR_NEXT_LINK: labels.CLEAR_NEXT_LINK
                 }
             );
         }
@@ -654,7 +737,7 @@ export async function animateSimpleDeleteLast(
         await delay(500);
 
         // Limpiamos el registro del nodo eliminado
-        deletionData.positions.delete(currLastNodeId);
+        deletionData.positions.delete(currTailNodeId);
 
         // Fin de la operación
         bus.emit("op:done", { op: "removeLast" });
@@ -665,7 +748,7 @@ export async function animateSimpleDeleteLast(
 }
 
 /**
- * Función encargada de animar el proceso de eliminación de un nodo en una posición especifica de la lista simple.
+ * Función encargada de animar el proceso de eliminación de un nodo en una posición especifica de la lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la lista necesaria para la animación.
@@ -674,7 +757,7 @@ export async function animateSimpleDeleteLast(
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSimpleDeleteAt(
+export async function animateDoublyDeleteAt(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     deletionData: {
         removalNodeId: string;
@@ -690,7 +773,7 @@ export async function animateSimpleDeleteAt(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Etiquetas para el registro de eventos
-    const labels = listaSimpleCode.removeAt.labels!;
+    const labels = listaDobleCode.removeAt.labels!;
 
     // Nodos implicados en la eliminación
     const { removalNodeId, prevNodeId, nextNodeId } = deletionData;
@@ -710,9 +793,10 @@ export async function animateSimpleDeleteAt(
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
                     VALIDATE_POSITION: labels.VALIDATE_POSITION,
                     DECLARE_REMOVED_NODE: labels.DECLARE_REMOVED_NODE,
-                    VALIDATE_HEAD: labels.VALIDATE_HEAD,
-                    SAVE_HEAD: labels.SAVE_HEAD,
-                    CLEAR_HEAD: labels.MOVE_HEAD
+                    VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
+                    SAVE_SINGLE_NODE: labels.SAVE_SINGLE_NODE,
+                    CLEAR_HEAD: labels.CLEAR_HEAD,
+                    CLEAR_TAIL: labels.CLEAR_TAIL
                 }
             );
         } else if (!prevNodeId && nextNodeId) {
@@ -730,9 +814,11 @@ export async function animateSimpleDeleteAt(
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
                     VALIDATE_POSITION: labels.VALIDATE_POSITION,
                     DECLARE_REMOVED_NODE: labels.DECLARE_REMOVED_NODE,
-                    VALIDATE_HEAD: labels.VALIDATE_HEAD,
-                    SAVE_HEAD: labels.SAVE_HEAD,
-                    MOVE_HEAD: labels.MOVE_HEAD
+                    VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
+                    ELSE_SINGLE_NODE: labels.ELSE_IF_HEAD,
+                    SAVE_HEAD_NODE: labels.SAVE_HEAD_NODE,
+                    MOVE_HEAD: labels.MOVE_HEAD,
+                    CLEAR_PREV_LINK: labels.CLEAR_PREV_LINK
                 },
                 () => repositionList(
                     svg,
@@ -740,10 +826,10 @@ export async function animateSimpleDeleteAt(
                     deletionData.remainingLinksData,
                     deletionData.positions,
                     {
-                        headIndicator: null,
-                        headNodeId: null,
-                        tailIndicator: null,
-                        tailNodeId: null,
+                        headIndicator: svg.select<SVGGElement>("g#head-indicator"),
+                        headNodeId: nextNodeId,
+                        tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
+                        tailNodeId: deletionData.remainingNodesData[deletionData.remainingNodesData.length - 1].id
                     }
                 )
             );
@@ -753,9 +839,8 @@ export async function animateSimpleDeleteAt(
                 svg,
                 {
                     removalNodeId,
-                    newLastNodeId: prevNodeId,
-                    positions: deletionData.positions,
-                    pathNodes: deletionData.remainingNodesData.slice(0, -1)
+                    newTailNodeId: prevNodeId,
+                    positions: deletionData.positions
 
                 },
                 bus,
@@ -764,18 +849,12 @@ export async function animateSimpleDeleteAt(
                     VALIDATE_EMPTY: labels.VALIDATE_EMPTY,
                     VALIDATE_POSITION: labels.VALIDATE_POSITION,
                     DECLARE_REMOVED_NODE: labels.DECLARE_REMOVED_NODE,
-                    VALIDATE_SINGLE_NODE: labels.VALIDATE_HEAD,
-                    ELSE_SINGLE_NODE: labels.ELSE_REMOVE,
-                    GET_PREV_NODE: labels.GET_PREV_NODE,
-                    SAVE_LAST_NODE: labels.SAVE_TARGET_NODE,
-                    UNLINK_LAST_NODE: labels.BYPASS_NODE
-                },
-                {
-                    INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
-                    WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
-                    ADVANCE_NODE: labels.ADVANCE_NODE,
-                    DEC_POS: labels.DEC_POS,
-                    RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
+                    VALIDATE_SINGLE_NODE: labels.VALIDATE_SINGLE_NODE,
+                    ELSE_IF_HEAD: labels.ELSE_IF_HEAD,
+                    ELSE_IF_TAIL: labels.ELSE_IF_TAIL,
+                    SAVE_TAIL_NODE: labels.SAVE_TAIL_NODE,
+                    MOVE_TAIL: labels.MOVE_TAIL,
+                    CLEAR_NEXT_LINK: labels.CLEAR_NEXT_LINK
                 }
             );
         } else {
@@ -787,7 +866,7 @@ export async function animateSimpleDeleteAt(
             const linksG = svg.select<SVGGElement>("g#links-layer");
 
             // Grupo correspondiente al nodo a eliminar
-            const removeNodeGroup = nodesG.select<SVGGElement>(`g#${removalNodeId}`);
+            const removalNodeGroup = nodesG.select<SVGGElement>(`g#${removalNodeId}`);
 
             // Grupo correspondiente al actual enlace siguiente del nodo previo que apunta al nodo a eliminar
             const prevNodeCurrNextLinkGroup = linksG.select<SVGGElement>(
@@ -799,6 +878,22 @@ export async function animateSimpleDeleteAt(
                 `g#link-${prevNodeId}-${nextNodeId}-next path.node-link`
             );
             prevNodeNewNextLinkGroup.style("opacity", 0);
+
+            // Grupo correspondiente al actual enlace anterior del nodo siguiente que apunta al nodo a eliminar 
+            const nextNodeCurrPrevLinkGroup = linksG.select<SVGGElement>(
+                `g#link-${nextNodeId}-${removalNodeId}-prev`
+            );
+
+            // Grupo correspondiente al nuevo enlace anterior del nodo siguiente que apunta al nodo previo del nodo a eliminar
+            const nextNodeNewPrevLinkGroup = linksG.select<SVGPathElement>(
+                `g#link-${nextNodeId}-${prevNodeId}-prev path.node-link`
+            );
+            nextNodeNewPrevLinkGroup.style("opacity", 0);
+
+            // Grupo correspondiente al enlace anterior del nodo a eliminar que apunta al nodo previo
+            const removalNodePrevLinkGroup = linksG.select<SVGGElement>(
+                `g#link-${removalNodeId}-${prevNodeId}-prev`
+            );
 
             // Grupo correspondiente al enlace siguiente del nodo a eliminar que apunta al nodo siguiente 
             const removalNodeNextLinkGroup = linksG.select<SVGGElement>(
@@ -814,17 +909,23 @@ export async function animateSimpleDeleteAt(
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.DECLARE_REMOVED_NODE });
             await delay(500);
 
-            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.VALIDATE_HEAD });
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.VALIDATE_SINGLE_NODE });
+            await delay(500);
+
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.ELSE_IF_HEAD });
+            await delay(500);
+
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.ELSE_IF_TAIL });
             await delay(500);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.ELSE_REMOVE });
             await delay(500);
 
-            // Recorrido de los nodos hasta el nodo anterior al nodo a eliminar
-            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.GET_PREV_NODE });
+            // Recorrido de los nodos hasta el nodo a eliminar
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.GET_NODE_AT_POS });
             await delay(500);
 
-            const nodesToTraverse = remainingNodesData.slice(0, deletePosition);
+            const nodesToTraverse = remainingNodesData.slice(0, deletePosition + 1);
             await animateGetListNodePos(nodesG, nodesToTraverse, bus, {
                 INIT_TRAVERSAL: labels.INIT_TRAVERSAL,
                 WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
@@ -833,7 +934,7 @@ export async function animateSimpleDeleteAt(
                 RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
             }, "removeAt");
 
-            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.GET_PREV_NODE });
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.GET_NODE_AT_POS });
             await delay(400);
 
             // Posición de animación final del nodo a eliminar
@@ -852,6 +953,14 @@ export async function animateSimpleDeleteAt(
                 SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
             );
 
+            const finalRemovalNodePrevLink = buildListPath(
+                "prev",
+                finalRemovalNodePos,
+                deletionData.positions.get(prevNodeId!) ?? null,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+
             const initialNextNodePos = {
                 x: SVG_LINKED_LIST_VALUES.MARGIN_LEFT + (deletePosition + 1) * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING),
                 y: removalNodePos.y
@@ -864,11 +973,19 @@ export async function animateSimpleDeleteAt(
                 SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
             );
 
+            const finalNextNodeCurrPrevLink = buildListPath(
+                "prev",
+                initialNextNodePos,
+                finalRemovalNodePos,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+
             // Promesas para el movimiento del nodo a eliminar y enlaces asociados a su posición final
-            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.SAVE_TARGET_NODE });
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.LINK_PREV_TO_NEXT });
             const shiftPromises: Promise<void>[] = [];
             shiftPromises.push(
-                removeNodeGroup
+                removalNodeGroup
                     .transition()
                     .duration(1250)
                     .attr("transform", `translate(${finalRemovalNodePos.x}, ${finalRemovalNodePos.y})`)
@@ -885,6 +1002,15 @@ export async function animateSimpleDeleteAt(
             );
 
             shiftPromises.push(
+                removalNodePrevLinkGroup
+                    .select("path.node-link")
+                    .transition()
+                    .duration(1250)
+                    .attr("d", finalRemovalNodePrevLink)
+                    .end()
+            );
+
+            shiftPromises.push(
                 removalNodeNextLinkGroup
                     .select("path.node-link")
                     .transition()
@@ -892,10 +1018,18 @@ export async function animateSimpleDeleteAt(
                     .attr("d", finalRemovalNodeNextLink)
                     .end()
             );
+
+            shiftPromises.push(
+                nextNodeCurrPrevLinkGroup
+                    .select("path.node-link")
+                    .transition()
+                    .duration(1250)
+                    .attr("d", finalNextNodeCurrPrevLink)
+                    .end()
+            );
             await Promise.all(shiftPromises);
 
             // Desconexión del actual enlace siguiente del nodo previo que apunta al nodo a eliminar
-            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.BYPASS_NODE });
             await prevNodeCurrNextLinkGroup
                 .transition()
                 .duration(1000)
@@ -904,7 +1038,7 @@ export async function animateSimpleDeleteAt(
                 .end();
 
             // Establecimiento del nuevo enlace siguiente del nodo previo
-            const initialNextPathToNextNode = buildListPath(
+            const prevNodeNewNextLink = buildListPath(
                 "next",
                 deletionData.positions.get(prevNodeId!) ?? null,
                 initialNextNodePos,
@@ -914,11 +1048,35 @@ export async function animateSimpleDeleteAt(
             await prevNodeNewNextLinkGroup
                 .transition()
                 .duration(1000)
-                .attr("d", initialNextPathToNextNode)
+                .attr("d", prevNodeNewNextLink)
                 .style("opacity", 1)
                 .end();
 
-            // Desconexión del enlace siguiente del nodo a eliminar
+            // Desconexión del actual enlace anterior del nodo siguiente
+            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.LINK_NEXT_TO_PREV });
+            await nextNodeCurrPrevLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
+            // Establecimiento del nuevo enlace anterior del nodo siguiente
+            const nextNodeNewPrevLink = buildListPath(
+                "prev",
+                initialNextNodePos,
+                deletionData.positions.get(prevNodeId!) ?? null,
+                SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+                SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+            );
+            await nextNodeNewPrevLinkGroup
+                .transition()
+                .duration(1000)
+                .attr("d", nextNodeNewPrevLink)
+                .style("opacity", 1)
+                .end();
+
+            // Desconexión de los enlaces asociados al nodo a eliminar
             await removalNodeNextLinkGroup
                 .transition()
                 .duration(1000)
@@ -926,8 +1084,15 @@ export async function animateSimpleDeleteAt(
                 .remove()
                 .end();
 
+            await removalNodePrevLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
             // Salida del nodo a eliminar
-            await animateExitListNode(removeNodeGroup);
+            await animateExitListNode(removalNodeGroup);
 
             // Nodos a desplazar y enlaces a ajustar luego de la eliminación
             const nodesToMove = remainingNodesData.slice(
@@ -947,8 +1112,8 @@ export async function animateSimpleDeleteAt(
                 {
                     headIndicator: null,
                     headNodeId: null,
-                    tailIndicator: null,
-                    tailNodeId: null
+                    tailIndicator: svg.select("g#tail-indicator"),
+                    tailNodeId: remainingNodesData[remainingNodesData.length - 1].id
                 }
             );
         }
@@ -970,252 +1135,6 @@ export async function animateSimpleDeleteAt(
     }
 }
 
-/**
- * Función encargada de animar el proceso de búsqueda de un nodo dentro de la lista.
- * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
- * @param nodesG Selección D3 del grupo <g> que contiene los nodos de la lista enlazada.
- * @param targetElement Elemento a buscar en la lista.
- * @param nodesData Array de nodos (`ListNodeData<number>`) que componen la lista.
- * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
- * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
- * @param resetQueryValues Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
- */
-export async function animateSearchElement(
-    nodesG: Selection<SVGGElement, unknown, null, undefined>,
-    targetElement: number,
-    nodesData: ListNodeData<number>[],
-    bus: EventBus,
-    labels: {
-        INIT_TRAVERSAL: number,
-        WHILE_TRAVERSAL: number,
-        IF_MATCH: number,
-        RETURN_TRUE: number,
-        ADVANCE_NODE: number,
-        RETURN_FALSE: number
-    },
-    resetQueryValues: () => void,
-    setIsAnimating: Dispatch<SetStateAction<boolean>>
-) {
-    try {
-        // Inicio de la operación
-        bus.emit("op:start", { op: "search" });
-
-        bus.emit("step:progress", { stepId: "search", lineIndex: labels.INIT_TRAVERSAL });
-        await delay(500);
-
-        let found = false;
-        for (const node of nodesData) {
-            // Selección del grupo correspondiente al nodo actual
-            const currRectElement = nodesG.select<SVGRectElement>(`g#${node.id} rect.node-container`);
-
-            // Resaltado suave del nodo actual
-            bus.emit("step:progress", { stepId: "search", lineIndex: labels.WHILE_TRAVERSAL });
-            await currRectElement
-                .transition()
-                .duration(800)
-                .attr("stroke", "#f87171")
-                .attr("stroke-width", 3)
-                .end();
-
-            bus.emit("step:progress", { stepId: "search", lineIndex: labels.IF_MATCH });
-            await delay(600);
-
-            if (node.value === targetElement) {
-                bus.emit("step:progress", { stepId: "search", lineIndex: labels.RETURN_TRUE });
-
-                // Efecto de latido
-                const x = parseFloat(currRectElement.attr("x") || "0");
-                const y = parseFloat(currRectElement.attr("y") || "0");
-                const w = parseFloat(currRectElement.attr("width") || `${SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH}`);
-                const h = parseFloat(currRectElement.attr("height") || `${SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT}`);
-                const scale = 1.15;
-                const cx = x + w / 2;
-                const cy = y + h / 2;
-                const originalTransform = currRectElement.attr("transform") || "";
-
-                await currRectElement
-                    .transition()
-                    .duration(500)
-                    .attr(
-                        "transform",
-                        `${originalTransform} translate(${cx},${cy}) scale(${scale}) translate(${-cx},${-cy})`
-                    )
-                    .transition()
-                    .duration(500)
-                    .attr("transform", originalTransform)
-                    .end();
-
-                // Restablecimiento mas prolongado del estilo original del nodo
-                await currRectElement
-                    .transition()
-                    .duration(1000)
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                    .end();
-
-                found = true;
-                break;
-            }
-
-            // Restablecimiento de los bordes originales del nodo
-            bus.emit("step:progress", { stepId: "search", lineIndex: labels.ADVANCE_NODE });
-            await currRectElement
-                .transition()
-                .duration(800)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
-
-        if (!found) {
-            bus.emit("step:progress", { stepId: "search", lineIndex: labels.WHILE_TRAVERSAL });
-            await delay(500);
-
-            bus.emit("step:progress", { stepId: "search", lineIndex: labels.RETURN_FALSE });
-            await delay(500);
-        }
-
-        // Fin de la operación
-        bus.emit("op:done", { op: "search" });
-    } finally {
-        resetQueryValues();
-        setIsAnimating(false);
-    }
-}
-
-/**
- * Función encargada de animar el resaltado secuencial de un conjunto de nodos en una lista enlazada.
- * Cada nodo del camino se resalta temporalmente mediante una transición de trazo
- * y luego se restaura a su estilo original, excepto el último nodo, que permanece resaltado.
- * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
- * @param nodesLayer Selección D3 del grupo <g> que contiene los nodos de la lista enlazada.
- * @param nodePath Array ordenado de nodos (`ListNodeData<number>`) que define el camino a recorrer.
- * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
- * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
- * @param stepId Identificador del paso actual; reenviado en los eventos de progreso emitidos.
- * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
- */
-export async function animateGetListNodePos(
-    nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
-    nodePath: ListNodeData<number>[],
-    bus: EventBus,
-    labels: {
-        INIT_TRAVERSAL: number,
-        WHILE_TRAVERSAL: number,
-        ADVANCE_NODE: number,
-        DEC_POS: number,
-        RETURN_NODE_GETPOS: number
-    },
-    stepId: string
-) {
-    bus.emit("step:progress", { stepId, lineIndex: labels.INIT_TRAVERSAL });
-    await delay(500);
-
-    for (let i = 0; i < nodePath.length - 1; i++) {
-        // Selección del grupo correspondiente al nodo actual
-        const currRectElement = nodesLayer.select<SVGRectElement>(`g#${nodePath[i].id} rect.node-container`);
-
-        // Resaltado del nodo actual
-        bus.emit("step:progress", { stepId, lineIndex: labels.WHILE_TRAVERSAL });
-        await currRectElement
-            .transition()
-            .duration(800)
-            .attr("stroke", "#f87171")
-            .attr("stroke-width", 3)
-            .end();
-
-        // Restablecimiento del borde original del nodo actual (antes de pasar al sig. nodo)
-        bus.emit("step:progress", { stepId, lineIndex: labels.ADVANCE_NODE });
-        await currRectElement
-            .transition()
-            .duration(800)
-            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-            .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-            .end();
-
-        bus.emit("step:progress", { stepId, lineIndex: labels.DEC_POS });
-        await delay(500);
-    }
-    bus.emit("step:progress", { stepId, lineIndex: labels.WHILE_TRAVERSAL });
-    await delay(500);
-
-    // Resaltado final del elemento objetivo
-    const targetElement = nodesLayer.select<SVGRectElement>(`g#${nodePath[nodePath.length - 1].id} rect.node-container`);
-    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_NODE_GETPOS });
-    await targetElement
-        .transition()
-        .duration(800)
-        .attr("stroke", "#f87171")
-        .attr("stroke-width", 3)
-        .end();
-}
-
-/**
- * Función encargada de animar la aparición de un nodo en una lista enlazada, con opción de desplazamiento.
- * El nodo se posiciona inicialmente en las coordenadas `initialPos` y se vuelve visible mediante una transición de opacidad.
- * Si se proporciona `finalPos`, el nodo se desplaza suavemente hacia esa posición.
- * @param nodeGroup Selección D3 del grupo <g> que representa el nodo a animar.
- * @param initialPos Coordenadas `{ x, y }` donde se posiciona inicialmente el nodo antes de la animación.
- * @param finalPos Coordenadas `{ x, y }` opcionales que definen la posición final del nodo. Si se omiten, no hay desplazamiento.
- * @returns Promise<`void`>. Se resuelve cuando la animación ha finalizado.
- */
-export async function animateAppearListNode(
-    nodeGroup: Selection<SVGGElement, unknown, null, undefined>,
-    initialPos: { x: number; y: number; },
-    finalPos?: { x: number; y: number; }
-) {
-    // Posicionamiento inicial del nodo
-    nodeGroup.attr(
-        "transform",
-        `translate(${initialPos.x}, ${initialPos.y})`
-    );
-
-    // Desplazamiento del nodo hacia su posición final
-    if (finalPos) {
-        await nodeGroup
-            .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .attr(
-                "transform",
-                `translate(${finalPos.x}, ${finalPos.y})`
-            )
-            .end();
-    } else {
-        await nodeGroup.transition().duration(1000).style("opacity", 1).end();
-    }
-}
-
-/**
- * Función encargada de animar la salida de un nodo en una lista enlazada, con opción de desplazamiento.
- * El nodo se vuelve invisible mediante una transición de opacidad. Si se proporciona `finalPos`, el nodo se desplaza suavemente hacia esa posición antes de ser eliminado.
- * @param nodeGroup Selección D3 del grupo <g> que representa el nodo a animar.
- * @param finalPos Coordenadas `{ x, y }` opcionales que definen la posición de salida del nodo. Si se omiten, no hay desplazamiento.
- * @returns Promise<`void`>. Se resuelve cuando la animación ha finalizado.
- */
-export async function animateExitListNode(
-    nodeGroup: Selection<SVGGElement, unknown, null, undefined>,
-    finalPos?: { x: number; y: number; }
-) {
-    // Desplazamiento del nodo hacia su posición final
-    if (finalPos) {
-        await nodeGroup
-            .transition()
-            .duration(1500)
-            .attr(
-                "transform",
-                `translate(${finalPos.x}, ${finalPos.y})`
-            )
-            .style("opacity", 0)
-            .remove()
-            .end();
-    } else {
-        await nodeGroup.transition().duration(1000).style("opacity", 0).remove().end();
-    }
-}
-
 async function animateInsertInEmptyList(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     bus: EventBus,
@@ -1223,10 +1142,10 @@ async function animateInsertInEmptyList(
     stepId: string,
     labels: {
         VALIDATE_POSITION?: number;
-        LINK_NEW_TO_HEAD?: number;
         CREATE_NODE: number;
         VALIDATE_EMPTY: number;
-        ASSIGN_HEAD_EMPTY: number;
+        SET_HEAD_EMPTY: number;
+        SET_TAIL_EMPTY: number;
     }
 ) {
     // Grupos contenedor de los nodos de la lista
@@ -1235,8 +1154,9 @@ async function animateInsertInEmptyList(
     // Grupo correspondiente al nuevo nodo
     const newNodeGroup = nodesG.select<SVGGElement>(`g#${newNodeId}`);
 
-    // Grupo correspondiente al indicador de cabeza
+    // Grupos correspondientes a los indicadores de cabeza y cola
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
     // Estado visual inicial de los elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
@@ -1252,15 +1172,14 @@ async function animateInsertInEmptyList(
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
     await delay(500);
 
-    if (labels.LINK_NEW_TO_HEAD) {
-        bus.emit("step:progress", { stepId, lineIndex: labels.LINK_NEW_TO_HEAD });
-        await delay(500);
-    }
-
     // Aparición del nuevo nodo (lista vacía) y del indicador de cabeza
-    bus.emit("step:progress", { stepId, lineIndex: labels.ASSIGN_HEAD_EMPTY });
+    bus.emit("step:progress", { stepId, lineIndex: labels.SET_HEAD_EMPTY });
     await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
     await headIndicatorGroup.transition().duration(800).style("opacity", 1).end();
+
+    // Aparición del indicador de cola
+    bus.emit("step:progress", { stepId, lineIndex: labels.SET_TAIL_EMPTY });
+    await tailIndicatorGroup.transition().duration(800).style("opacity", 1).end();
 }
 
 async function animateInsertAtHeadNonEmpty(
@@ -1274,11 +1193,12 @@ async function animateInsertAtHeadNonEmpty(
     stepId: string,
     labels: {
         VALIDATE_POSITION?: number;
-        ELSE_EMPTY?: number;
         CREATE_NODE: number;
         VALIDATE_EMPTY: number;
+        ELSE_EMPTY: number;
         LINK_NEW_TO_HEAD: number;
-        ASSIGN_NEW_HEAD: number;
+        LINK_HEAD_TO_NEW: number;
+        UPDATE_HEAD: number;
     },
     repositionList: () => Promise<void>
 ) {
@@ -1297,12 +1217,18 @@ async function animateInsertAtHeadNonEmpty(
         `g#link-${newNodeId}-${headNodeId}-next`
     );
 
+    // Grupo correspondiente al enlace anterior del nodo cabeza que apunta al nuevo nodo
+    const headNodePrevLinkGroup = linksG.select<SVGGElement>(
+        `g#link-${headNodeId}-${newNodeId}-prev`
+    );
+
     // Grupo correspondiente al indicador de cabeza
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
     // Estado visual inicial de los elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
     newNodeNextLinkGroup.style("opacity", 0);
+    headNodePrevLinkGroup.style("opacity", 0);
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
@@ -1315,10 +1241,8 @@ async function animateInsertAtHeadNonEmpty(
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
     await delay(500);
 
-    if (labels.ELSE_EMPTY) {
-        bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_EMPTY });
-        await delay(500);
-    }
+    bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_EMPTY });
+    await delay(500);
 
     // Reposicionamiento de los elementos actuales de la lista a su posición final
     bus.emit("step:progress", { stepId, lineIndex: labels.LINK_NEW_TO_HEAD });
@@ -1339,8 +1263,16 @@ async function animateInsertAtHeadNonEmpty(
         .style("opacity", 1)
         .end();
 
+    // Establecimiento del enlace anterior del nodo cabeza
+    bus.emit("step:progress", { stepId, lineIndex: labels.LINK_HEAD_TO_NEW });
+    await headNodePrevLinkGroup
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+
     // Posicionamiento del indicador de cabeza a la nueva cabeza de la lista
-    bus.emit("step:progress", { stepId, lineIndex: labels.ASSIGN_NEW_HEAD });
+    bus.emit("step:progress", { stepId, lineIndex: labels.UPDATE_HEAD });
     await headIndicatorGroup
         .transition()
         .duration(1500)
@@ -1357,31 +1289,25 @@ async function animateInsertAtTailNonEmpty(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     insertionData: {
         newNodeId: string;
-        lastNodeId: string;
-        pathNodes: ListNodeData<number>[];
+        tailNodeId: string;
         positions: Map<string, { x: number; y: number }>;
     },
     bus: EventBus,
     stepId: string,
     labels: {
         VALIDATE_POSITION?: number;
-        LINK_PREV_TO_NEW?: number;
+        ELSE_EMPTY?: number;
+        ELSE_IF_HEAD?: number;
+        ELSE_IF_TAIL?: number;
         CREATE_NODE: number;
         VALIDATE_EMPTY: number;
-        ELSE_EMPTY: number;
-        GET_LAST_NODE: number;
-        LINK_NODE_END: number;
-    },
-    getPosLabels: {
-        INIT_TRAVERSAL: number,
-        WHILE_TRAVERSAL: number,
-        ADVANCE_NODE: number,
-        DEC_POS: number,
-        RETURN_NODE_GETPOS: number
+        LINK_TAIL_TO_NEW: number,
+        LINK_NEW_TO_TAIL: number,
+        UPDATE_TAIL: number,
     }
 ) {
     // Nodos implicados en la inserción
-    const { newNodeId, lastNodeId } = insertionData;
+    const { newNodeId, tailNodeId } = insertionData;
 
     // Grupos contenedores de nodos y enlaces de la lista
     const nodesG = svg.select<SVGGElement>("g#nodes-layer");
@@ -1390,14 +1316,23 @@ async function animateInsertAtTailNonEmpty(
     // Grupo correspondiente al nuevo nodo
     const newNodeGroup = nodesG.select<SVGGElement>(`g#${newNodeId}`);
 
-    // Grupo correspondiente al enlace siguiente del último nodo que apunta al nuevo nodo
-    const lastNodeNextLinkGroup = linksG.select<SVGGElement>(
-        `g#link-${lastNodeId}-${newNodeId}-next`
+    // Grupo correspondiente al enlace siguiente del nodo cola que apunta al nuevo nodo
+    const tailNodeNextLinkGroup = linksG.select<SVGGElement>(
+        `g#link-${tailNodeId}-${newNodeId}-next`
     );
+
+    // Grupo correspondiente al enlace anterior del nuevo nodo que apunta a la cola
+    const newNodePrevLinkGroup = linksG.select<SVGGElement>(
+        `g#link-${newNodeId}-${tailNodeId}-prev`
+    );
+
+    // Grupo correspondiente al indicador de cola
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
     // Estado visual inicial de los elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
-    lastNodeNextLinkGroup.style("opacity", 0);
+    tailNodeNextLinkGroup.style("opacity", 0);
+    newNodePrevLinkGroup.style("opacity", 0);
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
@@ -1410,20 +1345,19 @@ async function animateInsertAtTailNonEmpty(
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
     await delay(500);
 
-    bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_EMPTY });
-    await delay(500);
+    if (labels.ELSE_IF_HEAD) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_IF_HEAD });
+        await delay(500);
+    }
 
-    bus.emit("step:progress", { stepId, lineIndex: labels.GET_LAST_NODE });
-    await delay(500);
-
-    // Recorrido de los nodos hasta la posición de inserción (último nodo actual)
-    await animateGetListNodePos(nodesG, insertionData.pathNodes, bus, getPosLabels, stepId);
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.GET_LAST_NODE });
-    await delay(400);
+    const elseTailLabel = labels.ELSE_EMPTY ?? labels.ELSE_IF_TAIL ?? null;
+    if (elseTailLabel) {
+        bus.emit("step:progress", { stepId, lineIndex: elseTailLabel });
+        await delay(500);
+    }
 
     // Aparición y posicionamiento del nuevo nodo
-    bus.emit("step:progress", { stepId, lineIndex: labels.LINK_NODE_END });
+    bus.emit("step:progress", { stepId, lineIndex: labels.LINK_TAIL_TO_NEW });
     const newNodePos = insertionData.positions.get(newNodeId)!;
     const initialNewNodePos = {
         x: newNodePos.x,
@@ -1432,37 +1366,58 @@ async function animateInsertAtTailNonEmpty(
     await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
 
     // Establecimiento del enlace siguiente del último nodo
-    if (labels.LINK_PREV_TO_NEW) bus.emit("step:progress", { stepId, lineIndex: labels.LINK_PREV_TO_NEW });
-    await lastNodeNextLinkGroup
+    await tailNodeNextLinkGroup
         .transition()
         .duration(1000)
         .style("opacity", 1)
+        .end();
+
+    // Establecimiento del enlace anterior del nuevo nodo
+    bus.emit("step:progress", { stepId, lineIndex: labels.LINK_NEW_TO_TAIL });
+    await newNodePrevLinkGroup
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+
+    // Posicionamiento del indicador de cola a la nueva cola de la lista
+    bus.emit("step:progress", { stepId, lineIndex: labels.UPDATE_TAIL });
+    await tailIndicatorGroup
+        .transition()
+        .duration(1500)
+        .attr("transform", () => {
+            const finalX =
+                newNodePos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = newNodePos.y;
+            return `translate(${finalX}, ${finalY})`;
+        })
         .end();
 }
 
 async function animateDeleteOneElementList(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     bus: EventBus,
-    currHeadNodeId: string,
+    removalNodeId: string,
     stepId: string,
     labels: {
-        VALIDATE_POSITION?: number;
-        DECLARE_REMOVED_NODE?: number;
-        VALIDATE_SINGLE_NODE?: number;
-        VALIDATE_HEAD?: number;
+        VALIDATE_POSITION?: number,
+        SAVE_SINGLE_NODE?: number;
         VALIDATE_EMPTY: number;
-        SAVE_HEAD: number;
+        DECLARE_REMOVED_NODE: number,
+        VALIDATE_SINGLE_NODE: number;
         CLEAR_HEAD: number;
+        CLEAR_TAIL: number;
     }
 ) {
     // Grupos contenedor de los nodos de la lista
     const nodesG = svg.select<SVGGElement>("g#nodes-layer");
 
     // Grupo correspondiente al nodo a eliminar
-    const currHeadNodeGroup = nodesG.select<SVGGElement>(`g#${currHeadNodeId}`);
+    const removalNodeGroup = nodesG.select<SVGGElement>(`g#${removalNodeId}`);
 
-    // Grupo correspondiente al indicador de cabeza
+    // Grupos correspondientes a los indicadores de cabeza y cola
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
     await delay(500);
@@ -1472,23 +1427,25 @@ async function animateDeleteOneElementList(
         await delay(500);
     }
 
-    if (labels.DECLARE_REMOVED_NODE) {
-        bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
-        await delay(400);
-    }
+    bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
+    await delay(500);
 
-    const validateHeadLabel = labels.VALIDATE_HEAD ?? labels.VALIDATE_SINGLE_NODE ?? null;
-    if (validateHeadLabel) {
-        bus.emit("step:progress", { stepId, lineIndex: validateHeadLabel });
+    bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_SINGLE_NODE });
+    await delay(500);
+
+    if (labels.SAVE_SINGLE_NODE) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_SINGLE_NODE });
         await delay(500);
     }
 
-    bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_HEAD });
-    await delay(500);
-
+    // Salida del nodo a eliminar y del indicador de cabeza
     bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_HEAD });
     await headIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
-    await currHeadNodeGroup.transition().duration(1000).style("opacity", 0).remove().end();
+
+    // Salida del indicador de cola
+    bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_TAIL });
+    await tailIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
+    await removalNodeGroup.transition().duration(1000).style("opacity", 0).remove().end();
 }
 
 async function animateDeleteAtHeadNonEmpty(
@@ -1502,11 +1459,13 @@ async function animateDeleteAtHeadNonEmpty(
     stepId: string,
     labels: {
         VALIDATE_POSITION?: number;
-        DECLARE_REMOVED_NODE?: number;
+        SAVE_HEAD_NODE?: number;
         VALIDATE_EMPTY: number;
-        VALIDATE_HEAD?: number;
-        SAVE_HEAD: number;
+        DECLARE_REMOVED_NODE: number;
+        VALIDATE_SINGLE_NODE: number;
+        ELSE_SINGLE_NODE: number;
         MOVE_HEAD: number;
+        CLEAR_PREV_LINK: number;
     },
     repositionList: () => Promise<void>
 ) {
@@ -1525,109 +1484,13 @@ async function animateDeleteAtHeadNonEmpty(
         `g#link-${removalNodeId}-${newHeadNodeId}-next`
     );
 
+    // Grupo correspondiente al enlace anterior del nuevo nodo cabeza que apunta al nodo a eliminar
+    const newHeadNodePrevLinkGroup = linksG.select<SVGGElement>(
+        `g#link-${newHeadNodeId}-${removalNodeId}-prev`
+    );
+
     // Grupo correspondiente al indicador de cabeza
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
-
-    if (labels.VALIDATE_POSITION) {
-        bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
-    }
-
-    if (labels.DECLARE_REMOVED_NODE) {
-        bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
-        await delay(500);
-    }
-
-    if (labels.VALIDATE_HEAD) {
-        bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_HEAD });
-        await delay(500);
-    }
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_HEAD });
-    await delay(500);
-
-    // Posición de animación final del nodo a eliminar
-    bus.emit("step:progress", { stepId, lineIndex: labels.MOVE_HEAD });
-    const removalNodePos = deletionData.positions.get(removalNodeId)!;
-    const finalRemovalNodePos = {
-        x: removalNodePos.x,
-        y: removalNodePos.y + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8,
-    };
-
-    // Desconexión del enlace siguiente del nodo a eliminar
-    await removalNodeNextLinkGroup
-        .transition()
-        .duration(1000)
-        .style("opacity", 0)
-        .remove()
-        .end();
-
-    // Salida del nodo a eliminar
-    await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
-
-    // Salida del indicador de cabeza
-    await headIndicatorGroup
-        .transition()
-        .duration(600)
-        .style("opacity", 0)
-        .end();
-
-    // Reposicionamiento de los elementos restantes de la lista a su posición final
-    await repositionList();
-
-    // Entrada del indicador de cabeza (ahora apuntando a la nueva cabeza de la lista)
-    await headIndicatorGroup
-        .transition()
-        .duration(600)
-        .style("opacity", 1)
-        .end();
-}
-
-async function animateDeleteAtTailNonEmpty(
-    svg: Selection<SVGSVGElement, unknown, null, undefined>,
-    deletionData: {
-        removalNodeId: string;
-        newLastNodeId: string;
-        pathNodes: ListNodeData<number>[];
-        positions: Map<string, { x: number; y: number }>;
-    },
-    bus: EventBus,
-    stepId: string,
-    labels: {
-        VALIDATE_POSITION?: number;
-        VALIDATE_EMPTY: number;
-        DECLARE_REMOVED_NODE: number;
-        VALIDATE_SINGLE_NODE: number;
-        ELSE_SINGLE_NODE: number;
-        GET_PREV_NODE: number;
-        SAVE_LAST_NODE: number;
-        UNLINK_LAST_NODE: number;
-    },
-    getPosLabels: {
-        INIT_TRAVERSAL: number,
-        WHILE_TRAVERSAL: number,
-        ADVANCE_NODE: number,
-        DEC_POS: number,
-        RETURN_NODE_GETPOS: number
-    }
-) {
-    // Nodos implicados en la eliminación
-    const { removalNodeId, newLastNodeId } = deletionData;
-
-    // Grupos contenedores de nodos y enlaces de la lista
-    const nodesG = svg.select<SVGGElement>("g#nodes-layer");
-    const linksG = svg.select<SVGGElement>("g#links-layer");
-
-    // Grupo correspondiente al nodo a eliminar
-    const removalNodeGroup = nodesG.select<SVGGElement>(`g#${removalNodeId}`);
-
-    // Grupo correspondiente al enlace siguiente del nuevo último nodo que apunta al nodo a eliminar
-    const newLastNodeNextLinkGroup = linksG.select<SVGGElement>(
-        `g#link-${newLastNodeId}-${removalNodeId}-next`
-    );
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
     await delay(500);
@@ -1646,34 +1509,170 @@ async function animateDeleteAtTailNonEmpty(
     bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_SINGLE_NODE });
     await delay(500);
 
-    bus.emit("step:progress", { stepId, lineIndex: labels.GET_PREV_NODE });
-    await delay(500);
+    if (labels.SAVE_HEAD_NODE) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_HEAD_NODE });
+        await delay(500);
+    }
 
-    // Recorrido de los nodos hasta el nuevo último nodo
-    await animateGetListNodePos(nodesG, deletionData.pathNodes, bus, getPosLabels, stepId);
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.GET_PREV_NODE });
-    await delay(400);
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_LAST_NODE });
-    await delay(500);
-
-    // Posición de animación final del nodo a eliminar
-    bus.emit("step:progress", { stepId, lineIndex: labels.UNLINK_LAST_NODE });
+    // Posicionamiento del indicador de cabeza a la nueva cabeza de la lista
+    bus.emit("step:progress", { stepId, lineIndex: labels.MOVE_HEAD });
     const removalNodePos = deletionData.positions.get(removalNodeId)!;
-    const finalRemoveNodePos = {
-        x: removalNodePos.x,
-        y: removalNodePos.y + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8,
-    };
-
-    // Desconexión del enlace siguiente del nuevo último nodo
-    await newLastNodeNextLinkGroup
+    const initialNewHeadPos = {
+        x: SVG_LINKED_LIST_VALUES.MARGIN_LEFT + (1) * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING),
+        y: removalNodePos.y
+    }
+    await headIndicatorGroup
         .transition()
-        .duration(1000)
+        .duration(1500)
+        .attr("transform", () => {
+            const finalX =
+                initialNewHeadPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = initialNewHeadPos.y;
+            return `translate(${finalX}, ${finalY})`;
+        })
+        .end();
+
+    // Desconexión del enlace anterior del nuevo nodo cabeza
+    bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_PREV_LINK });
+    await newHeadNodePrevLinkGroup
+        .transition()
+        .duration(800)
         .style("opacity", 0)
         .remove()
         .end();
 
+    // Desconexión del enlace siguiente del nodo a eliminar
+    await removalNodeNextLinkGroup
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .remove()
+        .end();
+
+    // Posición de animación final del nodo a eliminar
+    const finalRemovalNodePos = {
+        x: removalNodePos.x,
+        y: removalNodePos.y + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8,
+    };
+    await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
+
+    // Reposicionamiento de los elementos restantes de la lista a su posición final
+    await repositionList();
+}
+
+async function animateDeleteAtTailNonEmpty(
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    deletionData: {
+        removalNodeId: string;
+        newTailNodeId: string;
+        positions: Map<string, { x: number; y: number }>;
+    },
+    bus: EventBus,
+    stepId: string,
+    labels: {
+        VALIDATE_POSITION?: number;
+        ELSE_SINGLE_NODE?: number;
+        ELSE_IF_HEAD?: number;
+        ELSE_IF_TAIL?: number;
+        SAVE_TAIL_NODE?: number;
+        VALIDATE_EMPTY: number;
+        DECLARE_REMOVED_NODE: number;
+        VALIDATE_SINGLE_NODE: number;
+        MOVE_TAIL: number;
+        CLEAR_NEXT_LINK: number;
+    }
+) {
+    // Nodos implicados en la eliminación
+    const { removalNodeId, newTailNodeId } = deletionData;
+
+    // Grupos contenedores de nodos y enlaces de la lista
+    const nodesG = svg.select<SVGGElement>("g#nodes-layer");
+    const linksG = svg.select<SVGGElement>("g#links-layer");
+
+    // Grupo correspondiente al nodo a eliminar
+    const removalNodeGroup = nodesG.select<SVGGElement>(`g#${removalNodeId}`);
+
+    // Grupo correspondiente al enlace siguiente del nuevo nodo cola que apunta al nodo a eliminar
+    const newTailNodeNextLinkGroup = linksG.select<SVGGElement>(
+        `g#link-${newTailNodeId}-${removalNodeId}-next`
+    );
+
+    // Grupo correspondiente al enlace anterior del nodo a eliminar que apunta a la nueva cola
+    const removalNodePrevLinkGroup = linksG.select<SVGGElement>(
+        `g#link-${removalNodeId}-${newTailNodeId}-prev`
+    );
+
+    // Grupo correspondiente al indicador de cola
+    const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+
+    bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
+    await delay(500);
+
+    if (labels.VALIDATE_POSITION) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
+        await delay(500);
+    }
+
+    bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
+    await delay(500);
+
+    bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_SINGLE_NODE });
+    await delay(500);
+
+    if (labels.ELSE_IF_HEAD) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_IF_HEAD });
+        await delay(500);
+    }
+
+    const elseLabel = labels.ELSE_SINGLE_NODE ?? labels.ELSE_IF_TAIL ?? null;
+    if (elseLabel) {
+        bus.emit("step:progress", { stepId, lineIndex: elseLabel });
+        await delay(500);
+    }
+
+    if (labels.SAVE_TAIL_NODE) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_TAIL_NODE });
+        await delay(500);
+    }
+
+    // Posicionamiento del indicador de cola a la posición del nuevo último nodo
+    bus.emit("step:progress", { stepId, lineIndex: labels.MOVE_TAIL });
+    const newLastPos = deletionData.positions.get(newTailNodeId)!;
+    await tailIndicatorGroup
+        .transition()
+        .duration(1500)
+        .attr("transform", () => {
+            const finalX =
+                newLastPos.x + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH / 2;
+            const finalY = newLastPos.y;
+            return `translate(${finalX}, ${finalY})`;
+        })
+        .end();
+
+    // Desconexión del enlace siguiente del nuevo último nodo
+    bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_NEXT_LINK });
+    await newTailNodeNextLinkGroup
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .remove()
+        .end();
+
+    // Desconexión del enlace anterior del nodo a eliminar
+    await removalNodePrevLinkGroup
+        .transition()
+        .duration(800)
+        .style("opacity", 0)
+        .remove()
+        .end();
+
+    // Posición de animación final del nodo a eliminar
+    const removalNodePos = deletionData.positions.get(removalNodeId)!;
+    const finalRemovalNodePos = {
+        x: removalNodePos.x,
+        y: removalNodePos.y + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8,
+    };
+
     // Salida del nodo a eliminar
-    await animateExitListNode(removalNodeGroup, finalRemoveNodePos);
+    await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
 }
