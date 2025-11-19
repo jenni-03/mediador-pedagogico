@@ -167,7 +167,7 @@ export class CommandExecutor {
   }
 
   // ────────────────────── Ejecutar asignación ────────────────────────
-  private execAssign(
+   private execAssign(
     ast: import("./command-interpreter").AssignAST
   ): ExecOutcome {
     try {
@@ -243,6 +243,96 @@ export class CommandExecutor {
         };
       }
 
+      // OBJ.campo = ...
+      if (ast.target.kind === "field") {
+        const objVar = ast.target.base;
+        const field = ast.target.field;
+
+        // p.campo = otraVar;
+        if (ast.expr.kind === "ident") {
+          const r = this.memory.setObjectFieldFromId(
+            objVar,
+            field,
+            ast.expr.name
+          );
+          return r[0]
+            ? {
+                ok: true,
+                message: `✅ ${objVar}.${field} actualizado desde ${ast.expr.name}.`,
+              }
+            : { ok: false, message: r[1] };
+        }
+
+        // p.campo = "literal";
+        if (ast.expr.kind === "string") {
+          const r = this.memory.setObjectFieldStringLiteral(
+            objVar,
+            field,
+            ast.expr.value
+          );
+          return r[0]
+            ? {
+                ok: true,
+                message: `✅ ${objVar}.${field} actualizado (String literal).`,
+              }
+            : { ok: false, message: r[1] };
+        }
+
+        // p.campo = null; (no lo soportamos todavía)
+        if (ast.expr.kind === "null") {
+          return {
+            ok: false,
+            message:
+              `❌ Aún no soportamos asignar null directamente a campos de objeto. ` +
+              `Piensa en null sólo para variables de referencia completas (p = null).`,
+          };
+        }
+
+        // p.campo = 123;  / true / 'A'  (literal primitivo)
+        const value = exprToJs(ast.expr);
+        const r = this.memory.setObjectFieldPrimitive(objVar, field, value);
+        return r[0]
+          ? {
+              ok: true,
+              message: `✅ Campo ${objVar}.${field} actualizado.`,
+            }
+          : { ok: false, message: r[1] };
+      }
+
+      // OBJ.campo[idx] = ...
+      if (ast.target.kind === "fieldIndex") {
+        const objVar = ast.target.base;
+        const field = ast.target.field;
+        const idx = ast.target.index;
+
+        if (ast.expr.kind === "ident") {
+          return {
+            ok: false,
+            message:
+              `❌ ${objVar}.${field}[${idx}] = ${ast.expr.name} no está soportado todavía ` +
+              `para campos de arreglo. Usa literales (número, char, etc.).`,
+          };
+        }
+
+        if (ast.expr.kind === "null") {
+          return {
+            ok: false,
+            message:
+              `❌ ${objVar}.${field}[${idx}] = null no está soportado. ` +
+              `(didácticamente no manejamos null dentro de arrays de campos)`,
+          };
+        }
+
+        const value = exprToJs(ast.expr);
+        const r = this.memory.setFieldArrayIndex(objVar, field, idx, value);
+        return r[0]
+          ? {
+              ok: true,
+              message: `✅ ${objVar}.${field}[${idx}] actualizado.`,
+            }
+          : { ok: false, message: r[1] };
+      }
+
       // ARR[idx] = ...
       if (ast.target.kind === "index") {
         const name = ast.target.name;
@@ -279,6 +369,7 @@ export class CommandExecutor {
       };
     }
   }
+
 
   // === MemType helpers =======================================================
   private elemMemType(typeName: string): MemType {

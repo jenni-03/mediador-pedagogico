@@ -50,14 +50,14 @@ export class Memory {
   private heap = new Heap();
   private readonly NULL_GUARD = 16;
 
-    constructor(sizeBytes: number = 1024 * 64) {
+  constructor(sizeBytes: number = 1024 * 64) {
     this.ram = new ByteStore(sizeBytes);
     // Reserva inicial para representar 0x0000… como "zona inválida" (null-guard).
     this.ram.allocAligned(this.NULL_GUARD, this.NULL_GUARD, "null guard");
     this.stack.push("global");
   }
 
-    /** 🔴 Limpia completamente la memoria: RAM, Stack y Heap, y vuelve al estado inicial. */
+  /** 🔴 Limpia completamente la memoria: RAM, Stack y Heap, y vuelve al estado inicial. */
   clearAll() {
     const size = this.ram.capacity();
 
@@ -752,9 +752,49 @@ export class Memory {
     return [false, `Modo de array no soportado para "${name}".`] as const;
   }
 
-  // ==========================================================================
-  // Mutaciones sobre arrays dentro de objetos compactos
-  // ==========================================================================
+  private computeObjectFieldOffset(
+    meta: ObjectCompactMeta,
+    field: string
+  ):
+    | [
+        true,
+        {
+          idx: number;
+          offset: number;
+          schema: { key: string; type: PrimitiveType | "ptr32" | "string" }[];
+        },
+      ]
+    | [false, string] {
+    // Tipamos explícitamente el schema para salir del "any"
+    const schema = meta.schema as Array<{
+      key: string;
+      type: PrimitiveType | "ptr32" | "string";
+    }>;
+
+    const idx = schema.findIndex((f) => f.key === field);
+    if (idx < 0) {
+      return [false, `Campo "${field}" no existe en el objeto.`];
+    }
+
+    let off = 0;
+    for (let i = 0; i < idx; i++) {
+      const t = schema[i].type;
+
+      if (t === "ptr32" || t === "string") {
+        // puntero de 32 bits
+        off += 4;
+      } else {
+        // aquí YA sabemos que t es PrimitiveType
+        off += SIZES[t as PrimitiveType];
+      }
+    }
+
+    return [true, { idx, offset: off, schema }];
+  }
+
+  // ========================================================================
+  // Mutaciones sobre arrays dentro de objetos compactos: obj.campo[idx]
+  // ========================================================================
   setFieldArrayIndex(objVar: string, field: string, index: number, value: any) {
     const slot = this.resolveSlot(objVar);
     if (!slot || slot.kind !== "ref" || slot.refAddr === 0) {
@@ -763,39 +803,58 @@ export class Memory {
 
     const objHdr = slot.refAddr;
     const objE = this.heap.get(objHdr);
-    if (!objE || objE.kind !== "object")
+    if (!objE || objE.kind !== "object") {
       return [false, `"${objVar}" no es objeto.`] as const;
-
-    const meta = objE.meta as ObjectCompactMeta | undefined;
-    if (!meta || meta.tag !== "object-compact")
-      return [false, `Sólo soportado en objeto compacto.`] as const;
-
-    const schema = meta.schema;
-    const idx = schema.findIndex((f) => f.key === field);
-    if (idx < 0)
-      return [false, `Campo "${field}" no existe en "${objVar}".`] as const;
-
-    // Calcula offset sumando tamaños inline de campos anteriores
-    let off = 0;
-    for (let i = 0; i < idx; i++) {
-      const t = schema[i].type;
-      if (t === "ptr32" || t === "string") off += 4;
-      else off += SIZES[t];
     }
 
-    // Base de datos: justo después del header [len:u32]
-    const dataBase = objHdr + 4;
-    const fieldPtr = this.ram.readU32(dataBase + off); // debe ser puntero a header de array
+    const meta = objE.meta as ObjectCompactMeta | undefined;
+    if (!meta || meta.tag !== "object-compact") {
+      return [
+        false,
+        `Sólo soportado para objetos con layout compacto.`,
+      ] as const;
+    }
+
+    // Usamos el helper para evitar el SIZES[any]
+    const [okOff, info] = this.computeObjectFieldOffset(meta, field);
+    if (!okOff) return [false, info] as const;
+
+    const { offset: off, schema } = info;
+    const fieldInfo = schema[info.idx];
+
+    // El campo debe ser una referencia (ptr32) a un array
+    if (fieldInfo.type !== "ptr32") {
+      const human = fieldInfo.type === "string" ? "String" : fieldInfo.type;
+      return [
+        false,
+        `Campo "${objVar}.${field}" no es un arreglo (es ${human}).`,
+      ] as const;
+    }
+
+    // Dirección donde está almacenado el puntero al array
+    const ptrAddr = objHdr + 4 + off;
+    const fieldPtr = this.ram.readU32(ptrAddr);
+
+    if (fieldPtr === 0) {
+      return [
+        false,
+        `Campo "${objVar}.${field}" es referencia null; aún no apunta a un arreglo.`,
+      ] as const;
+    }
 
     const arrE = this.heap.get(fieldPtr);
-    if (!arrE || arrE.kind !== "array")
+    if (!arrE || arrE.kind !== "array") {
       return [false, `"${objVar}.${field}" no es array.`] as const;
+    }
 
+    // === Caso: array-inline-prim dentro del objeto ===
     if (arrE.meta.tag === "array-inline-prim") {
       const m = arrE.meta as ArrayInlinePrimMeta;
       const { elemType, elemSize, dataPtr, length } = m;
-      if (index < 0 || index >= length)
+
+      if (index < 0 || index >= length) {
         return [false, `Índice fuera de rango 0..${length - 1}`] as const;
+      }
 
       const addr = dataPtr + index * elemSize;
       Layout.writePrimitiveAt(
@@ -808,22 +867,25 @@ export class Memory {
       return [true, `${objVar}.${field}[${index}] actualizado`] as const;
     }
 
+    // === Caso: array-ref32 dentro del objeto ===
     if (arrE.meta.tag === "array-ref32") {
       const m = arrE.meta as ArrayRef32Meta;
-      const table = m.dataPtr;
-      const len = m.length;
-      if (index < 0 || index >= len)
-        return [false, `Índice fuera de rango 0..${len - 1}`] as const;
+      const { dataPtr: table, length, elem } = m;
+
+      if (index < 0 || index >= length) {
+        return [false, `Índice fuera de rango 0..${length - 1}`] as const;
+      }
 
       const cell = table + index * 4;
 
       // dec del puntero anterior si existía
       const oldPtr = this.ram.readU32(cell);
-      if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
+      if (oldPtr !== 0 && this.heap.has(oldPtr)) {
+        this.heap.dec(oldPtr);
+      }
 
-      const elemT = m.elem;
-
-      if (isStr(elemT)) {
+      // String dentro del array de campo
+      if (isStr(elem)) {
         const sh = Layout.allocUtf16String(
           this.ram,
           String(value),
@@ -840,18 +902,253 @@ export class Memory {
         return [true, `${objVar}.${field}[${index}] actualizado`] as const;
       }
 
-      const child = this.allocDeep(
-        elemT,
-        value,
-        `${objVar}.${field}[${index}]`
-      );
+      // Elementos que son otros objetos/arrays → allocDeep
+      const child = this.allocDeep(elem, value, `${objVar}.${field}[${index}]`);
       const refAddr = child.slot.kind === "ref" ? child.slot.refAddr : 0;
+
       this.ram.writeU32(cell, refAddr);
       if (refAddr !== 0) this.heap.inc(refAddr);
+
       return [true, `${objVar}.${field}[${index}] actualizado`] as const;
     }
 
     return [false, `Modo de array no soportado.`] as const;
+  }
+
+  // ==========================================================================
+  // Mutaciones sobre campos de objetos compactos
+  // ==========================================================================
+
+  setObjectFieldPrimitive(objVar: string, field: string, value: any) {
+    const slot = this.resolveSlot(objVar);
+    if (!slot || slot.kind !== "ref" || slot.refAddr === 0) {
+      return [false, `Objeto "${objVar}" no existe.`] as const;
+    }
+
+    const objHdr = slot.refAddr;
+    const objE = this.heap.get(objHdr);
+    if (!objE || objE.kind !== "object") {
+      return [false, `"${objVar}" no es objeto.`] as const;
+    }
+
+    const meta = objE.meta as ObjectCompactMeta | undefined;
+    if (!meta || meta.tag !== "object-compact") {
+      return [
+        false,
+        `Sólo soportado para objetos con layout compacto.`,
+      ] as const;
+    }
+
+    const [okOff, info] = this.computeObjectFieldOffset(meta, field);
+    if (!okOff) return [false, info] as const;
+
+    const { idx, offset: off, schema } = info;
+    const fieldInfo = schema[idx];
+
+    // string/ptr32 no van por aquí
+    if (fieldInfo.type === "ptr32" || fieldInfo.type === "string") {
+      return [
+        false,
+        `Campo "${objVar}.${field}" no es primitivo; no puedes asignarle un literal numérico/booleano/char directamente.`,
+      ] as const;
+    }
+
+    const primType = fieldInfo.type as PrimitiveType;
+
+    // Chequeo de tipo didáctico
+    if (primType === "boolean") {
+      if (typeof value !== "boolean") {
+        return [
+          false,
+          `Campo "${objVar}.${field}" es boolean; solo acepta true/false.`,
+        ] as const;
+      }
+    } else if (primType === "char") {
+      if (typeof value !== "string" || value.length !== 1) {
+        return [
+          false,
+          `Campo "${objVar}.${field}" es char; usa un carácter entre comillas simples, p.ej. 'A'.`,
+        ] as const;
+      }
+    } else {
+      if (typeof value !== "number") {
+        return [
+          false,
+          `Campo "${objVar}.${field}" es ${primType}; solo acepta literales numéricos.`,
+        ] as const;
+      }
+    }
+
+    const fieldAddr = objHdr + 4 + off; // +4: header [len:u32]
+
+    try {
+      Layout.writePrimitiveAt(
+        this.ram,
+        primType,
+        value,
+        fieldAddr,
+        `${objVar}.${field}`
+      );
+    } catch (err) {
+      if (err instanceof RangeError) {
+        return [false, (err as Error).message] as const;
+      }
+      throw err;
+    }
+
+    return [true, `${objVar}.${field} actualizado`] as const;
+  }
+
+  setObjectFieldStringLiteral(objVar: string, field: string, value: string) {
+    const slot = this.resolveSlot(objVar);
+    if (!slot || slot.kind !== "ref" || slot.refAddr === 0) {
+      return [false, `Objeto "${objVar}" no existe.`] as const;
+    }
+
+    const objHdr = slot.refAddr;
+    const objE = this.heap.get(objHdr);
+    if (!objE || objE.kind !== "object") {
+      return [false, `"${objVar}" no es objeto.`] as const;
+    }
+
+    const meta = objE.meta as ObjectCompactMeta | undefined;
+    if (!meta || meta.tag !== "object-compact") {
+      return [
+        false,
+        `Sólo soportado para objetos con layout compacto.`,
+      ] as const;
+    }
+
+    const [okOff, info] = this.computeObjectFieldOffset(meta, field);
+    if (!okOff) return [false, info] as const;
+
+    const { idx, offset: off, schema } = info;
+    const fieldInfo = schema[idx];
+
+    if (fieldInfo.type !== "string") {
+      const expected =
+        fieldInfo.type === "ptr32"
+          ? "referencia (array/objeto)"
+          : fieldInfo.type;
+      return [
+        false,
+        `Campo "${objVar}.${field}" no es String (es ${expected}).`,
+      ] as const;
+    }
+
+    const ptrAddr = objHdr + 4 + off;
+
+    // dec() de la string anterior si la había
+    const oldPtr = this.ram.readU32(ptrAddr);
+    if (oldPtr !== 0 && this.heap.has(oldPtr)) {
+      this.heap.dec(oldPtr);
+    }
+
+    // nueva string en heap
+    const hdr = Layout.allocUtf16String(
+      this.ram,
+      String(value),
+      `${objVar}.${field}#str`
+    );
+    this.ram.writeU32(ptrAddr, hdr);
+    const len = this.ram.readU32(hdr);
+    const dataPtr = this.ram.readU32(hdr + 4);
+    this.heap.addString(hdr, { length: len, dataPtr }, `${objVar}.${field}`);
+
+    return [true, `${objVar}.${field} actualizado`] as const;
+  }
+
+  setObjectFieldFromId(objVar: string, field: string, source: string) {
+    const src = this.resolveSlot(source);
+    if (!src) return [false, `Fuente "${source}" no existe.`] as const;
+
+    const slot = this.resolveSlot(objVar);
+    if (!slot || slot.kind !== "ref" || slot.refAddr === 0) {
+      return [false, `Objeto "${objVar}" no existe.`] as const;
+    }
+
+    const objHdr = slot.refAddr;
+    const objE = this.heap.get(objHdr);
+    if (!objE || objE.kind !== "object") {
+      return [false, `"${objVar}" no es objeto.`] as const;
+    }
+
+    const meta = objE.meta as ObjectCompactMeta | undefined;
+    if (!meta || meta.tag !== "object-compact") {
+      return [
+        false,
+        `Sólo soportado para objetos con layout compacto.`,
+      ] as const;
+    }
+
+    const [okOff, info] = this.computeObjectFieldOffset(meta, field);
+    if (!okOff) return [false, info] as const;
+
+    const { idx, offset: off, schema } = info;
+    const fieldInfo = schema[idx];
+    const addr = objHdr + 4 + off;
+
+    // 1) Campo String: copiamos referencia a la misma string
+    if (fieldInfo.type === "string") {
+      if (src.kind !== "ref") {
+        return [
+          false,
+          `Tipos incompatibles: "${objVar}.${field}" es String y "${source}" no es referencia.`,
+        ] as const;
+      }
+      if (src.refAddr === 0) {
+        return [
+          false,
+          `No puedes asignar null directamente a "${objVar}.${field}" (String).`,
+        ] as const;
+      }
+      const se = this.heap.get(src.refAddr);
+      if (!se || se.kind !== "string") {
+        return [
+          false,
+          `Tipos incompatibles: "${objVar}.${field}" es String y "${source}" no es String.`,
+        ] as const;
+      }
+
+      const oldPtr = this.ram.readU32(addr);
+      if (oldPtr === src.refAddr) {
+        return [true, `${objVar}.${field} sin cambios`] as const;
+      }
+      if (oldPtr !== 0 && this.heap.has(oldPtr)) this.heap.dec(oldPtr);
+
+      this.ram.writeU32(addr, src.refAddr >>> 0);
+      this.heap.inc(src.refAddr);
+
+      return [
+        true,
+        `${objVar}.${field} ahora referencia el mismo String que "${source}".`,
+      ] as const;
+    }
+
+    // 2) Campo referencia (array/objeto) → no lo soportamos todavía
+    if (fieldInfo.type === "ptr32") {
+      return [
+        false,
+        `Campo "${objVar}.${field}" es un arreglo u objeto (referencia). ` +
+          `Por ahora solo soportamos asignación directa a campos primitivos o String.`,
+      ] as const;
+    }
+
+    // 3) Campo primitivo: copiamos bytes desde el primitivo fuente
+    if (src.kind !== "prim" || src.type !== fieldInfo.type) {
+      const got = src.kind === "prim" ? src.type : "referencia";
+      return [
+        false,
+        `Tipos incompatibles: campo "${objVar}.${field}" es ${fieldInfo.type} y "${source}" es ${got}.`,
+      ] as const;
+    }
+
+    const primType = fieldInfo.type as PrimitiveType;
+    const sz = SIZES[primType];
+    const bytes = this.ram.readBytes(src.valueAddr, sz);
+    this.ram.writeBytes(addr, bytes);
+
+    return [true, `${objVar}.${field} ← (bytes de "${source}")`] as const;
   }
 
   // ==========================================================================
