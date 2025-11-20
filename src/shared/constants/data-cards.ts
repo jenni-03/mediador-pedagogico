@@ -22,7 +22,7 @@ export const data = [
     {
         title: 'Lista Doblemente Enlazada',
         id: 3,
-        img: '/assets/images/lista_simple.png',
+        img: '/assets/images/lista_doblemente_enlazada.png',
         type: 'estructura_lineal',
         bgCard: '#D02222',
         bgButton: '#E97F7F',
@@ -32,7 +32,7 @@ export const data = [
     {
         title: 'Lista Circular Simplemente Enlazada',
         id: 4,
-        img: '/assets/images/lista_simple.png',
+        img: '/assets/images/lista_circular_simplemente_enlazada.png',
         type: 'estructura_lineal',
         bgCard: '#D02222',
         bgButton: '#E97F7F',
