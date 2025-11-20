@@ -7,7 +7,7 @@ export const getColaCode = (): Record<string, OperationCode> => ({
  * Método que encola un nuevo elemento en la cola.
  * @param valor Elemento a encolar.
  */`,
-      `public void encolar(T {0}) {`,
+      `public void enqueue(T {0}) {`,
       `    NodoS<T> nuevoNodo = new NodoS<>({0});`,
       `    if (this.tamanio == 0) {`,
       `        this.inicio = nuevoNodo;`,
@@ -27,7 +27,7 @@ export const getColaCode = (): Record<string, OperationCode> => ({
  * @return valor Elemento asociado al nodo decolado.
  * @throws RuntimeException si la cola está vacía.
  */`,
-      `public T decolar() {`,
+      `public T dequeue() {`,
       `    if (this.tamanio == 0) {`,
       `        throw new RuntimeException("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");`,
       `    }`,
@@ -48,7 +48,7 @@ export const getColaCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que elimina todos los elementos de la cola.
  */`,
-      `public void vaciar() {`,
+      `public void clean() {`,
       `    this.inicio = null;`,
       `    this.fin = null;`,
       `    this.tamanio = 0;`,
@@ -67,7 +67,7 @@ export const getColaCode = (): Record<string, OperationCode> => ({
  * @return valor Elemento cabeza asociado al nodo inicial. 
  * @throws RuntimeException si la cola está vacía.
  */`,
-      `public T getInicio() {`,
+      `public T getFront() {`,
       `    if (this.tamanio == 0) {`,
       `        throw new RuntimeException("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
       `    }`,
