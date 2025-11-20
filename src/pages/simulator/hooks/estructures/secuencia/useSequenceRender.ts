@@ -50,7 +50,6 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
 
         // Inicio de la operación
         bus.emit("op:start", { op: "create" });
-        bus.emit("step:enter", { stepId: "create" });
 
         (async () => {
             // justo antes de arrancar las transiciones “grandes”

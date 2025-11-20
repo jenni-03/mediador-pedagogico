@@ -311,7 +311,7 @@ export async function animateSimpleCircularInsertAt(
             const nodesG = svg.select<SVGGElement>("g#nodes-layer");
             const linksG = svg.select<SVGGElement>("g#links-layer");
 
-            // Grupos correspondientes a los elementos producto de la inserción
+            // Grupos correspondientes a los nuevos elementos producto de la inserción
             const newNodeGroup = nodesG.select<SVGGElement>(`g#${newNodeId}`);
             newNodeGroup.style("opacity", 0);
 
@@ -558,7 +558,7 @@ export async function animateSimpleCircularDeleteFirst(
                     removalNodeId: currHeadNodeId,
                     newHeadNodeId,
                     tailNodeId,
-                    tailIndex: deletionData.remainingNodesData.length - 1,
+                    tailIndex: deletionData.remainingNodesData.length,
                     positions: deletionData.positions
                 },
                 bus,
@@ -578,7 +578,7 @@ export async function animateSimpleCircularDeleteFirst(
                     deletionData.positions,
                     {
                         headIndicator: svg.select<SVGGElement>("g#head-indicator"),
-                        headNodeId: currHeadNodeId,
+                        headNodeId: newHeadNodeId,
                         tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
                         tailNodeId
                     }
@@ -1178,7 +1178,7 @@ async function animateInsertInEmptyList(
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
     const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Estado visual inicial de los elementos producto de la inserción
+    // Estado visual inicial de los nuevos elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
     newNodeNextLinkGroup.style("opacity", 0);
 
@@ -1260,7 +1260,7 @@ async function animateInsertAtHeadNonEmpty(
     // Grupo correspondiente al indicador de cabeza
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-    // Estado visual inicial de los elementos producto de la inserción
+    // Estado visual inicial de los nuevos elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
     newNodeNextLinkGroup.style("opacity", 0);
     tailNodeNewNextLinkGroup.style("opacity", 0);
@@ -1378,7 +1378,7 @@ async function animateInsertAtTailNonEmpty(
     // Grupo correspondiente al indicador de cola
     const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Estado visual inicial de los elementos producto de la inserción
+    // Estado visual inicial de los nuevos elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
     tailNodeNewNextLinkGroup.style("opacity", 0);
     newNodeNextLinkGroup.style("opacity", 0);
@@ -1568,7 +1568,7 @@ async function animateDeleteAtHeadNonEmpty(
     // Grupo correspondiente al indicador de cabeza
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-    // Estado visual de los elementos producto de la eliminación
+    // Estado visual de los nuevos elementos producto de la eliminación
     tailNodeNewNextLinkGroup.style("opacity", 0);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
@@ -1620,24 +1620,9 @@ async function animateDeleteAtHeadNonEmpty(
         .remove()
         .end();
 
-    // Desconexión del enlace siguiente del nodo a eliminar
-    await removalNodeNextLinkGroup
-        .transition()
-        .duration(1000)
-        .style("opacity", 0)
-        .remove()
-        .end();
-
-    // Posición de animación final del nodo a eliminar
-    const finalRemovalNodePos = {
-        x: removalNodePos.x,
-        y: removalNodePos.y + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8,
-    };
-    await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
-
     // Forma inicial del nuevo enlace circular del nodo cola
     const initialTailPos = {
-        x: SVG_LINKED_LIST_VALUES.MARGIN_LEFT + (tailIndex + 1) * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING),
+        x: SVG_LINKED_LIST_VALUES.MARGIN_LEFT + (tailIndex) * (SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH + SVG_LINKED_LIST_VALUES.SPACING),
         y: removalNodePos.y
     }
 
@@ -1657,6 +1642,21 @@ async function animateDeleteAtHeadNonEmpty(
         .duration(1000)
         .style("opacity", 1)
         .end();
+
+    // Desconexión del enlace siguiente del nodo a eliminar
+    await removalNodeNextLinkGroup
+        .transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .remove()
+        .end();
+
+    // Posición de animación final del nodo a eliminar
+    const finalRemovalNodePos = {
+        x: removalNodePos.x,
+        y: removalNodePos.y + SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH * 0.8,
+    };
+    await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
 
     // Reposicionamiento de los elementos restantes de la lista a su posición final
     await repositionList();
@@ -1722,7 +1722,7 @@ async function animateDeleteAtTailNonEmpty(
     // Grupo correspondiente al indicador de cola
     const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Estado visual inicial de los elementos producto de la eliminación
+    // Estado visual inicial de los nuevos elementos producto de la eliminación
     newTailNodeNewNextLinkGroup.style("opacity", 0);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
