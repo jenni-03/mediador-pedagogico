@@ -72,7 +72,7 @@ export const data = [
     {
         title: 'Cola de Prioridad',
         id: 8,
-        img: '/assets/images/cola.png',
+        img: '/assets/images/cola_prioridad.png',
         type: 'estructura_lineal',
         bgCard: '#D02222',
         bgButton: '#E97F7F',
@@ -102,7 +102,7 @@ export const data = [
     {
         title: 'Árbol Binario de Búsqueda',
         id: 11,
-        img: '/assets/images/arbol_binario.png',
+        img: '/assets/images/arbol_binario_busqueda.png',
         bgCard: '#669bbc',
         type: 'arbol_binario',
         bgButton: '#AEC5D3',
