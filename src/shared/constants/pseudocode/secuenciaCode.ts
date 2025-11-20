@@ -20,8 +20,8 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
     labels: { IF_CANT: 2, PRINT_INVALID: 3, ALLOC: 5, CANT0: 6, ASSIGN: 7 },
     errorPlans: {
       INVALID_CAPACITY: [
-        { lineLabel: "IF_CANT", hold: 700 },
-        { lineLabel: "PRINT_INVALID", hold: 900 }
+        { lineLabel: "IF_CANT", hold: 600 },
+        { lineLabel: "PRINT_INVALID", hold: 600 }
       ]
     }
   },
@@ -42,8 +42,8 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
     labels: { IF_FULL: 2, PRINT_FULL: 3, ELSE: 4, ASSIGN: 5 },
     errorPlans: {
       CAPACITY_EXCEEDED: [
-        { lineLabel: "IF_FULL", hold: 700 },
-        { lineLabel: "PRINT_FULL", hold: 900 }
+        { lineLabel: "IF_FULL", hold: 600 },
+        { lineLabel: "PRINT_FULL", hold: 600 }
       ]
     }
   },
@@ -69,13 +69,13 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
     labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, IF_RANGE: 5, PRINT_RANGE: 6, RETURN_ELEM: 8 },
     errorPlans: {
       GET_EMPTY: [
-        { lineLabel: "IF_EMPTY", hold: 700 },
-        { lineLabel: "PRINT_EMPTY", hold: 900 }
+        { lineLabel: "IF_EMPTY", hold: 600 },
+        { lineLabel: "PRINT_EMPTY", hold: 600 }
       ],
       GET_OUT_OF_RANGE: [
-        { lineLabel: "IF_EMPTY", hold: 700 },
-        { lineLabel: "IF_RANGE", hold: 700 },
-        { lineLabel: "PRINT_RANGE", hold: 900 }
+        { lineLabel: "IF_EMPTY", hold: 600 },
+        { lineLabel: "IF_RANGE", hold: 600 },
+        { lineLabel: "PRINT_RANGE", hold: 600 }
       ]
     }
   },
@@ -97,8 +97,8 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
     labels: { IF_RANGE: 2, PRINT_ERR: 3, UPDATE: 5 },
     errorPlans: {
       SET_OUT_OF_RANGE: [
-        { lineLabel: "IF_RANGE", hold: 700 },
-        { lineLabel: "PRINT_ERR", hold: 900 }
+        { lineLabel: "IF_RANGE", hold: 600 },
+        { lineLabel: "PRINT_ERR", hold: 600 }
       ]
     }
   },
@@ -127,13 +127,13 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
     labels: { IF_EMPTY: 2, PRINT_EMPTY: 3, IF_RANGE: 5, PRINT_RANGE: 6, FOR: 8, REASSING: 9, DELETE: 11, DECREASE: 12 },
     errorPlans: {
       DELETE_EMPTY: [
-        { lineLabel: "IF_EMPTY", hold: 700 },
-        { lineLabel: "PRINT_EMPTY", hold: 900 }
+        { lineLabel: "IF_EMPTY", hold: 600 },
+        { lineLabel: "PRINT_EMPTY", hold: 600 }
       ],
       DELETE_OUT_OF_RANGE: [
-        { lineLabel: "IF_EMPTY", hold: 700 },
-        { lineLabel: "IF_RANGE", hold: 700 },
-        { lineLabel: "PRINT_RANGE", hold: 900 }
+        { lineLabel: "IF_EMPTY", hold: 600 },
+        { lineLabel: "IF_RANGE", hold: 600 },
+        { lineLabel: "PRINT_RANGE", hold: 600 }
       ]
     }
   },

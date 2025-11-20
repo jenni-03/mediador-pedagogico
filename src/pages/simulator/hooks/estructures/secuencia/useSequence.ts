@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { type Secuencia } from "../../../../../shared/utils/structures/Secuencia";
+import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
 import { BaseQueryOperations } from "../../../../../types";
 import { DomainError } from "../../../../../shared/utils/error/DomainError";
 
@@ -25,7 +25,7 @@ export function useSequence(structure: Secuencia<number>) {
     const createSequence = useCallback((n: number) => {
         try {
             if (n <= 0) {
-                throw new DomainError("Tamaño de secuencia no válido.", "INVALID_CAPACITY");
+                throw new DomainError("Capacidad de secuencia no válida!", "INVALID_CAPACITY");
             }
 
             const newSecuencia = new Secuencia<number>(n);
