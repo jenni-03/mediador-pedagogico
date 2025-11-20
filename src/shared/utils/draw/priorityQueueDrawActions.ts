@@ -1,7 +1,7 @@
 import { LinkData, PriorityQueueNodeData, QueueNodeData } from "../../../types";
 import * as d3 from "d3";
 import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
-import { calculateLinkPath } from "./calculateLinkPath";
+// import { calculateLinkPath } from "./calculateLinkPath";
 
 // Función para obtener el color según la prioridad (ahora retorna un objeto con fill y stroke)
 export function getPriorityColor(priority: number): { fill: string; stroke: string } {

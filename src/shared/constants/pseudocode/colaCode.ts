@@ -1,75 +1,78 @@
 import { OperationCode } from "./typesPseudoCode";
 
-export const getColaCode = (): OperationCode => ({
-  enqueue: [
-    "/**",
-    " * Método que encola un nuevo elemento en la cola.",
-    " * @param valor Elemento a encolar.",
-    " */",
-    "public NodoS<T> encolar(T {0}) {",
-    "  if ({1} >= {3})",
-    '    throw new RuntimeException("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: " + {3} + ").");',
-    "",
-    "  NodoS<T> nuevoNodo = new NodoS<>({0});",
-    "",
-    "  if (this.esVacia()) {",
-    "    this.inicio = nuevoNodo;",
-    "    this.fin = nuevoNodo;",
-    "  } else {",
-    "    this.fin.setSiguiente(nuevoNodo);",
-    "    this.fin = nuevoNodo;",
-    "  }",
-    "",
-    "  {1}++;",
-    "  return nuevoNodo;",
-    "}",
-  ],
-
-  dequeue: [
-    "/**",
-    " * Método que decola (remueve) el primer elemento de la cola.",
-    " * @return Elemento decolado.",
-    " */",
-    "public NodoS<T> decolar() {",
-    "  if (this.esVacia())",
-    '    throw new RuntimeException("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");',
-    "",
-    "  NodoS<T> nodoAEliminar = this.inicio;",
-    "",
-    "  if (this.inicio == this.fin) {",
-    "    this.inicio = null;",
-    "    this.fin = null;",
-    "  } else {",
-    "    this.inicio = this.inicio.getSiguiente();",
-    "  }",
-    "",
-    "  {0}--;",
-    "  return nodoAEliminar;",
-    "}",
-  ],
-
-  clean: [
-    "/**",
-    " * Método que vacía la cola.",
-    " * post: La cola quedó vacía.",
-    " */",
-    "public void vaciar() {",
-    "  this.inicio = null;",
-    "  this.fin = null;",
-    "  this.tamanio = 0;",
-    "}",
-  ],
-
-  getFront: [
-    "/**",
-    " * Método que obtiene el elemento inicial de la cola.",
-    " * @return NodoS o null si la cola está vacía.",
-    " */",
-    "public NodoS<T> getInicio() {",
-    `    if (this.inicio == null) {`,
-    `        throw new RuntimeException(" No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
-    `    }`,
-    "  return this.inicio;",
-    "}",
-  ],
+export const getColaCode = (): Record<string, OperationCode> => ({
+  enqueue: {
+    lines: [
+      `/**
+ * Método que encola un nuevo elemento en la cola.
+ * @param valor Elemento a encolar.
+ */`,
+      `public void encolar(T {0}) {`,
+      `    NodoS<T> nuevoNodo = new NodoS<>({0});`,
+      `    if (this.tamanio == 0) {`,
+      `        this.inicio = nuevoNodo;`,
+      `        this.fin = nuevoNodo;`,
+      `    } else {`,
+      `        this.fin.siguiente = nuevoNodo;`,
+      `        this.fin = nuevoNodo;`,
+      `    }`,
+      `    {1}++;`,
+      `}`,
+    ]
+  },
+  dequeue: {
+    lines: [
+      `/**
+ * Método que decola (remueve) el primer elemento de la cola.
+ * @return valor Elemento asociado al nodo decolado.
+ * @throws RuntimeException si la cola está vacía.
+ */`,
+      `public T decolar() {`,
+      `    if (this.tamanio == 0) {`,
+      `        throw new RuntimeException("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");`,
+      `    }`,
+      `    NodoS<T> nodoEliminar = this.inicio;`,
+      `    if (this.inicio == this.fin) {`,
+      `        this.inicio = null;`,
+      `        this.fin = null;`,
+      `    } else {`,
+      `        this.inicio = this.inicio.siguiente;`,
+      `    }`,
+      `    {0}--;`,
+      `    return nodoEliminar.info;`,
+      `}`,
+    ]
+  },
+  clean: {
+    lines: [
+      `/**
+ * Método que elimina todos los elementos de la cola.
+ */`,
+      `public void vaciar() {`,
+      `    this.inicio = null;`,
+      `    this.fin = null;`,
+      `    this.tamanio = 0;`,
+      `}`,
+    ],
+    labels: {
+      CLEAR_HEAD: 2,
+      CLEAR_TAIL: 3,
+      RESET_SIZE: 4
+    }
+  },
+  getFront: {
+    lines: [
+      `/**
+ * Método que obtiene el primer elemento insertado en la cola.
+ * @return valor Elemento cabeza asociado al nodo inicial. 
+ * @throws RuntimeException si la cola está vacía.
+ */`,
+      `public T getInicio() {`,
+      `    if (this.tamanio == 0) {`,
+      `        throw new RuntimeException("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
+      `    }`,
+      `    return this.inicio.info;`,
+      `}`,
+    ]
+  },
 });

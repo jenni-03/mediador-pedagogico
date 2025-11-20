@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, IndicatorPositioningConfig, LinkData, QueueNodeData } from "../../../../../types";
+import { BaseQueryOperations, IndicatorPositioningConfig, ListLinkData, QueueNodeData } from "../../../../../types";
 import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { drawQueueNodes, animateDequeueNode, animateEnqueueNode } from "../../../../../shared/utils/draw/queueDrawActions";
-import * as d3 from "d3";
+import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { drawArrowIndicator, drawListLinks, animateHighlightNode, animateClearList } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { getColaCode } from "../../../../../shared/constants/pseudocode/colaCode";
+import { useBus } from "../../../../../shared/hooks/useBus";
 
 export function useQueueRender(
     queueNodes: QueueNodeData[],
@@ -15,7 +17,7 @@ export function useQueueRender(
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
-    // Mapa para guardar posiciones {x, y} de los nodos dentro del SVG
+    // Mapa de posiciones actuales de los nodos dentro del SVG
     const nodePositions = useRef(new Map<string, { x: number, y: number }>()).current;
 
     // Estado previo de la cola
@@ -24,16 +26,19 @@ export function useQueueRender(
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
 
-    // Memo para calcular los enlaces entre nodos
-    const linksData = useMemo<LinkData[]>(() => {
-        const links: LinkData[] = [];
+    // Bus para la emisión de eventos de código
+    const bus = useBus();
+
+    // Cálculo de enlaces entre nodos
+    const linksData = useMemo<ListLinkData[]>(() => {
+        const links: ListLinkData[] = [];
         queueNodes.forEach(n => {
             if (n.next) {
                 links.push({
                     sourceId: n.id,
                     targetId: n.next,
                     type: "next"
-                })
+                });
             }
         });
         return links;
@@ -41,51 +46,55 @@ export function useQueueRender(
 
     // Renderizado base de la cola
     useEffect(() => {
-        // Verificamos que el array de nodos no sea nulo y que la referencia al SVG se haya establecido
         if (!queueNodes || !svgRef.current) return;
 
-        // Margenes para el svg
-        const margin = { left: SVG_QUEUE_VALUES.MARGIN_LEFT, right: SVG_QUEUE_VALUES.MARGIN_RIGHT };
-
-        // Dimensiones para cada nodo
-        const elementWidth = SVG_QUEUE_VALUES.ELEMENT_WIDTH;
-        const elementHeight = SVG_QUEUE_VALUES.ELEMENT_HEIGHT;
-
         // Espaciado entre nodos
-        const spacing = SVG_QUEUE_VALUES.SPACING;
-        const nodeSpacing = elementWidth + spacing;
+        const nodeSpacing = SVG_QUEUE_VALUES.ELEMENT_WIDTH + SVG_QUEUE_VALUES.SPACING;
 
         // Cálculo del ancho del SVG en base al número de nodos presentes
         const displayLength = Math.max(queueNodes.length, prevNodes?.length ?? 0);
-        const width = margin.left + displayLength * nodeSpacing - (queueNodes.length > 0 ? spacing : 0) + margin.right;
-
-        // Alto del SVG
-        const height = SVG_QUEUE_VALUES.HEIGHT;
+        const width = SVG_QUEUE_VALUES.MARGIN_LEFT + displayLength * nodeSpacing - (queueNodes.length > 0 ? SVG_QUEUE_VALUES.SPACING : 0) + SVG_QUEUE_VALUES.MARGIN_RIGHT;
 
         // Configuración del contenedor SVG
-        const svg = d3.select(svgRef.current)
-            .attr("height", height)
+        const svg = select(svgRef.current)
+            .attr("height", SVG_QUEUE_VALUES.HEIGHT)
             .attr("width", width);
+
+        // Capas internas para nodos y enlaces
+        let nodesLayer = svg.select<SVGGElement>("#nodes-layer");
+        if (nodesLayer.empty()) nodesLayer = svg.append("g").attr("id", "nodes-layer");
+
+        let linksLayer = svg.select<SVGGElement>("#links-layer");
+        if (linksLayer.empty()) linksLayer = svg.append("g").attr("id", "links-layer");
 
         // Renderizado de los nodos pertenecientes a la cola
         drawQueueNodes(
-            svg,
+            nodesLayer,
             queueNodes,
             nodePositions,
-            { margin, elementWidth, elementHeight, nodeSpacing, height }
+            {
+                margin: { left: SVG_QUEUE_VALUES.MARGIN_LEFT, right: SVG_QUEUE_VALUES.MARGIN_RIGHT },
+                elementWidth: SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+                elementHeight: SVG_QUEUE_VALUES.ELEMENT_HEIGHT,
+                nodeSpacing,
+                height: SVG_QUEUE_VALUES.HEIGHT
+            }
         );
 
         // Renderizado de los enlaces entre nodos 
         drawListLinks(
-            svg,
+            linksLayer,
             linksData,
             nodePositions,
-            elementWidth,
-            elementHeight
+            SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+            SVG_QUEUE_VALUES.ELEMENT_HEIGHT
         );
 
+        // Elevamos la capa de nodos
+        nodesLayer.raise();
+
         // Dimensiones y transición compartidas por ambos indicadores
-        const sharedDims = { elementWidth, elementHeight };
+        const sharedDims = { elementWidth: SVG_QUEUE_VALUES.ELEMENT_WIDTH, elementHeight: SVG_QUEUE_VALUES.ELEMENT_HEIGHT };
         const indicatorPositioningTransform: IndicatorPositioningConfig = {
             calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})`
         };
@@ -143,70 +152,73 @@ export function useQueueRender(
             indicatorPositioningTransform,
             sharedDims
         );
-    }, [queueNodes, linksData, prevNodes]);
+    }, [queueNodes, linksData, prevNodes?.length]);
 
-    // Efecto para manejar la animación de encolar
+    // Efecto para manejar el encolamiento de un nuevo nodo
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
-        if (!queueNodes || !svgRef.current || !query.toEnqueuedNode || !prevNodes) return;
-
-        // Id del nodo encolado
-        const nodeIdEnqueued = query.toEnqueuedNode;
-
-        // Obtenemos el nodo que anteriormente era el último
-        const prevLastNode = prevNodes.length > 0 ? prevNodes[prevNodes.length - 1] : null;
+        if (!queueNodes || !svgRef.current || !query.toEnqueuedNode) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
+
+        // Id del nuevo nodo
+        const newNodeId = query.toEnqueuedNode;
+
+        // Obtenemos del último nodo actual
+        const currLastNodeId = queueNodes.length > 1 ? queueNodes[queueNodes.length - 2].id : null;
 
         // Animación de inserción del nuevo nodo
         animateEnqueueNode(
             svg,
-            nodeIdEnqueued,
-            prevLastNode ? prevLastNode.id : null,
-            nodePositions,
+            {
+                newLastNodeId: newNodeId,
+                currLastNodeId,
+                positions: nodePositions
+            },
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toEnqueuedNode, queueNodes, prevNodes, resetQueryValues, setIsAnimating]);
+    }, [query.toEnqueuedNode, queueNodes, resetQueryValues, setIsAnimating]);
 
-    // Efecto para manejar la animación de decolar
+    // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
-        if (!queueNodes || !svgRef.current || !query.toDequeuedNode || !prevNodes || prevNodes.length === 0) return;
-
-        // Obtenemos el nodo que anteriormente era el primero (nodo a desencolar)
-        const prevFirstNode = query.toDequeuedNode;
-
-        // Obtenemos el primer nodo actual de la lista 
-        const newFirstNode = queueNodes.length > 0 ? queueNodes[0].id : null;
+        if (!queueNodes || !svgRef.current || !query.toDequeuedNode) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
+
+        // Id del primer nodo actual previo a la eliminación (nodo a eliminar)
+        const currFirstNodeId = query.toDequeuedNode;
+
+        // Id del nuevo primer nodo 
+        const newFirstNodeId = queueNodes.length > 0 ? queueNodes[0].id : null;
 
         // Animación de desvinculación del nodo
         animateDequeueNode(
             svg,
-            { dequeuedNode: prevFirstNode, newFirstNode },
-            { remainingNodesData: queueNodes, remainingLinksData: linksData },
-            nodePositions,
+            {
+                currFirstNodeId,
+                newFirstNodeId,
+                remainingNodesData: queueNodes,
+                remainingLinksData: linksData,
+                positions: nodePositions
+            },
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toDequeuedNode, queueNodes, linksData, prevNodes, resetQueryValues, setIsAnimating]);
+    }, [query.toDequeuedNode, queueNodes, linksData, resetQueryValues, setIsAnimating]);
 
-    // Efecto para manejar la animación de resaltado del elemento cabeza
+    // Efecto para manejar el resaltado del elemento cabeza
     useEffect(() => {
         if (
             !svgRef.current ||
             !queueNodes ||
-            queueNodes.length === 0 ||
             !query.toGetFront
         )
             return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
         // Identificador del nodo cabeza de la cola
         const headNodeId = query.toGetFront;
@@ -228,10 +240,24 @@ export function useQueueRender(
         if (!queueNodes || !svgRef.current || !query.toClear) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
-        // Animación de limpieza del lienzo
-        animateClearList(svg, nodePositions, resetQueryValues, setIsAnimating);
+        // Código y labels de la operación
+        const colaCode = getColaCode();
+        const labels = colaCode.clean.labels!;
+
+        // Animación de limpieza de la cola
+        animateClearList(
+            svg,
+            nodePositions,
+            bus,
+            {
+                CLEAR_HEAD: labels.CLEAR_HEAD,
+                CLEAR_TAIL: labels.CLEAR_TAIL,
+                RESET_SIZE: labels.RESET_SIZE
+            },
+            "clean",
+            resetQueryValues, setIsAnimating);
     }, [query.toClear, queueNodes, resetQueryValues, setIsAnimating]);
 
     return { svgRef }

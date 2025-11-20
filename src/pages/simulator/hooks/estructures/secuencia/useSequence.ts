@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
+import { type Secuencia } from "../../../../../shared/utils/structures/Secuencia";
 import { BaseQueryOperations } from "../../../../../types";
 import { DomainError } from "../../../../../shared/utils/error/DomainError";
 
