@@ -221,7 +221,8 @@ export function Simulator<T extends string>({
             <Header />
 
             {/* Lienzo general del simulador */}
-            <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+<div className="min-h-screen bg-gradient-to-b from-[#3B4250] via-[#2B303A] to-[#1C2028] text-[#F4F4F5] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+
                 <div className="flex w-full flex-col gap-6">
                     {/* Título */}
                     <h1

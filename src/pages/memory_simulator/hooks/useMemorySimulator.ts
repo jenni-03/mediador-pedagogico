@@ -62,12 +62,35 @@ export function useMemorySimulator(sizeBytes = 64 * 1024) {
 
   const clearLogs = useCallback(() => setLogs([]), []);
 
+  // 🔴 Reset completo de la simulación (botón "Limpiar RAM")
+  const reset = useCallback(() => {
+    try {
+      // Limpia stack, heap y RAM (y recrea null-guard + frame global)
+      memory.clearAll();
+
+      // Resincroniza snapshot desde cero
+      const snap = vm.getSnapshot(ramOpts);
+      setSnapshot(snap);
+
+      // Deja rastro en el log (pero NO borra el historial)
+      setLogs((L) =>
+        [...L, "🧹 Memoria reiniciada: stack, heap y RAM limpios."].slice(-500)
+      );
+    } catch (e) {
+      setLogs((L) => [...L, `❌ Error al reiniciar: ${normErr(e)}`].slice(-500));
+    }
+  }, [memory, vm, ramOpts]);
+
   return {
     memory,
     vm,
     snapshot,
     logs,
     animEvents,
-    actions: { executeCommand, clearLogs },
+    actions: {
+      executeCommand,
+      clearLogs,
+      reset, // 👈 aquí queda expuesto para el botón
+    },
   };
 }
