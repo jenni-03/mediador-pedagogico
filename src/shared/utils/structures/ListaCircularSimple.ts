@@ -1,6 +1,7 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
 import { EqualityFn, LinkedListInterface } from "../../../types";
+import { DomainError } from "../error/DomainError";
 import { linkedListToArray } from "../listUtils";
 import { NodoS } from "../nodes/NodoS";
 
@@ -98,8 +99,9 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
    */
   public insertarEnPosicion(valor: T, posicion: number): NodoS<T> {
     if (posicion < 0 || posicion > this.tamanio) {
-      throw new Error(
-        `No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`
+      throw new DomainError(
+        `No fue posible insertar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`,
+        "OUT_OF_BOUNDS"
       );
     }
 
@@ -132,8 +134,9 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
    */
   public eliminarAlInicio(): NodoS<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el nodo inicial: La lista se encuentra vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
 
     const nodoEliminado = this.cabeza!;
@@ -156,8 +159,9 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
    */
   public eliminarAlFinal(): NodoS<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el nodo final: La lista se encuentra vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
 
     let nodoEliminado: NodoS<T>;
@@ -184,13 +188,15 @@ export class ListaCircularSimple<T> implements LinkedListInterface<T> {
    */
   public eliminarEnPosicion(posicion: number): NodoS<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible eliminar el nodo en la posición especificada: La lista se encuentra vacía (tamaño actual: 0).",
+        "DELETE_EMPTY"
       );
 
     if (posicion < 0 || posicion >= this.tamanio) {
-      throw new Error(
-        `No fue posible eliminar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`
+      throw new DomainError(
+        `No fue posible eliminar el nodo en la posición especificada: La posición ${posicion} no existe dentro de la Lista Simple.`,
+        "OUT_OF_BOUNDS"
       );
     }
 
