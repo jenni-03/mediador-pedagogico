@@ -1,4 +1,5 @@
 import { NodoS } from "../nodes/NodoS";
+import { DomainError } from "../error/DomainError";
 
 /**
  * Clase que representa una Pila utilizando nodos simples.
@@ -53,7 +54,10 @@ export class Pila<T> {
    */
   public desapilar(): T {
     if (this.esVacia())
-      throw new Error("No fue posible desapilar: No hay elementos en la pila.");
+      throw new DomainError(
+        "No fue posible desapilar: No hay elementos en la pila.",
+        "STACK_EMPTY"
+      );
 
     const valor = this.tope!.getValor();
     this.tope = this.tope!.getSiguiente();

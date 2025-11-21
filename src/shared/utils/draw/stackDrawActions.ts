@@ -1,6 +1,15 @@
 import { StackNodeData } from "../../../types";
 import * as d3 from "d3";
-import { SVG_QUEUE_VALUES, SVG_STACK_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import {
+  SVG_QUEUE_VALUES,
+  SVG_STACK_VALUES,
+  SVG_STYLE_VALUES,
+} from "../../constants/consts";
+import { EventBus } from "../../events/eventBus";
+import { getPilaCode } from "../../constants/pseudocode/pilaCode";
+import { delay } from "../simulatorUtils";
+
+const stackCode = getPilaCode();
 
 /**
  * Función encargada de renderizar los nodos de la pila.
@@ -10,119 +19,128 @@ import { SVG_QUEUE_VALUES, SVG_STACK_VALUES, SVG_STYLE_VALUES } from "../../cons
  * @param dims Dimensiones de los elementos dentro del lienzo
  */
 export function drawStackNodes(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    pushNodes: StackNodeData[],
-    positions: Map<string, { x: number; y: number }>,
-    dims: {
-        margin: { left: number; right: number };
-        elementWidth: number;
-        elementHeight: number;
-        verticalSpacing: number;
-        height: number;
-        nodesHeight: number;
-    }
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  pushNodes: StackNodeData[],
+  positions: Map<string, { x: number; y: number }>,
+  dims: {
+    margin: { left: number; right: number };
+    elementWidth: number;
+    elementHeight: number;
+    verticalSpacing: number;
+    height: number;
+    nodesHeight: number;
+  }
 ) {
-    // Dimensiones del lienzo
-    const { margin, elementWidth, elementHeight, verticalSpacing, height, nodesHeight } = dims;
+  // Dimensiones del lienzo
+  const {
+    margin,
+    elementWidth,
+    elementHeight,
+    verticalSpacing,
+    height,
+    nodesHeight,
+  } = dims;
 
-    // Verificamos si hay un espacio adicional para animación en la parte superior
-    const animationSpace = Math.max(0, height - nodesHeight);
+  // Verificamos si hay un espacio adicional para animación en la parte superior
+  const animationSpace = Math.max(0, height - nodesHeight);
 
-    // Data join para el renderizado de los nodos
-    svg.selectAll<SVGGElement, StackNodeData>("g.node")
-        .data(pushNodes, (d) => d.id)
-        .join(
-            (enter) => {
-                // Creación de los grupos para cada nuevo nodo
-                const gEnter = enter
-                    .append("g")
-                    .attr("class", "node")
-                    .attr("id", (d) => d.id)
-                    .attr("transform", (d, i) => {
-                        // Cálculo de la posición del nodo
-                        const x = margin.left;
-                        const y = SVG_STACK_VALUES.MARGIN_TOP + animationSpace + i * verticalSpacing;
-                        positions.set(d.id, { x, y });
-                        return `translate(${x}, ${y})`;
-                    })
+  // Data join para el renderizado de los nodos
+  svg
+    .selectAll<SVGGElement, StackNodeData>("g.node")
+    .data(pushNodes, (d) => d.id)
+    .join(
+      (enter) => {
+        // Creación de los grupos para cada nuevo nodo
+        const gEnter = enter
+          .append("g")
+          .attr("class", "node")
+          .attr("id", (d) => d.id)
+          .attr("transform", (d, i) => {
+            // Cálculo de la posición del nodo
+            const x = margin.left;
+            const y =
+              SVG_STACK_VALUES.MARGIN_TOP +
+              animationSpace +
+              i * verticalSpacing;
+            positions.set(d.id, { x, y });
+            return `translate(${x}, ${y})`;
+          });
 
-                // Contenedor principal del nodo
-                gEnter
-                    .append("rect")
-                    .attr("class", "node-container")
-                    .attr("width", elementWidth)
-                    .attr("height", elementHeight)
-                    .attr("rx", 12)
-                    .attr("ry", 12)
-                    .attr("fill", "#ffffff")
-                    .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                    .attr("stroke-width", 1.5);
+        // Contenedor principal del nodo
+        gEnter
+          .append("rect")
+          .attr("class", "node-container")
+          .attr("width", elementWidth)
+          .attr("height", elementHeight)
+          .attr("rx", 12)
+          .attr("ry", 12)
+          .attr("fill", "#ffffff")
+          .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+          .attr("stroke-width", 1.5);
 
-                // Sección superior para el valor del nodo
-                const valueSection = gEnter
-                    .append("g")
-                    .attr("class", "value-section");
+        // Sección superior para el valor del nodo
+        const valueSection = gEnter.append("g").attr("class", "value-section");
 
-                // Contenedor del valor del nodo
-                valueSection
-                    .append("rect")
-                    .attr("class", "value-container")
-                    .attr("width", elementWidth - 2)
-                    .attr("height", elementHeight / 2 - 1)
-                    .attr("x", 1)
-                    .attr("y", 1)
-                    .attr("rx", 8)
-                    .attr("ry", 8)
-                    .attr("fill", SVG_STYLE_VALUES.RECT_STROKE_COLOR);
+        // Contenedor del valor del nodo
+        valueSection
+          .append("rect")
+          .attr("class", "value-container")
+          .attr("width", elementWidth - 2)
+          .attr("height", elementHeight / 2 - 1)
+          .attr("x", 1)
+          .attr("y", 1)
+          .attr("rx", 8)
+          .attr("ry", 8)
+          .attr("fill", SVG_STYLE_VALUES.RECT_STROKE_COLOR);
 
-                // Texto del valor
-                valueSection
-                    .append("text")
-                    .attr("class", "value-text")
-                    .attr("x", elementWidth / 2)
-                    .attr("y", elementHeight / 4 + 2)
-                    .attr("text-anchor", "middle")
-                    .attr("dominant-baseline", "middle")
-                    .attr("fill", "white")
-                    .style("font-weight", "bold")
-                    .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
-                    .style("letter-spacing", "0.5px")
-                    .text((d) => d.value);
+        // Texto del valor
+        valueSection
+          .append("text")
+          .attr("class", "value-text")
+          .attr("x", elementWidth / 2)
+          .attr("y", elementHeight / 4 + 2)
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("fill", "white")
+          .style("font-weight", "bold")
+          .style("font-size", SVG_STYLE_VALUES.ELEMENT_TEXT_SIZE)
+          .style("letter-spacing", "0.5px")
+          .text((d) => d.value);
 
-                // Sección inferior para la dirección de memoria
-                const memorySection = gEnter
-                    .append("g")
-                    .attr("class", "memory-section");
+        // Sección inferior para la dirección de memoria
+        const memorySection = gEnter
+          .append("g")
+          .attr("class", "memory-section");
 
-                // Texto de la dirección de memoria
-                memorySection
-                    .append("text")
-                    .attr("class", "memory-text")
-                    .attr("x", elementWidth / 2)
-                    .attr("y", (elementHeight * 3) / 4 + 4)
-                    .attr("text-anchor", "middle")
-                    .attr("dominant-baseline", "middle")
-                    .attr("fill", "#444")
-                    .style("font-weight", "bold")
-                    .style("font-size", "12px")
-                    .style("letter-spacing", "0.5px")
-                    .text((d) => d.memoryAddress);
+        // Texto de la dirección de memoria
+        memorySection
+          .append("text")
+          .attr("class", "memory-text")
+          .attr("x", elementWidth / 2)
+          .attr("y", (elementHeight * 3) / 4 + 4)
+          .attr("text-anchor", "middle")
+          .attr("dominant-baseline", "middle")
+          .attr("fill", "#444")
+          .style("font-weight", "bold")
+          .style("font-size", "12px")
+          .style("letter-spacing", "0.5px")
+          .text((d) => d.memoryAddress);
 
-                return gEnter;
-            },
-            (update) => {
-                // Guarda la posición actualizada para cada nodo presente
-                update
-                    .each((d, i) => {
-                        const x = margin.left;
-                        const y = SVG_STACK_VALUES.MARGIN_TOP + animationSpace + i * verticalSpacing;
-                        positions.set(d.id, { x, y });
-                    });
+        return gEnter;
+      },
+      (update) => {
+        // Guarda la posición actualizada para cada nodo presente
+        update.each((d, i) => {
+          const x = margin.left;
+          const y =
+            SVG_STACK_VALUES.MARGIN_TOP + animationSpace + i * verticalSpacing;
+          positions.set(d.id, { x, y });
+        });
 
-                return update;
-            },
-            (exit) => exit
-        );
+        return update;
+      },
+      (exit) => exit
+    );
 }
 
 /**
@@ -135,89 +153,130 @@ export function drawStackNodes(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animatePushNode(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodeStacked: string,
-    remainingNodesData: StackNodeData[],
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodeStacked: string,
+  remainingNodesData: StackNodeData[],
+  positions: Map<string, { x: number; y: number }>,
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Grupo del lienzo correspondiente al nuevo elemento
-    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeStacked}`);
+  // Etiquetas para el registro de eventos
+  const labels = stackCode.push.labels!;
 
-    // Posición final del nuevo nodo
-    const finalPos = positions.get(nodeStacked)!;
+  // Grupo del lienzo correspondiente al nuevo elemento
+  const newNodeGroup = svg.select<SVGGElement>(`g#${nodeStacked}`);
 
-    // Cálculo de la posición de animación inicial del nuevo nodo
-    const topMargin = 20;
-    const initialPos = {
-        x: finalPos.x,
-        y: topMargin
-    };
+  // Posición final del nuevo nodo
+  const finalPos = positions.get(nodeStacked)!;
 
-    // Estado visual inicial para el nuevo nodo
-    newNodeGroup
-        .style("opacity", 0)
-        .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
+  // Cálculo de la posición de animación inicial del nuevo nodo
+  const topMargin = 20;
+  const initialPos = {
+    x: finalPos.x,
+    y: topMargin,
+  };
 
-    // Aparición del nuevo nodo
-    await newNodeGroup
-        .transition()
-        .duration(1000)
-        .style("opacity", 1)
-        .ease(d3.easeCubicInOut)
-        .end();
+  // Inicio de la operación
+  bus.emit("op:start", { op: "push" });
 
-    // En caso de haber mas nodos dentro de la pila
-    if (remainingNodesData.length > 0) {
-        // Grupo del lienzo correspondiente al indicador del elemento tope
-        const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
+  // Estado visual inicial para el nuevo nodo
+  newNodeGroup
+    .style("opacity", 0)
+    .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
 
-        // Salida del indicador de tope
-        await topeIndicatorGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
+  bus.emit("step:progress", { stepId: "push", lineIndex: labels.CREATE_NODE });
 
-        // Selección de nodos existentes (re-vinculación de datos)
-        const remainingNodes = svg
-            .selectAll<SVGGElement, StackNodeData>("g.node")
-            .data(remainingNodesData, (d) => d.id);
+  // Aparición del nuevo nodo
+  await newNodeGroup
+    .transition()
+    .duration(1000)
+    .style("opacity", 1)
+    .ease(d3.easeCubicInOut)
+    .end();
 
-        // Desplazamiento de nodos existentes a su posición final
-        await remainingNodes
-            .transition()
-            .duration(1500)
-            .ease(d3.easeCubicInOut)
-            .attr("transform", (d) => {
-                const finalPos = positions.get(d.id)!;
-                return `translate(${finalPos.x}, ${finalPos.y})`;
-            })
-            .end();
+  // En caso de haber mas nodos dentro de la pila
+  if (remainingNodesData.length > 0) {
+    bus.emit("step:progress", { stepId: "push", lineIndex: labels.ELSE_EMPTY });
+    await delay(600);
 
-        // Entrada del indicador tope
-        await topeIndicatorGroup
-            .transition()
-            .duration(1000)
-            .ease(d3.easeBounce)
-            .style("opacity", 1)
-            .end();
-    }
+    // Grupo del lienzo correspondiente al indicador del elemento tope
+    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-    // Movimiento del nuevo nodo a su posición final
-    await newNodeGroup
-        .transition()
-        .duration(1500)
-        .ease(d3.easeCubicInOut)
-        .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-        .end();
+    bus.emit("step:progress", {
+      stepId: "push",
+      lineIndex: labels.LINK_NEW_TO_PREV_TOP,
+    });
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    // Salida del indicador de tope
+    await topeIndicatorGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
 
-    // Finalización de la animación
-    setIsAnimating(false);
+    // Selección de nodos existentes (re-vinculación de datos)
+    const remainingNodes = svg
+      .selectAll<SVGGElement, StackNodeData>("g.node")
+      .data(remainingNodesData, (d) => d.id);
+
+    // Desplazamiento de nodos existentes a su posición final
+    await remainingNodes
+      .transition()
+      .duration(1500)
+      .ease(d3.easeCubicInOut)
+      .attr("transform", (d) => {
+        const finalPos = positions.get(d.id)!;
+        return `translate(${finalPos.x}, ${finalPos.y})`;
+      })
+      .end();
+
+    // Entrada del indicador tope
+    await topeIndicatorGroup
+      .transition()
+      .duration(1000)
+      .ease(d3.easeBounce)
+      .style("opacity", 1)
+      .end();
+
+    bus.emit("step:progress", {
+      stepId: "push",
+      lineIndex: labels.ASSIGN_NEW_TOP,
+    });
+    await delay(800);
+  } else {
+    bus.emit("step:progress", {
+      stepId: "push",
+      lineIndex: labels.VALIDATE_EMPTY,
+    });
+    await delay(1000);
+
+    bus.emit("step:progress", {
+      stepId: "push",
+      lineIndex: labels.ASSIGN_TOP_EMPTY,
+    });
+    await delay(600);
+  }
+
+  // Movimiento del nuevo nodo a su posición final
+  await newNodeGroup
+    .transition()
+    .duration(1500)
+    .ease(d3.easeCubicInOut)
+    .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
+    .end();
+
+  bus.emit("step:progress", { stepId: "push", lineIndex: labels.INC_SIZE });
+  await delay(600);
+
+  // Fin de la operación
+  bus.emit("op:done", { op: "push" });
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -230,80 +289,120 @@ export async function animatePushNode(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animatePopNode(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodeIdPop: string,
-    remainingNodesData: StackNodeData[],
-    positions: Map<string, { x: number; y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodeIdPop: string,
+  remainingNodesData: StackNodeData[],
+  positions: Map<string, { x: number; y: number }>,
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Grupo del lienzo correspondiente al elemento a desapilar
-    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdPop}`);
+  // Etiquetas para el registro de eventos
+  const labels = stackCode.pop.labels!;
 
-    // Movimiento del nodo a desapilar
-    const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
+  // Grupo del lienzo correspondiente al elemento a desapilar
+  const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdPop}`);
 
-    // Salida del nodo a eliminar
-    await nodeToRemoveGroup
-        .transition()
-        .ease(d3.easeBackInOut)
-        .duration(1500)
-        .attr("transform", () => {
-            const currentPos = positions.get(nodeIdPop);
-            const x = currentPos?.x ?? 0;
-            const y = (currentPos?.y ?? 0) + nodeMoveOffsetY;
-            return `translate(${x}, ${y})`;
-        })
-        .style("opacity", 0)
-        .end();
+  // Movimiento del nodo a desapilar
+  const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
 
-    // Eliminación de los elementos del DOM correspondientes al nodo decolado
-    nodeToRemoveGroup.remove();
+  // Inicio de la operación
+  bus.emit("op:start", { op: "pop" });
 
-    // Eliminación de la posición del nodo decolado
-    positions.delete(nodeIdPop);
+  bus.emit("step:progress", { stepId: "pop", lineIndex: labels.SAVE_TOP });
+  // Salida del nodo a eliminar
+  await nodeToRemoveGroup
+    .transition()
+    .ease(d3.easeBackInOut)
+    .duration(1500)
+    .attr("transform", () => {
+      const currentPos = positions.get(nodeIdPop);
+      const x = currentPos?.x ?? 0;
+      const y = (currentPos?.y ?? 0) + nodeMoveOffsetY;
+      return `translate(${x}, ${y})`;
+    })
+    .style("opacity", 0)
+    .end();
 
-    // Si hay nodos por mover
-    if (remainingNodesData.length > 0) {
-        // Grupo del lienzo correspondiente al indicador del elemento tope
-        const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
+  // Eliminación de los elementos del DOM correspondientes al nodo decolado
+  nodeToRemoveGroup.remove();
 
-        // Salida del indicador de tope
-        await topeIndicatorGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
+  // Eliminación de la posición del nodo decolado
+  positions.delete(nodeIdPop);
 
-        // Selección de nodos restantes (re-vinculación de datos)
-        const remainingNodes = svg
-            .selectAll<SVGGElement, StackNodeData>("g.node")
-            .data(remainingNodesData, (d) => d.id);
+  // Si hay nodos por mover
+  if (remainingNodesData.length > 0) {
+    // Grupo del lienzo correspondiente al indicador del elemento tope
+    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-        // Desplazamiento de nodos restantes a su posición final
-        await remainingNodes
-            .transition()
-            .duration(1500)
-            .ease(d3.easeCubicInOut)
-            .attr("transform", (d) => {
-                const finalPos = positions.get(d.id)!;
-                return `translate(${finalPos.x}, ${finalPos.y})`;
-            })
-            .end();
+    // Salida del indicador de tope
+    await topeIndicatorGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
 
-        // Entrada del indicador de tope
-        await topeIndicatorGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-    }
+    // Selección de nodos restantes (re-vinculación de datos)
+    const remainingNodes = svg
+      .selectAll<SVGGElement, StackNodeData>("g.node")
+      .data(remainingNodesData, (d) => d.id);
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.ADVANCE_TOP });
+    // Desplazamiento de nodos restantes a su posición final
+    await remainingNodes
+      .transition()
+      .duration(1500)
+      .ease(d3.easeCubicInOut)
+      .attr("transform", (d) => {
+        const finalPos = positions.get(d.id)!;
+        return `translate(${finalPos.x}, ${finalPos.y})`;
+      })
+      .end();
 
-    // Finalización de la animación
-    setIsAnimating(false);
+    // Entrada del indicador de tope
+    await topeIndicatorGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 1)
+      .end();
+  }
+
+  bus.emit("step:progress", { stepId: "pop", lineIndex: labels.DEC_SIZE });
+  await delay(700);
+
+  if (remainingNodesData.length === 0) {
+    // Grupo del lienzo correspondiente al indicador del elemento tope
+    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
+
+    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.STACK_EMPTY });
+    await delay(700);
+
+    bus.emit("step:progress", {
+      stepId: "pop",
+      lineIndex: labels.TOP_NULL,
+    });
+    // Salida del indicador de tope
+    await topeIndicatorGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .end();
+  }
+
+  bus.emit("step:progress", {
+    stepId: "pop",
+    lineIndex: labels.RETURN_VALUE,
+  });
+  await delay(700);
+
+  // Fin de la operación
+  bus.emit("op:done", { op: "pop" });
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
 
 /**
@@ -314,27 +413,54 @@ export async function animatePopNode(
  * @param setIsAnimating Función para establecer el estado de animación.
  */
 export async function animateClearStack(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodePositions: Map<string, { x: number, y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  nodePositions: Map<string, { x: number; y: number }>,
+  bus: EventBus,
+  resetQueryValues: () => void,
+  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-    // Animacición de salida de los nodos
-    await svg.selectAll("g.node")
-        .transition()
-        .duration(1000)
-        .style("opacity", 0)
-        .end();
+  // Etiquetas para el registro de eventos
+  const labels = stackCode.clean.labels!;
 
-    // Eliminación de los nodos del DOM
-    svg.selectAll("g.node").remove();
+  // Inicio de la operación
+  bus.emit("op:start", { op: "clean" });
 
-    // Liempiza del mapa de posiciones
-    nodePositions.clear();
+  bus.emit("step:progress", { stepId: "clean", lineIndex: labels.START });
+  await delay(500);
 
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
+  // Grupo del lienzo correspondiente al indicador del elemento tope
+  const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-    // Finalización de la animación
-    setIsAnimating(false);
+  // Salida del indicador de tope
+  bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAR_TOP });
+  await topeIndicatorGroup
+    .transition()
+    .duration(1000)
+    .style("opacity", 0)
+    .remove()
+    .end();
+
+  bus.emit("step:progress", { stepId: "clean", lineIndex: labels.RESET_SIZE });
+  // Animacición de salida de los nodos
+  await svg
+    .selectAll("g.node")
+    .transition()
+    .duration(1000)
+    .style("opacity", 0)
+    .end();
+
+  // Eliminación de los nodos del DOM
+  svg.selectAll("g.node").remove();
+
+  // Liempiza del mapa de posiciones
+  nodePositions.clear();
+
+  // Fin de la operación
+  bus.emit("op:done", { op: "clean" });
+
+  // Restablecimiento de los valores de las queries del usuario
+  resetQueryValues();
+
+  // Finalización de la animación
+  setIsAnimating(false);
 }
