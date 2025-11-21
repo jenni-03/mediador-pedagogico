@@ -26,6 +26,8 @@ export function PseudoCodeRunner({
   const intervalRef = useRef<number | null>(null);
   const lastLinesIdRef = useRef<number>(linesId);
   const lastResetTimeRef = useRef<number>(0);
+  const codeContainerRef = useRef<HTMLDivElement | null>(null);
+  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     if (lastLinesIdRef.current !== linesId) {
@@ -76,6 +78,34 @@ export function PseudoCodeRunner({
   useEffect(() => {
     return () => clearExistingInterval();
   }, []);
+
+  // Auto-scroll cuando cambie la línea actual
+  // useEffect(() => {
+  //   if (currentLineIndex == null) return;
+  //   const container = codeContainerRef.current;
+  //   const lineEl = lineRefs.current[currentLineIndex];
+
+  //   if (container && lineEl) {
+  //     lineEl.scrollIntoView({
+  //       behavior: "smooth",
+  //       block: "center",
+  //     });
+  //   }
+  // }, [currentLineIndex]);
+  useEffect(() => {
+    if (currentLineIndex == null) return;
+
+    const container = codeContainerRef.current;
+    const lineEl = lineRefs.current[currentLineIndex];
+    if (!container || !lineEl) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const lineRect = lineEl.getBoundingClientRect();
+
+    // Se scroll solo dentro del contenedor
+    container.scrollTop +=
+      lineRect.top - containerRect.top - containerRect.height / 2;
+  }, [currentLineIndex]);
 
   const clearExistingInterval = () => {
     if (intervalRef.current !== null) {
@@ -234,13 +264,45 @@ export function PseudoCodeRunner({
       <hr className="border-t-2 border-red-500 mb-4 w-120 rounded" />
 
       {/* Contenedor del código */}
-      <pre className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D72638]/60">
+      <div
+        ref={codeContainerRef}
+        className="overflow-auto max-h-96 font-mono text-sm py-2 px-4 rounded-md 
+             whitespace-pre scrollbar-none"
+      >
+        <pre>
+          {lines.map((line, index) => {
+            const replacedLine = replacePlaceholders(line, args);
+            const isCurrent = index === currentLineIndex;
+            return (
+              <div
+                key={index}
+                ref={(el) => (lineRefs.current[index] = el)}
+                className={
+                  isCurrent ? "text-[#FF1744] font-bold" : "text-[#E0E0E0]"
+                }
+              >
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: replacedLine,
+                  }}
+                ></div>
+              </div>
+            );
+          })}
+        </pre>
+      </div>
+
+      {/* <pre
+        ref={codeContainerRef}
+        className="font-mono text-sm py-2 px-4 whitespace-pre rounded-md overflow-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#D72638]/60"
+      >
         {lines.map((line, index) => {
           const replacedLine = replacePlaceholders(line, args);
           const isCurrent = index === currentLineIndex;
           return (
             <div
               key={index}
+              ref={(el) => (lineRefs.current[index] = el)}
               className={
                 isCurrent ? "text-[#FF1744] font-bold" : "text-[#E0E0E0]"
               }
@@ -253,7 +315,7 @@ export function PseudoCodeRunner({
             </div>
           );
         })}
-      </pre>
+      </pre> */}
     </div>
   );
 }

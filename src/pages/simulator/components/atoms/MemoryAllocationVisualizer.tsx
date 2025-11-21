@@ -14,6 +14,9 @@ export default function MemoryAllocationVisualizer({
   structure: string;
 }) {
   const [step, setStep] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleOpen = () => setIsOpen((prev) => !prev);
 
   const getCodeLines = () => {
     if (structure === "secuencia") {
@@ -58,33 +61,27 @@ export default function MemoryAllocationVisualizer({
   };
 
   const codeLines = getCodeLines();
-
   const isShowingCode = step === 0;
 
-  // Calcular el número máximo de pasos según la estructura
   const getMaxSteps = () => {
     if (
       structure === "pila" ||
       structure === "cola de prioridad" ||
       structure === "lista_simplemente_enlazada"
     ) {
-      // Solo se muestra el primer elemento, así que máximo 1 paso
       return Math.min(1, n);
     } else if (
       structure === "cola" ||
       structure === "lista_doblemente_enlazada"
     ) {
-      // Se muestran el primero y último, así que máximo 2 pasos
       return Math.min(2, n);
     }
-    // Para otras estructuras, mostrar todos los elementos
     return n;
   };
 
   const maxSteps = getMaxSteps();
   const isShowingMemory = step > 0 && step <= maxSteps;
 
-  // Se reinicia el paso cuando cambian las props (nuevo proceso)
   useEffect(() => {
     setStep(0);
   }, [n, direccionBase, tamanioNodo]);
@@ -97,36 +94,62 @@ export default function MemoryAllocationVisualizer({
     if (step > 0) setStep((prev) => prev - 1);
   };
 
-  // Función para determinar qué elementos mostrar basado en el step actual
   const getVisibleElements = () => {
     if (
       structure === "pila" ||
       structure === "cola de prioridad" ||
       structure === "lista_simplemente_enlazada"
     ) {
-      // Solo mostrar el primer elemento
       return direcciones.slice(0, Math.min(step, 1));
     } else if (
       structure === "cola" ||
       structure === "lista_doblemente_enlazada"
     ) {
-      // Para cola: mostrar progresivamente
       if (step === 1) {
-        return direcciones.slice(0, 1); // Solo el primer elemento
+        return direcciones.slice(0, 1);
       } else if (step === 2 && direcciones.length > 1) {
-        return [direcciones[0], direcciones[direcciones.length - 1]]; // Primero y último
+        return [direcciones[0], direcciones[direcciones.length - 1]];
       }
       return [];
     }
-    // Para otras estructuras, mostrar según el step normal
     return direcciones.slice(0, step);
   };
 
+  if (!isOpen) {
+    return (
+      <div className="bg-[#1F1F22] border border-[#2E2E2E] rounded-2xl p-5 shadow-md flex items-center justify-between">
+        {/* Título */}
+        <h2 className="text-xl font-semibold text-[#E0E0E0] text-center w-full">
+          Visualización Paso a Paso de Asignación de Memoria
+        </h2>
+
+        {/* Botón Expandir */}
+        <button
+          onClick={toggleOpen}
+          className="ml-4 p-3 bg-[#2E2E2E] border border-[#3A3A3A]
+                   rounded-lg hover:bg-[#3A3A3A] transition flex items-center justify-center"
+        >
+          <i className="pi pi-expand text-sm text-lg"></i>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col lg:w-[90%] bg-[#1F1F22] text-[#E0E0E0] rounded-2xl p-4 border border-[#2E2E2E] space-y-6">
-      <h2 className="text-xl font-semibold text-[#A0A0A0] text-center">
-        Visualización Paso a Paso de Asignación de Memoria
-      </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-[#A0A0A0] text-center">
+          Visualización Paso a Paso de Asignación de Memoria
+        </h2>
+
+        <button
+          onClick={toggleOpen}
+          className="px-3 py-2 bg-[#2E2E2E] border border-[#3A3A3A] text-[#E0E0E0] 
+                   rounded-lg hover:bg-[#3A3A3A] transition flex items-center"
+        >
+          <i className="pi pi-window-minimize text-sm"></i>
+        </button>
+      </div>
 
       {isShowingCode && (
         <pre className="bg-[#2E2E2E] p-2 rounded-lg text-sm leading-6 max-h-[200px] overflow-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
@@ -141,13 +164,11 @@ export default function MemoryAllocationVisualizer({
       {isShowingMemory && (
         <div className="flex justify-start gap-4 px-4 overflow-auto scrollbar-thin scrollbar-thumb-[#D72638]/60 scrollbar-track-transparent">
           {getVisibleElements().map((direccion, index) => {
-            // Detectamos si el item es string o un objeto con memoryAddress
             const address =
               typeof direccion === "string"
                 ? direccion
                 : direccion.memoryAddress;
 
-            // Para cola, necesitamos mostrar el índice real
             let realIndex = index;
             if (
               (structure === "cola" ||
@@ -155,7 +176,7 @@ export default function MemoryAllocationVisualizer({
               step === 2 &&
               index === 1
             ) {
-              realIndex = direcciones.length - 1; // Índice real del último elemento
+              realIndex = direcciones.length - 1;
             }
 
             return (
@@ -190,7 +211,6 @@ export default function MemoryAllocationVisualizer({
         </button>
       </div>
 
-      {/* Indicador de paso opcional */}
       <div className="text-center text-sm text-[#A0A0A0]">
         Paso {step} de {maxSteps}
       </div>

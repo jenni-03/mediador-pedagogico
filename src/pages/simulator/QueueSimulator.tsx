@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { Cola } from "../../shared/utils/structures/Cola";
 import { QueueRender } from "./components/estructures/cola/QueueRender";
@@ -15,7 +15,7 @@ export function QueueSimulator() {
         dynamicAddressGenerator.reset();
     }, []);
 
-    // Llamada al hook useQueue para manejar la lógica de la cola
+    // Llamada al hook useQueue para manejar el estado de la cola
     const { queue, query, error, operations } = useQueue(structure);
 
     // Desestructuración de las operaciones soportadas por la cola
@@ -27,16 +27,22 @@ export function QueueSimulator() {
         resetQueryValues,
     } = operations;
 
+    // Conjunto de acciones disponibles para la interacción con la estructura
+    const actions = useMemo(
+        () => ({
+            enqueue: enqueueElement,
+            dequeue: dequeueElement,
+            getFront: getFront,
+            clean: clearQueue,
+        }),
+        [enqueueElement, dequeueElement, getFront, clearQueue]
+    );
+
     return (
         <Simulator
             structureName={STRUCTURE_NAME.QUEUE}
             structure={queue}
-            actions={{
-                enqueue: enqueueElement,
-                dequeue: dequeueElement,
-                getFront: getFront,
-                clean: clearQueue,
-            }}
+            actions={actions}
             query={query}
             error={error}
         >

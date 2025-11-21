@@ -6,10 +6,11 @@ import { useBus } from "../../../../../shared/hooks/useBus";
 import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { select } from "d3";
 import { animateClearList, drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateCircularSearchElement, animateSimpleCircularDeleteAt, animateSimpleCircularDeleteFirst, animateSimpleCircularDeleteLast, animateSimpleCircularInsertAt, animateSimpleCircularInsertFirst, animateSimpleCircularInsertLast } from "../../../../../shared/utils/draw/circularSimpleLinkedListDrawActions";
-import { getListaCircularSimplementeEnlazadaCode } from "../../../../../shared/constants/pseudocode/listaCircularSimplementeEnlazadaCode";
+import { animateCircularSearchElement } from "../../../../../shared/utils/draw/circularSimpleLinkedListDrawActions";
+import { animateDoublyCircularDeleteAt, animateDoublyCircularDeleteFirst, animateDoublyCircularDeleteLast, animateDoublyCircularInsertAt, animateDoublyCircularInsertFirst, animateDoublyCircularInsertLast } from "../../../../../shared/utils/draw/circularDoublyLinkedListDrawActions";
+import { getListaCircularDoblementeEnlazadaCode } from "../../../../../shared/constants/pseudocode/listaCircularDoblementeEnlazadaCode";
 
-export function useCircularSimpleLinkedListRender(
+export function useCircularDoublyLinkedListRender(
     listNodes: ListNodeData<number>[],
     query: BaseQueryOperations<"lista_enlazada">,
     resetQueryValues: () => void
@@ -34,6 +35,17 @@ export function useCircularSimpleLinkedListRender(
         const links: ListLinkData[] = [];
 
         listNodes.forEach((n, i, arr) => {
+            if (n.prev) {
+                const isCircularPrev =
+                    i === 0 &&
+                    n.prev === arr[arr.length - 1].id
+
+                links.push({
+                    sourceId: n.id,
+                    targetId: n.prev,
+                    type: isCircularPrev ? "circular-prev" : "prev"
+                });
+            }
             if (n.next) {
                 const isCircularNext =
                     i === arr.length - 1 &&
@@ -124,33 +136,6 @@ export function useCircularSimpleLinkedListRender(
             { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
             { elementWidth: SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, elementHeight: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT }
         );
-
-        // Creación de indicador para elemento cola
-        const tailId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
-        const tailPos = tailId ? nodePositions.get(tailId)! : null;
-
-        // Configuración de estilos y de posicionamiento para el indicador del elemento cola
-        const tailStyleConfig = {
-            text: "COLA",
-            textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
-            arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
-            fontSize: "14px",
-            fontWeight: "bold",
-            arrowPathData: "M0,0 L-9.5,10 L-4,10 L-4,20 L4,20 L4,10 L9.5,10 Z",
-            textRelativeY: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT + 70,
-            arrowTransform: `translate(0, ${SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT + 35})`
-        }
-
-        // Renderizado del indicador de cola
-        drawArrowIndicator(
-            svg,
-            "tail-indicator",
-            "tail-indicator-group",
-            tailPos,
-            tailStyleConfig,
-            { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
-            { elementWidth: SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, elementHeight: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT }
-        );
     }, [listNodes, linksData, prevNodes?.length]);
 
     // Efecto para manejar la inserción de un nuevo nodo al inicio
@@ -166,16 +151,16 @@ export function useCircularSimpleLinkedListRender(
         // Id del actual nodo cabeza de la lista (anterior a la inserción)
         const currHeadNodeId = listNodes.length > 1 ? listNodes[1].id : null;
 
-        // Id del nodo cola de la lista
-        const tailNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 1].id : null;
+        // Id del último nodo de la lista
+        const lastNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 1].id : null;
 
         // Animación de inserción del nodo como primer elemento de la lista
-        animateSimpleCircularInsertFirst(
+        animateDoublyCircularInsertFirst(
             svg,
             {
                 newHeadNodeId,
                 currHeadNodeId,
-                tailNodeId,
+                lastNodeId,
                 nodesData: listNodes,
                 linksData,
                 positions: nodePositions
@@ -194,20 +179,20 @@ export function useCircularSimpleLinkedListRender(
         const svg = select(svgRef.current);
 
         // Id del nuevo nodo cola
-        const newTailNodeId = query.toAddLast;
+        const newLastNodeId = query.toAddLast;
 
         // Id del actual nodo cola de la lista (anterior a la inserción)
-        const currTailNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
+        const currLastNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
 
         // Id del nodo cabeza de la lista
         const headNodeId = listNodes.length > 1 ? listNodes[0].id : null
 
         // Animación de inserción del nodo como último elemento de la lista
-        animateSimpleCircularInsertLast(
+        animateDoublyCircularInsertLast(
             svg,
             {
-                newTailNodeId,
-                currTailNodeId,
+                newLastNodeId,
+                currLastNodeId,
                 headNodeId,
                 nodesData: listNodes,
                 positions: nodePositions
@@ -235,7 +220,7 @@ export function useCircularSimpleLinkedListRender(
         const nextNodeId = position !== listNodes.length - 1 ? listNodes[position + 1].id : null;
 
         // Animación de inserción del nodo en una posición especifica
-        animateSimpleCircularInsertAt(
+        animateDoublyCircularInsertAt(
             svg,
             {
                 newNodeId: nodeId,
@@ -265,16 +250,16 @@ export function useCircularSimpleLinkedListRender(
         // Id del nuevo nodo cabeza
         const newHeadNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
-        // Id del nodo cola de la lista
-        const tailNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+        // Id del último nodo de la lista
+        const lastNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
         // Animación de eliminación del primer nodo de la lista
-        animateSimpleCircularDeleteFirst(
+        animateDoublyCircularDeleteFirst(
             svg,
             {
                 currHeadNodeId,
                 newHeadNodeId,
-                tailNodeId,
+                lastNodeId,
                 remainingNodesData: listNodes,
                 remainingLinksData: linksData,
                 positions: nodePositions
@@ -292,21 +277,21 @@ export function useCircularSimpleLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del actual nodo cola previo a la eliminación (nodo a eliminar)
-        const currTailNodeId = query.toDeleteLast;
+        // Id del último nodo actual previo a la eliminación (nodo a eliminar)
+        const currLastNodeId = query.toDeleteLast;
 
-        // Id del nuevo nodo cola
-        const newTailNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
+        // Id del nuevo último nodo
+        const newLastNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
         // Id del nodo cabeza
         const headNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
         // Animación de eliminación del último nodo de la lista
-        animateSimpleCircularDeleteLast(
+        animateDoublyCircularDeleteLast(
             svg,
             {
-                currTailNodeId,
-                newTailNodeId,
+                currLastNodeId,
+                newLastNodeId,
                 headNodeId,
                 remainingNodesData: listNodes,
                 positions: nodePositions
@@ -334,7 +319,7 @@ export function useCircularSimpleLinkedListRender(
         const nextNodeId = position !== prevNodes.length - 1 ? prevNodes[position + 1].id : null;
 
         // Animación de eliminación del nodo en una posición especifica
-        animateSimpleCircularDeleteAt(
+        animateDoublyCircularDeleteAt(
             svg,
             {
                 removalNodeId: nodeId,
@@ -362,8 +347,8 @@ export function useCircularSimpleLinkedListRender(
         const targetElement = query.toSearch;
 
         // Código y labels de la operación
-        const listaSimpleCircularCode = getListaCircularSimplementeEnlazadaCode();
-        const labels = listaSimpleCircularCode.search.labels!;
+        const listaDobleCircularCode = getListaCircularDoblementeEnlazadaCode();
+        const labels = listaDobleCircularCode.search.labels!;
 
         // Grupo contenedor de los nodos de la lista
         const nodesG = svg.select<SVGGElement>("g#nodes-layer");
@@ -399,8 +384,8 @@ export function useCircularSimpleLinkedListRender(
         const svg = select(svgRef.current);
 
         // Código y labels de la operación
-        const listaSimpleCircularCode = getListaCircularSimplementeEnlazadaCode();
-        const labels = listaSimpleCircularCode.clean.labels!;
+        const listaDobleCircularCode = getListaCircularDoblementeEnlazadaCode();
+        const labels = listaDobleCircularCode.clean.labels!;
 
         // Animación de limpieza de la lista
         animateClearList(
@@ -409,7 +394,6 @@ export function useCircularSimpleLinkedListRender(
             bus,
             {
                 CLEAR_HEAD: labels.CLEAR_HEAD,
-                CLEAR_TAIL: labels.CLEAR_TAIL,
                 RESET_SIZE: labels.RESET_SIZE
             },
             "clean",

@@ -556,7 +556,7 @@ export async function animateClearList(
     bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_HEAD });
     await headIndicatorG
       .transition()
-      .duration(500)
+      .duration(800)
       .style("opacity", 0)
       .remove()
       .end();
@@ -568,7 +568,7 @@ export async function animateClearList(
       bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_TAIL });
       await tailIndicatorG
         .transition()
-        .duration(500)
+        .duration(800)
         .style("opacity", 0)
         .remove()
         .end();
@@ -578,7 +578,7 @@ export async function animateClearList(
     bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
     await linksG
       .transition()
-      .duration(500)
+      .duration(800)
       .style("opacity", 0)
       .remove()
       .end();
@@ -586,12 +586,12 @@ export async function animateClearList(
     // salida de los nodos
     await nodesG
       .transition()
-      .duration(500)
+      .duration(800)
       .style("opacity", 0)
       .remove()
       .end();
 
-    // Liempiza del mapa de posiciones
+    // Limpieza del mapa de posiciones
     nodePositions.clear();
 
     // Fin de la operación

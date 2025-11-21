@@ -42,7 +42,7 @@ export const data = [
     {
         title: 'Lista Circular Doblemente Enlazada',
         id: 5,
-        img: '/assets/images/lista_simple.png',
+        img: '/assets/images/lista_circular_doblemente_enlazada.png',
         type: 'estructura_lineal',
         bgCard: '#D02222',
         bgButton: '#E97F7F',
@@ -72,7 +72,7 @@ export const data = [
     {
         title: 'Cola de Prioridad',
         id: 8,
-        img: '/assets/images/cola.png',
+        img: '/assets/images/cola_prioridad.png',
         type: 'estructura_lineal',
         bgCard: '#D02222',
         bgButton: '#E97F7F',
@@ -102,7 +102,7 @@ export const data = [
     {
         title: 'Árbol Binario de Búsqueda',
         id: 11,
-        img: '/assets/images/arbol_binario.png',
+        img: '/assets/images/arbol_binario_busqueda.png',
         bgCard: '#669bbc',
         type: 'arbol_binario',
         bgButton: '#AEC5D3',
@@ -172,7 +172,7 @@ export const data = [
     {
         title: 'Árbol B',
         id: 18,
-        img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6uxV6yeyM6vLUspnMmz78vte7XykZ18ZIC99gbdU3Fe2cN9f0vkrDg98eAw6jMstRSR9IUS3wTykqnXmT2Z69NoThtbn2Jl-IIi4NOR0KFeJzZUuXw_-9rEqwg8BOin4ePTkfHPuPYE0/s1600/B13.jpg.jpg',
+        img: '/assets/images/arbol_b.jpg',
         type: 'arbol_eneario',
         bgCard: '#A42121',
         bgButton: '#C46B6B',
@@ -182,7 +182,7 @@ export const data = [
     {
         title: 'Árbol B+',
         id: 19,
-        img: 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi6uxV6yeyM6vLUspnMmz78vte7XykZ18ZIC99gbdU3Fe2cN9f0vkrDg98eAw6jMstRSR9IUS3wTykqnXmT2Z69NoThtbn2Jl-IIi4NOR0KFeJzZUuXw_-9rEqwg8BOin4ePTkfHPuPYE0/s1600/B13.jpg.jpg',
+         img: '/assets/images/arbol_b+.jpg',
         type: 'arbol_eneario',
         bgCard: '#A42121',
         bgButton: '#C46B6B',
