@@ -7,7 +7,7 @@ export function OperationArbolB2() {
     <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="h-7 w-2 rounded bg-red-500"></div>
+        <div className="h-7 w-2 rounded bg-red-500" />
         <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
           Árbol B+
         </h1>
@@ -16,141 +16,194 @@ export function OperationArbolB2() {
         Operaciones
       </span>
 
-      {/* Operación de Búsqueda */}
+      {/* Operación de búsqueda */}
       <section className="mb-10">
-        <h2 className="text-xl font-bold text-red-500 mb-4">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
           Operación de búsqueda
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-6">
-          <p>
-            Para buscar un registro en un árbol B+ a partir de su clave, primero
-            hay que recorrer todo el árbol del índice, comparando los valores de
-            clave de cada nodo y tomando el descendiente adecuado, tal y como se
-            realiza en la operación de búsqueda de un registro en un árbol B.
+
+        {/* Idea general */}
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-4">
+          <p className="mb-4">
+            Para buscar un registro en un árbol B+ a partir de su clave{" "}
+            <b>K</b>, primero se recorre el <b>árbol del índice</b> (la parte
+            tipo árbol B). En cada nodo interno se comparan las claves y se toma
+            el hijo cuyo intervalo contiene a <b>K</b>, de forma similar a la
+            búsqueda en un árbol B.
           </p>
-          <p className="mt-4">
-            La diferencia fundamental consiste en que al estar todos los
-            registros en los bloques de datos, es necesario que la búsqueda
-            llegue siempre a un nodo hoja. Una vez localizado el bloque, se
-            llevará a memoria, donde se realiza la búsqueda del registro.
+          <p>
+            La diferencia fundamental es que en el árbol B+{" "}
+            <b>todos los registros están en los nodos hoja</b>. Por tanto, la
+            búsqueda siempre termina en una página hoja. Una vez localizado el
+            bloque hoja apropiado, este se carga en memoria y se busca{" "}
+            <b>internamente</b> el registro (normalmente mediante búsqueda
+            binaria en el bloque).
           </p>
         </div>
+
+        {/* Resumen paso a paso */}
+        <div className="bg-[#111217] border border-cyan-500/60 rounded-lg p-4 shadow mb-6 text-[15.5px]">
+          <h3 className="text-cyan-300 font-semibold mb-2">
+            Búsqueda paso a paso
+          </h3>
+          <ol className="list-decimal list-inside space-y-1 text-gray-100">
+            <li>Comenzar en la raíz del conjunto índice.</li>
+            <li>
+              En cada nodo interno, comparar <b>K</b> con las claves y elegir el
+              puntero al hijo cuyo rango contiene a <b>K</b>.
+            </li>
+            <li>Repetir el proceso hasta llegar a una página hoja.</li>
+            <li>
+              En la hoja, buscar <b>K</b> entre las claves del bloque (búsqueda
+              binaria o secuencial).
+            </li>
+            <li>
+              Si se encuentra, se devuelve el <b>registro</b> asociado; si no,
+              se informa que la clave no está en el árbol.
+            </li>
+          </ol>
+        </div>
+
         <img
           src={img1}
-          alt="Operación de búsqueda en árbol B+"
+          alt="Esquema de la operación de búsqueda en un árbol B+"
           className="rounded-xl border-2 border-red-500 shadow bg-white w-full"
         />
       </section>
 
-      {/* Ejemplo de Insertar */}
+      {/* Ejemplo de búsqueda */}
       <section className="mb-10">
-        <h2 className="text-xl font-bold text-red-500 mb-4">
-          Ejemplo de Insertar
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
+          Ejemplo de búsqueda
         </h2>
         <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-6">
-          <p>
-            Se busca un registro con clave “86” en el árbol B+ de orden 4.
-            Empezamos comparando con la clave almacenada en el nodo raíz. Como
-            es mayor, seguimos la búsqueda por su hijo derecho; comparamos con
-            “78”, como 78 &lt; 86 continuamos con la hoja que contiene las
-            claves {"{"}80, 84{"}"}. Comparando, 80 &lt; 84 &lt; 86,
-            seleccionamos el tercer apuntador de esta hoja, que nos lleva al
-            último bloque del conjunto secuencia.
+          <p className="mb-3">
+            Se busca un registro con clave <b>86</b> en un árbol B+ de{" "}
+            <b>orden 4</b>. Empezamos en la raíz y comparamos con la clave{" "}
+            <b>66</b>. Como 86 &gt; 66, seguimos la búsqueda por su hijo
+            derecho.
           </p>
-          <p className="mt-3">
-            En color verde se indica la secuencia de apuntadores que se ha
-            seguido. Una vez obtenida la posición del bloque de datos, se lleva
-            a memoria donde se realiza la búsqueda del registro.
+          <p className="mb-3">
+            En el siguiente nivel comparamos con <b>78</b>. Como 78 &lt; 86,
+            descendemos al hijo que contiene el rango de claves{" "}
+            <b>{"{80, 84, ...}"}</b>. Allí llegamos a la hoja con las claves{" "}
+            <b>{"{80, 84}"}</b> y sus punteros a bloques de datos.
+          </p>
+          <p>
+            Como 80 &lt; 84 &lt; 86, se selecciona el <b>tercer puntero</b> de
+            la hoja, que nos lleva al último bloque del conjunto secuencia, donde
+            se buscará finalmente el registro con clave 86. En la figura, el
+            recorrido seguido se marca en <b>color verde</b>.
           </p>
         </div>
         <img
           src={img2}
-          alt="Ejemplo inserción árbol B+"
+          alt="Recorrido de búsqueda de la clave 86 en un árbol B+"
           className="rounded-xl border-2 border-red-500 shadow bg-white w-full"
         />
       </section>
 
-      {/* Operación de Inserción */}
+      {/* Operación de inserción */}
       <section className="mb-10">
-        <h2 className="text-xl font-bold text-red-500 mb-4">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
           Operación de inserción
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-6">
-          <p>
-            Para insertar un nuevo registro en un árbol B+, hay que localizar, a
-            partir de su clave, el bloque en el que debe almacenarse,
-            recorriendo el árbol desde la raíz hasta la página hoja adecuada. Si
-            aún no se ha ocupado su máximo número de registros, se inserta de
-            forma ordenada.
-          </p>
-          <p className="mt-4">
-            Si el bloque está completo, se produce “desbordamiento”, lo cual se
-            resuelve dividiendo la página y repartiendo equitativamente los
-            registros en dos nuevas páginas hojas.
-          </p>
-          <p className="mt-4">
-            <b>Si hay espacio en la página:</b>
-          </p>
-          <ul className="list-disc ml-6 mt-2 space-y-2">
-            <li>Se almacena el registro en la página de forma ordenada.</li>
-            <li>Se reescribe nuevamente la página en disco.</li>
-          </ul>
-        </div>
-      </section>
 
-      {/* Desbordamiento */}
-      <section className="mb-10">
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-6">
-          <p className="mb-2">
-            <b>Si no hay espacio en la página:</b>
+        {/* Idea general */}
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-4">
+          <p className="mb-4">
+            Para insertar un nuevo registro de clave <b>K</b> en un árbol B+, se
+            sigue primero el mismo recorrido que en la búsqueda: se localiza la{" "}
+            <b>página hoja</b> donde debería quedar almacenado el nuevo
+            registro.
           </p>
-          <ul className="list-disc ml-6 space-y-2">
+          <p>
+            Si en esa página aún no se ha alcanzado el número máximo de
+            registros, la clave se inserta en orden y se reescribe el bloque. Si
+            la página está llena, se produce un <b>desbordamiento</b> y es
+            necesario dividirla en dos páginas hoja y actualizar el índice.
+          </p>
+        </div>
+
+        {/* Casos de inserción */}
+        <div className="bg-[#111217] border border-red-500/60 rounded-lg p-4 shadow text-[15.5px] mb-6">
+          <h3 className="text-red-300 font-semibold mb-2">
+            Casos de inserción
+          </h3>
+          <p className="text-gray-100 mb-2">
+            <b>Si hay espacio en la página hoja:</b>
+          </p>
+          <ul className="list-disc list-inside ml-3 text-gray-100 space-y-1 mb-3">
+            <li>Insertar la nueva clave en su posición ordenada.</li>
+            <li>Mantener enlazados los registros de la secuencia.</li>
+            <li>Reescribir la página en disco/memoria secundaria.</li>
+          </ul>
+
+          <p className="text-gray-100 mb-2">
+            <b>Si no hay espacio en la página (desbordamiento):</b>
+          </p>
+          <ul className="list-disc list-inside ml-3 text-gray-100 space-y-1">
             <li>
-              Se crea una nueva página y se reparten los datos entre ambas.
+              Crear una <b>nueva página hoja</b> y repartir los registros entre
+              la página original y la nueva (aproximadamente la mitad en cada
+              una).
             </li>
             <li>
-              Se actualiza el índice insertando una clave separadora entre ambas
-              páginas.
+              Insertar en el <b>nodo interno padre</b> una clave separadora que
+              indique el límite entre ambas páginas.
+            </li>
+            <li>
+              Si el nodo padre también se desborda, repetir el proceso hacia
+              arriba (divisiones en cascada hasta la raíz si es necesario).
             </li>
           </ul>
         </div>
+
         <img
           src={img3}
-          alt="Desbordamiento árbol B+"
+          alt="Desbordamiento y división de una página hoja en un árbol B+"
           className="rounded-xl border-2 border-red-500 shadow bg-white w-full"
         />
       </section>
 
-      {/* Operación de Eliminación */}
+      {/* Operación de eliminación */}
       <section className="mb-10">
-        <h2 className="text-xl font-bold text-red-500 mb-4">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
           Operación de eliminación
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-6">
+
+        {/* Idea general */}
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-4">
+          <p className="mb-4">
+            Para eliminar un dato de un árbol B+, primero se recorre el árbol
+            índice hasta llegar a la <b>hoja</b> que contiene el bloque donde
+            está almacenado el registro. Se elimina la clave en la página hoja y
+            se actualiza el bloque.
+          </p>
           <p>
-            Para eliminar un dato de un árbol B+, hay que recorrer el árbol
-            hasta llegar a la hoja que contiene el bloque donde está almacenado.
-            Si después de eliminar el dato el bloque queda con al menos la mitad
-            de los registros, solo se reescribe. Si no, puede haber
-            redistribución o concatenación de registros con otro bloque
-            adyacente.
+            Si después de eliminar el dato la página sigue teniendo{" "}
+            <b>al menos la mitad</b> de los registros permitidos, no se requiere
+            más trabajo. Si queda por debajo del mínimo, es necesario{" "}
+            <b>redistribuir</b> o <b>fusionar</b> páginas y actualizar el
+            índice.
           </p>
         </div>
-      </section>
 
-      {/* Eliminación con redistribución o concatenación */}
-      <section className="mb-12">
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow text-[15.5px] text-gray-200 leading-7 mb-6">
-          <p>
-            <b>Si el bloque queda ocupado con menos de la mitad:</b>
-          </p>
-          <ul className="list-disc ml-6 mt-2 space-y-2">
+        {/* Casos con falta de registros */}
+        <div className="bg-[#111217] border border-red-500/60 rounded-lg p-4 shadow text-[15.5px] mb-6">
+          <h3 className="text-red-300 font-semibold mb-2">
+            Si el bloque queda con menos de la mitad
+          </h3>
+          <ul className="list-disc list-inside ml-1 text-gray-100 space-y-2">
             <li>
-              Se intenta redistribuir los registros con un bloque adyacente.
+              <b>Redistribución:</b> si existe un bloque hoja adyacente con
+              espacio de sobra, se <b>reparten</b> los registros entre ambas
+              páginas para que las dos cumplan el mínimo.
             </li>
             <li>
-              Si no es posible, se concatenan los bloques y se actualiza el
-              índice eliminando la clave separadora.
+              <b>Concatenación (fusión):</b> si no es posible redistribuir, se
+              <b> unen</b> dos páginas hojas en una sola y se actualiza el nodo
+              interno eliminando la clave separadora asociada.
             </li>
           </ul>
         </div>
