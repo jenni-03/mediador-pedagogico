@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { STRUCTURE_NAME } from "../../shared/constants/consts";
 import { Simulator } from "./components/templates/Simulator";
 import { priorityQueueAddressGenerator } from "../../shared/utils/memoryAllocator";
@@ -27,16 +27,22 @@ export function PriorityQueueSimulator() {
         resetQueryValues,
     } = operations;
 
+    // Conjunto de acciones disponibles para la interacción con la estructura
+    const actions = useMemo(
+        () => ({
+            enqueue: enqueueElement,
+            dequeue: dequeueElement,
+            getFront: getFront,
+            clean: clearQueue,
+        }),
+        [enqueueElement, dequeueElement, getFront, clearQueue]
+    );
+
     return (
         <Simulator
             structureName={STRUCTURE_NAME.PRIORITY_QUEUE}
             structure={queue}
-            actions={{
-                enqueue: enqueueElement,
-                dequeue: dequeueElement,
-                getFront: getFront,
-                clean: clearQueue,
-            }}
+            actions={actions}
             query={query}
             error={error}
         >

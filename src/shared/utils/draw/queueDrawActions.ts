@@ -4,6 +4,7 @@ import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
 import { Dispatch, SetStateAction } from "react";
 import { animateAppearListNode, animateExitListNode } from "./simpleLinkedListDrawActions";
 import { repositionList } from "./drawActionsUtilities";
+import { type EventBus } from "../../events/eventBus";
 
 /**
  * Función encargada de renderizar los nodos de una cola dentro del lienzo.
@@ -140,35 +141,36 @@ export async function animateEnqueueNode(
         const newNodeGroup = nodesG.select<SVGGElement>(`g#${newLastNodeId}`);
         newNodeGroup.style("opacity", 0);
 
-        // Grupos correspondientes a los indicadores de cabeza y cola
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-        const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+        // Grupos correspondientes a los indicadores de inicio y fin
+        const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
+        const finalIndicatorGroup = svg.select<SVGGElement>("g#final-indicator");
 
         if (!currLastNodeId) {
+            // Aparición del nuevo nodo junto a los indicadores de inicio y fin
             await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
-            await headIndicatorGroup.transition().duration(800).style("opacity", 1).end();
-            await tailIndicatorGroup.transition().duration(800).style("opacity", 1).end();
+            await initialIndicatorGroup.transition().duration(800).style("opacity", 1).end();
+            await finalIndicatorGroup.transition().duration(800).style("opacity", 1).end();
         } else {
             const { positions } = insertionData;
 
-            // Grupo correspondiente al enlace siguiente del último nodo actual que apunta al nuevo nodo
+            // Grupo correspondiente al enlace siguiente del nodo final que apunta al nuevo nodo
             const currLastNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${currLastNodeId}-${newLastNodeId}-next`);
             currLastNodeNextLinkGroup.style("opacity", 0);
 
             // Aparición y posicionamiento del nuevo nodo
             const newNodePos = positions.get(newLastNodeId)!;
-            const initialNewNodePos = { x: newNodePos.x, y: newNodePos.y - 60 };
+            const initialNewNodePos = { x: newNodePos.x, y: newNodePos.y - 70 };
             await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
 
-            // Establecimiento del enlace siguiente del último nodo actual
+            // Establecimiento del enlace siguiente del nodo final
             await currLastNodeNextLinkGroup
                 .transition()
                 .duration(1000)
                 .style("opacity", 1)
                 .end();
 
-            // Posicionamiento del indicador final al nuevo nodo
-            await tailIndicatorGroup
+            // Posicionamiento del indicador final al nuevo nodo final de la cola
+            await finalIndicatorGroup
                 .transition()
                 .duration(1500)
                 .attr("transform", () => {
@@ -196,8 +198,8 @@ export async function animateEnqueueNode(
 export async function animateDequeueNode(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     deletionData: {
-        currFirstNodeId: string,
-        newFirstNodeId: string | null,
+        currInitialNodeId: string,
+        newInitialNodeId: string | null,
         remainingNodesData: QueueNodeData[];
         remainingLinksData: ListLinkData[];
         positions: Map<string, { x: number; y: number }>;
@@ -206,7 +208,7 @@ export async function animateDequeueNode(
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Nodos implicados en la eliminación
-    const { currFirstNodeId, newFirstNodeId } = deletionData;
+    const { currInitialNodeId, newInitialNodeId } = deletionData;
 
     try {
         // Grupos contenedores de nodos y enlaces de la lista
@@ -214,25 +216,25 @@ export async function animateDequeueNode(
         const linksG = svg.select<SVGGElement>("g#links-layer");
 
         // Grupo correspondiente al nodo a eliminar
-        const removalNodeGroup = nodesG.select<SVGGElement>(`g#${currFirstNodeId}`);
+        const removalNodeGroup = nodesG.select<SVGGElement>(`g#${currInitialNodeId}`);
 
-        // Grupos correspondientes a los indicadores de cabeza y cola
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
-        const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
+        // Grupos correspondientes a los indicadores de inicio y fin
+        const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
+        const finalIndicatorGroup = svg.select<SVGGElement>("g#final-indicator");
 
-        if (!newFirstNodeId) {
-            // Salida de indicadores y el nodo a eliminar
-            await headIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
-            await tailIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
+        if (!newInitialNodeId) {
+            // Salida del nodo a eliminar junto a los indicadores de inicio y fin
+            await initialIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
+            await finalIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
             await removalNodeGroup.transition().duration(1000).style("opacity", 0).remove().end();
         } else {
             const { positions, remainingNodesData, remainingLinksData } = deletionData;
 
-            // Grupo correspondiente al enlace siguiente del nodo a eliminar
-            const removalNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${currFirstNodeId}-${newFirstNodeId}-next`);
+            // Grupo correspondiente al enlace siguiente del nodo a eliminar que apunta al nuevo nodo inicial
+            const removalNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${currInitialNodeId}-${newInitialNodeId}-next`);
 
-            // Salida del indicador de cabeza
-            await headIndicatorGroup
+            // Salida del indicador de inicio
+            await initialIndicatorGroup
                 .transition()
                 .duration(800)
                 .style("opacity", 0)
@@ -247,7 +249,7 @@ export async function animateDequeueNode(
                 .end();
 
             // Salida del nodo a eliminar
-            const removalNodePos = positions.get(currFirstNodeId)!;
+            const removalNodePos = positions.get(currInitialNodeId)!;
             const finalRemovalNodePos = {
                 x: removalNodePos.x,
                 y: removalNodePos.y + SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8,
@@ -263,13 +265,13 @@ export async function animateDequeueNode(
                 {
                     headIndicator: null,
                     headNodeId: null,
-                    tailIndicator: tailIndicatorGroup,
+                    tailIndicator: finalIndicatorGroup,
                     tailNodeId: remainingNodesData[remainingNodesData.length - 1].id,
                 }
             );
 
-            // Entrada del indicador de cabeza (ahora apuntando al nuevo primer nodo de la cola)
-            await headIndicatorGroup
+            // Entrada del indicador de inicio (ahora apuntando al nuevo nodo inicial de la cola)
+            await initialIndicatorGroup
                 .transition()
                 .duration(800)
                 .style("opacity", 1)
@@ -277,7 +279,88 @@ export async function animateDequeueNode(
         }
 
         // Limpiamos el registro del nodo eliminado
-        deletionData.positions.delete(currFirstNodeId);
+        deletionData.positions.delete(currInitialNodeId);
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
+    }
+}
+
+/**
+ * Función encargada de eliminar todos los nodos y enlaces de una cola dentro del lienzo.
+ * @param nodesG Selección D3 del grupo <g> que contiene los nodos de la cola.
+ * @param linksG Selección D3 del grupo <g> que contiene los enlaces entre nodos.
+ * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
+ * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
+ */
+export async function animateClearQueue(
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    nodePositions: Map<string, { x: number; y: number }>,
+    bus: EventBus,
+    labels: {
+        CLEAR_TAIL?: number;
+        CLEAR_HEAD: number;
+        RESET_SIZE: number;
+    },
+    stepId: string,
+    resetQueryValues: () => void,
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
+) {
+    try {
+        // Inicio de la operación
+        bus.emit("op:start", { op: "clean" });
+
+        // Elementos dentro del lienzo
+        const initialIndicatorG = svg.select<SVGGElement>("g#initial-indicator");
+        const nodesG = svg.select<SVGGElement>("g#nodes-layer");
+        const linksG = svg.select<SVGGElement>("g#links-layer");
+
+        // Salida del indicador de cabeza
+        bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_HEAD });
+        await initialIndicatorG
+            .transition()
+            .duration(800)
+            .style("opacity", 0)
+            .remove()
+            .end();
+
+        // Salida del indicador de cola
+        if (labels.CLEAR_TAIL) {
+            const finalIndicatorG = svg.select<SVGGElement>("g#final-indicator");
+
+            bus.emit("step:progress", { stepId, lineIndex: labels.CLEAR_TAIL });
+            await finalIndicatorG
+                .transition()
+                .duration(800)
+                .style("opacity", 0)
+                .remove()
+                .end();
+        }
+
+        // salida de los enlaces
+        bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
+        await linksG
+            .transition()
+            .duration(800)
+            .style("opacity", 0)
+            .remove()
+            .end();
+
+        // salida de los nodos
+        await nodesG
+            .transition()
+            .duration(800)
+            .style("opacity", 0)
+            .remove()
+            .end();
+
+        // Limpieza del mapa de posiciones
+        nodePositions.clear();
+
+        // Fin de la operación
+        bus.emit("op:done", { op: "clean" });
     } finally {
         resetQueryValues();
         setIsAnimating(false);

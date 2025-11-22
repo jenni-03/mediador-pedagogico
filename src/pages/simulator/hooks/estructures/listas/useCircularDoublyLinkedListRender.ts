@@ -84,7 +84,7 @@ export function useCircularDoublyLinkedListRender(
         let linksLayer = svg.select<SVGGElement>("#links-layer");
         if (linksLayer.empty()) linksLayer = svg.append("g").attr("id", "links-layer");
 
-        // Renderizado de los nodos de la lista
+        // Renderizado de los nodos de la lista circular doble
         drawListNodes(
             nodesLayer,
             listNodes,
@@ -110,11 +110,11 @@ export function useCircularDoublyLinkedListRender(
         // Elevamos la capa de nodos
         nodesLayer.raise();
 
-        // Creación de indicador para elemento cabeza
+        // Creación del indicador para el nodo cabeza de la lista circular doble
         const headId = listNodes.length > 0 ? listNodes[0].id : null;
         const headPos = headId ? nodePositions.get(headId)! : null;
 
-        // Configuración de estilos y de posicionamiento para el indicador del elemento cabeza
+        // Configuración de estilos y de posicionamiento para el indicador de cabeza
         const headStyleConfig = {
             text: "CABEZA",
             textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
@@ -148,13 +148,13 @@ export function useCircularDoublyLinkedListRender(
         // Id del nuevo nodo cabeza
         const newHeadNodeId = query.toAddFirst;
 
-        // Id del actual nodo cabeza de la lista (anterior a la inserción)
+        // Id del actual nodo cabeza de la lista circular doble (anterior a la inserción)
         const currHeadNodeId = listNodes.length > 1 ? listNodes[1].id : null;
 
-        // Id del último nodo de la lista
+        // Id del último nodo de la lista circular doble
         const lastNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 1].id : null;
 
-        // Animación de inserción del nodo como primer elemento de la lista
+        // Animación de inserción del nuevo nodo como primer elemento de la lista circular doble
         animateDoublyCircularInsertFirst(
             svg,
             {
@@ -181,13 +181,13 @@ export function useCircularDoublyLinkedListRender(
         // Id del nuevo nodo cola
         const newLastNodeId = query.toAddLast;
 
-        // Id del actual nodo cola de la lista (anterior a la inserción)
+        // Id del actual nodo cola de la lista circular doble (anterior a la inserción)
         const currLastNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
 
-        // Id del nodo cabeza de la lista
+        // Id del nodo cabeza de la lista circular doble
         const headNodeId = listNodes.length > 1 ? listNodes[0].id : null
 
-        // Animación de inserción del nodo como último elemento de la lista
+        // Animación de inserción del nuevo nodo como último elemento de la lista circular doble
         animateDoublyCircularInsertLast(
             svg,
             {
@@ -217,9 +217,9 @@ export function useCircularDoublyLinkedListRender(
         const prevNodeId = position > 0 ? listNodes[position - 1].id : null;
 
         // Id del nodo siguiente al nuevo nodo
-        const nextNodeId = position !== listNodes.length - 1 ? listNodes[position + 1].id : null;
+        const nextNodeId = position < listNodes.length - 1 ? listNodes[position + 1].id : null;
 
-        // Animación de inserción del nodo en una posición especifica
+        // Animación de inserción del nuevo nodo en una posición especifica
         animateDoublyCircularInsertAt(
             svg,
             {
@@ -247,13 +247,13 @@ export function useCircularDoublyLinkedListRender(
         // Id del actual nodo cabeza previo a la eliminación (nodo a eliminar)
         const currHeadNodeId = query.toDeleteFirst;
 
-        // Id del nuevo nodo cabeza
+        // Id del nuevo nodo cabeza de la lista circular doble
         const newHeadNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
-        // Id del último nodo de la lista
+        // Id del último nodo de la lista circular doble
         const lastNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
-        // Animación de eliminación del primer nodo de la lista
+        // Animación de eliminación del primer nodo de la lista circular doble
         animateDoublyCircularDeleteFirst(
             svg,
             {
@@ -277,16 +277,16 @@ export function useCircularDoublyLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del último nodo actual previo a la eliminación (nodo a eliminar)
+        // Id del actual último nodo previo a la eliminación (nodo a eliminar)
         const currLastNodeId = query.toDeleteLast;
 
-        // Id del nuevo último nodo
+        // Id del nuevo último nodo de la lista circular doble
         const newLastNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
-        // Id del nodo cabeza
+        // Id del nodo cabeza de la lista circular doble
         const headNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
-        // Animación de eliminación del último nodo de la lista
+        // Animación de eliminación del último nodo de la lista circular doble
         animateDoublyCircularDeleteLast(
             svg,
             {
@@ -316,7 +316,7 @@ export function useCircularDoublyLinkedListRender(
         const prevNodeId = position > 0 ? prevNodes[position - 1].id : null;
 
         // Id del nodo siguiente al nodo a eliminar
-        const nextNodeId = position !== prevNodes.length - 1 ? prevNodes[position + 1].id : null;
+        const nextNodeId = position < prevNodes.length - 1 ? prevNodes[position + 1].id : null;
 
         // Animación de eliminación del nodo en una posición especifica
         animateDoublyCircularDeleteAt(
@@ -343,7 +343,7 @@ export function useCircularDoublyLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Obtenemos el elemento de la lista a buscar
+        // Elemento de la lista a buscar
         const targetElement = query.toSearch;
 
         // Código y labels de la operación

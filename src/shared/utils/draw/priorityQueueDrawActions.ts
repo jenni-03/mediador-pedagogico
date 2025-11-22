@@ -1,7 +1,10 @@
-import {  PriorityQueueNodeData, QueueNodeData } from "../../../types";
-import * as d3 from "d3";
+import { ListLinkData, PriorityQueueNodeData, QueueNodeData } from "../../../types";
+import { color, Selection } from "d3";
 import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
-// import { calculateLinkPath } from "./calculateLinkPath";
+import { Dispatch, SetStateAction } from "react";
+import { repositionList } from "./drawActionsUtilities";
+import { animateAppearListNode, animateExitListNode } from "./simpleLinkedListDrawActions";
+import { buildListPath } from "../listUtils";
 
 // Función para obtener el color según la prioridad (ahora retorna un objeto con fill y stroke)
 export function getPriorityColor(priority: number): { fill: string; stroke: string } {
@@ -29,14 +32,14 @@ export function getPriorityColor(priority: number): { fill: string; stroke: stri
 }
 
 /**
- * Función encargada renderizar los nodos de la cola de prioridad dentro del lienzo.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param queueNodes Nodos a renderizar.
+ * Función encargada de renderizar los nodos de una cola de prioridad dentro del lienzo.
+ * @param nodesLayer Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los nodos de la cola.
+ * @param queueNodes Array con información de los nodos a renderizar.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
  * @param dims Dimensiones del lienzo y sus elementos.
  */
 export function drawPriorityQueueNodes(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+    nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
     queueNodes: PriorityQueueNodeData[],
     positions: Map<string, { x: number, y: number }>,
     dims: {
@@ -51,7 +54,7 @@ export function drawPriorityQueueNodes(
     const { margin, elementWidth, elementHeight, nodeSpacing, height } = dims;
 
     // Data join para la creación de los nodos
-    svg.selectAll<SVGGElement, PriorityQueueNodeData>("g.node")
+    nodesLayer.selectAll<SVGGElement, PriorityQueueNodeData>("g.node")
         .data(queueNodes, d => d.id)
         .join(
             enter => {
@@ -124,7 +127,7 @@ export function drawPriorityQueueNodes(
                     .attr("cy", SVG_PRIORITY_QUEUE_VALUES.PRIORITY_BADGE_HEIGHT)
                     .attr("r", SVG_PRIORITY_QUEUE_VALUES.PRIORITY_GLOW_RADIUS)
                     .attr("fill", SVG_PRIORITY_QUEUE_VALUES.PRIORITY_GLOW_FILL)
-                    .attr("stroke", d => d3.color(getPriorityColor(d.priority).stroke)?.brighter(0.8)?.toString() || getPriorityColor(d.priority).stroke)
+                    .attr("stroke", d => color(getPriorityColor(d.priority).stroke)?.brighter(0.8)?.toString() || getPriorityColor(d.priority).stroke)
                     .attr("stroke-width", SVG_PRIORITY_QUEUE_VALUES.PRIORITY_GLOW_STROKE_WIDTH)
                     .attr("opacity", 0.6)
                     .style("filter", "blur(1px)");
@@ -176,7 +179,7 @@ export function drawPriorityQueueNodes(
 
                 // Actualizar el color del resplandor según la nueva prioridad
                 update.select(".priority-glow")
-                    .attr("stroke", d => d3.color(getPriorityColor(d.priority).stroke)?.brighter(0.8)?.toString() || getPriorityColor(d.priority).stroke);
+                    .attr("stroke", d => color(getPriorityColor(d.priority).stroke)?.brighter(0.8)?.toString() || getPriorityColor(d.priority).stroke);
 
                 return update;
             },
@@ -185,629 +188,447 @@ export function drawPriorityQueueNodes(
 }
 
 /**
- * Función encargada de animar la inserción de un nuevo nodo al inicio de la cola de prioridad.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción.
- * @param queueData Objeto con información relacionada a los nodos y enlaces de la cola.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo en una cola de prioridad.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param insertionData Objeto con información de la cola de prioridad necesaria para la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateEnqueueFirstNode(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { nodeEnqueued: string, nextNode: string | null },
-    queueData: { queueNodes: PriorityQueueNodeData[], linksData: LinkData[] },
-    positions: Map<string, { x: number, y: number }>,
+export async function animateEnqueuePriorityNode(
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    insertionData: {
+        newNodeId: string;
+        prevNodeId: string | null;
+        nextNodeId: string | null;
+        insertionPosition: number;
+        nodesData: PriorityQueueNodeData[];
+        linksData: ListLinkData[];
+        positions: Map<string, { x: number; y: number }>;
+    },
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
     // Nodos implicados en la inserción
-    const { nodeEnqueued, nextNode } = nodesInvolved;
+    const { newNodeId, prevNodeId, nextNodeId } = insertionData;
 
-    // Grupo del lienzo correspondiente al nuevo elemento
-    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeEnqueued}`);
+    try {
+        // Grupos contenedores de nodos y enlaces de la lista
+        const nodesG = svg.select<SVGGElement>("g#nodes-layer");
+        const linksG = svg.select<SVGGElement>("g#links-layer");
 
-    // Estado visual inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
+        // Grupo correspondiente al nuevo nodo
+        const newNodeGroup = nodesG.select<SVGGElement>(`g#${newNodeId}`);
+        newNodeGroup.style("opacity", 0);
 
-    if (nextNode) {
-        // Información de la lista
-        const { queueNodes, linksData } = queueData;
+        if (!prevNodeId && !nextNodeId) {
+            // Grupo correspondiente al indicador de inicio
+            const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
 
-        // Grupo del lienzo correspondiente al indicador del nodo cabeza
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+            // Aparición del nuevo nodo junto al indicador de inicio
+            await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
+            await initialIndicatorGroup.transition().duration(800).style("opacity", 1).end();
+        } else if (!prevNodeId && nextNodeId) {
+            // Inserción al inicio
+            const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
 
-        // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
-        const newNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${nodeEnqueued}-${nextNode}-next`);
+            // Grupo correspondiente al enlace siguiente del nuevo nodo que apunta al inicio
+            const newNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${newNodeId}-${nextNodeId}-next`);
 
-        // Estado visual inicial del enlace siguiente del nuevo nodo
-        newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
+            // Estado visual inicial del enlace siguiente del nuevo nodo
+            newNodeNextLinkGroup.style("opacity", 0);
 
-        // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces
-        const shiftPromises: Promise<void>[] = [];
+            // Reposicionamiento de los elementos restantes de la cola de prioridad a su posición final
+            await repositionList(
+                svg,
+                insertionData.nodesData,
+                insertionData.linksData,
+                insertionData.positions,
+                {
+                    headIndicator: initialIndicatorGroup,
+                    headNodeId: nextNodeId,
+                    tailIndicator: null,
+                    tailNodeId: null,
+                }
+            );
 
-        // Selección de nodos a desplazar (re-vinculación de datos)
-        const remainingNodes = svg.selectAll<SVGGElement, QueueNodeData>("g.node")
-            .data(queueNodes, d => d.id);
+            // Aparición y posicionamiento del nuevo nodo
+            const newNodePos = insertionData.positions.get(newNodeId)!;
+            const initialNewNodePos = {
+                x: newNodePos.x,
+                y: newNodePos.y - 70,
+            };
+            await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
 
-        // Promesa para desplazamiento de nodos existentes a su posición final
-        shiftPromises.push(
-            remainingNodes
+            // Establecimiento del enlace siguiente del nuevo nodo
+            await newNodeNextLinkGroup
                 .transition()
                 .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("transform", (d) => {
-                    const finalPos = positions.get(d.id)!;
-                    return `translate(${finalPos.x}, ${finalPos.y})`;
-                })
-                .end()
-        );
+                .style("opacity", 1)
+                .end();
 
-        // Selección de enlaces a desplazar (re-vinculación de datos)
-        const remainingLinks = svg.selectAll<SVGGElement, LinkData>("g.link")
-            .data(linksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`);
-
-        // Promesa para desplazamiento de enlaces existentes a su posición final
-        shiftPromises.push(
-            remainingLinks.select("path.node-link")
+            // Posicionamiento del indicador de inicio al nuevo nodo inicial de la cola de prioridad
+            await initialIndicatorGroup
                 .transition()
-                .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("d", d => calculateLinkPath(d, positions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT))
-                .end()
-        );
-
-        // Posición de animación inicial del indicador de cabeza
-        const initialHeadIndicatorPos = positions.get(nextNode)!;
-        shiftPromises.push(
-            headIndicatorGroup
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadOut)
+                .duration(1500)
                 .attr("transform", () => {
-                    const finalX = initialHeadIndicatorPos.x + SVG_QUEUE_VALUES.ELEMENT_WIDTH / 2;
-                    const finalY = initialHeadIndicatorPos.y;
+                    const finalX = newNodePos.x + SVG_QUEUE_VALUES.ELEMENT_WIDTH / 2;
+                    const finalY = newNodePos.y;
                     return `translate(${finalX}, ${finalY})`;
                 })
-                .end()
-        );
+                .end();
+        } else if (prevNodeId && !nextNodeId) {
+            // Inserción al final
+            const { nodesData } = insertionData;
 
-        // Resolución de promesas para animación de desplazamiento
-        await Promise.all(shiftPromises);
+            // Grupo correspondiente al enlace siguiente del nodo final que apunta al nuevo nodo
+            const lastNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${prevNodeId}-${newNodeId}-next`);
 
-        // Posición de animación final para inserción del nuevo nodo
-        const finalNewNodePos = positions.get(nodeEnqueued)!;
+            // Estado visual inicial del enlace siguiente del nodo final
+            lastNodeNextLinkGroup.style("opacity", 0);
 
-        // Posición de animación inicial para inserción del nuevo nodo
-        const initialYOffset = -60;
-        const initialNewNodePos = { x: finalNewNodePos.x, y: finalNewNodePos.y + initialYOffset };
-        newNodeGroup.attr("transform", `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`);
+            // Recorrido de los nodos hasta la posición de inserción (último nodo actual)
+            const nodesToTraverse = nodesData.slice(0, -1);
+            for (let i = 0; i < nodesToTraverse.length - 1; i++) {
+                // Selección del grupo correspondiente al nodo actual
+                const currRectElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[i].id} rect.node-container`);
 
-        // Desplazamiento del nuevo nodo hacia su posición final
-        await newNodeGroup
-            .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .ease(d3.easePolyInOut)
-            .attr("transform", `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`)
-            .end();
+                // Resaltado del nodo actual
+                await currRectElement
+                    .transition()
+                    .duration(800)
+                    .attr("stroke", "#D72638")
+                    .attr("stroke-width", 3)
+                    .end();
 
-        // Aparición del enlace siguiente del nuevo nodo que apunta al nodo cabeza anterior
-        await newNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
+                // Restablecimiento del borde original del nodo actual (antes de pasar al sig. nodo)
+                await currRectElement
+                    .transition()
+                    .duration(800)
+                    .attr("stroke", getPriorityColor(nodesToTraverse[i].priority).stroke)
+                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
+                    .end();
+            }
 
-        // Movimiento del indicador de cabeza hacia el nuevo nodo
-        await headIndicatorGroup
-            .transition()
-            .duration(1000)
-            .ease(d3.easeQuadInOut)
-            .attr("transform", () => {
-                const finalX = finalNewNodePos.x + SVG_QUEUE_VALUES.ELEMENT_WIDTH / 2;
-                const finalY = finalNewNodePos.y;
-                return `translate(${finalX}, ${finalY})`;
-            })
-            .end();
-    } else {
-        // Animación de aparición simple del nuevo nodo
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-    }
-
-    // Animación de confirmación con el badge de prioridad como protagonista
-    const priorityBadge = newNodeGroup.select(".priority-badge");
-    const priorityGlow = newNodeGroup.select(".priority-glow");
-
-    await priorityBadge
-        .transition()
-        .duration(150)
-        .attr("r", 18)
-        .attr("stroke-width", 3)
-        .transition()
-        .duration(150)
-        .attr("r", 14)
-        .attr("stroke-width", 2)
-        .end();
-
-    await priorityGlow
-        .transition()
-        .duration(300)
-        .attr("opacity", 1)
-        .attr("r", 20)
-        .transition()
-        .duration(300)
-        .attr("opacity", 0.6)
-        .attr("r", 16)
-        .end();
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
-}
-
-/**
- * Función encargada de animar la inserción de un nuevo nodo al final de la cola de prioridad.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción.
- * @param queueNodes Array con información relacionada a los nodos de la cola.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- */
-export async function animateEnqueueLastNode(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { nodeEnqueued: string, prevNode: string | null },
-    queueNodes: PriorityQueueNodeData[],
-    positions: Map<string, { x: number, y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-) {
-    // Nodos implicados en la inserción
-    const { nodeEnqueued, prevNode } = nodesInvolved;
-
-    // Grupo del lienzo correspondiente al nuevo elemento
-    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeEnqueued}`);
-
-    // Estado visual inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
-
-    if (prevNode) {
-        // Grupo del lienzo correspondiente al enlace siguiente del nodo previo
-        const prevNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${nodeEnqueued}-next`);
-
-        // Estado visual inicial del enlace siguiente del nodo previo
-        prevNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
-
-        for (const node of queueNodes) {
-            // Selección del grupo del nodo actual
-            const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
-
-            // Selección del elemento a animar
-            const nodeElement = nodeGroup.select("rect");
-
-            // Resaltado del nodo actual
-            await nodeElement
+            // Resaltado final del nodo objetivo
+            const targetElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[nodesToTraverse.length - 1].id} rect.node-container`);
+            await targetElement
                 .transition()
-                .duration(600)
+                .duration(800)
                 .attr("stroke", "#D72638")
                 .attr("stroke-width", 3)
                 .end();
 
-            // Restablecimiento del estilo original del nodo (excepto para el último nodo)
-            if (node.id !== prevNode) {
-                await nodeElement
+            // Aparición y posicionamiento del nuevo nodo
+            const newNodePos = insertionData.positions.get(newNodeId)!;
+            const initialNewNodePos = {
+                x: newNodePos.x,
+                y: newNodePos.y - 70,
+            };
+            await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
+
+            // Establecimiento del enlace siguiente del nodo final
+            await lastNodeNextLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+        } else {
+            // Inserción en una posición intermedia
+            const { insertionPosition, nodesData, linksData } = insertionData;
+
+            // Grupos correspondientes a los nuevos elementos producto de la inserción
+            const prevNodeNewNextLinkGroup = linksG.select<SVGGElement>(
+                `g#link-${prevNodeId}-${newNodeId}-next`
+            );
+            prevNodeNewNextLinkGroup.style("opacity", 0);
+
+            const newNodeNextLinkGroup = linksG.select<SVGGElement>(
+                `g#link-${newNodeId}-${nextNodeId}-next`
+            );
+            newNodeNextLinkGroup.style("opacity", 0);
+
+            // Recorrido de los nodos hasta la posición de inserción
+            const nodesToTraverse = nodesData.slice(0, insertionPosition);
+            for (let i = 0; i < nodesToTraverse.length - 1; i++) {
+                // Selección del grupo correspondiente al nodo actual
+                const currRectElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[i].id} rect.node-container`);
+
+                // Resaltado del nodo actual
+                await currRectElement
                     .transition()
-                    .duration(600)
-                    .attr("stroke", getPriorityColor(node.priority).stroke)
+                    .duration(800)
+                    .attr("stroke", "#D72638")
+                    .attr("stroke-width", 3)
+                    .end();
+
+                // Restablecimiento del borde original del nodo actual (antes de pasar al sig. nodo)
+                await currRectElement
+                    .transition()
+                    .duration(800)
+                    .attr("stroke", getPriorityColor(nodesToTraverse[i].priority).stroke)
                     .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
                     .end();
             }
-        }
 
-        // Posición de animación final para inserción del nuevo nodo
-        const finalNewNodePos = positions.get(nodeEnqueued)!;
-
-        // Posición de animación inicial para inserción del nuevo nodo
-        const initialYOffset = -60;
-        const initialNewNodePos = { x: finalNewNodePos.x, y: finalNewNodePos.y + initialYOffset };
-        newNodeGroup.attr("transform", `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`);
-
-        // Desplazamiento del nuevo nodo hacia su posición final
-        await newNodeGroup
-            .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .ease(d3.easePolyInOut)
-            .attr("transform", `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`)
-            .end();
-
-        // Aparición del enlace siguiente entre el nodo previo y el nuevo nodo
-        await prevNodeNextLinkGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-    } else {
-        // Animación de aparición simple del nuevo nodo
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-    }
-
-    // Animación de confirmación con el badge de prioridad como protagonista
-    const priorityBadge = newNodeGroup.select(".priority-badge");
-    const priorityGlow = newNodeGroup.select(".priority-glow");
-
-    await priorityBadge
-        .transition()
-        .duration(150)
-        .attr("r", 18)
-        .attr("stroke-width", 3)
-        .transition()
-        .duration(150)
-        .attr("r", 14)
-        .attr("stroke-width", 2)
-        .end();
-
-    await priorityGlow
-        .transition()
-        .duration(300)
-        .attr("opacity", 1)
-        .attr("r", 20)
-        .transition()
-        .duration(300)
-        .attr("opacity", 0.6)
-        .attr("r", 16)
-        .end();
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
-}
-
-/**
- * Función encargada de animar la inserción de un nuevo nodo entre nodos de la cola de prioridad.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved Objeto con información de los nodos involucrados en la inserción.
- * @param queueData Objeto con información relacionada a los nodos y enlaces de la cola.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues Función para restablecer los valores de la query del usuario.
- * @param setIsAnimating Función para establecer el estado de animación.
- */
-export async function animateEnqueueBetweenNodes(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { nodeEnqueued: { id: string, index: number }, prevNode: string | null, nextNode: string | null },
-    queueData: { queueNodes: PriorityQueueNodeData[], linksData: LinkData[] },
-    positions: Map<string, { x: number, y: number }>,
-    resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
-) {
-    // Nodos implicados en la inserción
-    const { nodeEnqueued, prevNode, nextNode } = nodesInvolved;
-
-    // Grupo del lienzo correspondiente al nuevo elemento
-    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeEnqueued.id}`);
-
-    // Estado visual inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
-
-    if (prevNode && nextNode) {
-        // Información de la lista
-        const { queueNodes, linksData } = queueData;
-
-        // Grupo del lienzo correspondiente al enlace siguiente formado entre el nodo previo y el nuevo nodo
-        const prevToNewNodeLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${nodeEnqueued.id}-next`);
-
-        // Estado visual inicial del enlace siguiente entre el nodo previo y el nuevo nodo
-        prevToNewNodeLinkGroup.select("path.node-link").style("opacity", 0);
-
-        // Grupo del lienzo correspondiente al enlace siguiente del nuevo nodo
-        const newNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${nodeEnqueued.id}-${nextNode}-next`);
-
-        // Estado visual inicial del enlace siguiente del nuevo nodo
-        newNodeNextLinkGroup.select("path.node-link").style("opacity", 0);
-
-        // Nodos a recorrer para insertar el nodo
-        const nodesToTraverse = queueNodes.slice(0, nodeEnqueued.index);
-
-        for (const node of nodesToTraverse) {
-            // Selección del grupo del nodo actual
-            const nodeGroup = svg.select<SVGGElement>(`g#${node.id}`);
-
-            // Selección del elemento a animar
-            const nodeElement = nodeGroup.select("rect");
-
-            // Resaltado del nodo actual
-            await nodeElement
+            // Resaltado final del nodo objetivo
+            const targetElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[nodesToTraverse.length - 1].id} rect.node-container`);
+            await targetElement
                 .transition()
-                .duration(600)
+                .duration(800)
                 .attr("stroke", "#D72638")
                 .attr("stroke-width", 3)
                 .end();
 
-            // Restablecimiento del estilo original del nodo (excepto para el nodo anterior al nuevo)
-            if (node.id !== prevNode) {
-                await nodeElement
+            // Nodos a desplazar y enlaces a ajustar para la inclusión del nuevo nodo (incluyendo el actual enlace siguiente
+            // entre el nodo previo y siguiente del nuevo nodo)
+            const nodesToMove = nodesData.slice(
+                insertionPosition,
+                nodesData.length
+            );
+            const linksToMove = linksData.slice(
+                insertionPosition,
+                linksData.length
+            );
+            linksToMove.push({ sourceId: prevNodeId!, targetId: nextNodeId!, type: "next" });
+
+            // Reposicionamiento de los elementos indicados de la lista a su posición final
+            await repositionList(svg,
+                nodesToMove,
+                linksToMove,
+                insertionData.positions,
+                {
+                    headIndicator: null,
+                    headNodeId: null,
+                    tailIndicator: null,
+                    tailNodeId: null
+                }
+            );
+
+            // Posición de animación inicial del nuevo nodo
+            const newNodePos = insertionData.positions.get(newNodeId)!;
+            const initialNewNodePos = { x: newNodePos.x, y: newNodePos.y - 70 };
+
+            // Forma inicial de los nuevos enlaces producto de la inserción
+            const initialPrevNodeNewNextLink = buildListPath(
+                "next",
+                insertionData.positions.get(prevNodeId!) ?? null,
+                initialNewNodePos,
+                SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+                SVG_QUEUE_VALUES.ELEMENT_HEIGHT
+            );
+            prevNodeNewNextLinkGroup
+                .select("path.node-link")
+                .attr("d", initialPrevNodeNewNextLink);
+
+            const initialNewNodeNextLink = buildListPath(
+                "next",
+                initialNewNodePos,
+                insertionData.positions.get(nextNodeId!) ?? null,
+                SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+                SVG_QUEUE_VALUES.ELEMENT_HEIGHT
+            );
+            newNodeNextLinkGroup
+                .select("path.node-link")
+                .attr("d", initialNewNodeNextLink);
+
+            // Aparición y posicionamiento inicial del nuevo nodo
+            await animateAppearListNode(newNodeGroup, initialNewNodePos);
+
+            // Establecimiento del enlace siguiente del nuevo nodo
+            await newNodeNextLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+
+            // Desconexión del actual enlace siguiente entre el nodo previo y siguiente al nuevo nodo
+            await linksG.select<SVGGElement>(`g#link-${prevNodeId}-${nextNodeId}-next`)
+                .transition()
+                .duration(1000)
+                .style("opacity", 0)
+                .remove()
+                .end();
+
+            // Establecimiento del nuevo enlace siguiente del nodo previo
+            await prevNodeNewNextLinkGroup
+                .transition()
+                .duration(1000)
+                .style("opacity", 1)
+                .end();
+
+            // Forma final de los nuevos enlaces producto de la inserción
+            const finalPrevNodeNewNextLink = buildListPath(
+                "next",
+                insertionData.positions.get(prevNodeId!) ?? null,
+                newNodePos,
+                SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+                SVG_QUEUE_VALUES.ELEMENT_HEIGHT
+            );
+            const finalNewNodeNextLink = buildListPath(
+                "next",
+                newNodePos,
+                insertionData.positions.get(nextNodeId!) ?? null,
+                SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+                SVG_QUEUE_VALUES.ELEMENT_HEIGHT
+            );
+
+            // Promesas para movimiento del nuevo nodo y enlaces asociados a sus posiciones finales
+            const shiftPromises: Promise<void>[] = [];
+            shiftPromises.push(
+                newNodeGroup
                     .transition()
-                    .duration(600)
-                    .attr("stroke", getPriorityColor(node.priority).stroke)
-                    .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                    .end();
-            }
+                    .duration(1000)
+                    .attr(
+                        "transform",
+                        `translate(${newNodePos.x}, ${newNodePos.y})`
+                    )
+                    .end()
+            );
+            shiftPromises.push(
+                prevNodeNewNextLinkGroup
+                    .select("path.node-link")
+                    .transition()
+                    .duration(1000)
+                    .attr("d", finalPrevNodeNewNextLink)
+                    .end()
+            );
+            shiftPromises.push(
+                newNodeNextLinkGroup
+                    .select("path.node-link")
+                    .transition()
+                    .duration(1000)
+                    .attr("d", finalNewNodeNextLink)
+                    .end()
+            );
+
+            await Promise.all(shiftPromises);
         }
 
-        // Grupo del lienzo correspondiente al enlace siguiente entre el nodo previo y el nodo siguiente
-        const prevToNextNodeNextLinkGroup = svg.select<SVGGElement>(`g#link-${prevNode}-${nextNode}-next`);
+        // Animación de confirmación con el badge de prioridad como protagonista
+        const priorityBadge = newNodeGroup.select(".priority-badge");
+        const priorityGlow = newNodeGroup.select(".priority-glow");
 
-        // Desconexión del enlace entre el nodo previo y el siguiente
-        await prevToNextNodeNextLinkGroup
-            .select("path.node-link")
+        await priorityBadge
             .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
-        prevToNextNodeNextLinkGroup.remove();
-
-        // Reposicionamiento de los nodos para hacer espacio para el nuevo nodo
-        const shiftPromises: Promise<void>[] = [];
-        const nodesToShift = queueNodes.slice(nodeEnqueued.index, queueNodes.length);
-
-        // Selección de nodos a desplazar (re-vinculación de datos)
-        const remainingNodes = svg.selectAll<SVGGElement, QueueNodeData>("g.node")
-            .data(nodesToShift, d => d.id);
-
-        // Promesa para desplazamiento de nodos existentes a su posición final
-        shiftPromises.push(
-            remainingNodes
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("transform", (d) => {
-                    const finalPos = positions.get(d.id)!;
-                    return `translate(${finalPos.x}, ${finalPos.y})`;
-                })
-                .end()
-        );
-
-        // Selección de enlaces a desplazar (re-vinculación de datos)
-        const remainingLinks = svg.selectAll<SVGGElement, LinkData>("g.link")
-            .data(linksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`);
-
-        // Promesa para desplazamiento de enlaces existentes a su posición final
-        shiftPromises.push(
-            remainingLinks.select("path.node-link")
-                .transition()
-                .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("d", d => calculateLinkPath(d, positions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT))
-                .end()
-        );
-
-        // Resolución de promesas para animación de desplazamiento
-        await Promise.all(shiftPromises);
-
-        // Posición de animación final para inserción del nuevo nodo
-        const finalNewNodePos = positions.get(nodeEnqueued.id)!;
-
-        // Posición de animación inicial para inserción del nuevo nodo
-        const initialYOffset = -60;
-        const initialNewNodePos = { x: finalNewNodePos.x, y: finalNewNodePos.y + initialYOffset };
-        newNodeGroup.attr("transform", `translate(${initialNewNodePos.x}, ${initialNewNodePos.y})`);
-
-        // Desplazamiento del nuevo nodo hacia su posición final
-        await newNodeGroup
+            .duration(150)
+            .attr("r", 18)
+            .attr("stroke-width", 3)
             .transition()
-            .duration(1500)
-            .style("opacity", 1)
-            .ease(d3.easePolyInOut)
-            .attr("transform", `translate(${finalNewNodePos.x}, ${finalNewNodePos.y})`)
+            .duration(150)
+            .attr("r", 14)
+            .attr("stroke-width", 2)
             .end();
 
-        // Aparición del enlace siguiente entre el nuevo nodo y el nodo siguiente
-        await newNodeNextLinkGroup
-            .select("path.node-link")
+        await priorityGlow
             .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-
-        // Aparición del enlace siguiente entre el nodo previo y el nuevo nodo
-        await prevToNewNodeLinkGroup
-            .select("path.node-link")
+            .duration(300)
+            .attr("opacity", 1)
+            .attr("r", 20)
             .transition()
-            .duration(1000)
-            .style("opacity", 1)
+            .duration(300)
+            .attr("opacity", 0.6)
+            .attr("r", 16)
             .end();
-    } else {
-        // Animación de aparición simple del nuevo nodo
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
     }
-
-    // Animación de confirmación con el badge de prioridad como protagonista
-    const priorityBadge = newNodeGroup.select(".priority-badge");
-    const priorityGlow = newNodeGroup.select(".priority-glow");
-
-    await priorityBadge
-        .transition()
-        .duration(150)
-        .attr("r", 18)
-        .attr("stroke-width", 3)
-        .transition()
-        .duration(150)
-        .attr("r", 14)
-        .attr("stroke-width", 2)
-        .end();
-
-    await priorityGlow
-        .transition()
-        .duration(300)
-        .attr("opacity", 1)
-        .attr("r", 20)
-        .transition()
-        .duration(300)
-        .attr("opacity", 0.6)
-        .attr("r", 16)
-        .end();
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
 }
 
 /**
- * Función encargada de animar la salida de un nodo de la cola de prioridad.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
- * @param nodesInvolved Objeto con información de los nodos involucrados en la eliminación.
- * @param queueData Objeto con información relacionada a los nodos y enlaces de la cola.
- * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @param resetQueryValues Función para restablecer los valores de la query del usuario
+ * Función encargada de animar el proceso de eliminación del nodo con mayor prioridad de una cola de prioridad.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
+ * @param deletionData Objeto con información de la cola de prioridad necesaria para la animación.
+ * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void `>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateDequeueNode(
-    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    nodesInvolved: { dequeuedNode: string, nextNode: string | null },
-    queueData: { queueNodes: PriorityQueueNodeData[], linksData: LinkData[] },
-    positions: Map<string, { x: number, y: number }>,
+export async function animateDequeuePriorityNode(
+    svg: Selection<SVGSVGElement, unknown, null, undefined>,
+    deletionData: {
+        currInitialNodeId: string,
+        newInitialNodeId: string | null,
+        remainingNodesData: QueueNodeData[];
+        remainingLinksData: ListLinkData[];
+        positions: Map<string, { x: number; y: number }>;
+    },
     resetQueryValues: () => void,
-    setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+    setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-    // Nodos implicados en la inserción
-    const { dequeuedNode, nextNode } = nodesInvolved;
+    // Nodos implicados en la eliminación
+    const { currInitialNodeId, newInitialNodeId } = deletionData;
 
-    // Grupo del lienzo correspondiente al elemento a eliminar
-    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${dequeuedNode}`);
+    try {
+        // Grupos contenedores de nodos y enlaces de la lista
+        const nodesG = svg.select<SVGGElement>("g#nodes-layer");
+        const linksG = svg.select<SVGGElement>("g#links-layer");
 
-    if (nextNode) {
-        // Información de la lista
-        const { queueNodes, linksData } = queueData;
+        // Grupo correspondiente al nodo a eliminar
+        const removalNodeGroup = nodesG.select<SVGGElement>(`g#${currInitialNodeId} `);
 
-        // Grupo del lienzo correspondiente al enlace siguiente del elemento a decolar
-        const linkToRemoveGroup = svg.select<SVGGElement>(`g#link-${dequeuedNode}-${nextNode}-next`);
+        // Grupo correspondiente al indicador de inicio
+        const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
 
-        // Grupo del lienzo correspondiente al indicador del elemento cabeza
-        const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
+        if (!newInitialNodeId) {
+            // Salida del nodo a eliminar junto al indicador de inicio
+            await initialIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
+            await removalNodeGroup.transition().duration(1000).style("opacity", 0).remove().end();
+        } else {
+            const { positions, remainingNodesData, remainingLinksData } = deletionData;
 
-        // Animación de salida del indicador de cabeza
-        await headIndicatorGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
+            // Grupo correspondiente al enlace siguiente del nodo a eliminar que apunta al nuevo nodo inicial
+            const removalNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${currInitialNodeId}-${newInitialNodeId}-next`);
 
-        // Animación de salida del enlace perteneciente al nodo a elimnar
-        await linkToRemoveGroup
-            .select("path.node-link")
-            .transition()
-            .duration(1000)
-            .ease(d3.easeBounce)
-            .style("opacity", 0)
-            .end();
+            // Salida del indicador de inicio
+            await initialIndicatorGroup
+                .transition()
+                .duration(800)
+                .style("opacity", 0)
+                .end();
 
-        // Movimiento del nodo a decolar 
-        const nodeMoveOffsetY = SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
-
-        // Animación de salida del nodo
-        await nodeToRemoveGroup
-            .transition()
-            .ease(d3.easeBackInOut)
-            .duration(1500)
-            .attr("transform", () => {
-                const currentPos = positions.get(dequeuedNode);
-                const x = currentPos?.x ?? 0;
-                const y = (currentPos?.y ?? 0) + nodeMoveOffsetY;
-                return `translate(${x}, ${y})`;
-            })
-            .style("opacity", 0)
-            .end();
-
-        // Eliminación de los elementos del DOM correspondientes al nodo decolado
-        nodeToRemoveGroup.remove();
-        linkToRemoveGroup.remove();
-
-        // Eliminación de la posición del nodo decolado
-        positions.delete(dequeuedNode);
-
-        // // Array de promesas para concretar animaciones de desplazamiento de nodos y enlaces restantes
-        const shiftPromises: Promise<void>[] = [];
-
-        // Selección de nodos restantes (re-vinculación de datos)
-        const remainingNodes = svg.selectAll<SVGGElement, QueueNodeData>("g.node")
-            .data(queueNodes, d => d.id);
-
-        // Promesa para desplazamiento de nodos restantes a su posición final
-        shiftPromises.push(
-            remainingNodes
+            // Desconexión del enlace siguiente del nodo a eliminar
+            await removalNodeNextLinkGroup
                 .transition()
                 .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("transform", (d) => {
-                    const finalPos = positions.get(d.id)!;
-                    return `translate(${finalPos.x}, ${finalPos.y})`;
-                })
-                .end()
-        );
+                .style("opacity", 0)
+                .remove()
+                .end();
 
-        // Selección de enlaces restantes (re-vinculación de datos)
-        const remainingLinks = svg.selectAll<SVGGElement, LinkData>("g.link")
-            .data(linksData, d => `link-${d.sourceId}-${d.targetId}-${d.type}`);
+            // Salida del nodo a eliminar
+            const removalNodePos = positions.get(currInitialNodeId)!;
+            const finalRemovalNodePos = {
+                x: removalNodePos.x,
+                y: removalNodePos.y + SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8,
+            };
+            await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
 
-        // Promesa para desplazamiento de enlaces restantes a su posición final
-        shiftPromises.push(
-            remainingLinks.select("path.node-link")
+            // Reposicionamiento de los elementos restantes de la cola de prioridad a su posición final
+            await repositionList(
+                svg,
+                remainingNodesData,
+                remainingLinksData,
+                positions,
+                {
+                    headIndicator: null,
+                    headNodeId: null,
+                    tailIndicator: null,
+                    tailNodeId: null,
+                }
+            );
+
+            // Entrada del indicador de inicio (ahora apuntando al nuevo nodo inicial de la cola de prioridad)
+            await initialIndicatorGroup
                 .transition()
-                .duration(1000)
-                .ease(d3.easeQuadOut)
-                .attr("d", d => calculateLinkPath(d, positions, SVG_QUEUE_VALUES.ELEMENT_WIDTH, SVG_QUEUE_VALUES.ELEMENT_HEIGHT))
-                .end()
-        );
+                .duration(800)
+                .style("opacity", 1)
+                .end();
+        }
 
-        // Resolución de promesas para animación de desplazamiento
-        await Promise.all(shiftPromises);
-
-        // Entrada del indicador de cabeza
-        await headIndicatorGroup
-            .transition()
-            .duration(1000)
-            .ease(d3.easeBounce)
-            .style("opacity", 1)
-            .end();
-    } else {
-        // Animación de salida simple del nodo a decolar
-        await nodeToRemoveGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 0)
-            .end();
-
-        // Eliminación del elemento del DOM correspondiente al nodo decolado
-        nodeToRemoveGroup.remove();
-
-        // Eliminación de la posición del nodo decolado
-        positions.delete(dequeuedNode);
+        // Limpiamos el registro del nodo eliminado
+        deletionData.positions.delete(currInitialNodeId);
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
     }
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
 }
