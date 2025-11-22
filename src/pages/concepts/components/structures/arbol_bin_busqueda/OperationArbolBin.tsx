@@ -5,165 +5,200 @@ import img4 from "../../../../../assets/images/operacion_bin_4.jpg";
 
 export function OperationArbolBinarioBusqueda() {
   return (
-    <div className="py-8 px-3 sm:px-10 max-w-4xl mx-auto text-white">
+    <div className="py-6 px-6 sm:px-10 text-white bg-[#0f0f0f] min-h-screen max-w-4xl mx-auto">
       {/* Header principal */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="h-7 w-2 rounded bg-red-600"></div>
+        <div className="h-7 w-2 rounded bg-red-600" />
         <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
-          Operaciones
+          Operaciones · Árbol Binario de Búsqueda
         </h1>
       </div>
       <span className="text-base text-red-400 ml-3 font-medium block mb-2">
-        Árboles Binarios de Búsqueda
+        Árboles Binarios de Búsqueda (ABB)
       </span>
       <hr className="border-t-2 border-red-500 mb-8 w-40 rounded" />
 
       {/* Intro */}
-      <section className="mb-10">
-        <p className="mb-4">
-          A continuación definiremos el Tipo Abstracto de Datos asociado a los
-          árboles binarios de búsqueda. Para no alargar la descripción del mismo
-          supondremos incluidas las operaciones del TAD ArbolB.
+      <section className="mb-8 text-sm leading-6 text-gray-200">
+        <p>
+          Un Árbol Binario de Búsqueda mantiene sus claves ordenadas para
+          permitir operaciones muy eficientes de{" "}
+          <b>búsqueda, inserción y eliminación</b>. A continuación se resume el
+          comportamiento de cada operación tomando como base el TAD de un
+          árbol binario.
         </p>
 
-        {/* Búsqueda de un Elemento */}
-        <div className="mb-8">
-          <h3 className="font-bold mb-1 text-[18px]">
-            Búsqueda de un Elemento:
-          </h3>
-          <p className="text-gray-200">
-            La operación de búsqueda en un árbol binario de búsqueda es bastante
-            sencilla de entender. Supongamos que buscamos un elemento <b>x</b>{" "}
-            en el árbol. Lo primero que haremos será comprobar si se encuentra
-            en el nodo raíz. Si no es así, si el elemento buscado es menor que
-            el contenido en el nodo raíz sabremos que, de estar en el árbol, se
-            encuentra en el subárbol izquierdo. Si el elemento buscado es mayor
-            que el contenido en el nodo raíz sabremos que, de estar en el árbol,
-            se encuentra en el subárbol derecho. Para continuar la búsqueda en
-            el subárbol adecuado aplicaremos recursivamente el mismo
-            razonamiento. Por lo tanto, el esquema del algoritmo BuscarNodo será
-            el siguiente:
-            <ol className="list-decimal ml-5 mt-2 space-y-1">
-              <li>
-                Si el valor del nodo actual es igual al valor buscado, lo hemos
-                encontrado.
-              </li>
-              <li>
-                Si el valor buscado es menor que el del nodo actual, deberemos
-                inspeccionar el subárbol izquierdo.
-              </li>
-              <li>
-                Si el valor buscado es mayor que el del nodo actual, deberemos
-                inspeccionar el subárbol derecho.
-              </li>
-            </ol>
+        <div className="mt-4 bg-[#17181c] border-l-4 border-cyan-500 rounded-md p-3 text-[13px]">
+          <p className="font-semibold text-cyan-300 mb-1">
+            Idea clave del ABB:
           </p>
-        </div>
-
-        {/* Inserción de un Elemento */}
-        <div className="mb-3">
-          <h3 className="font-bold mb-1 text-[18px]">
-            Inserción de un Elemento:
-          </h3>
-          <p className="text-gray-200">
-            La operación de inserción de un nuevo nodo en un árbol binario de
-            búsqueda consta de tres fases básicas:
-            <b> 1.</b> Creación del nuevo nodo
-            <b> 2.</b> Búsqueda de su posición correspondiente en el árbol.
-            <b> 3.</b> Inserción en la posición encontrada.
-            <br />
-            Se modifican de modo adecuado los enlaces de la estructura. La
-            creación de un nuevo nodo supone simplemente reservar espacio para
-            el registro asociado y rellenar sus tres campos. Dado que nos hemos
-            impuesto la restricción de que el árbol resultante sea equilibrado,
-            consideraremos que la posición adecuada para insertar el nuevo nodo
-            es la que al ser tal se mantiene el orden del árbol. Insertar el
-            nodo en una hoja supone una operación mucho menos complicada que
-            tener que insertarlo como un nodo intery modificar la posición de
-            uno o varios subárboles completos.
-          </p>
-          <p className="mt-3 text-gray-200">
-            Veamos con un ejemplo la evolución de un árbol conforme vamos
-            insertando nodos siguiendo el criterio anterior respecto a la
-            posición adecuada.
+          <p>
+            En cada nodo, las claves del subárbol izquierdo son menores, y las
+            del subárbol derecho son mayores. Toda operación debe respetar esta
+            propiedad.
           </p>
         </div>
       </section>
 
-      {/* Ejemplo visual de inserciones */}
-      <div className="bg-[#19191d] rounded-xl shadow p-4 mb-10">
-        <div className="flex flex-col items-center justify-center gap-6">
-          <img
-            src={img1}
-            className="bg-white rounded-xl border-2 border-yellow-400 shadow max-w-3xl w-full p-4"
-          />
-          <img
-            src={img2}
-            className="bg-white rounded-xl border-2 border-yellow-400 shadow max-w-3xl w-full p-4"
-          />
-          <img
-            src={img3}
-            className="bg-white rounded-xl border-2 border-yellow-400 shadow max-w-3xl w-full p-4"
-          />
-        </div>
-      </div>
-      <section className="mb-10">
-        {/* Eliminación de un Elemento */}
-        <div className="mb-8">
-          <h3 className="font-bold mb-1 text-[18px]">
-            Eliminación de un Elemento:
-          </h3>
-          <p className="text-gray-200">
-            La eliminación de un nodo de un árbol binario de búsqueda es más
-            complicada que la inserción, puesto que puede suponer la
-            recolocación de varios de sus nodos. En líneas generales un posible
-            esquema para abordar esta operación es el siguiente:
-            <ol className="list-decimal ml-5 mt-2 space-y-1">
-              <li>
-                Buscar el nodo que se desea borrar manteniendo un puntero a su
-                padre.
-              </li>
-              <li>
-                Si se encuentra el nodo hay que contemplar tres casos posibles:
-                <ul className="list-disc ml-6 mt-1">
-                  <li>
-                    <b>a.</b> Si el nodo a borrar no tiene hijos, simplemente se
-                    libera el espacio que ocupa.
-                  </li>
-                  <li>
-                    <b>b.</b> Si el nodo a borrar tiene un solo hijo, se añade
-                    como hijo de su padre, sustituyendo la posición ocupada por
-                    el nodo borrado.
-                  </li>
-                  <li>
-                    <b>c.</b> Si el nodo a borrar tiene los dos hijos se siguen
-                    los siguientes pasos:
-                    <ul className="list-disc ml-8">
-                      <li>
-                        i. Se busca el máximo de la rama izquierda o el mínimo
-                        de la rama derecha.
-                      </li>
-                      <li>
-                        ii. Se sustituye el nodo a borrar por el nodo
-                        encontrado.
-                      </li>
-                    </ul>
-                  </li>
-                </ul>
-              </li>
-            </ol>
+      {/* BÚSQUEDA */}
+      <section className="mb-10 text-sm leading-6">
+        <h2 className="text-2xl font-bold mb-3 text-red-400">Búsqueda</h2>
+        <div className="bg-[#19191d] border-l-4 border-cyan-400 rounded-md p-4 shadow">
+          <p>
+            Buscar un elemento <b>x</b> en un ABB es seguir el orden que impone
+            la propia estructura:
           </p>
-          <p className="mt-3 text-gray-200">
-            Veamos gráficamente varios ejemplos de eliminación de un nodo:
+          <ol className="list-decimal ml-6 mt-3 space-y-1 text-gray-200 text-[15px]">
+            <li>Comparar la clave buscada con la clave del nodo actual.</li>
+            <li>
+              Si son iguales, <b>x</b> ha sido encontrado.
+            </li>
+            <li>
+              Si <b>x</b> es menor, continuar la búsqueda en el{" "}
+              <b>subárbol izquierdo</b>.
+            </li>
+            <li>
+              Si <b>x</b> es mayor, continuar la búsqueda en el{" "}
+              <b>subárbol derecho</b>.
+            </li>
+            <li>
+              Si se alcanza un puntero nulo, el elemento <b>no está</b> en el
+              árbol.
+            </li>
+          </ol>
+          <div className="mt-3 bg-black/40 border-l-4 border-cyan-500 px-3 py-2 rounded text-[13px] text-cyan-100">
+            En un árbol balanceado, la búsqueda tiene complejidad aproximada{" "}
+            <b>O(log n)</b>, ya que en cada comparación se descarta la mitad del
+            árbol.
+          </div>
+        </div>
+      </section>
+
+      {/* INSERCIÓN */}
+      <section className="mb-10 text-sm leading-6">
+        <h2 className="text-2xl font-bold mb-3 text-red-400">Inserción</h2>
+        <div className="bg-[#19191d] border-l-4 border-emerald-400 rounded-md p-4 shadow mb-4">
+          <p>
+            Insertar un nuevo nodo en un ABB consiste en encontrar la posición
+            donde debe ir para mantener el orden:
+          </p>
+          <ol className="list-decimal ml-6 mt-3 space-y-1 text-gray-200 text-[15px]">
+            <li>Crear el nuevo nodo con la clave a insertar.</li>
+            <li>
+              Partir desde la <b>raíz</b> y comparar la nueva clave con el nodo
+              actual.
+            </li>
+            <li>
+              Si la clave es menor, avanzar al subárbol izquierdo; si es mayor,
+              al derecho.
+            </li>
+            <li>
+              Repetir el proceso hasta encontrar un enlace nulo y colocar allí
+              el nuevo nodo.
+            </li>
+            <li>
+              No se permiten claves duplicadas: si la clave ya existe, se decide
+              no insertar o actualizar la información asociada.
+            </li>
+          </ol>
+          <p className="mt-3 text-emerald-200 text-[13px]">
+            Al insertar siempre respetando la regla izquierda &lt; raíz &lt;
+            derecha, el árbol conserva su propiedad de búsqueda.
           </p>
         </div>
 
-        {/* Imagen de ejemplo eliminación */}
-        <div className="bg-[#19191d] rounded-xl shadow p-4 mb-10 flex justify-center">
-          <img
-            src={img4}
-            className="bg-white rounded-xl border-2 border-red-400 shadow max-w-4xl w-full p-4"
-          />
+        {/* Ejemplo visual de inserciones */}
+        <div className="bg-[#15161a] rounded-xl shadow p-4 mb-10">
+          <p className="text-sm text-gray-200 mb-3 font-semibold">
+            Evolución del árbol al insertar sucesivamente varias claves:
+          </p>
+          <div className="flex flex-col items-center justify-center gap-6">
+            <div className="w-full">
+              <img
+                src={img1}
+                alt="Inserciones iniciales en ABB"
+                className="bg-white rounded-xl border-2 border-yellow-400 shadow max-w-3xl w-full p-4 mx-auto"
+              />
+            </div>
+            <div className="w-full">
+              <img
+                src={img2}
+                alt="Continuación de inserciones en ABB"
+                className="bg-white rounded-xl border-2 border-yellow-400 shadow max-w-3xl w-full p-4 mx-auto"
+              />
+            </div>
+            <div className="w-full">
+              <img
+                src={img3}
+                alt="Árbol resultante tras varias inserciones"
+                className="bg-white rounded-xl border-2 border-yellow-400 shadow max-w-3xl w-full p-4 mx-auto"
+              />
+            </div>
+          </div>
+          <p className="text-[13px] text-gray-400 mt-3 text-center">
+            Cada inserción coloca la nueva clave en la rama izquierda o derecha
+            según su valor, manteniendo el orden del árbol.
+          </p>
+        </div>
+      </section>
+
+      {/* ELIMINACIÓN */}
+      <section className="mb-10 text-sm leading-6">
+        <h2 className="text-2xl font-bold mb-3 text-red-400">Eliminación</h2>
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4">
+          <p>
+            Eliminar un nodo en un ABB es más delicado que buscar o insertar,
+            porque puede requerir reestructurar parte del árbol. El esquema
+            general es:
+          </p>
+          <ol className="list-decimal ml-6 mt-3 space-y-2 text-gray-200 text-[15px]">
+            <li>
+              Localizar el nodo a eliminar manteniendo una referencia a su{" "}
+              <b>padre</b>.
+            </li>
+            <li>
+              Según el tipo de nodo, aplicar uno de los tres casos:
+              <ul className="list-disc ml-5 mt-1 space-y-1">
+                <li>
+                  <b>a) Nodo hoja:</b> no tiene hijos. Se elimina el enlace
+                  desde su padre y se libera el nodo.
+                </li>
+                <li>
+                  <b>b) Nodo con un solo hijo:</b> el padre pasa a apuntar
+                  directamente al hijo, “saltándose” el nodo eliminado.
+                </li>
+                <li>
+                  <b>c) Nodo con dos hijos:</b> se busca el{" "}
+                  <b>sucesor inorden</b> (mínimo del subárbol derecho) o el{" "}
+                  <b>predecesor inorden</b> (máximo del subárbol izquierdo),
+                  copiando su valor en el nodo a eliminar y, después, se elimina
+                  ese sucesor/predecesor con uno de los casos anteriores.
+                </li>
+              </ul>
+            </li>
+          </ol>
+          <p className="mt-3 text-[13px] text-red-200">
+            El objetivo es siempre preservar la propiedad de búsqueda: izquierda
+            &lt; nodo &lt; derecha en todo momento.
+          </p>
+        </div>
+
+        {/* Ejemplo visual de eliminación */}
+        <div className="bg-[#15161a] rounded-xl shadow p-4">
+          <p className="text-sm text-gray-200 mb-3 font-semibold">
+            Ejemplos gráficos de eliminación para los casos a), b) y c):
+          </p>
+          <div className="flex justify-center">
+            <img
+              src={img4}
+              alt="Casos de eliminación en árbol binario de búsqueda"
+              className="bg-white rounded-xl border-2 border-red-400 shadow max-w-4xl w-full p-4"
+            />
+          </div>
+          <p className="text-[13px] text-gray-400 mt-3 text-center">
+            Cada eliminación ajusta los enlaces del árbol para mantener el orden
+            sin romper la estructura del ABB.
+          </p>
         </div>
       </section>
     </div>
