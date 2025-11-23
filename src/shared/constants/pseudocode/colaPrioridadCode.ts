@@ -1,79 +1,76 @@
 import { OperationCode } from "./typesPseudoCode";
 
-export const getColaPrioridadCode = (): OperationCode => ({
-  enqueue: [
-    "/**",
-    " * Método que inserta un elemento en la posición correspondiente según su prioridad.",
-    " * @param valor Elemento a encolar.",
-    " * @param prioridad Prioridad del nodo (menor número = mayor prioridad).",
-    " * @return Elemento insertado.",
-    " */",
-    "public NodoPrioridad<T> encolar(T {0}, int {1}) {",
-    "  if ({2} >= {4})",
-    '    throw new RuntimeException("No fue posible encolar el nodo: Cantidad de nodos máxima alcanzada (tamaño máximo: " + {4} + ").");',
-    "",
-    "  NodoPrioridad<T> nuevoNodo = new NodoPrioridad<>({0}, {1});",
-    "",
-    "  if (this.esVacia() || {1} < this.inicio.getPrioridad()) {",
-    "    nuevoNodo.setSiguiente(this.inicio);",
-    "    this.inicio = nuevoNodo;",
-    "  } else {",
-    "    NodoPrioridad<T> actual = this.inicio;",
-    "    while (actual.getSiguiente() != null && actual.getSiguiente().getPrioridad() <= {1}) {",
-    "      actual = actual.getSiguiente();",
-    "    }",
-    "    nuevoNodo.setSiguiente(actual.getSiguiente());",
-    "    actual.setSiguiente(nuevoNodo);",
-    "  }",
-    "",
-    "  {2}++;",
-    "  return nuevoNodo;",
-    "}",
-  ],
-
-  dequeue: [
-    "/**",
-    " * Método que elimina el elemento con mayor prioridad (inicio).",
-    " * @return Elemento decolado.",
-    " */",
-    "public NodoPrioridad<T> decolar() {",
-    "  if (this.esVacia())",
-    '    throw new RuntimeException("No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0).");',
-    "",
-    "  NodoPrioridad<T> nodoAEliminar = this.inicio;",
-    "",
-    "  if (this.inicio.getSiguiente() != null) {",
-    "    this.inicio = this.inicio.getSiguiente();",
-    "  } else {",
-    "    this.inicio = null;",
-    "  }",
-    "",
-    "  {0}--;",
-    "  return nodoAEliminar;",
-    "}",
-  ],
-
-  clean: [
-    "/**",
-    " * Método que vacía la cola.",
-    " * post: La cola quedó vacía.",
-    " */",
-    "public void vaciar() {",
-    "  this.inicio = null;",
-    "  this.tamanio = 0;",
-    "}",
-  ],
-
-  getFront: [
-    "/**",
-    " * Método que obtiene el elemento inicial de la cola.",
-    " * @return NodoPrioridad o null si la cola está vacía.",
-    " */",
-    "public NodoPrioridad<T> getInicio() {",
-    `    if (this.inicio == null) {`,
-    `        throw new RuntimeException(" No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
-    `    }`,
-    "  return this.inicio;",
-    "}",
-  ],
+export const getColaPrioridadCode = (): Record<string, OperationCode> => ({
+  enqueue: {
+    lines: [
+      `/**
+ * Método que encola un nuevo elemento en la cola según su prioridad.
+ * @param valor Elemento a encolar.
+ * @param prioridad Prioridad del nodo (menor número = mayor prioridad).
+ */`,
+      `public void enqueue(T {0}, int {1}) {`,
+      `    NodoPrioridad<T> nuevoNodo = new NodoPrioridad<>({0}, {1});`,
+      `    if (this.inicio == null || {1} < this.inicio.prioridad) {`,
+      `        nuevoNodo.siguiente = this.inicio;`,
+      `        this.inicio = nuevoNodo;`,
+      `    } else {`,
+      `        NodoPrioridad<T> actual = this.inicio;`,
+      `        while (actual.siguiente != null && actual.siguiente.prioridad <= {1}) {`,
+      `               actual = actual.siguiente;`,
+      `        }`,
+      `        nuevoNodo.siguiente = actual.siguiente;`,
+      `        actual.siguiente = nuevoNodo;`,
+      `    }`,
+      `    {2}++;`,
+      `}`,
+    ]
+  },
+  dequeue: {
+    lines: [
+      `/**
+ * Método que decola (remueve) el elemento con mayor prioridad de la cola.
+ * @return valor Elemento asociado al nodo decolado.
+ * @throws RuntimeException si la cola está vacía.
+ */`,
+      `public T dequeue() {`,
+      `    if (this.inicio == null) {`,
+      `        throw new RuntimeException("No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).");`,
+      `    }`,
+      `    NodoPrioridad<T> nodoEliminar = this.inicio;`,
+      `    this.inicio = this.inicio.siguiente;`,
+      `    {0}--;`,
+      `    return nodoEliminar.info;`,
+      `}`,
+    ]
+  },
+  clean: {
+    lines: [
+      `/**
+ * Método que elimina todos los elementos de la cola.
+ */`,
+      `public void clean() {`,
+      `    this.inicio = null;`,
+      `    this.tamanio = 0;`,
+      `}`,
+    ],
+    labels: {
+      CLEAR_HEAD: 2,
+      RESET_SIZE: 3
+    }
+  },
+  getFront: {
+    lines: [
+      `/**
+ * Método que obtiene el primer elemento insertado en la cola.
+ * @return valor Elemento cabeza asociado al nodo inicial. 
+ * @throws RuntimeException si la cola está vacía.
+ */`,
+      `public T getFront() {`,
+      `    if (this.inicio == null) {`,
+      `        throw new RuntimeException("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
+      `    }`,
+      `    return this.inicio.info;`,
+      `}`,
+    ]
+  },
 });

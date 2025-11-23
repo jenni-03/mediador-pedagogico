@@ -12,7 +12,7 @@ import { buildListPath } from "../listUtils";
 const listaDobleCode = getListaDoblementeEnlazadaCode();
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo al inicio de la lista doble.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo al inicio de una lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la lista necesaria para la animación.
@@ -101,7 +101,7 @@ export async function animateDoublyInsertFirst(
 }
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo al final de la lista doble.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo al final de una lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la lista necesaria para la animación.
@@ -177,7 +177,7 @@ export async function animateDoublyInsertLast(
 }
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo en una posición especifica de la lista doble.
+ * Función encargada de animar el proceso de inserción de un nuevo nodo en una posición especifica de una lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la lista necesaria para la animación.
@@ -288,7 +288,7 @@ export async function animateDoublyInsertAt(
             const nodesG = svg.select<SVGGElement>("g#nodes-layer");
             const linksG = svg.select<SVGGElement>("g#links-layer");
 
-            // Grupos correspondientes a los elementos producto de la inserción
+            // Grupos correspondientes a los nuevos elementos producto de la inserción
             const newNodeGroup = nodesG.select<SVGGElement>(`g#${newNodeId}`);
             newNodeGroup.style("opacity", 0);
 
@@ -569,7 +569,7 @@ export async function animateDoublyInsertAt(
 }
 
 /**
- * Función encargada de animar el proceso de eliminación de un nodo al inicio de la lista doble.
+ * Función encargada de animar el proceso de eliminación de un nodo al inicio de una lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la lista necesaria para la animación.
@@ -640,7 +640,7 @@ export async function animateDoublyDeleteFirst(
                     deletionData.positions,
                     {
                         headIndicator: svg.select<SVGGElement>("g#head-indicator"),
-                        headNodeId: currHeadNodeId,
+                        headNodeId: newHeadNodeId,
                         tailIndicator: svg.select<SVGGElement>("g#tail-indicator"),
                         tailNodeId: deletionData.remainingNodesData[deletionData.remainingNodesData.length - 1].id
                     }
@@ -665,7 +665,7 @@ export async function animateDoublyDeleteFirst(
 }
 
 /**
- * Función encargada de animar el proceso de eliminación de un nodo al final de la lista doble.
+ * Función encargada de animar el proceso de eliminación de un nodo al final de una lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la lista necesaria para la animación.
@@ -748,7 +748,7 @@ export async function animateDoublyDeleteLast(
 }
 
 /**
- * Función encargada de animar el proceso de eliminación de un nodo en una posición especifica de la lista doble.
+ * Función encargada de animar el proceso de eliminación de un nodo en una posición especifica de una lista doble.
  * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la lista necesaria para la animación.
@@ -1225,7 +1225,7 @@ async function animateInsertAtHeadNonEmpty(
     // Grupo correspondiente al indicador de cabeza
     const headIndicatorGroup = svg.select<SVGGElement>("g#head-indicator");
 
-    // Estado visual inicial de los elementos producto de la inserción
+    // Estado visual inicial de los nuevos elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
     newNodeNextLinkGroup.style("opacity", 0);
     headNodePrevLinkGroup.style("opacity", 0);
@@ -1329,7 +1329,7 @@ async function animateInsertAtTailNonEmpty(
     // Grupo correspondiente al indicador de cola
     const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
-    // Estado visual inicial de los elementos producto de la inserción
+    // Estado visual inicial de los nuevos elementos producto de la inserción
     newNodeGroup.style("opacity", 0);
     tailNodeNextLinkGroup.style("opacity", 0);
     newNodePrevLinkGroup.style("opacity", 0);

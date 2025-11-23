@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, LinkData, PriorityQueueNodeData } from "../../../../../types";
+import { BaseQueryOperations, ListLinkData, PriorityQueueNodeData } from "../../../../../types";
 import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { drawPriorityQueueNodes, animateDequeueNode, animateEnqueueBetweenNodes, animateEnqueueFirstNode, animateEnqueueLastNode, getPriorityColor } from "../../../../../shared/utils/draw/priorityQueueDrawActions";
-import * as d3 from "d3";
+import { drawPriorityQueueNodes, animateEnqueuePriorityNode, animateDequeuePriorityNode, getPriorityColor } from "../../../../../shared/utils/draw/priorityQueueDrawActions";
+import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { animateClearList, animateHighlightNode, drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { animateHighlightNode, drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
+import { getColaPrioridadCode } from "../../../../../shared/constants/pseudocode/colaPrioridadCode";
+import { useBus } from "../../../../../shared/hooks/useBus";
+import { animateClearQueue } from "../../../../../shared/utils/draw/queueDrawActions";
 
 export function usePriorityQueueRender(
     queueNodes: PriorityQueueNodeData[],
@@ -15,7 +18,7 @@ export function usePriorityQueueRender(
     // Referencia que apunta al elemento SVG del DOM
     const svgRef = useRef<SVGSVGElement>(null);
 
-    // Mapa para guardar posiciones {x, y} de los nodos dentro del SVG
+    // Mapa de posiciones actuales de los nodos dentro del SVG
     const nodePositions = useRef(
         new Map<string, { x: number; y: number }>()
     ).current;
@@ -26,16 +29,19 @@ export function usePriorityQueueRender(
     // Control de bloqueo de animación
     const { setIsAnimating } = useAnimation();
 
-    // Memo para calcular los enlaces entre nodos
-    const linksData = useMemo<LinkData[]>(() => {
-        const links: LinkData[] = [];
+    // Bus para la emisión de eventos de código
+    const bus = useBus();
+
+    // Cálculo de enlaces entre nodos
+    const linksData = useMemo<ListLinkData[]>(() => {
+        const links: ListLinkData[] = [];
         queueNodes.forEach(n => {
             if (n.next) {
                 links.push({
                     sourceId: n.id,
                     targetId: n.next,
                     type: "next"
-                })
+                });
             }
         });
         return links;
@@ -43,60 +49,59 @@ export function usePriorityQueueRender(
 
     // Renderizado base de la cola
     useEffect(() => {
-        // Verificamos que el array de nodos no sea nulo y que la referencia al SVG se haya establecido
         if (!queueNodes || !svgRef.current) return;
 
-        // Margenes para el svg
-        const margin = {
-            left: SVG_QUEUE_VALUES.MARGIN_LEFT,
-            right: SVG_QUEUE_VALUES.MARGIN_RIGHT,
-        };
-
-        // Dimensiones para cada nodo
-        const elementWidth = SVG_QUEUE_VALUES.ELEMENT_WIDTH;
-        const elementHeight = SVG_QUEUE_VALUES.ELEMENT_HEIGHT;
-
         // Espaciado entre nodos
-        const spacing = SVG_QUEUE_VALUES.SPACING;
-        const nodeSpacing = elementWidth + spacing;
+        const nodeSpacing = SVG_QUEUE_VALUES.ELEMENT_WIDTH + SVG_QUEUE_VALUES.SPACING;
 
         // Cálculo del ancho del SVG en base al número de nodos presentes
-        const displayLength = Math.max(
-            queueNodes.length,
-            prevNodes?.length ?? 0
-        );
-        const width =
-            margin.left +
-            displayLength * nodeSpacing -
-            (queueNodes.length > 0 ? spacing : 0) +
-            margin.right;
-
-        // Alto del SVG
-        const height = SVG_QUEUE_VALUES.HEIGHT;
+        const displayLength = Math.max(queueNodes.length, prevNodes?.length ?? 0);
+        const width = SVG_QUEUE_VALUES.MARGIN_LEFT + displayLength * nodeSpacing - (queueNodes.length > 0 ? SVG_QUEUE_VALUES.SPACING : 0) + SVG_QUEUE_VALUES.MARGIN_RIGHT;
 
         // Configuración del contenedor SVG
-        const svg = d3
-            .select(svgRef.current)
-            .attr("height", height)
+        const svg = select(svgRef.current)
+            .attr("height", SVG_QUEUE_VALUES.HEIGHT)
             .attr("width", width);
 
-        // Renderizado de los nodos pertenecientes a la cola
+        // Capas internas para nodos y enlaces
+        let nodesLayer = svg.select<SVGGElement>("#nodes-layer");
+        if (nodesLayer.empty()) nodesLayer = svg.append("g").attr("id", "nodes-layer");
+
+        let linksLayer = svg.select<SVGGElement>("#links-layer");
+        if (linksLayer.empty()) linksLayer = svg.append("g").attr("id", "links-layer");
+
+        // Renderizado de los nodos pertenecientes a la cola de prioridad
         drawPriorityQueueNodes(
-            svg,
+            nodesLayer,
             queueNodes,
             nodePositions,
-            { margin, elementWidth, elementHeight, nodeSpacing, height }
+            {
+                margin: { left: SVG_QUEUE_VALUES.MARGIN_LEFT, right: SVG_QUEUE_VALUES.MARGIN_RIGHT },
+                elementWidth: SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+                elementHeight: SVG_QUEUE_VALUES.ELEMENT_HEIGHT,
+                nodeSpacing,
+                height: SVG_QUEUE_VALUES.HEIGHT
+            }
         );
 
-        // Renderizado de los enlaces entre nodos
-        drawListLinks(svg, linksData, nodePositions, elementWidth, elementHeight);
+        // Renderizado de los enlaces entre nodos 
+        drawListLinks(
+            linksLayer,
+            linksData,
+            nodePositions,
+            SVG_QUEUE_VALUES.ELEMENT_WIDTH,
+            SVG_QUEUE_VALUES.ELEMENT_HEIGHT
+        );
 
-        // Creación de indicador para elemento cabeza de la cola
-        const headId = queueNodes.length > 0 ? queueNodes[0].id : null;
-        const headPos = headId ? nodePositions.get(headId)! : null;
+        // Elevamos la capa de nodos
+        nodesLayer.raise();
 
-        // Configuración de estilos y de posicionamiento para el indicador de cabeza
-        const headStyleConfig = {
+        // Creación del indicador para el nodo inicial de la cola de prioridad
+        const initialNodeId = queueNodes.length > 0 ? queueNodes[0].id : null;
+        const initialNodePos = initialNodeId ? nodePositions.get(initialNodeId)! : null;
+
+        // Configuración de estilos y de posicionamiento para el indicador de inicio
+        const initialIndicatorStyleConfig = {
             text: "INICIO",
             textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
             arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
@@ -107,128 +112,106 @@ export function usePriorityQueueRender(
             arrowTransform: `translate(0, -5)`,
         };
 
-        // Renderizado del indicador de cabeza
+        // Renderizado del indicador de inicio
         drawArrowIndicator(
             svg,
-            "head-indicator",
-            "head-indicator-group",
-            headPos,
-            headStyleConfig,
+            "initial-indicator",
+            "initial-indicator-group",
+            initialNodePos,
+            initialIndicatorStyleConfig,
             { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
-            { elementWidth, elementHeight }
+            { elementWidth: SVG_QUEUE_VALUES.ELEMENT_WIDTH, elementHeight: SVG_QUEUE_VALUES.ELEMENT_HEIGHT }
         );
-    }, [queueNodes, linksData, prevNodes]);
+    }, [queueNodes, linksData, prevNodes?.length]);
 
-    // Efecto para manejar la animación de encolar
+    // Efecto para manejar la inserción de un nuevo nodo dada su prioridad
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
-        if (!queueNodes || !svgRef.current || !query.toEnqueuedNode || !prevNodes) return;
-
-        // Id del nodo encolado
-        const nodeIdEnqueued = query.toEnqueuedNode;
+        if (!queueNodes || !svgRef.current || !query.toEnqueuedNode) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
-        // Localizamos el índice del nodo recién insertado en la cola de prioridad
-        const newNodeIndex = queueNodes.findIndex(node => node.id === nodeIdEnqueued);
+        // Id y posición del nuevo nodo
+        const newNodeId = query.toEnqueuedNode;
+        const newNodeIndex = queueNodes.findIndex(node => node.id === newNodeId);
 
-        // Determinamos el nodo que está antes y después del nuevo nodo (en base a la posición)
+        // Id del nodo anterior y posterior al nuevo nodo (en base a la posición)
         const prevNodeId = newNodeIndex > 0 ? queueNodes[newNodeIndex - 1].id : null;
         const nextNodeId = newNodeIndex < queueNodes.length - 1 ? queueNodes[newNodeIndex + 1].id : null;
 
-        if (newNodeIndex === -1) {
-            resetQueryValues();
-            setIsAnimating(false);
-            return;
-        }
-
-        // Determinamos la animación a realizar en base a la posición del nuevo nodo
-        if (newNodeIndex === 0) {
-            animateEnqueueFirstNode(
-                svg,
-                { nodeEnqueued: nodeIdEnqueued, nextNode: nextNodeId },
-                { queueNodes, linksData },
-                nodePositions,
-                resetQueryValues,
-                setIsAnimating
-            );
-        } else if (newNodeIndex === queueNodes.length - 1) {
-            animateEnqueueLastNode(
-                svg,
-                { nodeEnqueued: nodeIdEnqueued, prevNode: prevNodeId },
-                prevNodes,
-                nodePositions,
-                resetQueryValues,
-                setIsAnimating
-            );
-        } else {
-            animateEnqueueBetweenNodes(
-                svg,
-                { nodeEnqueued: { id: nodeIdEnqueued, index: newNodeIndex }, prevNode: prevNodeId, nextNode: nextNodeId },
-                { queueNodes, linksData },
-                nodePositions,
-                resetQueryValues,
-                setIsAnimating
-            );
-        }
-    }, [query.toEnqueuedNode, queueNodes, linksData, prevNodes, resetQueryValues, setIsAnimating]);
-
-    // Efecto para manejar la animación de decolar
-    useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
-        if (
-            !queueNodes ||
-            !svgRef.current ||
-            !query.toDequeuedNode ||
-            !prevNodes ||
-            prevNodes.length === 0
-        )
-            return;
-
-        // Obtenemos el nodo que anteriormente era el primero (nodo a desencolar)
-        const dequeuedNodeId = query.toDequeuedNode;
-
-        const nextNodeId = queueNodes.length > 0 ? queueNodes[0].id : null;
-
-        // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
-
-        // Animación de desvinculación del nodo
-        animateDequeueNode(
+        // Animación de inserción del nuevo nodo
+        animateEnqueuePriorityNode(
             svg,
-            { dequeuedNode: dequeuedNodeId, nextNode: nextNodeId },
-            { queueNodes, linksData },
-            nodePositions,
+            {
+                newNodeId,
+                prevNodeId,
+                nextNodeId,
+                insertionPosition: newNodeIndex,
+                nodesData: queueNodes,
+                linksData,
+                positions: nodePositions
+            },
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toDequeuedNode, queueNodes, linksData, prevNodes, resetQueryValues, setIsAnimating]);
+    }, [query.toEnqueuedNode, queueNodes, linksData, resetQueryValues, setIsAnimating]);
 
-    // Efecto para manejar la animación de obtención del elemento cabeza
+    // Efecto para manejar la eliminación de un nodo
+    useEffect(() => {
+        if (
+            !queueNodes ||
+            !svgRef.current ||
+            !query.toDequeuedNode
+        )
+            return;
+
+        // Selección del elemento SVG a partir de su referencia
+        const svg = select(svgRef.current);
+
+        // Id del actual nodo inicial de la cola de prioridad previo a la eliminación (nodo a eliminar)
+        const currInitialNodeId = query.toDequeuedNode;
+
+        // Id del nuevo nodo inicial 
+        const newInitialNodeId = queueNodes.length > 0 ? queueNodes[0].id : null;
+
+        // Animación de desvinculación del nodo
+        animateDequeuePriorityNode(
+            svg,
+            {
+                currInitialNodeId,
+                newInitialNodeId,
+                remainingNodesData: queueNodes,
+                remainingLinksData: linksData,
+                positions: nodePositions
+            },
+            resetQueryValues,
+            setIsAnimating
+        );
+    }, [query.toDequeuedNode, queueNodes, linksData, resetQueryValues, setIsAnimating]);
+
+    // Efecto para manejar el resaltado del nodo inicial
     useEffect(() => {
         if (
             !svgRef.current ||
             !queueNodes ||
-            queueNodes.length === 0 ||
             !query.toGetFront
         )
             return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
-        // Identificador del nodo cabeza de la cola
-        const headNodeId = query.toGetFront;
+        // Identificador del nodo inicial de la cola de prioridad
+        const initialNodeId = query.toGetFront;
 
-        // Prioridad del nodo cabeza
-        const headPriority = queueNodes[0].priority;
+        // Prioridad del nodo inicial
+        const initialNodePriority = queueNodes[0].priority;
 
-        // Animación de resaltado para nodo cabeza de la cola
+        // Animación de resaltado para el nodo inicial de la cola de prioridad
         animateHighlightNode(
             svg,
-            headNodeId,
-            { highlightColor: "#0066CC", rectStrokeColor: getPriorityColor(headPriority).stroke, rectStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH },
+            initialNodeId,
+            { highlightColor: "#0066CC", rectStrokeColor: getPriorityColor(initialNodePriority).stroke, rectStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH },
             { textFillColor: "black", textFontSize: SVG_PRIORITY_QUEUE_VALUES.ELEMENT_TEXT_SIZE, textFontWeight: SVG_PRIORITY_QUEUE_VALUES.ELEMENT_TEXT_WEIGHT },
             resetQueryValues,
             setIsAnimating
@@ -237,15 +220,27 @@ export function usePriorityQueueRender(
 
     // Efecto para manejar la limpieza de lienzo
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
         if (!queueNodes || !svgRef.current || !query.toClear) return;
 
         // Selección del elemento SVG a partir de su referencia
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
 
-        // Animación de limpieza del lienzo
-        animateClearList(svg, nodePositions, resetQueryValues, setIsAnimating);
-    }, [query.toClear, queueNodes, resetQueryValues, setIsAnimating]);
+        // Código y labels de la operación
+        const colaPrioridadCode = getColaPrioridadCode();
+        const labels = colaPrioridadCode.clean.labels!;
+
+        // Animación de limpieza de la cola
+        animateClearQueue(
+            svg,
+            nodePositions,
+            bus,
+            {
+                CLEAR_HEAD: labels.CLEAR_HEAD,
+                RESET_SIZE: labels.RESET_SIZE
+            },
+            "clean",
+            resetQueryValues, setIsAnimating);
+    }, [query.toClear, queueNodes, bus, resetQueryValues, setIsAnimating]);
 
     return { svgRef };
 }

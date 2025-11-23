@@ -76,7 +76,7 @@ export function useDoublyLinkedListRender(
         let linksLayer = svg.select<SVGGElement>("#links-layer");
         if (linksLayer.empty()) linksLayer = svg.append("g").attr("id", "links-layer");
 
-        // Renderizado de los nodos de la lista
+        // Renderizado de los nodos de la lista doble
         drawListNodes(
             nodesLayer,
             listNodes,
@@ -102,12 +102,12 @@ export function useDoublyLinkedListRender(
         // Elevamos la capa de nodos
         nodesLayer.raise();
 
-        // Creación de indicador para elemento cabeza
+        // Creación del indicador para el nodo cabeza de la lista doble
         const headId = listNodes.length > 0 ? listNodes[0].id : null;
         const headPos = headId ? nodePositions.get(headId)! : null;
 
-        // Configuración de estilos y de posicionamiento para el indicador del elemento cabeza
-        const headStyleConfig = {
+        // Configuración de estilos y de posicionamiento para el indicador de cabeza
+        const headIndicatorStyleConfig = {
             text: "CABEZA",
             textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
             arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
@@ -124,17 +124,17 @@ export function useDoublyLinkedListRender(
             "head-indicator",
             "head-indicator-group",
             headPos,
-            headStyleConfig,
+            headIndicatorStyleConfig,
             { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
             { elementWidth: SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, elementHeight: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT }
         );
 
-        // Creación de indicador para elemento cola
+        // Creación del indicador para el nodo cola de la lista doble
         const tailId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
         const tailPos = tailId ? nodePositions.get(tailId)! : null;
 
-        // Configuración de estilos y de posicionamiento para el indicador del elemento cola
-        const tailStyleConfig = {
+        // Configuración de estilos y de posicionamiento para el indicador de cola
+        const tailIndicatorStyleConfig = {
             text: "COLA",
             textColor: SVG_STYLE_VALUES.ELEMENT_TEXT_COLOR,
             arrowColor: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
@@ -151,7 +151,7 @@ export function useDoublyLinkedListRender(
             "tail-indicator",
             "tail-indicator-group",
             tailPos,
-            tailStyleConfig,
+            tailIndicatorStyleConfig,
             { calculateTransform: (pos, d) => `translate(${pos.x + d.elementWidth / 2}, ${pos.y})` },
             { elementWidth: SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, elementHeight: SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT }
         );
@@ -167,10 +167,10 @@ export function useDoublyLinkedListRender(
         // Id del nuevo nodo cabeza
         const newHeadNodeId = query.toAddFirst;
 
-        // Id del nodo cabeza actual de la lista (anterior a la inserción)
+        // Id del actual nodo cabeza de la lista doble (anterior a la inserción)
         const currHeadNodeId = listNodes.length > 1 ? listNodes[1].id : null;
 
-        // Animación de inserción del nodo como primer elemento de la lista
+        // Animación de inserción del nuevo nodo como primer elemento de la lista doble
         animateDoublyInsertFirst(
             svg,
             {
@@ -196,10 +196,10 @@ export function useDoublyLinkedListRender(
         // Id del nuevo nodo cola
         const newTailNodeId = query.toAddLast;
 
-        // Id del actual nodo cola de la lista (anterior a la inserción)
+        // Id del actual nodo cola de la lista doble (anterior a la inserción)
         const currTailNodeId = listNodes.length > 1 ? listNodes[listNodes.length - 2].id : null;
 
-        // Animación de inserción del nodo como último elemento de la lista
+        // Animación de inserción del nuevo nodo como último elemento de la lista doble
         animateDoublyInsertLast(
             svg,
             {
@@ -228,9 +228,9 @@ export function useDoublyLinkedListRender(
         const prevNodeId = position > 0 ? listNodes[position - 1].id : null;
 
         // Id del nodo siguiente al nuevo nodo
-        const nextNodeId = position !== listNodes.length - 1 ? listNodes[position + 1].id : null;
+        const nextNodeId = position < listNodes.length - 1 ? listNodes[position + 1].id : null;
 
-        // Animación de inserción del nodo en una posición especifica
+        // Animación de inserción del nuevo nodo en una posición especifica
         animateDoublyInsertAt(
             svg,
             {
@@ -255,13 +255,13 @@ export function useDoublyLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Id del nodo cabeza actual previo a la eliminación (nodo a eliminar)
+        // Id del actual nodo cabeza previo a la eliminación (nodo a eliminar)
         const currHeadNodeId = query.toDeleteFirst;
 
-        // Id del nuevo nodo cabeza
+        // Id del nuevo nodo cabeza de la lista doble
         const newHeadNodeId = listNodes.length > 0 ? listNodes[0].id : null;
 
-        // Animación de eliminación del primer nodo de la lista
+        // Animación de eliminación del primer nodo de la lista doble
         animateDoublyDeleteFirst(
             svg,
             {
@@ -287,10 +287,10 @@ export function useDoublyLinkedListRender(
         // Id del actual nodo cola previo a la eliminación (nodo a eliminar)
         const currTailNodeId = query.toDeleteLast;
 
-        // Id del nuevo nodo cola
+        // Id del nuevo nodo cola de la lista doble
         const newTailNodeId = listNodes.length > 0 ? listNodes[listNodes.length - 1].id : null;
 
-        // Animación de eliminación del último nodo de la lista
+        // Animación de eliminación del último nodo de la lista doble
         animateDoublyDeleteLast(
             svg,
             {
@@ -319,7 +319,7 @@ export function useDoublyLinkedListRender(
         const prevNodeId = position > 0 ? prevNodes[position - 1].id : null;
 
         // Id del nodo siguiente al nodo a eliminar
-        const nextNodeId = position !== prevNodes.length - 1 ? prevNodes[position + 1].id : null;
+        const nextNodeId = position < prevNodes.length - 1 ? prevNodes[position + 1].id : null;
 
         // Animación de eliminación del nodo en una posición especifica
         animateDoublyDeleteAt(
@@ -346,7 +346,7 @@ export function useDoublyLinkedListRender(
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Obtenemos el elemento de la lista a buscar
+        // Elemento de la lista a buscar
         const targetElement = query.toSearch;
 
         // Código y labels de la operación

@@ -1,31 +1,25 @@
-import {
-    LIST_RENDER_CONFIGS,
-    SVG_STYLE_VALUES,
-} from "../../../../../shared/constants/consts";
+import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import { BaseQueryOperations, ListNodeData } from "../../../../../types";
-import { useLinkedListRender } from "../../../hooks/estructures/listas/useLinkedListRender";
+import { useCircularDoublyLinkedListRender } from "../../../hooks/estructures/listas/useCircularDoublyLinkedListRender";
 
-export function LinkedListRender({
+export function CircularDoublyLinkedListRender({
     linkedList,
     query,
     resetQueryValues,
-    listType,
 }: {
     linkedList: ListNodeData<number>[];
     query: BaseQueryOperations<"lista_enlazada">;
     resetQueryValues: () => void;
-    listType: keyof typeof LIST_RENDER_CONFIGS;
 }) {
-    const { svgRef } = useLinkedListRender(
+    const { svgRef } = useCircularDoublyLinkedListRender(
         linkedList,
         query,
-        resetQueryValues,
-        listType
+        resetQueryValues
     );
 
     return (
         <div>
-            <svg id={`linked-list-svg`} ref={svgRef}>
+            <svg id={`circularD-linked-list-svg`} ref={svgRef}>
                 <defs>
                     <marker
                         id="arrowhead"

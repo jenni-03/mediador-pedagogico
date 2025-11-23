@@ -321,14 +321,22 @@ export function getArbolRojiNegroTour(): TourStep[] {
     {
       type: "info",
       description:
-        "🔍 **Search** en RB: igual que en ABB; **no splayea**. Solo resalta si existe."
+        "🔍 **Search**: La búsqueda de un nodo en RB, funciona de igual manera que en un ABB. **No modifica** el árbol (sin rotaciones ni recoloreos). Va a la **izquierda** si es menor, **derecha** si es mayor."
     },
     { id: "inputConsola", text: "search(8);", type: "write" },
     {
       id: "console",
       type: "element",
       description:
-        "Busca **8**: izquierda si menor, derecha si mayor. Se resalta si se encuentra."
+        "Busca **8**: sigue el orden de ABB (izq si menor, der si mayor). Si se encuentra, el nodo **se resalta**."
+    },
+    { id: "inputConsola", type: "enter" },
+    { id: "inputConsola", text: "search(45);", type: "write" },
+    {
+      id: "console",
+      type: "element",
+      description:
+        "Busca **45**: si existe, se **resalta** el nodo. Si **no existe**, se resalta el **NIL** (o el **último visitado**) donde la búsqueda se detuvo."
     },
     { id: "inputConsola", type: "enter" },
 
@@ -342,21 +350,21 @@ export function getArbolRojiNegroTour(): TourStep[] {
       id: "main-canvas",
       type: "element",
       description:
-        "📐 **Inorden (izq → raíz → der)**: Recorre el árbol en orden ascendente. En un ABB (incluido el Rojo-Negro), siempre devuelve los elementos ordenados."
+        "📐 **Inorden (izq → raíz → der)**: Recorre el árbol en **orden ascendente**. En un ABB (incluido el Rojo-Negro) siempre devuelve los elementos **ordenados**."
     },
     { id: "inputConsola", text: "arbolRN.getInOrder();", type: "write" },
     { id: "inputConsola", type: "enter" },
     {
       type: "info",
       description:
-        "🌲 **Preorden (raíz → izq → der)**: Visita primero la raíz y luego sus subárboles. Útil para clonar el árbol"
+        "🌲 **Preorden (raíz → izq → der)**: Visita primero la **raíz** y luego sus subárboles. Útil para **clonar** o **serializar** el árbol"
     },
     { id: "inputConsola", text: "arbolRN.getPreOrder();", type: "write" },
     { id: "inputConsola", type: "enter" },
     {
       type: "info",
       description:
-        "🔄 **Postorden (izq → der → raíz)**: Procesa primero los hijos y al final la raíz."
+        "🔄 **Postorden (izq → der → raíz)**: Procesa primero los **hijos** y al final la **raíz**. Útil para **eliminar** el árbol de forma segura (hijos antes que padre)"
     },
     { id: "inputConsola", text: "arbolRN.getPostOrder();", type: "write" },
     { id: "inputConsola", type: "enter" },
@@ -364,7 +372,7 @@ export function getArbolRojiNegroTour(): TourStep[] {
       id: "main-canvas",
       type: "element",
       description:
-        "📶 **Level-order (BFS)**: Recorre el árbol nivel por nivel, de arriba hacia abajo. Útil para la inspección global de la estructura."
+        "📶 **Level-order (BFS)**: Recorre el árbol **nivel por nivel**, de arriba hacia abajo. Útil para la inspección global de la estructura."
     },
     { id: "inputConsola", text: "arbolRN.getLevelOrder();", type: "write" },
     { id: "inputConsola", type: "enter" },

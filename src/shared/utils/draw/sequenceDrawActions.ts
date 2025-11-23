@@ -234,7 +234,7 @@ export async function animateInsertionSequence(
   // Elementos implicados en la inserción
   const { insertionValue, insertionIndex } = insertionData;
 
-  // Grupo del lienzo correspondiente al elemento a insertar
+  // Grupo del correspondiente al elemento a insertar
   const targetGroup = svg
     .select<SVGGElement>(`g#e-${insertionIndex}`);
 

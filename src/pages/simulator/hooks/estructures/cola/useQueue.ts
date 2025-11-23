@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { Cola } from "../../../../../shared/utils/structures/Cola";
+import { useCallback, useMemo, useState } from "react";
+import { type Cola } from "../../../../../shared/utils/structures/Cola";
 import { BaseQueryOperations } from "../../../../../types";
 
 export function useQueue(structure: Cola<number>) {
     // Estado para manejar la cola
     const [queue, setQueue] = useState(structure);
 
-    // Estado para manejar el error
+    // Estado para gestionar el error
     const [error, setError] = useState<{ message: string, id: number } | null>(null);
 
     // Estado para manejar la operación solicitada por el usuario
@@ -17,116 +17,93 @@ export function useQueue(structure: Cola<number>) {
         toClear: false
     });
 
-    // Operación de encolar
-    const enqueueElement = (value: number) => {
+    // Operación para encolar un elemento
+    const enqueueElement = useCallback((value: number) => {
         try {
-            // Clonar la cola para garantizar la inmutabilidad del estado
             const clonedQueue = queue.clonar();
-
-            // Encolar el nuevo elemento
             const insertedNode = clonedQueue.encolar(value);
-
-            // Actualizar el estado de la cola
             setQueue(clonedQueue);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toEnqueuedNode: insertedNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [queue]);
 
-    // Operación de decolar
-    const dequeueElement = () => {
+    // Operación para decolar un elemento
+    const dequeueElement = useCallback(() => {
         try {
-            // Clonar la cola para asegurar la inmutabilidad del estado
             const clonedQueue = queue.clonar();
-
-            // Obtener el nodo a ser eliminado para acceder a su ID
             const nodeToDelete = clonedQueue.decolar();
-
-            // Actualizar el estado de la cola
             setQueue(clonedQueue);
 
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toDequeuedNode: nodeToDelete.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    }
+    }, [queue]);
 
     // Operación para obtener la cabeza de la cola 
-    const getFront = () => {
+    const getFront = useCallback(() => {
         try {
-            // Obtener el nodo cabeza de la cola
             const frontNode = queue.getInicio();
-
-            // Verificar su existencia
             if (!frontNode) throw new Error("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");
 
-            // Actualizar la query para informar de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toGetFront: frontNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now() });
         }
-    };
+    }, [queue]);
 
     // Operación para vaciar la cola
-    const clearQueue = () => {
-        // Clonar la cola para asegurar la inmutabilidad del estado
+    const clearQueue = useCallback(() => {
         const clonedQueue = queue.clonar();
-
-        // Vaciar la cola
         clonedQueue.vaciar();
-
-        // Actualizar el estado de la cola
         setQueue(clonedQueue);
 
-        // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true
         }));
-    }
+    }, [queue]);
 
     // Función de restablecimiento de las queries del usuario
-    const resetQueryValues = () => {
+    const resetQueryValues = useCallback(() => {
         setQuery({
             toEnqueuedNode: null,
             toDequeuedNode: null,
             toGetFront: null,
             toClear: false
         })
-    }
+    }, []);
+
+    // Objeto de operaciones estable
+    const operations = useMemo(() => ({
+        enqueueElement,
+        dequeueElement,
+        getFront,
+        clearQueue,
+        resetQueryValues
+    }), [
+        enqueueElement, dequeueElement, getFront, clearQueue, resetQueryValues
+    ]);
 
     return {
         queue,
         query,
         error,
-        operations: {
-            enqueueElement,
-            dequeueElement,
-            getFront,
-            clearQueue,
-            resetQueryValues
-        }
+        operations
     }
 }
