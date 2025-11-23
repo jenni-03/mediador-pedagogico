@@ -309,7 +309,7 @@ export async function animatePopNode(
   // Inicio de la operación
   bus.emit("op:start", { op: "pop" });
 
-  bus.emit("step:progress", { stepId: "pop", lineIndex: labels.SAVE_TOP });
+  bus.emit("step:progress", { stepId: "pop", lineIndex: labels.SAVE_TOP }); 
   // Salida del nodo a eliminar
   await nodeToRemoveGroup
     .transition()

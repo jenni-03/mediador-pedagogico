@@ -18,7 +18,17 @@ export const getColaCode = (): Record<string, OperationCode> => ({
       `    }`,
       `    {1}++;`,
       `}`,
-    ]
+    ],
+    labels: {
+      CREATE_NODE: 2,
+      VALIDATE_EMPTY: 3,
+      ASSIGN_START_EMPTY: 4,
+      ASSIGN_END_EMPTY: 5,
+      ELSE_EMPTY: 6,
+      LINK_NEW_TO_END: 7,
+      ASSIGN_NEW_END: 8,
+      INC_SIZE: 10,
+    },
   },
   dequeue: {
     lines: [
@@ -41,7 +51,52 @@ export const getColaCode = (): Record<string, OperationCode> => ({
       `    {0}--;`,
       `    return nodoEliminar.info;`,
       `}`,
-    ]
+    ],
+    labels: {
+      VALIDATE_EMPTY: 2,
+      THROW_EMPTY: 3,
+      SAVE_FIRST_NODE: 5,
+      VALIDATE_ONE_ELEMENT: 6,
+      CLEAR_START_SINGLE: 7,
+      CLEAR_END_SINGLE: 8,
+      ELSE_MULTIPLE: 9,
+      ADVANCE_START: 10,
+      DEC_SIZE: 12,
+      RETURN_VALUE: 13,
+    },
+    errorPlans: {
+      QUEUE_EMPTY: [
+        { lineLabel: "VALIDATE_EMPTY", hold: 600 },
+        { lineLabel: "THROW_EMPTY", hold: 600 },
+      ],
+    },
+  },
+  getFront: {
+    lines: [
+      `/**
+ * Método que obtiene el primer elemento insertado en la cola.
+ * @return valor Elemento cabeza asociado al nodo inicial. 
+ * @throws RuntimeException si la cola está vacía.
+ */`,
+      `public T getFront() {`,
+      `    if (this.tamanio == 0) {`,
+      `        throw new RuntimeException("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
+      `    }`,
+      `    return this.inicio.info;`,
+      `}`,
+    ],
+    labels: {
+      START: 1,
+      VALIDATE_EMPTY: 2,
+      THROW_EMPTY: 3,
+      RETURN_HEAD: 5,
+    },
+    errorPlans: {
+      QUEUE_EMPTY: [
+        { lineLabel: "VALIDATE_EMPTY", hold: 600 },
+        { lineLabel: "THROW_EMPTY", hold: 600 },
+      ],
+    },
   },
   clean: {
     lines: [
@@ -57,22 +112,7 @@ export const getColaCode = (): Record<string, OperationCode> => ({
     labels: {
       CLEAR_HEAD: 2,
       CLEAR_TAIL: 3,
-      RESET_SIZE: 4
-    }
-  },
-  getFront: {
-    lines: [
-      `/**
- * Método que obtiene el primer elemento insertado en la cola.
- * @return valor Elemento cabeza asociado al nodo inicial. 
- * @throws RuntimeException si la cola está vacía.
- */`,
-      `public T getFront() {`,
-      `    if (this.tamanio == 0) {`,
-      `        throw new RuntimeException("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");`,
-      `    }`,
-      `    return this.inicio.info;`,
-      `}`,
-    ]
+      RESET_SIZE: 4,
+    },
   },
 });

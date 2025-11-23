@@ -18,6 +18,7 @@ import {
   animateHighlightNode,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { useBus } from "../../../../../shared/hooks/useBus";
+import { getPilaCode } from "../../../../../shared/constants/pseudocode/pilaCode";
 
 export function useStackRender(
   stackNodes: StackNodeData[],
@@ -204,6 +205,9 @@ export function useStackRender(
     // Identificador del nodo tope de la pila
     const topNodeId = query.toGetTop;
 
+    const stackCode = getPilaCode();
+    const labels = stackCode.getTop.labels!;
+
     // Animación para resaltado de nodo tope de la pila
     animateHighlightNode(
       svg,
@@ -219,6 +223,11 @@ export function useStackRender(
         textFontWeight: SVG_STYLE_VALUES.ELEMENT_TEXT_WEIGHT,
       },
       bus,
+      {
+        START: labels.START,
+        RETURN_TOP: labels.RETURN_TOP,
+      },
+      "getTop",
       resetQueryValues,
       setIsAnimating
     );
@@ -233,7 +242,13 @@ export function useStackRender(
     const svg = d3.select(svgRef.current);
 
     // Animación de limpieza del lienzo
-    animateClearStack(svg, nodePositions, bus, resetQueryValues, setIsAnimating);
+    animateClearStack(
+      svg,
+      nodePositions,
+      bus,
+      resetQueryValues,
+      setIsAnimating
+    );
   }, [query.toClear, stackNodes, bus, resetQueryValues, setIsAnimating]);
 
   return { svgRef };

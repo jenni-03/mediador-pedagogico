@@ -24,8 +24,6 @@ import { type EventBus } from "../../events/eventBus";
 import { getPilaCode } from "../../constants/pseudocode/pilaCode";
 import { delay } from "../simulatorUtils";
 
-const stackCode = getPilaCode();
-
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
  * El indicador se crea inicialmente oculto (opacity = 0)
@@ -484,11 +482,16 @@ export async function animateHighlightNode(
     textFontWeight: string;
   },
   bus: EventBus,
+  labels: {
+    START: number;
+    RETURN_TOP?: number;
+    RETURN_HEAD?: number;
+  },
+  stepId: string,
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Etiquetas para el registro de eventos
-  const labels = stackCode.getTop.labels!;
 
   // Estilos para contenedor y texto del nodo
   const { highlightColor, rectStrokeColor, rectStrokeWidth } = rectValues;
@@ -498,17 +501,24 @@ export async function animateHighlightNode(
   const nodeGroup = svg.select<SVGGElement>(`#${nodeId}`);
 
   // Inicio de la operación
-  bus.emit("op:start", { op: "getTop" });
+  bus.emit("op:start", { op: stepId });
 
   // Grupo correspondiente al contenedor principal del nodo y al valor de este
   const rect = nodeGroup.select("rect");
   const text = nodeGroup.select("text");
 
-  bus.emit("step:progress", { stepId: "getTop", lineIndex: labels.START });
-  await delay(200);
+  bus.emit("step:progress", { stepId, lineIndex: labels.START });
+  await delay(400);
 
-  bus.emit("step:progress", { stepId: "getTop", lineIndex: labels.RETURN_TOP });
-  await delay(700);
+  if (labels.RETURN_TOP) {
+    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
+    await delay(700);
+  } else {
+    if (labels.RETURN_HEAD) {
+      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_HEAD });
+      await delay(700);
+    }
+  }
 
   // Animación de sobresalto del contenedor del nodo
   rect
@@ -537,7 +547,7 @@ export async function animateHighlightNode(
     .style("font-weight", textFontWeight);
 
   // Fin de la operación
-  bus.emit("op:done", { op: "getTop" });
+  bus.emit("op:done", { op: stepId });
 
   // Restablecimiento de los valores de las queries del usuario
   resetQueryValues();
@@ -600,20 +610,10 @@ export async function animateClearList(
 
     // salida de los enlaces
     bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
-    await linksG
-      .transition()
-      .duration(800)
-      .style("opacity", 0)
-      .remove()
-      .end();
+    await linksG.transition().duration(800).style("opacity", 0).remove().end();
 
     // salida de los nodos
-    await nodesG
-      .transition()
-      .duration(800)
-      .style("opacity", 0)
-      .remove()
-      .end();
+    await nodesG.transition().duration(800).style("opacity", 0).remove().end();
 
     // Limpieza del mapa de posiciones
     nodePositions.clear();

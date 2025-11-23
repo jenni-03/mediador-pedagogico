@@ -1,5 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { DomainError } from "../error/DomainError";
 import { NodoS } from "../nodes/NodoS";
 
 /**
@@ -63,8 +64,9 @@ export class Cola<T> {
    */
   public decolar(): NodoS<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible decolar el nodo: La cola está vacía (tamaño actual: 0).",
+        "QUEUE_EMPTY"
       );
 
     const nodoAEliminar = this.inicio!;
