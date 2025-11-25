@@ -1,3 +1,4 @@
+// src/hooks/estructures/hashTable/useHashTableRender.ts
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import {
@@ -8,7 +9,12 @@ import {
   StyleConfig,
   flatten,
 } from "../../../../../shared/utils/draw/hashTableDrawActions";
-import { HashNode, HashQuery, LastAction } from "./useHashTable";
+import {
+  HashNode,
+  HashQuery,
+  LastAction,
+  HashError,
+} from "./useHashTable";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { useBus } from "../../../../../shared/hooks/useBus";
 import { getTablaHashCode } from "../../../../../shared/constants/pseudocode/tablaHashCode";
@@ -22,6 +28,7 @@ interface Props {
   memory: number[];
   query: HashQuery;
   lastAction?: LastAction;
+  error: HashError | null;
   resetQueryValues: () => void;
   style?: Partial<StyleConfig>;
 }
@@ -31,6 +38,7 @@ export function useHashTableRender({
   memory,
   query,
   lastAction,
+  error,
   resetQueryValues,
   style,
 }: Props) {
@@ -80,6 +88,49 @@ export function useHashTableRender({
     mergedStyle.nodeStroke,
     canDrawBuckets,
   ]);
+
+  /* ───────────────── Errores: reproducir errorPlans ───────────────── */
+  useEffect(() => {
+    if (!error || !error.planId) return;
+    const { op, planId, id } = error;
+
+    const opCode = (code as any)[op];
+    if (!opCode || !opCode.labels || !opCode.errorPlans) return;
+
+    const labels = opCode.labels as Record<string, number>;
+    const plan = opCode.errorPlans[planId];
+    if (!plan || plan.length === 0) return;
+
+    const stepId = `hash-error-${op}-${id}`;
+    let cancelled = false;
+
+    const run = async () => {
+      setIsAnimating(true);
+      bus.emit("op:start", { op });
+
+      for (const stepDef of plan as {
+        lineLabel: string;
+        hold?: number;
+      }[]) {
+        const { lineLabel, hold } = stepDef;
+        const lineIndex = labels[lineLabel];
+        if (typeof lineIndex === "number") {
+          bus.emit("step:progress", { stepId, lineIndex });
+          await delay(hold ?? 600);
+          if (cancelled) return;
+        }
+      }
+
+      bus.emit("op:done", { op });
+      setIsAnimating(false);
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [error, code, bus, setIsAnimating]);
 
   /* ───────────────── create(n): constructor ───────────────── */
   useEffect(() => {
@@ -177,7 +228,7 @@ export function useHashTableRender({
     return () => {
       cancelled = true;
     };
-  }, [lastAction?.type, buckets, bus, setIsAnimating]);
+  }, [lastAction?.type, buckets, bus, setIsAnimating, code.create.labels]);
 
   /* ───────────────── get(k): búsqueda ───────────────── */
   useEffect(() => {
@@ -274,6 +325,7 @@ export function useHashTableRender({
     mergedStyle,
     resetQueryValues,
     setIsAnimating,
+    code.get.labels,
   ]);
 
   /* ───────────────── set(k,v): inserción / actualización ───────────────── */
@@ -435,9 +487,10 @@ export function useHashTableRender({
     mergedStyle.nodeStroke,
     bus,
     setIsAnimating,
+    code.set.labels,
   ]);
 
-  /* ───────────────── delete(k): eliminación ───────────────── */
+   /* ───────────────── delete(k): eliminación ───────────────── */
   useEffect(() => {
     if (!svgRef.current) return;
     if (lastAction?.type !== "delete" || lastAction.key == null) return;
@@ -461,7 +514,21 @@ export function useHashTableRender({
       setIsAnimating(true);
       bus.emit("op:start", { op: "delete" });
 
-      /* ── 1) hash(k): cuerpo de la función hash(...) ─────────── */
+      /* ── 1) Validaciones lógicas ───────────────────────────── */
+
+      // if (this.informacionEntrada == null || this.numeroSlots == 0){ ... }
+      await step("TABLE_EXISTS_IF", 600);
+      if (cancelled) return;
+
+      // if (!esEnteroValido({0})){ ... }
+      await step("VALIDATE_KEY", 600);
+      if (cancelled) return;
+
+      /* ── 2) hash(k) y cuerpo de hash(...) ─────────────────── */
+
+      // int idx = hash({0});
+      await step("HASH", 600);
+      if (cancelled) return;
 
       // int hcode = clave % numeroSlots;
       await step("HASH_FN_COMPUTE", 400);
@@ -479,15 +546,39 @@ export function useHashTableRender({
       await step("HASH_FN_RETURN", 400);
       if (cancelled) return;
 
-      /* ── 2) Cuerpo de delete(k) ────────────────────────────── */
+      /* ── 3) Cuerpo de delete(k) ────────────────────────────── */
 
-      // Lista bucket = buckets[hash({0})];
+      // Lista bucket = buckets[idx];
       await step("GET_BUCKET", 600);
       if (cancelled) return;
 
-      // boolean eliminado = bucket.eliminar({0});
+      // boolean eliminado = eliminarEnBucket(bucket, {0});
       await step("DELETE_NODE", 600);
       if (cancelled) return;
+
+      // ── 3.1) Cuerpo de eliminarEnBucket(bucket, clave) ───────
+      if (
+        typeof labels.DELETE_HELPER_FOR === "number" &&
+        typeof labels.DELETE_HELPER_CHECK_KEY === "number" &&
+        typeof labels.DELETE_HELPER_REMOVE === "number" &&
+        typeof labels.DELETE_HELPER_RETURN_TRUE === "number"
+      ) {
+        // for (int i = 0; i < bucket.size(); i++){
+        await step("DELETE_HELPER_FOR", 400);
+        if (cancelled) return;
+
+        // if (actual.key == clave){
+        await step("DELETE_HELPER_CHECK_KEY", 400);
+        if (cancelled) return;
+
+        //     bucket.eliminarEn(i);
+        await step("DELETE_HELPER_REMOVE", 400);
+        if (cancelled) return;
+
+        //     return true;
+        await step("DELETE_HELPER_RETURN_TRUE", 400);
+        if (cancelled) return;
+      }
 
       // X roja sobre el nodo en el snapshot ANTERIOR
       svg.selectAll("line.remove-mark").remove();
@@ -500,15 +591,11 @@ export function useHashTableRender({
       await delay(600);
       if (cancelled) return;
 
-      // if (eliminado){
-      await step("IF_DELETED", 600);
-      if (cancelled) return;
-
-      //     contador--;
+      // contador--  (numeroDatos--)
       await step("DECREMENT_COUNT", 600);
       if (cancelled) return;
 
-      /* ── 3) Sincronizar vista con estado lógico ────────────── */
+      /* ── 4) Sincronizar vista con estado lógico ───────────── */
 
       // Ahora sí, reflejamos en la vista que el nodo desapareció
       setRenderBuckets(buckets);
@@ -527,10 +614,11 @@ export function useHashTableRender({
     lastAction?.type,
     lastAction?.key,
     buckets,
-    mergedStyle.nodeStroke, // usamos solo una propiedad estable
+    // OJO: NO ponemos renderBuckets ni mergedStyle aquí
     bus,
     setIsAnimating,
   ]);
+
 
   /* ───────────────── clean(): limpieza total ───────────────── */
   useEffect(() => {
@@ -595,7 +683,7 @@ export function useHashTableRender({
     return () => {
       cancelled = true;
     };
-  }, [lastAction?.type, buckets, bus, setIsAnimating]);
+  }, [lastAction?.type, buckets, renderBuckets, bus, setIsAnimating, code.clean.labels]);
 
   return { svgRef };
 }

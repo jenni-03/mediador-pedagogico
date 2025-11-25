@@ -428,144 +428,120 @@ export const commandRules: Record<
     }
   },
 
-  tabla_hash: (parts: string[]) => {
-    const keyword = parts[0]?.toLowerCase();
+ tabla_hash: (parts: string[]) => {
+  const keyword = parts[0]?.toLowerCase();
 
-    // helpers locales
-    const isInt = (v: unknown) => /^-?\d+$/.test(String(v));
-    const isPosInt = (v: unknown) => /^\d+$/.test(String(v));
-    const isUpTo4Digits = (v: unknown) => /^\d{1,4}$/.test(String(v));
+  if (!keyword) {
+    return {
+      valid: false,
+      message: "Debes escribir una operación para tabla_hash (create, set, get, delete o clean).",
+    };
+  }
 
-    switch (keyword) {
-      case "create": {
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message:
-              parts.length === 1
-                ? "Debe proporcionar la capacidad de la tabla hash como argumento."
-                : "El método únicamente espera la capacidad de la tabla hash como argumento.",
-          };
-        }
+  // Helper para validar que un argumento es un número válido (sin hablar de rangos)
+  const isNumeric = (s: string | undefined) => {
+    if (s === undefined) return false;
+    const n = Number(s);
+    return !isNaN(n);
+  };
 
-        const num = Number(parts[1]);
-        if (isNaN(num) || !Number.isInteger(num)) {
-          return {
-            valid: false,
-            message:
-              "La capacidad de la tabla hash debe ser un número entero válido.",
-          };
-        }
-
-        if (num <= 0 || num >= 21) {
-          return {
-            valid: false,
-            message:
-              "La capacidad de la tabla hash debe ser un entero mayor que 0 y menor que 21.",
-          };
-        }
-
-        return true;
+  switch (keyword) {
+    case "create": {
+      // tabla_hash create <slots>
+      if (parts.length !== 2) {
+        return {
+          valid: false,
+          message:
+            parts.length === 1
+              ? "El comando create espera un argumento numérico: create <slots>."
+              : "El comando create solo recibe un argumento: create <slots>.",
+        };
       }
-
-      case "set": {
-        // set key value
-        if (parts.length !== 3) {
-          return {
-            valid: false,
-            message:
-              parts.length <= 1
-                ? "Debe proporcionar la clave y el valor como argumentos."
-                : "Debe proporcionar únicamente dos argumentos (clave, valor).",
-          };
-        }
-
-        const [key, value] = [parts[1], parts[2]];
-
-        if (!isPosInt(key) || !isUpTo4Digits(key)) {
-          return {
-            valid: false,
-            message:
-              "La clave debe ser un número entero positivo de hasta 4 dígitos.",
-          };
-        }
-
-        if (!isPosInt(value) || !isUpTo4Digits(value)) {
-          return {
-            valid: false,
-            message:
-              "El valor debe ser un número entero positivo de hasta 4 dígitos.",
-          };
-        }
-
-        return true;
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message: "El número de slots debe ser un valor numérico válido. Ej: create 8",
+        };
       }
-
-      case "get": {
-        // get key
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message:
-              parts.length === 1
-                ? "Debe proporcionar la clave a buscar como argumento."
-                : "El método únicamente espera la clave a buscar como argumento.",
-          };
-        }
-
-        const key = parts[1];
-
-        if (!isPosInt(key) || !isUpTo4Digits(key)) {
-          return {
-            valid: false,
-            message:
-              "La clave a buscar debe ser un número entero positivo de hasta 4 dígitos.",
-          };
-        }
-
-        return true;
-      }
-
-      case "delete": {
-        // delete key
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message:
-              parts.length === 1
-                ? "Debe proporcionar la clave a eliminar como argumento."
-                : "El método únicamente espera la clave a eliminar como argumento.",
-          };
-        }
-
-        const key = parts[1];
-
-        if (!isPosInt(key) || !isUpTo4Digits(key)) {
-          return {
-            valid: false,
-            message:
-              "La clave a eliminar debe ser un número entero positivo de hasta 4 dígitos.",
-          };
-        }
-
-        return true;
-      }
-
-      case "clean": {
-        if (parts.length !== 1) {
-          return {
-            valid: false,
-            message: "El método no espera ningún argumento.",
-          };
-        }
-        return true;
-      }
-
-      default:
-        // comando desconocido para tabla_hash
-        return false;
+      return true;
     }
-  },
+
+    case "set": {
+      // tabla_hash set <key> <value>
+      if (parts.length !== 3) {
+        return {
+          valid: false,
+          message:
+            "El comando set espera dos argumentos: set <clave> <valor>.",
+        };
+      }
+      if (!isNumeric(parts[1]) || !isNumeric(parts[2])) {
+        return {
+          valid: false,
+          message:
+            "La clave y el valor en set deben ser numéricos. Ej: set 12 45",
+        };
+      }
+      return true;
+    }
+
+    case "get": {
+      // tabla_hash get <key>
+      if (parts.length !== 2) {
+        return {
+          valid: false,
+          message:
+            "El comando get espera un solo argumento: get <clave>.",
+        };
+      }
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message: "La clave en get debe ser un número. Ej: get 21",
+        };
+      }
+      return true;
+    }
+
+    case "delete": {
+      // tabla_hash delete <key>
+      if (parts.length !== 2) {
+        return {
+          valid: false,
+          message:
+            "El comando delete espera un solo argumento: delete <clave>.",
+        };
+      }
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message: "La clave en delete debe ser un número. Ej: delete 21",
+        };
+      }
+      return true;
+    }
+
+    case "clean": {
+      // tabla_hash clean
+      if (parts.length !== 1) {
+        return {
+          valid: false,
+          message:
+            "El comando clean no recibe argumentos: solo escribe clean.",
+        };
+      }
+      return true;
+    }
+
+    default:
+      return {
+        valid: false,
+        message:
+          "Operación no válida para tabla_hash. Usa create, set, get, delete o clean.",
+      };
+  }
+},
+
 
   arbol_binario: (parts) => {
     const keyword = parts[0]?.toLowerCase();
@@ -1524,6 +1500,7 @@ export const commandRules: Record<
         }
         return true;
       }
+
 
       case "getlevelorder":
       case "clean": {

@@ -15,7 +15,7 @@ export function HashTableSimulator() {
     query,
     error: hookError,
     lastAction,
-    actions, // { create, set, get, remove, clean }
+    actions, // { create, set, get, delete, clean }
     resetQueryValues,
   } = useHashTable(0); // ← sin slots iniciales
 
@@ -81,10 +81,10 @@ export function HashTableSimulator() {
         memory={memory}
         query={query}
         lastAction={lastAction}
+        error={hookError}
         resetQueryValues={resetQueryValues}
         style={
           {
-            // sobrescribe aquí si lo necesitas
             // bucketWidth: 120,
             // hitFill: "#ef4444",
           }

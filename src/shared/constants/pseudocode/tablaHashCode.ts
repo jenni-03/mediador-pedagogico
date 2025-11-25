@@ -2,10 +2,10 @@
 import { OperationCode } from "./typesPseudoCode";
 
 export const getTablaHashCode = (): Record<string, OperationCode> => ({
-    /* ───────────────── create(n) ─────────────────
+  /* ───────────────── create(n) ─────────────────
    * Constructor Java-like: valida rango y luego inicializa contador, slots y arreglo de listas.
    */
-    create: {
+  create: {
     lines: [
       `/**`,
       ` * Constructor de una tabla hash con n slots.`,
@@ -17,10 +17,10 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
       `        throw new IllegalArgumentException("La cantidad de slots debe estar entre 1 y 21.");`,
       `    }`,
       ``,
-      `    this.numeroSlots  = {0};            // tamaño de la tabla`,
-      `    this.numeroDatos  = 0;              // contador de elementos`,
+      `    this.numeroSlots  = {0};`,
+      `    this.numeroDatos  = 0;`,
       `    this.informacionEntrada = new ListaCD[this.numeroSlots];`,
-      `    inicializarListas();                // crea una lista vacía por slot`,
+      `    inicializarListas();`,
       `}`,
       ``,
       ``,
@@ -34,23 +34,31 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      // Validación
-      VALIDATE_RANGE: 6,          // if ({0} < 1 || {0} > 21){
-      THROW_RANGE_ERROR: 7,       // throw new IllegalArgumentException...
+      // Firma del constructor (para CREATE_NON_INTEGER)
+      CREATE_SIGNATURE: 4,       // public TablaHash(int {0}){
+
+      // Validación de rango
+      VALIDATE_RANGE: 6,         // if ({0} < 1 || {0} > 21){
+      THROW_RANGE_ERROR: 7,      // throw new IllegalArgumentException...
 
       // Constructor
-      SET_CAP: 10,                // this.numeroSlots  = {0};
-      SET_COUNT: 11,              // this.numeroDatos  = 0;
-      ALLOC_BUCKETS: 12,          // new ListaCD[this.numeroSlots];
-      INIT_BUCKETS: 13,           // inicializarListas();
+      SET_CAP: 10,               // this.numeroSlots  = {0};
+      SET_COUNT: 11,             // this.numeroDatos  = 0;
+      ALLOC_BUCKETS: 12,         // new ListaCD[this.numeroSlots];
+      INIT_BUCKETS: 13,          // inicializarListas();
 
       // Método auxiliar inicializarListas()
-      INIT_LISTS_FOR: 21,         // for (int i = 0; ...
-      INIT_LISTS_ASSIGN: 22,      // informacionEntrada[i] = new ListaCD();
+      INIT_LISTS_FOR: 21,        // for (int i = 0; ...
+      INIT_LISTS_ASSIGN: 22,     // informacionEntrada[i] = new ListaCD();
     },
 
     // Planes de error para que el simulador sepa qué líneas resaltar
     errorPlans: {
+      // slots no entero → planId: CREATE_NON_INTEGER (hook: DomainError.code)
+      CREATE_NON_INTEGER: [
+        { lineLabel: "CREATE_SIGNATURE", hold: 600 },
+      ],
+      // slots fuera de rango [1..21] → INVALID_CAPACITY_RANGE
       INVALID_CAPACITY_RANGE: [
         { lineLabel: "VALIDATE_RANGE", hold: 600 },
         { lineLabel: "THROW_RANGE_ERROR", hold: 800 },
@@ -58,7 +66,7 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
     },
   },
 
-    /* ───────────────── set(k,v) ─────────────────
+  /* ───────────────── set(k,v) ─────────────────
    * Versión inspirada en insertar(clave, objeto) de Java:
    * - valida que la tabla exista y que (k,v) sean válidos
    * - calcula índice con hash()
@@ -84,19 +92,19 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
       `        throw new IllegalArgumentException("Clave y valor deben ser enteros (≤ 4 dígitos).");`,
       `    }`,
       ``,
-      `    int idx = hash({0});                     // calcular índice`,
-      `    Nodo n = buscarNodo(idx, {0});          // buscar dentro del bucket`,
+      `    int idx = hash({0});`,
+      `    Nodo n = buscarNodo(idx, {0});`,
       ``,
-      `    if (n != null){                         // caso actualización`,
-      `        n.value = {1};                      // reemplaza el valor`,
-      `    } else {                                // caso inserción`,
+      `    if (n != null){`,
+      `        n.value = {1};`,
+      `    } else {`,
       `        Nodo nuevo = new Nodo({0}, {1});`,
       `        // Si el bucket ya está lleno (máx 5 nodos), no permitimos más colisiones`,
       `        if (buckets[idx].size() >= 5){`,
       `            throw new RuntimeException("Bucket lleno: no se permiten más colisiones en este slot.");`,
       `        }`,
       `        buckets[idx].insertarAlFinal(nuevo);`,
-      `        {2}++;                              // contador++ (numeroDatos)`,
+      `        {2}++;`,
       `    }`,
       `}`,
       ``,
@@ -170,18 +178,25 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
       SEARCH_RETURN_NULL: 64,      // return null;
     },
     errorPlans: {
+      // validateTableExists() → TABLE_NOT_CREATED
       TABLE_NOT_CREATED: [
         { lineLabel: "TABLE_EXISTS_IF", hold: 600 },
         { lineLabel: "TABLE_EXISTS_THROW", hold: 800 },
       ],
+
+      // !Number.isInteger(key) || !Number.isInteger(value)
       INVALID_KEY_OR_VALUE_TYPE: [
         { lineLabel: "VALIDATE_KEYVAL", hold: 600 },
         { lineLabel: "THROW_INVALID_KEYVAL", hold: 800 },
       ],
+
+      // key/value fuera de 0..9999 (KEY_OR_VALUE_TOO_LARGE)
       KEY_OR_VALUE_TOO_LARGE: [
         { lineLabel: "VALIDATE_KEYVAL", hold: 600 },
         { lineLabel: "THROW_INVALID_KEYVAL", hold: 800 },
       ],
+
+      // bucket lleno
       BUCKET_FULL: [
         { lineLabel: "HASH", hold: 400 },
         { lineLabel: "SEARCH_NODE", hold: 400 },
@@ -192,8 +207,7 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
     },
   },
 
-
-    /* ───────────────── get(k) ─────────────────
+  /* ───────────────── get(k) ─────────────────
    * Versión inspirada en getObjeto(clave) de Java:
    * - valida que la tabla exista y que la clave sea válida
    * - calcula índice con hash()
@@ -286,6 +300,7 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
         { lineLabel: "TABLE_EXISTS_IF", hold: 600 },
         { lineLabel: "TABLE_EXISTS_THROW", hold: 800 },
       ],
+      // type/rango inválido → INVALID_KEY_TYPE
       INVALID_KEY_TYPE: [
         { lineLabel: "VALIDATE_KEY", hold: 600 },
         { lineLabel: "THROW_INVALID_KEY", hold: 800 },
@@ -297,13 +312,12 @@ export const getTablaHashCode = (): Record<string, OperationCode> => ({
     },
   },
 
-
-  /* ───────────────── delete(k) ─────────────────
+ /* ───────────────── delete(k) ─────────────────
  * Inspirado en eliminar(clave) de Java:
  * - valida que la tabla exista y que la clave sea válida
  * - calcula índice con hash()
  * - obtiene el bucket
- * - intenta eliminar por clave
+ * - intenta eliminar por clave mediante un método auxiliar
  * - si no la encuentra → lanza excepción
  * - si la encuentra → decrementa contador
  */
@@ -326,7 +340,7 @@ delete: {
     ``,
     `    int idx = hash({0});`,
     `    Lista bucket = buckets[idx];`,
-    `    boolean eliminado = bucket.eliminar({0});`,
+    `    boolean eliminado = eliminarEnBucket(bucket, {0});`,
     `    if (!eliminado){`,
     `        throw new RuntimeException("Clave no encontrada");`,
     `    }`,
@@ -344,6 +358,21 @@ delete: {
     `    }`,
     `    return hcode;`,
     `}`,
+    ``,
+    ``,
+    `/**`,
+    ` * Elimina dentro de un bucket el nodo cuya clave coincide.`,
+    ` */`,
+    `private boolean eliminarEnBucket(Lista bucket, int clave){`,
+    `    for (int i = 0; i < bucket.size(); i++){`,
+    `        Nodo actual = bucket.get(i);`,
+    `        if (actual.key == clave){`,
+    `            bucket.eliminarEn(i);`,
+    `            return true;`,
+    `        }`,
+    `    }`,
+    `    return false;`,
+    `}`,
   ],
   labels: {
     // Validación tabla creada
@@ -357,7 +386,7 @@ delete: {
     // Método delete(...)
     HASH: 15,                  // int idx = hash({0});
     GET_BUCKET: 16,            // Lista bucket = buckets[idx];
-    DELETE_NODE: 17,           // boolean eliminado = bucket.eliminar({0});
+    DELETE_NODE: 17,           // boolean eliminado = eliminarEnBucket(bucket, {0});
     IF_NOT_FOUND: 18,          // if (!eliminado){
     THROW_NOT_FOUND: 19,       // throw new RuntimeException("Clave no encontrada");
     DECREMENT_COUNT: 21,       // {1}--;
@@ -367,6 +396,13 @@ delete: {
     HASH_FN_IF_NEG: 30,        // if (hcode < 0){
     HASH_FN_ADJUST: 31,        // hcode += numeroSlots;
     HASH_FN_RETURN: 33,        // return hcode;
+
+    // eliminarEnBucket(...)  (opcional, por si luego quieres animarlo)
+    DELETE_HELPER_FOR: 41,         // for (int i = 0; i < bucket.size(); i++){
+    DELETE_HELPER_CHECK_KEY: 43,   // if (actual.key == clave){
+    DELETE_HELPER_REMOVE: 44,      // bucket.eliminarEn(i);
+    DELETE_HELPER_RETURN_TRUE: 45, // return true;
+    DELETE_HELPER_RETURN_FALSE: 48 // return false;
   },
   errorPlans: {
     TABLE_NOT_CREATED: [
@@ -385,7 +421,6 @@ delete: {
     ],
   },
 },
-
 
   /* ───────────────── clean() ─────────────────
    * Similar a eliminarTodo(): limpia estructuras internas

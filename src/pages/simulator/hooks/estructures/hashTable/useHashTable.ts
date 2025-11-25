@@ -6,6 +6,7 @@ import { DomainError } from "../../../../../shared/utils/error/DomainError";
 /* ── Tipos ─────────────────────────────────────────────────── */
 export type HashNode = { key: number; value: number };
 export type Bucket = HashNode[];
+
 export interface HashQuery {
   key: number | null;
   value: number | null;
@@ -62,13 +63,14 @@ function reducer(st: State, ac: Action): State {
       const buckets = Array.from({ length: ac.slots }, () => [] as Bucket);
       return {
         buckets,
-        hashFn: (k) => k % ac.slots,
+        hashFn: (k: number) => k % ac.slots,
         lastAction: { type: "create" },
       };
     }
 
     case "SET": {
-      // por seguridad extra, aunque en teoría nunca llamamos SET sin tabla
+      // Seguridad extra: nunca deberíamos llegar aquí sin tabla creada,
+      // pero si pasa, evitamos reventar.
       if (st.buckets.length === 0) {
         return st;
       }
@@ -137,18 +139,22 @@ function reducer(st: State, ac: Action): State {
   }
 }
 
-/* ── Estado inicial ───────────────────────────────────────── */
+/* ── Estado inicial ─────────────────────────────────────────
+   Usado como lazy initializer en useReducer para evitar recrear
+   el estado inicial en cada render.
+---------------------------------------------------------------- */
 const initState = (slots = 0): State => ({
-  buckets: Array.from({ length: slots }, () => []),
-  hashFn: (k) => (slots ? k % slots : 0),
+  buckets: Array.from({ length: slots }, () => [] as Bucket),
+  hashFn: (k: number) => (slots ? k % slots : 0),
 });
 
 /* ── Hook principal ───────────────────────────────────────── */
 export function useHashTable(initialSlots = 0) {
-  const [state, dispatch] = useReducer(reducer, initState(initialSlots));
+  // Lazy init: el tercer parámetro es la función inicializadora
+  const [state, dispatch] = useReducer(reducer, initialSlots, initState);
   const [query, setQuery] = useState<HashQuery>({ key: null, value: null });
 
-  // ahora error es un objeto rico, no solo string
+  // error rico para el simulador
   const [error, setError] = useState<HashError | null>(null);
 
   /* helpers básicos */
@@ -158,6 +164,7 @@ export function useHashTable(initialSlots = 0) {
   /* ── Helpers de errores / validaciones ───────────────────── */
 
   const raise = (message: string, code: HashErrorPlanId): never => {
+    // 'never' deja claro a TypeScript que esto corta el flujo
     throw new DomainError(message, code);
   };
 
@@ -198,13 +205,15 @@ export function useHashTable(initialSlots = 0) {
 
       if (slots <= 0 || slots > 21) {
         raise(
-          "📚 La cantidad de slots debe estar entre 1 y 21. Intenta con create(10)",
+          "📚 La cantidad de slots debe estar entre 1 y 21. Intenta con create(10).",
           "INVALID_CAPACITY_RANGE"
         );
       }
 
       setError(null);
       dispatch({ type: "CREATE", slots });
+      // limpiar query porque cambia toda la estructura
+      resetQueryValues();
     } catch (err) {
       handleError(err, "create");
     }
@@ -221,9 +230,15 @@ export function useHashTable(initialSlots = 0) {
         );
       }
 
-      if (key > 9999 || value > 9999) {
+      // rango 0..9999 (coherente con esEnteroValido del pseudocódigo)
+      if (
+        key < 0 ||
+        key > 9999 ||
+        value < 0 ||
+        value > 9999
+      ) {
         raise(
-          "🔢 La clave y el valor deben tener como máximo 4 cifras (≤ 9999). Intenta con números más pequeños.",
+          "🔢 Clave y valor deben estar entre 0 y 9999 (≤ 4 dígitos).",
           "KEY_OR_VALUE_TOO_LARGE"
         );
       }
@@ -240,6 +255,8 @@ export function useHashTable(initialSlots = 0) {
 
       setError(null);
       dispatch({ type: "SET", key, value });
+      // la animación de set se basa en lastAction; no usamos query aquí
+      resetQueryValues();
     } catch (err) {
       handleError(err, "set");
     }
@@ -249,9 +266,9 @@ export function useHashTable(initialSlots = 0) {
     try {
       validateTableExists();
 
-      if (!Number.isInteger(key)) {
+      if (!Number.isInteger(key) || key < 0 || key > 9999) {
         raise(
-          "🗑️ La clave a eliminar debe ser un número entero. Ej: delete(21)",
+          "🗑️ La clave a eliminar debe ser un entero entre 0 y 9999. Ej: delete(21)",
           "INVALID_KEY_TYPE"
         );
       }
@@ -268,23 +285,30 @@ export function useHashTable(initialSlots = 0) {
 
       setError(null);
       dispatch({ type: "DELETE", key });
+      resetQueryValues();
     } catch (err) {
       handleError(err, "delete");
     }
   };
 
   const clean = () => {
-    setError(null);
-    dispatch({ type: "CLEAN" });
+    try {
+      // limpiar aunque la tabla esté vacía no es error
+      setError(null);
+      dispatch({ type: "CLEAN" });
+      resetQueryValues();
+    } catch (err) {
+      handleError(err, "clean");
+    }
   };
 
   const get = (key: number) => {
     try {
       validateTableExists();
 
-      if (!Number.isInteger(key)) {
+      if (!Number.isInteger(key) || key < 0 || key > 9999) {
         raise(
-          "🔍 La clave debe ser un número entero. Ej: get(21)",
+          "🔍 La clave debe ser un entero entre 0 y 9999. Ej: get(21)",
           "INVALID_KEY_TYPE"
         );
       }
@@ -297,11 +321,12 @@ export function useHashTable(initialSlots = 0) {
           `🔍 La clave ${key} no se encuentra en el bucket ${idx}. Asegúrate de haberla insertado.`,
           "KEY_NOT_FOUND"
         );
-        return; // 👈 esto es SOLO para contentar a TypeScript
+        return;
       }
 
       setError(null);
-      setQuery({ key, value: node.value }); // aquí node ya está tipado como HashNode
+      // aquí node ya es un HashNode garantizado por el raise/throw
+      setQuery({ key, value: node.value });
     } catch (err) {
       handleError(err, "get");
     }
@@ -333,7 +358,9 @@ export function useHashTable(initialSlots = 0) {
         result.push({
           key: bucket[j].key,
           value: bucket[j].value,
-          memoryAddress: `0x${(baseAddress + j).toString(16).padStart(6, "0")}`,
+          memoryAddress: `0x${(baseAddress + j)
+            .toString(16)
+            .padStart(6, "0")}`,
         });
       }
     }
