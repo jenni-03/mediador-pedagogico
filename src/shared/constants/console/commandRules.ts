@@ -431,15 +431,138 @@ export const commandRules: Record<
   tabla_hash: (parts: string[]) => {
     const keyword = parts[0]?.toLowerCase();
 
+    // helpers locales
+    const isInt = (v: unknown) => /^-?\d+$/.test(String(v));
+    const isPosInt = (v: unknown) => /^\d+$/.test(String(v));
+    const isUpTo4Digits = (v: unknown) => /^\d{1,4}$/.test(String(v));
+
     switch (keyword) {
-      case "create":
-      case "set":
-      case "get":
-      case "delete":
-      case "clean": {
+      case "create": {
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar la capacidad de la tabla hash como argumento."
+                : "El método únicamente espera la capacidad de la tabla hash como argumento.",
+          };
+        }
+
+        const num = Number(parts[1]);
+        if (isNaN(num) || !Number.isInteger(num)) {
+          return {
+            valid: false,
+            message:
+              "La capacidad de la tabla hash debe ser un número entero válido.",
+          };
+        }
+
+        if (num <= 0 || num >= 21) {
+          return {
+            valid: false,
+            message:
+              "La capacidad de la tabla hash debe ser un entero mayor que 0 y menor que 21.",
+          };
+        }
+
         return true;
       }
+
+      case "set": {
+        // set key value
+        if (parts.length !== 3) {
+          return {
+            valid: false,
+            message:
+              parts.length <= 1
+                ? "Debe proporcionar la clave y el valor como argumentos."
+                : "Debe proporcionar únicamente dos argumentos (clave, valor).",
+          };
+        }
+
+        const [key, value] = [parts[1], parts[2]];
+
+        if (!isPosInt(key) || !isUpTo4Digits(key)) {
+          return {
+            valid: false,
+            message:
+              "La clave debe ser un número entero positivo de hasta 4 dígitos.",
+          };
+        }
+
+        if (!isPosInt(value) || !isUpTo4Digits(value)) {
+          return {
+            valid: false,
+            message:
+              "El valor debe ser un número entero positivo de hasta 4 dígitos.",
+          };
+        }
+
+        return true;
+      }
+
+      case "get": {
+        // get key
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar la clave a buscar como argumento."
+                : "El método únicamente espera la clave a buscar como argumento.",
+          };
+        }
+
+        const key = parts[1];
+
+        if (!isPosInt(key) || !isUpTo4Digits(key)) {
+          return {
+            valid: false,
+            message:
+              "La clave a buscar debe ser un número entero positivo de hasta 4 dígitos.",
+          };
+        }
+
+        return true;
+      }
+
+      case "delete": {
+        // delete key
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "Debe proporcionar la clave a eliminar como argumento."
+                : "El método únicamente espera la clave a eliminar como argumento.",
+          };
+        }
+
+        const key = parts[1];
+
+        if (!isPosInt(key) || !isUpTo4Digits(key)) {
+          return {
+            valid: false,
+            message:
+              "La clave a eliminar debe ser un número entero positivo de hasta 4 dígitos.",
+          };
+        }
+
+        return true;
+      }
+
+      case "clean": {
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message: "El método no espera ningún argumento.",
+          };
+        }
+        return true;
+      }
+
       default:
+        // comando desconocido para tabla_hash
         return false;
     }
   },
@@ -1401,7 +1524,6 @@ export const commandRules: Record<
         }
         return true;
       }
-
 
       case "getlevelorder":
       case "clean": {

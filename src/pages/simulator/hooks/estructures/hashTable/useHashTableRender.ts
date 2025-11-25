@@ -437,7 +437,7 @@ export function useHashTableRender({
     setIsAnimating,
   ]);
 
-   /* ───────────────── delete(k): eliminación ───────────────── */
+  /* ───────────────── delete(k): eliminación ───────────────── */
   useEffect(() => {
     if (!svgRef.current) return;
     if (lastAction?.type !== "delete" || lastAction.key == null) return;
@@ -541,25 +541,51 @@ export function useHashTableRender({
     const stepId = `clean-${Date.now()}`;
     let cancelled = false;
 
+    // Número de slots que tenía la tabla antes del clean
+    // (renderBuckets conserva el estado visual "antes" del clean)
+    const slots = renderBuckets.length;
+
+    // helper genérico para avanzar líneas
+    const step = async (labelName: keyof typeof labels, ms = 600) => {
+      const lineIndex = labels[labelName];
+      if (typeof lineIndex !== "number") return;
+      bus.emit("step:progress", { stepId, lineIndex });
+      await delay(ms);
+      if (cancelled) return;
+    };
+
     (async () => {
       setIsAnimating(true);
       bus.emit("op:start", { op: "clean" });
 
-      bus.emit("step:progress", {
-        stepId,
-        lineIndex: labels.CLEAR_BUCKETS,
-      });
-      await delay(600);
+      // clean(): limpiarBuckets();
+      await step("CLEAR_BUCKETS", 600);
       if (cancelled) return;
 
-      bus.emit("step:progress", {
-        stepId,
-        lineIndex: labels.RESET_COUNT,
-      });
-      await delay(600);
+      // cuerpo de limpiarBuckets():
+      // for (int i = 0; i < informacionEntrada.length; i++){
+      //     informacionEntrada[i] = null;
+      // }
+      if (
+        typeof labels.CLEAR_FOR === "number" &&
+        typeof labels.CLEAR_ASSIGN === "number"
+      ) {
+        for (let i = 0; i < slots; i++) {
+          if (cancelled) return;
+
+          await step("CLEAR_FOR", 300);
+          if (cancelled) return;
+
+          await step("CLEAR_ASSIGN", 300);
+          if (cancelled) return;
+        }
+      }
+
+      // numeroDatos = 0;
+      await step("RESET_COUNT", 600);
       if (cancelled) return;
 
-      // Tabla vacía en la vista
+      // Tabla vacía en la vista (estado lógico actual después del clean)
       setRenderBuckets(buckets);
 
       bus.emit("op:done", { op: "clean" });
