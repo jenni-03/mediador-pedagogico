@@ -1,31 +1,13 @@
 import { useEffect, useMemo, useRef } from "react";
-import {
-  BaseQueryOperations,
-  IndicatorPositioningConfig,
-  ListLinkData,
-  QueueNodeData,
-} from "../../../../../types";
-import {
-  SVG_QUEUE_VALUES,
-  SVG_STYLE_VALUES,
-} from "../../../../../shared/constants/consts";
-import {
-  drawQueueNodes,
-  animateDequeueNode,
-  animateEnqueueNode,
-  animateClearQueue,
-} from "../../../../../shared/utils/draw/queueDrawActions";
+import {BaseQueryOperations, IndicatorPositioningConfig, ListLinkData, QueueNodeData} from "../../../../../types";
+import {SVG_QUEUE_VALUES, SVG_STYLE_VALUES,} from "../../../../../shared/constants/consts";
+import {drawQueueNodes, animateDequeueNode, animateEnqueueNode, animateClearQueue,} from "../../../../../shared/utils/draw/queueDrawActions";
 import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import {
-  drawArrowIndicator,
-  drawListLinks,
-  animateHighlightNode,
-} from "../../../../../shared/utils/draw/drawActionsUtilities";
+import {drawArrowIndicator, drawListLinks, animateHighlightNode,} from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { getColaCode } from "../../../../../shared/constants/pseudocode/colaCode";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getPilaCode } from "../../../../../shared/constants/pseudocode/pilaCode";
 
 export function useQueueRender(
   queueNodes: QueueNodeData[],

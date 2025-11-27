@@ -1,5 +1,6 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
+import { DomainError } from "../error/DomainError";
 import { NodoPrioridad } from "../nodes/NodoPrioridad";
 
 /**
@@ -70,8 +71,9 @@ export class ColaDePrioridad<T> {
    */
   public decolar(): NodoPrioridad<T> {
     if (this.esVacia())
-      throw new Error(
-        "No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0)."
+      throw new DomainError(
+        "No fue posible decolar el nodo: la cola está vacía (tamaño actual: 0).",
+        "QUEUE_EMPTY"
       );
 
     const nodoAEliminar = this.inicio!;

@@ -486,6 +486,7 @@ export async function animateHighlightNode(
     START: number;
     RETURN_TOP?: number;
     RETURN_HEAD?: number;
+    RETURN_INFO?: number;
   },
   stepId: string,
   resetQueryValues: () => void,
@@ -511,13 +512,14 @@ export async function animateHighlightNode(
   await delay(400);
 
   if (labels.RETURN_TOP) {
-    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
-    await delay(700);
-  } else {
-    if (labels.RETURN_HEAD) {
+      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
+      await delay(700);
+  } else if (labels.RETURN_HEAD) {
       bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_HEAD });
       await delay(700);
-    }
+  } else if (labels.RETURN_INFO) {
+      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_INFO });
+      await delay(700);
   }
 
   // Animación de sobresalto del contenedor del nodo

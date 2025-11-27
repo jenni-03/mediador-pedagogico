@@ -23,8 +23,30 @@ export const getColaPrioridadCode = (): Record<string, OperationCode> => ({
       `    }`,
       `    {2}++;`,
       `}`,
-    ]
+    ],
+    labels: {
+      CREATE_NODE: 2,
+
+      // Caso prioridad más alta o cola vacía
+      CHECK_EMPTY_OR_HIGHER_PRIORITY: 3,
+      INSERT_AT_START_SET_NEXT: 4,
+      INSERT_AT_START_SET_HEAD: 5,
+
+      // Caso recorrido
+      ELSE_BLOCK: 6,
+      SET_CURRENT: 7,
+      WHILE_CHECK: 8,
+      WHILE_ADVANCE: 9,
+      END_WHILE: 10,
+
+      // Inserción en medio/final
+      LINK_NEWNODE_NEXT: 11,
+      LINK_PREVIOUS_TO_NEWNODE: 12,
+
+      INC_SIZE: 14,
+    },
   },
+
   dequeue: {
     lines: [
       `/**
@@ -41,22 +63,21 @@ export const getColaPrioridadCode = (): Record<string, OperationCode> => ({
       `    {0}--;`,
       `    return nodoEliminar.info;`,
       `}`,
-    ]
-  },
-  clean: {
-    lines: [
-      `/**
- * Método que elimina todos los elementos de la cola.
- */`,
-      `public void clean() {`,
-      `    this.inicio = null;`,
-      `    this.tamanio = 0;`,
-      `}`,
     ],
     labels: {
-      CLEAR_HEAD: 2,
-      RESET_SIZE: 3
-    }
+      VALIDATE_EMPTY: 2,
+      THROW_EMPTY: 3,
+      SAVE_NODE_TO_REMOVE: 5,
+      MOVE_HEAD: 6,
+      DEC_SIZE: 7,
+      RETURN_INFO: 8,
+    },
+    errorPlans: {
+      QUEUE_EMPTY: [
+        { lineLabel: "VALIDATE_EMPTY", hold: 600 },
+        { lineLabel: "THROW_EMPTY", hold: 600 },
+      ],
+    },
   },
   getFront: {
     lines: [
@@ -71,6 +92,35 @@ export const getColaPrioridadCode = (): Record<string, OperationCode> => ({
       `    }`,
       `    return this.inicio.info;`,
       `}`,
-    ]
+    ],
+    labels: {
+      START: 1,
+      VALIDATE_EMPTY: 2,
+      THROW_EMPTY: 3,
+      RETURN_INFO: 5,
+    },
+    errorPlans: {
+      QUEUE_EMPTY: [
+        { lineLabel: "VALIDATE_EMPTY", hold: 600 },
+        { lineLabel: "THROW_EMPTY", hold: 600 },
+      ],
+    },
+  },
+
+  clean: {
+    lines: [
+      `/**
+ * Método que elimina todos los elementos de la cola.
+ */`,
+      `public void clean() {`,
+      `    this.inicio = null;`,
+      `    this.tamanio = 0;`,
+      `}`,
+    ],
+    labels: {
+      START: 1,
+      CLEAR_HEAD: 2,
+      RESET_SIZE: 3,
+    },
   },
 });

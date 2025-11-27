@@ -5,6 +5,11 @@ import { Dispatch, SetStateAction } from "react";
 import { repositionList } from "./drawActionsUtilities";
 import { animateAppearListNode, animateExitListNode } from "./simpleLinkedListDrawActions";
 import { buildListPath } from "../listUtils";
+import { EventBus } from "../../events/eventBus";
+import { getColaPrioridadCode } from "../../constants/pseudocode/colaPrioridadCode";
+import { delay } from "../simulatorUtils";
+
+const queueCode = getColaPrioridadCode();
 
 // Función para obtener el color según la prioridad (ahora retorna un objeto con fill y stroke)
 export function getPriorityColor(priority: number): { fill: string; stroke: string } {
@@ -206,9 +211,12 @@ export async function animateEnqueuePriorityNode(
         linksData: ListLinkData[];
         positions: Map<string, { x: number; y: number }>;
     },
+    bus: EventBus,
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+    const labels = queueCode.enqueue.labels!;
+
     // Nodos implicados en la inserción
     const { newNodeId, prevNodeId, nextNodeId } = insertionData;
 
@@ -221,14 +229,29 @@ export async function animateEnqueuePriorityNode(
         const newNodeGroup = nodesG.select<SVGGElement>(`g#${newNodeId}`);
         newNodeGroup.style("opacity", 0);
 
+        // Inicio de la operación
+        bus.emit("op:start", { op: "enqueue" });
+
+        bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.CREATE_NODE });
+        await delay(600);
+
         if (!prevNodeId && !nextNodeId) {
+
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.CHECK_EMPTY_OR_HIGHER_PRIORITY });
+            await delay(600);
             // Grupo correspondiente al indicador de inicio
             const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
-
+            
             // Aparición del nuevo nodo junto al indicador de inicio
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.INSERT_AT_START_SET_NEXT });
             await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
+
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.INSERT_AT_START_SET_HEAD });
             await initialIndicatorGroup.transition().duration(800).style("opacity", 1).end();
         } else if (!prevNodeId && nextNodeId) {
+
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.CHECK_EMPTY_OR_HIGHER_PRIORITY });
+            await delay(600);
             // Inserción al inicio
             const initialIndicatorGroup = svg.select<SVGGElement>("g#initial-indicator");
 
@@ -238,6 +261,8 @@ export async function animateEnqueuePriorityNode(
             // Estado visual inicial del enlace siguiente del nuevo nodo
             newNodeNextLinkGroup.style("opacity", 0);
 
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.INSERT_AT_START_SET_NEXT });
+            await delay(800);
             // Reposicionamiento de los elementos restantes de la cola de prioridad a su posición final
             await repositionList(
                 svg,
@@ -261,6 +286,7 @@ export async function animateEnqueuePriorityNode(
             await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
 
             // Establecimiento del enlace siguiente del nuevo nodo
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.INSERT_AT_START_SET_HEAD });
             await newNodeNextLinkGroup
                 .transition()
                 .duration(1000)
@@ -277,7 +303,12 @@ export async function animateEnqueuePriorityNode(
                     return `translate(${finalX}, ${finalY})`;
                 })
                 .end();
+
         } else if (prevNodeId && !nextNodeId) {
+
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.ELSE_BLOCK });
+            await delay(600);
+
             // Inserción al final
             const { nodesData } = insertionData;
 
@@ -290,10 +321,20 @@ export async function animateEnqueuePriorityNode(
             // Recorrido de los nodos hasta la posición de inserción (último nodo actual)
             const nodesToTraverse = nodesData.slice(0, -1);
             for (let i = 0; i < nodesToTraverse.length - 1; i++) {
+                bus.emit("step:progress", {
+                    stepId: "enqueue",
+                    lineIndex: labels.SET_CURRENT
+                });
+                await delay(500);
+
                 // Selección del grupo correspondiente al nodo actual
                 const currRectElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[i].id} rect.node-container`);
 
                 // Resaltado del nodo actual
+                bus.emit("step:progress", {
+                    stepId: "enqueue",
+                    lineIndex: labels.WHILE_CHECK
+                });
                 await currRectElement
                     .transition()
                     .duration(800)
@@ -302,6 +343,10 @@ export async function animateEnqueuePriorityNode(
                     .end();
 
                 // Restablecimiento del borde original del nodo actual (antes de pasar al sig. nodo)
+                bus.emit("step:progress", {
+                    stepId: "enqueue",
+                    lineIndex: labels.WHILE_ADVANCE
+                });
                 await currRectElement
                     .transition()
                     .duration(800)
@@ -309,6 +354,8 @@ export async function animateEnqueuePriorityNode(
                     .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
                     .end();
             }
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.END_WHILE });
+            await delay(500);
 
             // Resaltado final del nodo objetivo
             const targetElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[nodesToTraverse.length - 1].id} rect.node-container`);
@@ -328,6 +375,10 @@ export async function animateEnqueuePriorityNode(
             await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
 
             // Establecimiento del enlace siguiente del nodo final
+            bus.emit("step:progress", {
+                stepId: "enqueue",
+                lineIndex: labels.LINK_PREVIOUS_TO_NEWNODE
+            });
             await lastNodeNextLinkGroup
                 .transition()
                 .duration(1000)
@@ -336,6 +387,8 @@ export async function animateEnqueuePriorityNode(
         } else {
             // Inserción en una posición intermedia
             const { insertionPosition, nodesData, linksData } = insertionData;
+
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.ELSE_BLOCK });
 
             // Grupos correspondientes a los nuevos elementos producto de la inserción
             const prevNodeNewNextLinkGroup = linksG.select<SVGGElement>(
@@ -351,10 +404,14 @@ export async function animateEnqueuePriorityNode(
             // Recorrido de los nodos hasta la posición de inserción
             const nodesToTraverse = nodesData.slice(0, insertionPosition);
             for (let i = 0; i < nodesToTraverse.length - 1; i++) {
+                bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.SET_CURRENT });
+                await delay(500);
+
                 // Selección del grupo correspondiente al nodo actual
                 const currRectElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[i].id} rect.node-container`);
 
                 // Resaltado del nodo actual
+                bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.WHILE_CHECK });
                 await currRectElement
                     .transition()
                     .duration(800)
@@ -363,6 +420,7 @@ export async function animateEnqueuePriorityNode(
                     .end();
 
                 // Restablecimiento del borde original del nodo actual (antes de pasar al sig. nodo)
+                bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.WHILE_ADVANCE });
                 await currRectElement
                     .transition()
                     .duration(800)
@@ -370,6 +428,8 @@ export async function animateEnqueuePriorityNode(
                     .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
                     .end();
             }
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.END_WHILE });
+            await delay(500);
 
             // Resaltado final del nodo objetivo
             const targetElement = nodesG.select<SVGRectElement>(`g#${nodesToTraverse[nodesToTraverse.length - 1].id} rect.node-container`);
@@ -432,6 +492,9 @@ export async function animateEnqueuePriorityNode(
                 .select("path.node-link")
                 .attr("d", initialNewNodeNextLink);
 
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.LINK_NEWNODE_NEXT });
+            await delay(500);
+
             // Aparición y posicionamiento inicial del nuevo nodo
             await animateAppearListNode(newNodeGroup, initialNewNodePos);
 
@@ -451,6 +514,7 @@ export async function animateEnqueuePriorityNode(
                 .end();
 
             // Establecimiento del nuevo enlace siguiente del nodo previo
+            bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.LINK_PREVIOUS_TO_NEWNODE });
             await prevNodeNewNextLinkGroup
                 .transition()
                 .duration(1000)
@@ -504,6 +568,8 @@ export async function animateEnqueuePriorityNode(
 
             await Promise.all(shiftPromises);
         }
+        bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.INC_SIZE });
+        await delay(400);
 
         // Animación de confirmación con el badge de prioridad como protagonista
         const priorityBadge = newNodeGroup.select(".priority-badge");
@@ -531,6 +597,8 @@ export async function animateEnqueuePriorityNode(
             .attr("r", 16)
             .end();
     } finally {
+        // Fin de la operación
+        bus.emit("op:done", { op: "enqueue" });
         resetQueryValues();
         setIsAnimating(false);
     }
@@ -553,13 +621,25 @@ export async function animateDequeuePriorityNode(
         remainingLinksData: ListLinkData[];
         positions: Map<string, { x: number; y: number }>;
     },
+    bus: EventBus,
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+    const labels = queueCode.dequeue.labels;
+
+    // Inicio operación dequeue
+    bus.emit("op:start", { op: "dequeue" });
+
     // Nodos implicados en la eliminación
     const { currInitialNodeId, newInitialNodeId } = deletionData;
 
     try {
+        // Inicio operación dequeue
+        bus.emit("op:start", { op: "dequeue" });
+
+        bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.VALIDATE_EMPTY });
+        await delay(600);
+
         // Grupos contenedores de nodos y enlaces de la lista
         const nodesG = svg.select<SVGGElement>("g#nodes-layer");
         const linksG = svg.select<SVGGElement>("g#links-layer");
@@ -572,10 +652,20 @@ export async function animateDequeuePriorityNode(
 
         if (!newInitialNodeId) {
             // Salida del nodo a eliminar junto al indicador de inicio
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.SAVE_NODE_TO_REMOVE });
             await initialIndicatorGroup.transition().duration(800).style("opacity", 0).remove().end();
+
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.DEC_SIZE });
+            await delay(500);
+
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.RETURN_INFO });
             await removalNodeGroup.transition().duration(1000).style("opacity", 0).remove().end();
+            
         } else {
             const { positions, remainingNodesData, remainingLinksData } = deletionData;
+
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.SAVE_NODE_TO_REMOVE });
+            await delay(600);
 
             // Grupo correspondiente al enlace siguiente del nodo a eliminar que apunta al nuevo nodo inicial
             const removalNodeNextLinkGroup = linksG.select<SVGGElement>(`g#link-${currInitialNodeId}-${newInitialNodeId}-next`);
@@ -603,6 +693,7 @@ export async function animateDequeuePriorityNode(
             };
             await animateExitListNode(removalNodeGroup, finalRemovalNodePos);
 
+
             // Reposicionamiento de los elementos restantes de la cola de prioridad a su posición final
             await repositionList(
                 svg,
@@ -618,16 +709,24 @@ export async function animateDequeuePriorityNode(
             );
 
             // Entrada del indicador de inicio (ahora apuntando al nuevo nodo inicial de la cola de prioridad)
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.MOVE_HEAD });
             await initialIndicatorGroup
                 .transition()
                 .duration(800)
                 .style("opacity", 1)
                 .end();
+
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.DEC_SIZE });
+            await delay(500);
+
+            bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.RETURN_INFO });
+            await delay(500);
         }
 
         // Limpiamos el registro del nodo eliminado
         deletionData.positions.delete(currInitialNodeId);
     } finally {
+        bus.emit("op:done", { op: "dequeue" });
         resetQueryValues();
         setIsAnimating(false);
     }
