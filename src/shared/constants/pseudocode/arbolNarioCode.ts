@@ -24,10 +24,10 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      ROOT_EXISTS_IF: 7,      // if (raiz != null){
-      ROOT_EXISTS_THROW: 8,   // throw new IllegalStateException...
-      NEW_ROOT: 11,           // raiz = new NodoN({0});
-      INIT_CHILDREN: 12,      // raiz.hijos = new ListaNodos();
+      ROOT_EXISTS_IF: 6, // if (raiz != null){
+      ROOT_EXISTS_THROW: 7, // throw new IllegalStateException...
+      NEW_ROOT: 10, // raiz = new NodoN({0});
+      INIT_CHILDREN: 11, // raiz.hijos = new ListaNodos();
     },
     errorPlans: {
       ROOT_ALREADY_EXISTS: [
@@ -75,29 +75,91 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `    nuevo.padre = padre;`,
       `}`,
       ``,
-      `// Nota: buscarPorIdBFS(raiz, id) se implementa con un recorrido BFS sobre el árbol.`,
+      `/**`,
+      ` * Busca un nodo por id usando recorrido BFS.`,
+      ` */`,
+      `private NodoN buscarPorIdBFS(NodoN raiz, String id){`,
+      `    if (raiz == null){`,
+      `        return null;`,
+      `    }`,
+      ``,
+      `    Cola<NodoN> q = new Cola<>();`,
+      `    q.encolar(raiz);`,
+      ``,
+      `    while (!q.esVacia()){`,
+      `        NodoN u = q.decolar();`,
+      `        if (u.id.equals(id)){`,
+      `            return u;`,
+      `        }`,
+      `        for (NodoN h : u.hijos){`,
+      `            q.encolar(h);`,
+      `        }`,
+      `    }`,
+      `    return null;`,
+      `}`,
+      ``,
+      `/**`,
+      ` * Lista de hijos: agrega al final.`,
+      ` */`,
+      `public void agregar(NodoN x){`,
+      `    hijos[size] = x;`,
+      `    size++;`,
+      `}`,
+      ``,
+      `/**`,
+      ` * Lista de hijos: inserta en la posición 'index'.`,
+      ` */`,
+      `public void insertar(int index, NodoN x){`,
+      `    for (int i = size; i > index; i--){`,
+      `        hijos[i] = hijos[i - 1];`,
+      `    }`,
+      `    hijos[index] = x;`,
+      `    size++;`,
+      `}`,
     ],
     labels: {
-      // Validación árbol creado
-      TREE_EMPTY_IF: 7,            // if (raiz == null){
-      TREE_EMPTY_THROW: 8,         // throw new IllegalStateException...
+      // insertChild(...)
+      TREE_EMPTY_IF: 6, // if (raiz == null){
+      TREE_EMPTY_THROW: 7, // throw new IllegalStateException...
 
-      // Búsqueda del padre
-      FIND_PARENT: 12,             // NodoN padre = buscarPorIdBFS(raiz, {0});
-      PARENT_NOT_FOUND_IF: 13,     // if (padre == null){
-      PARENT_NOT_FOUND_THROW: 14,  // throw new RuntimeException("Padre no existe");
+      FIND_PARENT: 11, // NodoN padre = buscarPorIdBFS(raiz, {0});
+      PARENT_NOT_FOUND_IF: 12, // if (padre == null){
+      PARENT_NOT_FOUND_THROW: 13, // throw new RuntimeException("Padre no existe");
 
-      // Crear hijo
-      NEW_NODE: 18,                // NodoN nuevo = new NodoN({1});
+      NEW_NODE: 17, // NodoN nuevo = new NodoN({1});
 
-      // Inserción según index
-      IF_INDEX_NULL: 21,           // if (index == null){
-      APPEND_CHILD: 22,            // padre.hijos.agregar(nuevo);
-      ELSE_INSERT_AT: 23,          // } else {
-      INSERT_AT_INDEX: 24,         // padre.hijos.insertar(index, nuevo);
+      IF_INDEX_NULL: 20, // if (index == null){
+      APPEND_CHILD: 21, // padre.hijos.agregar(nuevo);
+      ELSE_INSERT_AT: 22, // } else {
+      INSERT_AT_INDEX: 23, // padre.hijos.insertar(index, nuevo);
 
-      // Vincular padre
-      SET_PARENT: 27,              // nuevo.padre = padre;
+      SET_PARENT: 26, // nuevo.padre = padre;
+
+      // buscarPorIdBFS(...)
+      BFS_ROOT_NULL_IF: 33, // if (raiz == null){
+      BFS_QUEUE_INIT: 37, // Cola<NodoN> q = new Cola<>();
+      BFS_ENQUEUE_ROOT: 38, // q.encolar(raiz);
+
+      BFS_WHILE: 40, // while (!q.esVacia()){
+      BFS_DEQUEUE: 41, // NodoN u = q.decolar();
+      BFS_CHECK_ID: 42, // if (u.id.equals(id)){
+      BFS_RETURN_MATCH: 43, // return u;
+      BFS_FOR_CHILDREN: 45, // for (NodoN h : u.hijos){
+      BFS_ENQUEUE_CHILD: 46, // q.encolar(h);
+      BFS_RETURN_NULL: 49, // return null;
+
+      // agregar(...)
+      AGREGAR_HEADER: 55, // public void agregar(NodoN x){
+      AGREGAR_ASSIGN: 56, // hijos[size] = x;
+      AGREGAR_INCREMENT: 57, // size++;
+
+      // insertar(...)
+      INSERT_HEADER: 63, // public void insertar(int index, NodoN x){
+      INSERT_FOR: 64, // for (int i = size; i > index; i--){
+      INSERT_SHIFT_ASSIGN: 65, // hijos[i] = hijos[i - 1];
+      INSERT_FOR_END: 66, // }
+      INSERT_SET_AT: 67, // hijos[index] = x;
+      INSERT_INCREMENT: 68, // size++;
     },
     errorPlans: {
       TREE_NOT_CREATED: [
@@ -115,7 +177,7 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
   /* ───────────────── deleteNode(id) ─────────────────
    * Elimina un nodo (y su subárbol) por id.
    * - si árbol vacío → return
-   * - busca objetivo por id
+   * - busca objetivo por id (BFS auxiliar)
    * - si no existe → lanza excepción
    * - si es la raíz → raíz = null
    * - si no → se elimina de la lista de hijos de su padre
@@ -132,7 +194,7 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `        return;`,
       `    }`,
       ``,
-      `    // Buscar el nodo objetivo por id`,
+      `    // Buscar el nodo objetivo por id (BFS auxiliar)`,
       `    NodoN objetivo = buscarPorIdBFS(raiz, {0});`,
       `    if (objetivo == null){`,
       `        throw new RuntimeException("No existe el nodo con id: {0}");`,
@@ -149,21 +211,64 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `    int k = p.hijos.indiceDe(objetivo);`,
       `    p.hijos.eliminarEn(k);`,
       `}`,
+      ``,
+      `/**`,
+      ` * Busca un nodo por id usando recorrido BFS.`,
+      ` */`,
+      `private NodoN buscarPorIdBFS(NodoN raiz, String id){`,
+      `    if (raiz == null){`,
+      `        return null;`,
+      `    }`,
+      ``,
+      `    Cola<NodoN> q = new Cola<>();`,
+      `    q.encolar(raiz);`,
+      ``,
+      `    while (!q.esVacia()){`,
+      `        NodoN u = q.decolar();`,
+      `        if (u.id.equals(id)){`,
+      `            return u;`,
+      `        }`,
+      `        for (NodoN h : u.hijos){`,
+      `            q.encolar(h);`,
+      `        }`,
+      `    }`,
+      `    return null;`,
+      `}`,
     ],
     labels: {
-      TREE_EMPTY_IF: 7,             // if (raiz == null){
-      // (el return inmediato NO se considera error; simplemente no hace nada)
+      // Validación árbol vacío
+      TREE_EMPTY_IF: 6, // if (raiz == null){
+      TREE_EMPTY_RETURN: 7, // return;
 
-      FIND_TARGET: 12,              // NodoN objetivo = buscarPorIdBFS(raiz, {0});
-      TARGET_NOT_FOUND_IF: 13,      // if (objetivo == null){
-      TARGET_NOT_FOUND_THROW: 14,   // throw new RuntimeException...
+      // Búsqueda del objetivo
+      FIND_TARGET: 11, // NodoN objetivo = buscarPorIdBFS(raiz, {0});
+      TARGET_NOT_FOUND_IF: 12, // if (objetivo == null){
+      TARGET_NOT_FOUND_THROW: 13, // throw new RuntimeException(...)
 
-      IF_IS_ROOT: 18,               // if (objetivo == raiz){
-      SET_ROOT_NULL: 19,            // raiz = null;
+      // Caso especial: eliminar la raíz
+      IF_IS_ROOT: 17, // if (objetivo == raiz){
+      SET_ROOT_NULL: 18, // raiz = null;
+      RETURN_AFTER_ROOT_DELETE: 19, // return;
 
-      GET_PARENT: 23,               // NodoN p = objetivo.padre;
-      FIND_INDEX_IN_CHILDREN: 24,   // int k = p.hijos.indiceDe(objetivo);
-      REMOVE_AT_INDEX: 25,          // p.hijos.eliminarEn(k);
+      // Desvincular del padre
+      GET_PARENT: 23, // NodoN p = objetivo.padre;
+      FIND_INDEX_IN_CHILDREN: 24, // int k = p.hijos.indiceDe(objetivo);
+      REMOVE_AT_INDEX: 25, // p.hijos.eliminarEn(k);
+
+      // --- Auxiliar BFS (para animar la búsqueda) ---
+      BFS_ROOT_NULL_IF: 32, // if (raiz == null){
+      BFS_RETURN_NULL_EARLY: 33, // return null;
+
+      BFS_QUEUE_INIT: 36, // Cola<NodoN> q = new Cola<>();
+      BFS_ENQUEUE_ROOT: 37, // q.encolar(raiz);
+
+      BFS_WHILE: 39, // while (!q.esVacia()){
+      BFS_DEQUEUE: 40, // NodoN u = q.decolar();
+      BFS_CHECK_ID: 41, // if (u.id.equals(id)){
+      BFS_RETURN_MATCH: 42, // return u;
+      BFS_FOR_CHILDREN: 44, // for (NodoN h : u.hijos){
+      BFS_ENQUEUE_CHILD: 45, // q.encolar(h);
+      BFS_RETURN_NULL: 48, // return null;
     },
     errorPlans: {
       NODE_NOT_FOUND: [
@@ -248,42 +353,43 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
     ],
     labels: {
       // Validaciones básicas
-      SAME_NODE_IF: 8,              // if ({0}.equals({1})){
-      SAME_NODE_THROW: 9,           // throw new IllegalArgumentException...
+      SAME_NODE_IF: 7, // if ({0}.equals({1})){
+      SAME_NODE_THROW: 8, // throw new IllegalArgumentException...
 
       // Búsqueda de x y p
-      FIND_X: 13,                   // NodoN x = buscarPorIdBFS(raiz, {0});
-      FIND_P: 14,                   // NodoN p = buscarPorIdBFS(raiz, {1});
-      NODES_NOT_FOUND_IF: 15,       // if (x == null || p == null){
-      NODES_NOT_FOUND_THROW: 16,    // throw new RuntimeException("Nodo no encontrado");
+      FIND_X: 12, // NodoN x = buscarPorIdBFS(raiz, {0});
+      FIND_P: 13, // NodoN p = buscarPorIdBFS(raiz, {1});
+      NODES_NOT_FOUND_IF: 14, // if (x == null || p == null){
+      NODES_NOT_FOUND_THROW: 15, // throw new RuntimeException("Nodo no encontrado");
 
       // Validación de ciclo
-      CHECK_CYCLE_IF: 20,           // if (esDescendiente(p, x)){
-      CHECK_CYCLE_THROW: 21,        // throw new RuntimeException("Movimiento inválido: crearía un ciclo");
+      CHECK_CYCLE_IF: 19, // if (esDescendiente(p, x)){
+      CHECK_CYCLE_THROW: 20, // throw new RuntimeException("Movimiento inválido: crearía un ciclo");
 
       // No mover raíz
-      CHECK_IS_ROOT_IF: 25,         // if (x == raiz){
-      CHECK_IS_ROOT_THROW: 26,      // throw new RuntimeException("No se puede mover la raíz");
+      CHECK_IS_ROOT_IF: 24, // if (x == raiz){
+      CHECK_IS_ROOT_THROW: 25, // throw new RuntimeException("No se puede mover la raíz");
 
       // Desvincular de padre original
-      GET_OLD_PARENT: 30,           // NodoN actualPadre = x.padre;
-      FIND_INDEX_IN_OLD: 31,        // int i = actualPadre.hijos.indiceDe(x);
-      REMOVE_FROM_OLD: 32,          // actualPadre.hijos.eliminarEn(i);
+      GET_OLD_PARENT: 29, // NodoN actualPadre = x.padre;
+      FIND_INDEX_IN_OLD: 30, // int i = actualPadre.hijos.indiceDe(x);
+      REMOVE_FROM_OLD: 31, // actualPadre.hijos.eliminarEn(i);
 
       // Insertar en nuevo padre
-      IF_INDEX_NULL: 35,            // if (index == null){
-      APPEND_IN_NEW: 36,            // p.hijos.agregar(x);
-      ELSE_INSERT_IN_NEW: 37,       // } else {
-      INSERT_IN_NEW: 38,            // p.hijos.insertar(index, x);
-      SET_NEW_PARENT: 40,           // x.padre = p;
+      IF_INDEX_NULL: 34, // if (index == null){
+      APPEND_IN_NEW: 35, // p.hijos.agregar(x);
+      ELSE_INSERT_IN_NEW: 36, // } else {
+      INSERT_IN_NEW: 37, // p.hijos.insertar(index, x);
+      SET_NEW_PARENT: 39, // x.padre = p;
 
       // esDescendiente(...)
-      DESC_IF_NULL_ANCESTOR: 47,    // if (posibleAncestro == null){
-      DESC_BASE_EQUAL: 50,          // if (posibleDescendiente == posibleAncestro){
-      DESC_FOR_CHILDREN: 53,        // for (NodoN h : posibleAncestro.hijos){
-      DESC_RECURSE_CHILD: 54,       // if (esDescendiente(posibleDescendiente, h)){
-      DESC_RETURN_FALSE: 58,        // return false;
+      DESC_IF_NULL_ANCESTOR: 46, // if (posibleAncestro == null){
+      DESC_BASE_EQUAL: 49, // if (posibleDescendiente == posibleAncestro){
+      DESC_FOR_CHILDREN: 52, // for (NodoN h : posibleAncestro.hijos){
+      DESC_RECURSE_CHILD: 53, // if (esDescendiente(posibleDescendiente, h)){
+      DESC_RETURN_FALSE: 57, // return false;
     },
+
     errorPlans: {
       SAME_ORIGIN_AND_DESTINATION: [
         { lineLabel: "SAME_NODE_IF", hold: 600 },
@@ -326,14 +432,14 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      TREE_EMPTY_IF: 3,           // if (raiz == null){
-      TREE_EMPTY_THROW: 4,        // throw new IllegalStateException...
+      TREE_EMPTY_IF: 2, // if (raiz == null){
+      TREE_EMPTY_THROW: 3, // throw new IllegalStateException...
 
-      FIND_NODE: 7,               // NodoN n = buscarPorIdBFS(raiz, {0});
-      NODE_NOT_FOUND_IF: 8,       // if (n == null){
-      NODE_NOT_FOUND_THROW: 9,    // throw new RuntimeException...
+      FIND_NODE: 6, // NodoN n = buscarPorIdBFS(raiz, {0});
+      NODE_NOT_FOUND_IF: 7, // if (n == null){
+      NODE_NOT_FOUND_THROW: 8, // throw new RuntimeException...
 
-      ASSIGN_NEW_VALUE: 11,       // n.info = {1};
+      ASSIGN_NEW_VALUE: 11, // n.info = {1};
     },
     errorPlans: {
       TREE_NOT_CREATED: [
@@ -359,7 +465,7 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
     lines: [
       `/**`,
       ` * Busca el primer nodo cuyo valor coincida (recorrido BFS).`,
-      ` * Retorna true si se encuentra.`,
+      ` * Retorna true si se encuentra, lanza error si no.`,
       ` */`,
       `public boolean search(T {0}){`,
       `    // Si el árbol está vacío no hay nada que buscar`,
@@ -379,47 +485,58 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `            q.encolar(h);`,
       `        }`,
       `    }`,
-      `    return false;`,
+      `    // Si se vacía la cola y no se encontró el valor, lanzamos error`,
+      `    throw new RuntimeException("No existe un nodo con valor: {0}");`,
       `}`,
     ],
     labels: {
-      TREE_EMPTY_IF: 7,         // if (raiz == null){
+      // if (raiz == null){
+      TREE_EMPTY_IF: 6,
 
-      QUEUE_INIT: 11,           // Cola<NodoN> q = new Cola<>();
-      QUEUE_ENQUEUE_ROOT: 12,   // q.encolar(raiz);
+      // Cola<NodoN> q = new Cola<>();
+      QUEUE_INIT: 10,
+      // q.encolar(raiz);
+      QUEUE_ENQUEUE_ROOT: 11,
 
-      BFS_WHILE: 14,            // while (!q.esVacia()){
-      BFS_DEQUEUE: 15,          // NodoN u = q.decolar();
-      BFS_CHECK_VALUE: 16,      // if (u.info.equals({0})){
-      BFS_RETURN_TRUE: 17,      // return true;
+      // while (!q.esVacia()){
+      BFS_WHILE: 13,
+      // NodoN u = q.decolar();
+      BFS_DEQUEUE: 14,
+      // if (u.info.equals({0})){
+      BFS_CHECK_VALUE: 15,
+      // return true;
+      BFS_RETURN_TRUE: 16,
 
-      BFS_FOR_CHILDREN: 19,     // for (NodoN h : u.hijos){
-      BFS_ENQUEUE_CHILD: 20,    // q.encolar(h);
+      // for (NodoN h : u.hijos){
+      BFS_FOR_CHILDREN: 18,
+      // q.encolar(h);
+      BFS_ENQUEUE_CHILD: 19,
 
-      BFS_RETURN_FALSE: 22,     // return false;
+      // throw new RuntimeException("No existe un nodo con valor: {0}");
+      VALUE_NOT_FOUND_THROW: 23,
     },
     errorPlans: {
-      TREE_EMPTY: [
-        { lineLabel: "TREE_EMPTY_IF", hold: 600 },
-      ],
+      TREE_EMPTY: [{ lineLabel: "TREE_EMPTY_IF", hold: 600 }],
       VALUE_NOT_FOUND: [
         { lineLabel: "QUEUE_INIT", hold: 400 },
         { lineLabel: "QUEUE_ENQUEUE_ROOT", hold: 400 },
         { lineLabel: "BFS_WHILE", hold: 600 },
-        { lineLabel: "BFS_RETURN_FALSE", hold: 800 },
+        { lineLabel: "VALUE_NOT_FOUND_THROW", hold: 800 },
       ],
     },
   },
-
-  /* ───────────────── getPreOrder(n, resultado) ─────────────────
-   * Recorrido en preorden: nodo → hijos.
-   */
   getPreOrder: {
     lines: [
       `/**`,
       ` * Obtiene el recorrido en preorden (nodo → hijos).`,
       ` */`,
-      `public void getPreOrder(NodoN n, Lista<T> resultado){`,
+      `public Lista<T> getPreOrder(){`,
+      `    Lista<T> resultado = new Lista<>();`,
+      `    getPreOrder(raiz, resultado);`,
+      `    return resultado;`,
+      `}`,
+      ``,
+      `private void getPreOrder(NodoN n, Lista<T> resultado){`,
       `    if (n == null){`,
       `        return;`,
       `    }`,
@@ -431,23 +548,35 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      PRE_IF_NULL: 5,          // if (n == null){
-      PRE_RETURN_NULL: 6,      // return;
+      // Wrapper público
+      PRE_INIT_RESULT: 4, // Lista<T> resultado = new Lista<>();
+      PRE_CALL_HELPER: 5, // getPreOrder(raiz, resultado);
+      PRE_RETURN_RESULT: 6, // return resultado;
 
-      PRE_VISIT_NODE: 9,       // resultado.agregar(n.info);
-      PRE_FOR_CHILDREN: 10,    // for (NodoN h : n.hijos){
-      PRE_RECURSE_CHILD: 11,   // getPreOrder(h, resultado);
+      // Helper recursivo
+      PRE_IF_NULL: 10, // if (n == null){
+      PRE_RETURN_NULL: 11, // return;
+      PRE_VISIT_NODE: 14, // resultado.agregar(n.info);
+      PRE_FOR_CHILDREN: 15, // for (NodoN h : n.hijos){
+      PRE_RECURSE_CHILD: 16, // getPreOrder(h, resultado);
     },
   },
 
-  /* ───────────────── getPostOrder(n, resultado) ─────────────────
+  /* ───────────────── getPostOrder(...) ─────────────────
    * Recorrido en postorden: hijos → nodo.
+   * Wrapper público + helper recursivo.
    */
   getPostOrder: {
     lines: [
       `/**`,
       ` * Obtiene el recorrido en postorden (hijos → nodo).`,
       ` */`,
+      `public Lista<T> getPostOrder(){`,
+      `    Lista<T> resultado = new Lista<>();`,
+      `    getPostOrder(raiz, resultado);`,
+      `    return resultado;`,
+      `}`,
+      ``,
       `public void getPostOrder(NodoN n, Lista<T> resultado){`,
       `    if (n == null){`,
       `        return;`,
@@ -459,23 +588,30 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      POST_IF_NULL: 5,          // if (n == null){
-      POST_RETURN_NULL: 6,      // return;
+      POST_IF_NULL: 10, // if (n == null){
+      POST_RETURN_NULL: 11, // return;
 
-      POST_FOR_CHILDREN: 8,     // for (NodoN h : n.hijos){
-      POST_RECURSE_CHILD: 9,    // getPostOrder(h, resultado);
-      POST_VISIT_NODE: 11,      // resultado.agregar(n.info);
+      POST_FOR_CHILDREN: 13, // for (NodoN h : n.hijos){
+      POST_RECURSE_CHILD: 14, // getPostOrder(h, resultado);
+      POST_VISIT_NODE: 16, // resultado.agregar(n.info);
     },
   },
 
-  /* ───────────────── getLevelOrder(resultado) ─────────────────
+  /* ───────────────── getLevelOrder(...) ─────────────────
    * Recorrido por niveles (BFS).
+   * Wrapper público + método que consume la lista resultado.
    */
   getLevelOrder: {
     lines: [
       `/**`,
       ` * Obtiene el recorrido por niveles (BFS).`,
       ` */`,
+      `public Lista<T> getLevelOrder(){`,
+      `    Lista<T> resultado = new Lista<>();`,
+      `    getLevelOrder(resultado);`,
+      `    return resultado;`,
+      `}`,
+      ``,
       `public void getLevelOrder(Lista<T> resultado){`,
       `    if (raiz == null){`,
       `        return;`,
@@ -494,16 +630,16 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      LEVEL_TREE_EMPTY_IF: 5,      // if (raiz == null){
+      LEVEL_TREE_EMPTY_IF: 10, // if (raiz == null){
 
-      LEVEL_QUEUE_INIT: 9,         // Cola<NodoN> q = new Cola<>();
-      LEVEL_ENQUEUE_ROOT: 10,      // q.encolar(raiz);
+      LEVEL_QUEUE_INIT: 14, // Cola<NodoN> q = new Cola<>();
+      LEVEL_ENQUEUE_ROOT: 15, // q.encolar(raiz);
 
-      LEVEL_WHILE: 12,             // while (!q.esVacia()){
-      LEVEL_DEQUEUE: 13,           // NodoN u = q.decolar();
-      LEVEL_VISIT_NODE: 14,        // resultado.agregar(u.info);
-      LEVEL_FOR_CHILDREN: 15,      // for (NodoN h : u.hijos){
-      LEVEL_ENQUEUE_CHILD: 16,     // q.encolar(h);
+      LEVEL_WHILE: 17, // while (!q.esVacia()){
+      LEVEL_DEQUEUE: 18, // NodoN u = q.decolar();
+      LEVEL_VISIT_NODE: 19, // resultado.agregar(u.info);
+      LEVEL_FOR_CHILDREN: 20, // for (NodoN h : u.hijos){
+      LEVEL_ENQUEUE_CHILD: 21, // q.encolar(h);
     },
   },
 
@@ -521,7 +657,7 @@ export const getArbolNarioCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      CLEAR_ROOT: 6,  // raiz = null;
+      CLEAR_ROOT: 5, // raiz = null;
     },
   },
 });

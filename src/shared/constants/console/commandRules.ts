@@ -973,172 +973,208 @@ export const commandRules: Record<
     );
   },
 
-  arbol_nario: (parts) => {
-    // k puede no ser string si parts[0] viniera mal
-    const k = typeof parts[0] === "string" ? parts[0].toLowerCase() : "";
+ arbol_nario: (parts: string[]) => {
+  const keyword = parts[0]?.toLowerCase();
 
-    // ---- helpers robustos (aceptan number | string | undefined) ----
-    const asStr = (v: unknown) => (v == null ? "" : String(v));
-    const stripQuotes = (v: unknown) => asStr(v).replace(/^['"]|['"]$/g, "");
-    const isIntStr = (v: unknown) => /^\d+$/.test(asStr(v)); // "0", "35"
-    const isTwoDigits = (v: unknown) => /^\d{1,2}$/.test(asStr(v)); // 1..99
-    const normId = (v: unknown) => {
-      const n = Number(stripQuotes(v));
-      return Number.isFinite(n) ? String(n) : asStr(v);
+  if (!keyword) {
+    return {
+      valid: false,
+      message:
+        "Debes escribir una operación para arbol_nario (createRoot, insertChild, deleteNode, moveNode, updateValue, search, getPreOrder, getPostOrder, getLevelOrder o clean).",
     };
+  }
 
-    switch (k) {
-      case "createroot": {
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message:
-              parts.length === 1
-                ? "Debe proporcionar el valor de la raíz como argumento."
-                : "El método únicamente espera el valor de la raíz.",
-          };
-        }
-        if (!isTwoDigits(parts[1])) {
-          return {
-            valid: false,
-            message:
-              "El valor de la raíz debe ser un entero positivo de hasta 2 dígitos.",
-          };
-        }
-        return true;
+  // Helper simple: solo valida que pueda convertirse a número
+  const isNumeric = (s: string | undefined) => {
+    if (s === undefined) return false;
+    const n = Number(s);
+    return !isNaN(n);
+  };
+
+  switch (keyword) {
+    case "createroot": {
+      // arbol_nario createRoot <valor>
+      if (parts.length !== 2) {
+        return {
+          valid: false,
+          message:
+            parts.length === 1
+              ? "El comando createRoot espera un argumento: createRoot <valor>."
+              : "El comando createRoot solo recibe un argumento: createRoot <valor>.",
+        };
       }
-
-      case "insertchild": {
-        // insertChild parentId value [index]
-        if (parts.length !== 3 && parts.length !== 4) {
-          return {
-            valid: false,
-            message:
-              "Uso: insertChild idPadre valor [index]. Ej.: insertChild 1 25 0",
-          };
-        }
-        if (!isIntStr(parts[1])) {
-          return {
-            valid: false,
-            message: "El id del padre debe ser un entero (ej.: 1, '1', \"1\").",
-          };
-        }
-        // normaliza a string numérica sin comillas / ceros a la izquierda
-        parts[1] = normId(parts[1]);
-
-        if (!isTwoDigits(parts[2])) {
-          return {
-            valid: false,
-            message:
-              "El valor a insertar debe ser un entero positivo de hasta 2 dígitos.",
-          };
-        }
-        if (parts.length === 4 && !isIntStr(parts[3])) {
-          return {
-            valid: false,
-            message: "El índice (si se indica) debe ser un entero >= 0.",
-          };
-        }
-        return true;
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message:
+            "El valor de la raíz debe ser numérico. Ej: createRoot 10",
+        };
       }
-
-      case "deletenode": {
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message: "Uso: deleteNode id. Ej.: deleteNode 3",
-          };
-        }
-        if (!isIntStr(parts[1])) {
-          return { valid: false, message: "El id debe ser un entero." };
-        }
-        parts[1] = normId(parts[1]);
-        return true;
-      }
-
-      case "movenode": {
-        // moveNode id newParentId [index]
-        if (parts.length !== 3 && parts.length !== 4) {
-          return {
-            valid: false,
-            message: "Uso: moveNode id nuevoPadre [index]. Ej.: moveNode 5 1 2",
-          };
-        }
-        if (!isIntStr(parts[1]) || !isIntStr(parts[2])) {
-          return {
-            valid: false,
-            message: "Los ids deben ser enteros (ej.: 5, 1).",
-          };
-        }
-        parts[1] = normId(parts[1]);
-        parts[2] = normId(parts[2]);
-
-        if (parts.length === 4 && !isIntStr(parts[3])) {
-          return {
-            valid: false,
-            message: "El índice debe ser un entero >= 0.",
-          };
-        }
-        return true;
-      }
-
-      case "updatevalue": {
-        // updateValue id newValue
-        if (parts.length !== 3) {
-          return {
-            valid: false,
-            message: "Uso: updateValue id nuevoValor. Ej.: updateValue 7 42",
-          };
-        }
-        if (!isIntStr(parts[1])) {
-          return { valid: false, message: "El id debe ser un entero." };
-        }
-        parts[1] = normId(parts[1]);
-
-        if (!isTwoDigits(parts[2])) {
-          return {
-            valid: false,
-            message:
-              "El nuevo valor debe ser un entero positivo de hasta 2 dígitos.",
-          };
-        }
-        return true;
-      }
-
-      case "search": {
-        if (parts.length !== 2) {
-          return {
-            valid: false,
-            message: "Debe proporcionar el valor a buscar. Ej.: search 25",
-          };
-        }
-        if (!isTwoDigits(parts[1])) {
-          return {
-            valid: false,
-            message:
-              "El valor a buscar debe ser un entero positivo de hasta 2 dígitos.",
-          };
-        }
-        return true;
-      }
-
-      case "getpreorder":
-      case "getpostorder":
-      case "getlevelorder":
-      case "clean": {
-        if (parts.length !== 1) {
-          return {
-            valid: false,
-            message: "El método no espera ningún argumento.",
-          };
-        }
-        return true;
-      }
-
-      default:
-        return false;
+      return true;
     }
-  },
+
+    case "insertchild": {
+      // arbol_nario insertChild <parentId> <valor> [index]
+      if (parts.length !== 3 && parts.length !== 4) {
+        return {
+          valid: false,
+          message:
+            "Uso: insertChild <idPadre> <valor> [index]. Ej: insertChild 1 25 0",
+        };
+      }
+
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message:
+            "El id del padre debe ser numérico. Ej: insertChild 1 25",
+        };
+      }
+
+      if (!isNumeric(parts[2])) {
+        return {
+          valid: false,
+          message:
+            "El valor a insertar debe ser numérico. Ej: insertChild 1 25",
+        };
+      }
+
+      if (parts.length === 4 && !isNumeric(parts[3])) {
+        return {
+          valid: false,
+          message:
+            "El índice (si se indica) debe ser numérico. Ej: insertChild 1 25 0",
+        };
+      }
+
+      return true;
+    }
+
+    case "deletenode": {
+      // arbol_nario deleteNode <id>
+      if (parts.length !== 2) {
+        return {
+          valid: false,
+          message:
+            "Uso: deleteNode <id>. Ej: deleteNode 3",
+        };
+      }
+
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message:
+            "El id del nodo a eliminar debe ser numérico. Ej: deleteNode 3",
+        };
+      }
+
+      return true;
+    }
+
+    case "movenode": {
+      // arbol_nario moveNode <id> <nuevoPadreId> [index]
+      if (parts.length !== 3 && parts.length !== 4) {
+        return {
+          valid: false,
+          message:
+            "Uso: moveNode <id> <nuevoPadreId> [index]. Ej: moveNode 5 1 2",
+        };
+      }
+
+      if (!isNumeric(parts[1]) || !isNumeric(parts[2])) {
+        return {
+          valid: false,
+          message:
+            "Los ids del nodo y del nuevo padre deben ser numéricos. Ej: moveNode 5 1",
+        };
+      }
+
+      if (parts.length === 4 && !isNumeric(parts[3])) {
+        return {
+          valid: false,
+          message:
+            "El índice (si se indica) debe ser numérico. Ej: moveNode 5 1 2",
+        };
+      }
+
+      return true;
+    }
+
+    case "updatevalue": {
+      // arbol_nario updateValue <id> <nuevoValor>
+      if (parts.length !== 3) {
+        return {
+          valid: false,
+          message:
+            "Uso: updateValue <id> <nuevoValor>. Ej: updateValue 7 42",
+        };
+      }
+
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message:
+            "El id del nodo debe ser numérico. Ej: updateValue 7 42",
+        };
+      }
+
+      if (!isNumeric(parts[2])) {
+        return {
+          valid: false,
+          message:
+            "El nuevo valor debe ser numérico. Ej: updateValue 7 42",
+        };
+      }
+
+      return true;
+    }
+
+    case "search": {
+      // arbol_nario search <valor>
+      if (parts.length !== 2) {
+        return {
+          valid: false,
+          message:
+            "Uso: search <valor>. Ej: search 25",
+        };
+      }
+
+      if (!isNumeric(parts[1])) {
+        return {
+          valid: false,
+          message:
+            "El valor a buscar debe ser numérico. Ej: search 25",
+        };
+      }
+
+      return true;
+    }
+
+    case "getpreorder":
+    case "getpostorder":
+    case "getlevelorder":
+    case "clean": {
+      // sin argumentos
+      if (parts.length !== 1) {
+        return {
+          valid: false,
+          message:
+            "Este comando no recibe argumentos. Ej: getPreOrder",
+        };
+      }
+      return true;
+    }
+
+    default:
+      return {
+        valid: false,
+        message:
+          "Operación no válida para arbol_nario. Usa createRoot, insertChild, deleteNode, moveNode, updateValue, search, getPreOrder, getPostOrder, getLevelOrder o clean.",
+      };
+  }
+},
+
+
 
   arbol_123: (parts) => {
     const keyword = parts[0]?.toLowerCase();
