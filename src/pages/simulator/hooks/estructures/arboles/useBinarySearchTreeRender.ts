@@ -4,7 +4,7 @@ import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
 import { animateClearTree, animateTreeTraversal, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+// import { animateDeleteNode, animateInsertNode, animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
 import { select } from "d3";
 

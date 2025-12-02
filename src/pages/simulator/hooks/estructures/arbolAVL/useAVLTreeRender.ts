@@ -11,7 +11,7 @@ import {
   animateTreeTraversal,
   drawTraversalSequence,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+// import { animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
 import { animateAVLTreeDelete, animateAVLTreeInsert } from "../../../../../shared/utils/draw/avlTreeDrawActions";

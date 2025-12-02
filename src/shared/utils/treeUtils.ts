@@ -47,6 +47,7 @@ export function defaultComparator<T>(a: T, b: T): number {
  * @param sequencePadding Espaciado entre elementos de la secuencia.
  * @param sequenceHeight Altura de cada elemento de la secuencia.
  * @param extraTreeWidth Ancho extra a añadir al árbol.
+ * @param extraTreeHeight Alto extra a añadir al árbol.
  * @returns Objeto que contiene las métricas calculadas del árbol para el SVG.
  */
 export function computeSvgTreeMetrics(
@@ -56,7 +57,8 @@ export function computeSvgTreeMetrics(
     sequenceCount: number,
     sequencePadding: number,
     sequenceHeight: number,
-    extraTreeWidth: number = 0
+    extraTreeWidth: number = 0,
+    extraTreeHeight: number = 0,
 ) {
     // Valores minimos y máximos del árbol en cada eje
     const [minX, maxX] = extent([...prevNodes, ...currentNodes], d => d.x);
@@ -72,7 +74,7 @@ export function computeSvgTreeMetrics(
 
     // Ancho y alto del lienzo (en base a la extensión total del árbol)
     const width = Math.max(treeWidth, seqWidth) + extraTreeWidth;
-    const height = treeHeight + sequencePadding + sequenceHeight;
+    const height = treeHeight + sequencePadding + sequenceHeight + extraTreeHeight;
 
     // Desplazamientos iniciales para los contenedores (evita que partes queden fuera si las coordenadas son negativas)
     const treeOffset = { x: margin.left - minX!, y: margin.top - minY! };
