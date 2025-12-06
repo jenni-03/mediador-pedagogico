@@ -2,8 +2,21 @@
 import { HierarchyNodeData } from "../../../types";
 import { Cola } from "./Cola";
 import { Nodo23 } from "../nodes/Nodo23";
+import { DomainError } from "../error/DomainError";
 
 export type Cmp<T> = (a: T, b: T) => number;
+
+/**
+ * Códigos de error de dominio para el Árbol 2-3.
+ * Estos códigos se pueden mapear a los `errorPlans` del pseudocódigo / UI.
+ */
+export type Tree23ErrorCode =
+  | "ROOT_ALREADY_EXISTS"
+  | "TREE_EMPTY"
+  | "KEY_ALREADY_EXISTS"
+  | "KEY_NOT_FOUND"
+  | "MAX_NODES_REACHED"
+  | "INCONSISTENT_TREE";
 
 export class Arbol23<T> {
   private raiz: Nodo23<T> | null = null;
@@ -12,10 +25,28 @@ export class Arbol23<T> {
 
   constructor(private cmp: Cmp<T>) {}
 
+  /* ───────────────────────────── Helpers de error ───────────────────────────── */
+
+  private raise(message: string, code: Tree23ErrorCode): never {
+    throw new DomainError(message, code);
+  }
+
+  private checkCap(extraNodes = 0) {
+    if (this.tamanio + extraNodes > this.MAX_NODOS) {
+      this.raise(
+        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`,
+        "MAX_NODES_REACHED"
+      );
+    }
+  }
+
   /* ── API ── */
 
   public crearRaiz(k: T): Nodo23<T> {
-    if (this.raiz) throw new Error("La raíz ya existe.");
+    if (this.raiz) {
+      this.raise("La raíz ya existe.", "ROOT_ALREADY_EXISTS");
+    }
+
     this.checkCap(1);
     this.raiz = new Nodo23<T>([k]);
     this.tamanio = 1;
@@ -27,15 +58,25 @@ export class Arbol23<T> {
       this.crearRaiz(k);
       return;
     }
-    if (this.contiene(k)) throw new Error(`La clave ya existe: ${String(k)}`);
+
+    if (this.contiene(k)) {
+      this.raise(
+        `No fue posible insertar: la clave ya existe en el árbol (${String(k)}).`,
+        "KEY_ALREADY_EXISTS"
+      );
+    }
 
     // Descenso
     let cur: Nodo23<T> = this.raiz;
     while (!cur.isHoja()) {
       const i = this.lowerBound(cur.getKeys(), k);
       const hijo = cur.getHijo(i);
-      if (!hijo)
-        throw new Error("Inconsistencia: hijo inexistente durante descenso.");
+      if (!hijo) {
+        this.raise(
+          "Inconsistencia interna: hijo inexistente durante el descenso de inserción.",
+          "INCONSISTENT_TREE"
+        );
+      }
       cur = hijo;
     }
 
@@ -51,25 +92,40 @@ export class Arbol23<T> {
     this.tamanio = 0;
     if (resetIds) Nodo23.reset(1);
   }
+
   /* ───────────────────── API: DELETE ───────────────────── */
 
   public eliminar(k: T): void {
-    if (!this.raiz) throw new Error("Árbol vacío.");
+    if (!this.raiz) {
+      this.raise(
+        "No fue posible eliminar: el árbol se encuentra vacío.",
+        "TREE_EMPTY"
+      );
+    }
+
     // Verifica que exista
-    if (!this.contiene(k))
-      throw new Error(`La clave no está en el árbol: ${String(k)}`);
+    if (!this.contiene(k)) {
+      this.raise(
+        `No fue posible eliminar: la clave no está en el árbol (${String(k)}).`,
+        "KEY_NOT_FOUND"
+      );
+    }
 
     // Caso especial: raíz hoja
-    if (this.raiz.isHoja()) {
-      const keys = this.raiz.getKeys();
+    if (this.raiz!.isHoja()) {
+      const keys = this.raiz!.getKeys();
       const idx = this.lowerBound(keys, k);
       if (idx >= keys.length || this.cmp(keys[idx], k) !== 0) {
-        throw new Error("Inconsistencia: clave no encontrada en raíz.");
+        this.raise(
+          "Inconsistencia interna: clave no encontrada en la raíz durante delete.",
+          "INCONSISTENT_TREE"
+        );
       }
       keys.splice(idx, 1);
-      this.raiz.setKeys(keys);
+      this.raiz!.setKeys(keys);
+
       // Si quedó sin claves, árbol vacío
-      if (this.raiz.getNumeroKeys() === 0) {
+      if (this.raiz!.getNumeroKeys() === 0) {
         this.raiz = null;
         this.tamanio = 0; // no hay nodos
       }
@@ -77,7 +133,7 @@ export class Arbol23<T> {
     }
 
     // General: eliminar recursivamente y reparar underflow hacia arriba
-    this.eliminarRec(this.raiz, k);
+    this.eliminarRec(this.raiz!, k);
 
     // Contracción de raíz si se quedó sin claves
     if (this.raiz && this.raiz.getNumeroKeys() === 0) {
@@ -93,7 +149,10 @@ export class Arbol23<T> {
         this.tamanio = 0;
       } else {
         // Raíz con 0 claves y >1 hijos no debería ocurrir en 2-3 correcto
-        throw new Error("Inconsistencia: raíz sin claves con múltiples hijos.");
+        this.raise(
+          "Inconsistencia interna: raíz sin claves con múltiples hijos.",
+          "INCONSISTENT_TREE"
+        );
       }
     }
   }
@@ -135,13 +194,17 @@ export class Arbol23<T> {
     } else {
       // k no está en este nodo → descender al hijo correspondiente
       const child = n.getHijo(i);
-      if (!child)
-        throw new Error("Inconsistencia: hijo inexistente durante delete.");
+      if (!child) {
+        this.raise(
+          "Inconsistencia interna: hijo inexistente durante delete.",
+          "INCONSISTENT_TREE"
+        );
+      }
       // Si el hijo al que bajamos es una hoja con 1 clave y justo queremos borrarla,
       // la lógica de abajo (repararUnderflow) lo manejará.
-      this.eliminarRec(child, k);
+      this.eliminarRec(child!, k);
       // Tras eliminar, repara underflow si el hijo quedó con 0 claves
-      this.repararUnderflow(child);
+      this.repararUnderflow(child!);
     }
   }
 
@@ -155,8 +218,12 @@ export class Arbol23<T> {
     // Índice del hijo en el padre
     const pChildren = [...(padre.getHijos() as Nodo23<T>[])];
     const idx = pChildren.findIndex((x) => x === hijo);
-    if (idx === -1)
-      throw new Error("Inconsistencia: hijo no está en su padre.");
+    if (idx === -1) {
+      this.raise(
+        "Inconsistencia interna: hijo no está en la lista de hijos de su padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
 
     const leftSibling = idx > 0 ? pChildren[idx - 1] : null;
     const rightSibling = idx + 1 < pChildren.length ? pChildren[idx + 1] : null;
@@ -297,7 +364,13 @@ export class Arbol23<T> {
 
     const pChildren = [...(padre.getHijos() as Nodo23<T>[])];
     const idxHijo = pChildren.findIndex((x) => x === hijo);
-    if (idxHijo !== -1) pChildren.splice(idxHijo, 1);
+    if (idxHijo === -1) {
+      this.raise(
+        "Inconsistencia interna: hijo a fusionar no encontrado en el padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
+    pChildren.splice(idxHijo, 1);
     padre.setHijos(pChildren);
 
     // Se eliminó un nodo del árbol
@@ -329,7 +402,13 @@ export class Arbol23<T> {
 
     const pChildren = [...(padre.getHijos() as Nodo23<T>[])];
     const idxRight = pChildren.findIndex((x) => x === right);
-    if (idxRight !== -1) pChildren.splice(idxRight, 1);
+    if (idxRight === -1) {
+      this.raise(
+        "Inconsistencia interna: hijo derecho a fusionar no encontrado en el padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
+    pChildren.splice(idxRight, 1);
     padre.setHijos(pChildren);
 
     this.tamanio -= 1;
@@ -342,9 +421,21 @@ export class Arbol23<T> {
     let cur = root;
     while (!cur.isHoja()) {
       const hijos = cur.getHijos();
+      if (hijos.length === 0) {
+        this.raise(
+          "Inconsistencia interna: nodo interno sin hijos al buscar hoja máxima.",
+          "INCONSISTENT_TREE"
+        );
+      }
       cur = hijos[hijos.length - 1] as Nodo23<T>;
     }
     const keys = cur.getKeys();
+    if (keys.length === 0) {
+      this.raise(
+        "Inconsistencia interna: hoja sin claves al buscar máximo.",
+        "INCONSISTENT_TREE"
+      );
+    }
     return { leaf: cur, keyIndex: keys.length - 1 };
   }
 
@@ -353,18 +444,23 @@ export class Arbol23<T> {
   public esVacio(): boolean {
     return this.raiz === null;
   }
+
   public getTamanio(): number {
     return this.tamanio;
   } // nodos
+
   public getPeso(): number {
     return this.tamanio;
   }
+
   public getRaiz(): Nodo23<T> | null {
     return this.raiz;
   }
+
   public getAltura(): number {
     return this.alturaNodo(this.raiz);
   }
+
   public contarHojas(): number {
     return this.contarHojasAux(this.raiz);
   }
@@ -430,8 +526,12 @@ export class Arbol23<T> {
 
     while (cur && cur.getNumeroKeys() > 2) {
       const keys = cur.getKeys();
-      if (keys.length !== 3)
-        throw new Error("Overflow inválido: se esperaban 3 claves.");
+      if (keys.length !== 3) {
+        this.raise(
+          "Overflow inválido: se esperaban exactamente 3 claves en el nodo.",
+          "INCONSISTENT_TREE"
+        );
+      }
       const [k0, k1, k2] = keys as unknown as [T, T, T];
 
       const hijos = [...cur.getHijos()] as Nodo23<T>[];
@@ -470,8 +570,12 @@ export class Arbol23<T> {
 
         const pChildren = [...padre.getHijos()] as Nodo23<T>[];
         const idxL = pChildren.findIndex((x) => x === L);
-        if (idxL === -1)
-          throw new Error("Inconsistencia: L no está en el padre.");
+        if (idxL === -1) {
+          this.raise(
+            "Inconsistencia interna: nodo L no encontrado en la lista de hijos del padre.",
+            "INCONSISTENT_TREE"
+          );
+        }
         pChildren.splice(idxL + 1, 0, R);
         padre.setHijos(pChildren);
 
@@ -533,14 +637,6 @@ export class Arbol23<T> {
       copia.agregarHijo(hc);
     }
     return copia;
-  }
-
-  private checkCap(extraNodes = 0) {
-    if (this.tamanio + extraNodes > this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
-      );
-    }
   }
 
   private getNodoYPos(k: T): { nodo: Nodo23<T>; posKey: number } | null {
