@@ -272,16 +272,60 @@ export type BinaryTreeTraversalStep =
   | { type: "goLeft"; from: string; to: string | null }
   | { type: "visit"; at: string }
   | { type: "goRight"; from: string; to: string | null }
-  | { type: "return"; from: string | null; to: string | null; via: "left" | "right" | null };
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
 
 export type BinaryTreeGetStep =
   | { type: "checkNull"; at: string | null; isNull: boolean }
-  | { type: "visit"; at: string }
-  | { type: "match"; at: string }
+  | { type: "match"; at: string, found: boolean }
   | { type: "goLeft"; from: string; to: string | null }
   | { type: "checkLeftResult"; from: string; found: boolean }
   | { type: "goRight"; from: string; to: string | null }
-  | { type: "return"; from: string | null; to: string | null; found: boolean; via: "left" | "right" | null };
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right", found: boolean };
+
+export type BSTInsertStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right"; newId: string }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+export type BSTInsertMeta<T> = {
+  parent: NodoBin<T> | null;
+  targetNode: NodoBin<T> | null;
+  inserted: boolean;
+};
+
+export type BSTDeleteStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "match"; at: string }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+export type BSTDeleteMeta<T> = {
+  parent: NodoBin<T> | null;
+  targetNode: NodoBin<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoBin<T> | null;
+  successorParent: NodoBin<T> | null;
+  replacement: NodoBin<T> | null;
+  replacementSide: "left" | "right" | null;
+  deleted: boolean;
+};
+
+export type BSTSearchStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "match"; at: string }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+type BSTSearchMeta<T> = {
+  targetNode: NodoBin<T> | null;
+};
 
 export type RotationType = "LL" | "RR" | "LR" | "RL"
 
@@ -387,26 +431,28 @@ export type BinaryTreeSearchOutput<T> = {
 }
 
 export type BSTInsertOutput<T> = {
-  pathIds: string[];
+  steps: BSTInsertStep[];
   parent: NodoBin<T> | null;
-  targetNode: NodoBin<T>;
-  exists: boolean;
+  targetNode: NodoBin<T> | null;
+  inserted: boolean;
 };
 
 export type BSTSearchOutput<T> = {
-  pathIds: string[];
+  steps: BSTSearchStep[];
+  targetNode: NodoBin<T> | null;
   found: boolean;
-  lastVisited: NodoBin<T> | null;
 };
 
 export type BSTDeleteOutput<T> = {
-  pathToTargetIds: string[];
+  steps: BSTDeleteStep[];
   parent: NodoBin<T> | null;
-  targetNode: NodoBin<T>;
+  targetNode: NodoBin<T> | null;
   pathToSuccessorIds: string[];
   successor: NodoBin<T> | null;
+  successorParent: NodoBin<T> | null;
   replacement: NodoBin<T> | null;
-  exists: boolean;
+  replacementSide: "left" | "right" | null;
+  deleted: boolean;
 };
 
 export type SplayInsertOutput<T> = BSTInsertOutput<T>;
@@ -627,13 +673,13 @@ export type BaseQueryOperations<
   : // ABB
   T extends "arbol_binario_busqueda"
   ? {
-    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
-    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
-    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toInsert: { steps: BSTInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
+    toDelete: { steps: BSTDeleteStep[], parentNodeId: string | null, targetNodeId: string | null, pathToSuccessorIds: string[], successorNodeId: string | null, successorParentNodeId: string | null, replacementNodeId: string | null, replacementSide: "left" | "right" | null, deleted: boolean } | null;
+    toSearch: { steps: BSTSearchStep[], targetNodeId: string | null, found: boolean } | null;
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
   }
   : // AVL

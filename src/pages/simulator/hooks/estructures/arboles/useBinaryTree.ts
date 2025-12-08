@@ -160,16 +160,9 @@ export function useBinaryTree(structure: ArbolBinario<number>) {
 
     // Operación para vaciar el árbol
     const clearTree = useCallback(() => {
-        // Clonar el árbol para asegurar la inmutabilidad del estado
         const clonedTree = tree.clonar();
-
-        // Vaciar el árbol
         clonedTree.vaciar();
-
-        // Actualizar el estado del árbol
         setTree(clonedTree);
-
-        // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true

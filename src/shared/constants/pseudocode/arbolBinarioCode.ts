@@ -7,7 +7,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
  * Método que inserta un nuevo elemento en el árbol binario como hijo izquierdo del elemento padre dado.
  * @param padre Elemento al que se añadirá el hijo.
  * @param hijo Elemento a insertar.
- * @return true si la inserción fue exitosa, false en caso contrario.
+ * @return true si el elemento fue insertado, false en caso contrario.
  */`,
       `public boolean insertLeft(T {0}, T {1}){`,
       `    NodoBin<T> nuevoNodo = new NodoBin<>({1});`,
@@ -36,7 +36,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza una búsqueda a partir del nodo raíz dado para
+ * Método auxiliar que realiza una búsqueda en el subárbol dado para
  * obtener el nodo correspondiente al elemento proporcionado.
  * @param r Nodo raíz del subárbol actual donde se va a buscar.
  * @param info Elemento a buscar.
@@ -88,7 +88,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
  * Método que inserta un nuevo elemento en el árbol binario como hijo derecho del elemento padre dado.
  * @param padre Elemento al que se añadirá el hijo. 
  * @param hijo Elemento a insertar.
- * @return true si la inserción fue exitosa, false en caso contrario.
+ * @return true si el elemento fue insertado, false en caso contrario.
  */`,
       `public boolean insertRight(T {0}, T {1}){`,
       `    NodoBin<T> nuevoNodo = new NodoBin<>({1});`,
@@ -107,7 +107,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que obtiene el nodo correspondiente al elemento proporcionado. 
+ * Método auxiliar que obtiene el nodo correspondiente al elemento proporcionado.
  * @param info Elemento a buscar.
  * @return Nodo encontrado, o null si no existe.
  */`,
@@ -117,7 +117,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza una búsqueda a partir del nodo raíz dado para
+ * Método auxiliar que realiza una búsqueda en el subárbol dado para
  * obtener el nodo correspondiente al elemento proporcionado.
  * @param r Nodo raíz del subárbol actual donde se va a buscar.
  * @param info Elemento a buscar.
@@ -168,7 +168,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que elimina el elemento especificado del árbol binario. 
  * @param info Elemento a eliminar.
- * @return true si la eliminación fue exitosa, false en caso contrario.
+ * @return true si el elemento fue eliminado, false en caso contrario.
  * @throws RuntimeException si el árbol está vacío.
  */`,
       `public boolean delete(T {0}){`,
@@ -231,8 +231,8 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza una búsqueda a partir del nodo raíz dado para
- * obtener el nodo padre cuyo hijo izquierdo o derecho corresponde al elemento proporcionado.
+ * Método auxiliar que realiza una búsqueda en el subárbol dado para
+ * obtener el nodo padre cuyo nodo hijo izquierdo o derecho corresponde al elemento proporcionado.
  * @param r Nodo raíz del subárbol actual donde se va a buscar.
  * @param info Elemento a buscar.
  * @return Nodo padre encontrado, o null si no existe.
@@ -338,11 +338,11 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
   search: {
     lines: [
       `/**
- * Método que comprueba si un elemento existe en el árbol binario.
+ * Método que comprueba la existencia del elemento especificado en el árbol binario.
  * @param info Elemento a buscar.
  * @return true si el elemento existe en el árbol; false en caso contrario.
  */`,
-      `public boolean buscar(T {0}) {`,
+      `public boolean search(T {0}) {`,
       `    return this.get({0}) != null;`,
       `}`,
       `\n`,
@@ -358,7 +358,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza una búsqueda a partir del nodo raíz dado para
+ * Método auxiliar que realiza una búsqueda en el subárbol dado para
  * obtener el nodo correspondiente al elemento proporcionado.
  * @param r Nodo raíz del subárbol actual donde se va a buscar.
  * @param info Elemento a buscar.
@@ -399,27 +399,27 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
     lines: [
       `/**
  * Método que realiza el recorrido inorden del árbol binario.
- * @return Lista con la información de los nodos del árbol en orden inorden.
+ * @return Lista con la información de los nodos del árbol en secuencia inorden.
  */`,
-      `public ListaCD<T> inOrder() {`,
+      `public ListaCD<T> getInOrder() {`,
       `    ListaCD<T> nodos = new ListaCD<>();`,
-      `    this.inOrder(this.raiz, nodos);`,
+      `    this.getInOrder(this.raiz, nodos);`,
       `    return nodos;`,
       `}`,
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza el recorrido inorden a partir del nodo raíz dado.
+ * Método auxiliar que realiza el recorrido inorden en el subárbol dado.
  * @param r Nodo raíz del subárbol actual.
  * @param nodos Lista donde se almacenan la información de los nodos visitados en secuencia inorden.
  */`,
-      `private void inOrder(NodoBin<T> r, ListaCD<T> nodos) {`,
+      `private void getInOrder(NodoBin<T> r, ListaCD<T> nodos) {`,
       `    if (r == null) {`,
       `        return;`,
       `    }`,
-      `    this.inOrder(r.izquierdo, nodos);`,
+      `    this.getInOrder(r.izquierdo, nodos);`,
       `    nodos.insertLast(r.info);`,
-      `    this.inOrder(r.derecho, nodos);`,
+      `    this.getInOrder(r.derecho, nodos);`,
       `}`,
     ],
     labels: {
@@ -427,7 +427,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       CALL_RECURSIVE_INORDER: 3,
       RETURN_LIST: 4,
 
-      // Método inorder (NodoBin<T> r, ListaCD<T> nodos)
+      // Método getInOrder(NodoBin<T> r, ListaCD<T> nodos)
       IF_NULL_NODE: 10,
       RETURN_NULL: 11,
       CALL_LEFT: 13,
@@ -439,27 +439,27 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
     lines: [
       `/**
  * Método que realiza el recorrido preorden del árbol binario.
- * @return Lista con la información de los nodos del árbol en orden preorden.
+ * @return Lista con la información de los nodos del árbol en secuencia preorden.
  */`,
-      `public ListaCD<T> preOrder() {`,
+      `public ListaCD<T> getPreOrder() {`,
       `    ListaCD<T> nodos = new ListaCD<>();`,
-      `    this.preOrder(this.raiz, nodos);`,
+      `    this.getPreOrder(this.raiz, nodos);`,
       `    return nodos;`,
       `}`,
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza el recorrido preorden a partir del nodo raíz dado.
+ * Método auxiliar que realiza el recorrido preorden en el subárbol dado.
  * @param r Nodo raíz del subárbol actual.
  * @param nodos Lista donde se almacenan la información de los nodos visitados en secuencia preorden.
  */`,
-      `private void preOrder(NodoBin<T> r, ListaCD<T> nodos) {`,
+      `private void getPreOrder(NodoBin<T> r, ListaCD<T> nodos) {`,
       `    if (r == null) {`,
       `        return;`,
       `    }`,
       `    nodos.insertLast(r.info);`,
-      `    this.preOrder(root.izquierdo, nodos);`,
-      `    this.preOrder(root.derecho, nodos);`,
+      `    this.getPreOrder(root.izquierdo, nodos);`,
+      `    this.getPreOrder(root.derecho, nodos);`,
       `}`,
     ],
     labels: {
@@ -467,7 +467,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       CALL_RECURSIVE_INORDER: 3,
       RETURN_LIST: 4,
 
-      // Método inorder (NodoBin<T> r, ListaCD<T> nodos)
+      // Método getPreOrder(NodoBin<T> r, ListaCD<T> nodos)
       IF_NULL_NODE: 10,
       RETURN_NULL: 11,
       VISIT_NODE: 13,
@@ -479,26 +479,26 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
     lines: [
       `/**
  * Método que realiza el recorrido postorden del árbol binario.
- * @return Lista con la información de los nodos del árbol en orden postorden.
+ * @return Lista con la información de los nodos del árbol en secuencia postorden.
  */`,
-      `public ListaCD<T> postOrder() {`,
+      `public ListaCD<T> getPostOrder() {`,
       `    ListaCD<T> nodos = new ListaCD<>();`,
-      `    this.postOrder(this.raiz, nodos);`,
+      `    this.getPostOrder(this.raiz, nodos);`,
       `    return nodos;`,
       `}`,
       `\n`,
       `\n`,
       `/**
- * Método auxiliar que realiza el recorrido postorden a partir del nodo raíz dado.
+ * Método auxiliar que realiza el recorrido postorden en el subárbol dado.
  * @param r Nodo raíz del subárbol actual.
  * @param nodos Lista donde se almacenan la información de los nodos visitados en secuencia postorden.
  */`,
-      `private void postOrden(NodoBin<T> r, ListaCD<T> nodos) {`,
+      `private void getPostOrder(NodoBin<T> r, ListaCD<T> nodos) {`,
       `    if (r == null) {`,
       `        return;`,
       `    }`,
-      `    this.postOrder(root.izquierdo, nodos);`,
-      `    this.postOrder(root.derecho, nodos);`,
+      `    this.getPostOrder(root.izquierdo, nodos);`,
+      `    this.getPostOrder(root.derecho, nodos);`,
       `    nodos.insertLast(root.info);`,
       `}`,
     ],
@@ -507,7 +507,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       CALL_RECURSIVE_INORDER: 3,
       RETURN_LIST: 4,
 
-      // Método inorder (NodoBin<T> r, ListaCD<T> nodos)
+      // Método getPostOrder(NodoBin<T> r, ListaCD<T> nodos)
       IF_NULL_NODE: 10,
       RETURN_NULL: 11,
       CALL_LEFT: 13,
@@ -527,7 +527,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `        Cola<NodoBin<T>> cola = new Cola<>();`,
       `        cola.enqueue(this.raiz);`,
       `        \n`,
-      `        while (!cola.esVacia()) {`,
+      `        while (!cola.isEmpty()) {`,
       `             NodoBin<T> nodo = cola.dequeue();`,
       `             nodos.insertLast(nodo.info);`,
       `             if (nodo.izquierdo != null) {`,
@@ -560,7 +560,6 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
     lines: [
       `/**
  * Método que elimina todos los nodos del árbol binario.
- * post: Se eliminó todos los nodos en el árbol.
  */`,
       `public void clean(){`,
       `    this.raiz = null;`,
