@@ -660,7 +660,7 @@ search: {
     ],
     // Reutilizamos el mismo label que en el Árbol 1-2-3 para coherencia visual.
     labels: {
-      CLEAR_ROOT: 5, // this.root = null;
+      CLEAR_ROOT: 4, // this.root = null;
     },
   },
 });

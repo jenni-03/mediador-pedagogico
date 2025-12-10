@@ -2,9 +2,23 @@
 // Árbol B+ (internos = índices; hojas = datos y enlaces laterales).
 // API inspirada en ArbolB.ts, con extras propios de B+ (range/scanFrom).
 
-import { BPlusHierarchy, TraversalNodeType } from "../../../types"; // ajusta path
-import { BPlusNode, Par, Cmp as KeyCmp } from "../nodes/NodoBPlus"; // ajusta path
-import { Cola } from "./Cola"; // igual que en ArbolB
+import { BPlusHierarchy, TraversalNodeType } from "../../../types";
+import { BPlusNode, Par, Cmp as KeyCmp } from "../nodes/NodoBPlus";
+import { Cola } from "./Cola";
+import { DomainError } from "../error/DomainError";
+
+/**
+ * Códigos de dominio para el Árbol B+.
+ * Estos se pueden mapear a los `errorPlans` del pseudocódigo / UI.
+ */
+export type BPlusErrorCode =
+  | "INVALID_MIN_DEGREE"
+  | "ROOT_ALREADY_EXISTS"
+  | "TREE_EMPTY"
+  | "KEY_ALREADY_EXISTS"
+  | "KEY_NOT_FOUND"
+  | "MAX_NODES_REACHED"
+  | "INCONSISTENT_TREE";
 
 export class ArbolBPlus<K, V = K> {
   private raiz: BPlusNode<K, V> | null = null;
@@ -21,71 +35,33 @@ export class ArbolBPlus<K, V = K> {
     private t: number,
     private mapValue: (k: K) => V = (k) => k as unknown as V
   ) {
-    if (t < 2) throw new Error("El grado mínimo t debe ser >= 2.");
+    if (t < 2) {
+      this.raise("El grado mínimo t debe ser >= 2.", "INVALID_MIN_DEGREE");
+    }
   }
 
-  /** Clona profundamente el árbol (para inmutabilidad en React). */
-  public clonar(): ArbolBPlus<K, V> {
-    const clone = new ArbolBPlus<K, V>(this.cmp, this.t, this.mapValue);
-    if (!this.raiz) return clone;
+  /* ───────────────────────────── Helpers de error / capacidad ───────────────────────────── */
 
-    const oldToNew = new Map<BPlusNode<K, V>, BPlusNode<K, V>>();
+  private raise(message: string, code: BPlusErrorCode): never {
+    throw new DomainError(message, code);
+  }
 
-    const cloneRec = (
-      n: BPlusNode<K, V>,
-      parent: BPlusNode<K, V> | null
-    ): BPlusNode<K, V> => {
-      let nn: BPlusNode<K, V>;
-      if (n.getIsLeaf()) {
-        const keys = n.getKeys();
-        const vals = n.getValues();
-        const entries = keys.map((k, i) => ({ key: k, value: vals[i] }));
-        nn = new BPlusNode<K, V>({ isLeaf: true, entries });
-      } else {
-        const keys = n.getKeys().slice();
-        nn = new BPlusNode<K, V>({ isLeaf: false, keys, children: [] });
-        const childClones = (n.getChildren() as BPlusNode<K, V>[]).map((c) =>
-          cloneRec(c, nn)
-        );
-        nn.setChildren(childClones);
-        for (const c of childClones) c.setParent(nn);
-      }
-      nn.setParent(parent);
-      oldToNew.set(n, nn);
-      return nn;
-    };
-
-    const newRoot = cloneRec(this.raiz, null);
-
-    // reconstruir belt de hojas
-    const leftmostLeaf = (() => {
-      let x = this.raiz as BPlusNode<K, V>;
-      while (!x.getIsLeaf()) x = x.getChildren()[0] as BPlusNode<K, V>;
-      return x;
-    })();
-
-    let o: BPlusNode<K, V> | null = leftmostLeaf;
-    while (o) {
-      const onext = o.getNextLeaf();
-      if (onext) {
-        const nCur = oldToNew.get(o)!;
-        const nNext = oldToNew.get(onext)!;
-        nCur.setNextLeaf(nNext);
-        nNext.setPrevLeaf(nCur);
-      }
-      o = onext as BPlusNode<K, V> | null;
+  private checkCap(extraNodes = 0) {
+    if (this.tamanio + extraNodes > this.MAX_NODOS) {
+      this.raise(
+        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`,
+        "MAX_NODES_REACHED"
+      );
     }
-
-    clone["raiz"] = newRoot;
-    clone["tamanio"] = this.tamanio;
-    return clone;
   }
 
   /* ───────────────────────────── API PÚBLICA ───────────────────────────── */
 
   /** Crea raíz HOJA con (k,v). */
   public crearRaiz(k: K, v?: V): BPlusNode<K, V> {
-    if (this.raiz) throw new Error("La raíz ya existe.");
+    if (this.raiz) {
+      this.raise("La raíz ya existe.", "ROOT_ALREADY_EXISTS");
+    }
     this.checkCap(1);
     const val = v ?? this.mapValue(k);
     this.raiz = new BPlusNode<K, V>({
@@ -104,13 +80,20 @@ export class ArbolBPlus<K, V = K> {
       this.crearRaiz(k, val);
       return;
     }
-    if (this.contiene(k)) throw new Error(`La clave ya existe: ${String(k)}`);
+
+    if (this.contiene(k)) {
+      this.raise(
+        `No fue posible insertar: la clave ya existe en el árbol (${String(k)}).`,
+        "KEY_ALREADY_EXISTS"
+      );
+    }
 
     // Si la raíz está llena, dividir antes de descender
     if (this.keyCount(this.raiz) === this.maxKeys()) {
       this.checkCap(2); // nueva raíz (interna) + un nuevo nodo (right)
       const antigua = this.raiz;
       let nuevaRaiz: BPlusNode<K, V>;
+
       if (antigua.getIsLeaf()) {
         const { left, right, sepKey } = antigua.splitLeafAt(this.t);
         nuevaRaiz = new BPlusNode<K, V>({
@@ -142,12 +125,23 @@ export class ArbolBPlus<K, V = K> {
     this.insertNonFull(this.raiz!, { key: k, value: val });
   }
 
-  /** Elimina k si existe; lanza error si no está. */
+  /** Elimina k si existe; lanza DomainError si no está. */
   public eliminar(k: K): void {
-    if (!this.raiz) throw new Error("Árbol vacío.");
-    if (!this.contiene(k)) throw new Error(`La clave no está: ${String(k)}`);
+    if (!this.raiz) {
+      this.raise(
+        "No fue posible eliminar: el árbol se encuentra vacío.",
+        "TREE_EMPTY"
+      );
+    }
 
-    this.deleteRec(this.raiz, k);
+    if (!this.contiene(k)) {
+      this.raise(
+        `No fue posible eliminar: la clave no está en el árbol (${String(k)}).`,
+        "KEY_NOT_FOUND"
+      );
+    }
+
+    this.deleteRec(this.raiz!, k);
 
     // Contrae la raíz si es interno vacío
     if (this.raiz && !this.raiz.getIsLeaf() && this.keyCount(this.raiz) === 0) {
@@ -157,13 +151,14 @@ export class ArbolBPlus<K, V = K> {
         this.raiz.setParent(null);
         this.tamanio -= 1;
       } else {
-        throw new Error(
-          "Inconsistencia: raíz interna sin claves con múltiples hijos."
+        this.raise(
+          "Inconsistencia interna: raíz interna sin claves con múltiples hijos.",
+          "INCONSISTENT_TREE"
         );
       }
     }
 
-    // Si todo quedó vacío
+    // Si todo quedó vacío (raíz hoja sin claves)
     if (this.raiz && this.raiz.getIsLeaf() && this.keyCount(this.raiz) === 0) {
       this.raiz = null;
       this.tamanio = 0;
@@ -190,25 +185,29 @@ export class ArbolBPlus<K, V = K> {
     if (resetIds) BPlusNode.reset(1);
   }
 
-  /* ─────────────────────────── Consultas varias ─────────────────────────── */
-
   public esVacio(): boolean {
     return this.raiz === null;
   }
+
+  /** #nodos (no #claves). */
   public getTamanio(): number {
-    return this.tamanio; // #nodos
+    return this.tamanio;
   }
+
+  public getPeso(): number {
+    return this.tamanio;
+  }
+
   public getRaiz(): BPlusNode<K, V> | null {
     return this.raiz;
   }
+
   public getAltura(): number {
     return this.alturaNodo(this.raiz);
   }
+
   public contarHojas(): number {
     return this.contarHojasAux(this.raiz);
-  }
-  public getPeso(): number {
-    return this.tamanio;
   }
 
   public getById(id: number): BPlusNode<K, V> | null {
@@ -261,8 +260,6 @@ export class ArbolBPlus<K, V = K> {
     return res;
   }
 
-  /* ─────────────────────────────── RANGOS / SCAN ─────────────────────────────── */
-
   /** Rango inclusivo: devuelve las claves k con from ≤ k ≤ to, en orden ascendente. */
   public range(from: K, to: K): K[] {
     if (this.cmp(from, to) > 0) [from, to] = [to, from];
@@ -285,9 +282,66 @@ export class ArbolBPlus<K, V = K> {
     return res;
   }
 
+  /** Clona profundamente el árbol (para inmutabilidad en React). */
+  public clonar(): ArbolBPlus<K, V> {
+    const clone = new ArbolBPlus<K, V>(this.cmp, this.t, this.mapValue);
+    if (!this.raiz) return clone;
+
+    const oldToNew = new Map<BPlusNode<K, V>, BPlusNode<K, V>>();
+
+    const cloneRec = (
+      n: BPlusNode<K, V>,
+      parent: BPlusNode<K, V> | null
+    ): BPlusNode<K, V> => {
+      let nn: BPlusNode<K, V>;
+      if (n.getIsLeaf()) {
+        const keys = n.getKeys();
+        const vals = n.getValues();
+        const entries = keys.map((k, i) => ({ key: k, value: vals[i] }));
+        nn = new BPlusNode<K, V>({ isLeaf: true, entries });
+      } else {
+        const keys = n.getKeys().slice();
+        nn = new BPlusNode<K, V>({ isLeaf: false, keys, children: [] });
+        const childClones = (n.getChildren() as BPlusNode<K, V>[]).map((c) =>
+          cloneRec(c, nn)
+        );
+        nn.setChildren(childClones);
+        for (const c of childClones) c.setParent(nn);
+      }
+      nn.setParent(parent);
+      oldToNew.set(n, nn);
+      return nn;
+    };
+
+    const newRoot = cloneRec(this.raiz, null);
+
+    // reconstruir “belt” de hojas
+    const leftmostLeaf = (() => {
+      let x = this.raiz as BPlusNode<K, V>;
+      while (!x.getIsLeaf()) x = x.getChildren()[0] as BPlusNode<K, V>;
+      return x;
+    })();
+
+    let o: BPlusNode<K, V> | null = leftmostLeaf;
+    while (o) {
+      const onext = o.getNextLeaf();
+      if (onext) {
+        const nCur = oldToNew.get(o)!;
+        const nNext = oldToNew.get(onext)!;
+        nCur.setNextLeaf(nNext);
+        nNext.setPrevLeaf(nCur);
+      }
+      o = onext as BPlusNode<K, V> | null;
+    }
+
+    clone["raiz"] = newRoot;
+    clone["tamanio"] = this.tamanio;
+    return clone;
+  }
+
   /* ───────────────────────────── Internos: Insert ───────────────────────────── */
 
-  // 1) MÁS ROBUSTA
+  /** Insert en árbol donde la raíz YA no está full (B+ no recursivo en altura). */
   private insertNonFull(n: BPlusNode<K, V>, entry: Par<K, V>): void {
     // Caso hoja
     if (n.getIsLeaf()) {
@@ -303,7 +357,12 @@ export class ArbolBPlus<K, V = K> {
 
     // Clamp defensivo (por si el padre estuviera temporalmente desbalanceado)
     let kids = parentRef.getChildren() as BPlusNode<K, V>[];
-    if (kids.length === 0) throw new Error("Nodo interno sin hijos.");
+    if (kids.length === 0) {
+      this.raise(
+        "Inconsistencia interna: nodo interno sin hijos durante inserción.",
+        "INCONSISTENT_TREE"
+      );
+    }
     if (idx < 0) idx = 0;
     if (idx >= kids.length) idx = kids.length - 1;
 
@@ -328,14 +387,20 @@ export class ArbolBPlus<K, V = K> {
     this.insertNonFull(child, entry);
   }
 
-  // 2) SPLIT ATÓMICO (no deja al padre en estado intermedio)
+  /**
+   * splitChild: divide un hijo lleno en left+right y reconstruye el padre en un paso
+   * para evitar estados intermedios inconsistentes.
+   */
   private splitChild(parent: BPlusNode<K, V>, i: number): BPlusNode<K, V> {
     // Vamos a crear +1 nodo neto (child -> left+right). Verifica capacidad.
     this.checkCap(1);
 
     const child = parent.getChildren()[i] as BPlusNode<K, V>;
     if (this.keyCount(child) !== this.maxKeys()) {
-      throw new Error("splitChild: el hijo no está lleno.");
+      this.raise(
+        "Inconsistencia interna: splitChild llamado sobre hijo que no está lleno.",
+        "INCONSISTENT_TREE"
+      );
     }
 
     if (child.getIsLeaf()) {
@@ -380,7 +445,7 @@ export class ArbolBPlus<K, V = K> {
     }
   }
 
-  // 3) ADEMÁS: evitar mutaciones in-place de keys aquí también
+  /** Evita mutaciones in-place del padre; reconstruye el nodo padre y lo reemplaza. */
   private replaceNodeInParent(
     oldNode: BPlusNode<K, V>,
     newNode: BPlusNode<K, V>
@@ -394,11 +459,15 @@ export class ArbolBPlus<K, V = K> {
 
     const kids = p.getChildren().slice() as BPlusNode<K, V>[];
     const idx = kids.indexOf(oldNode);
-    if (idx === -1)
-      throw new Error("replaceNodeInParent: oldNode no es hijo del padre.");
+    if (idx === -1) {
+      this.raise(
+        "Inconsistencia interna: replaceNodeInParent con nodo que no es hijo del padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
     kids[idx] = newNode;
 
-    const keys = p.getKeys().slice(); // ← copiar, no mutar el array original
+    const keys = p.getKeys().slice();
     const nuevoPadre = new BPlusNode<K, V>({
       isLeaf: false,
       keys,
@@ -420,8 +489,15 @@ export class ArbolBPlus<K, V = K> {
   private deleteRec(n: BPlusNode<K, V>, k: K): void {
     if (n.getIsLeaf()) {
       const idx = n.indexOfKey(k, this.cmp);
-      if (idx === -1)
-        throw new Error(`Clave no encontrada en hoja: ${String(k)}`);
+      if (idx === -1) {
+        this.raise(
+          `Inconsistencia interna: clave no encontrada en hoja durante delete (${String(
+            k
+          )}).`,
+          "INCONSISTENT_TREE"
+        );
+      }
+
       const wasFirst = idx === 0;
       n.removeLeafAt(idx);
 
@@ -589,8 +665,9 @@ export class ArbolBPlus<K, V = K> {
 
       this.tamanio -= 1;
     } else {
-      throw new Error(
-        "mergeChildren: tipos inconsistentes (mezcla hoja/interno)."
+      this.raise(
+        "Inconsistencia interna: mergeChildren mezclando hoja e interno.",
+        "INCONSISTENT_TREE"
       );
     }
   }
@@ -616,8 +693,12 @@ export class ArbolBPlus<K, V = K> {
     if (!p) return;
     const kids = p.getChildren() as BPlusNode<K, V>[];
     const idx = kids.indexOf(n);
-    if (idx === -1)
-      throw new Error("fixLeafUnderflow: hoja no encontrada en su padre.");
+    if (idx === -1) {
+      this.raise(
+        "Inconsistencia interna: hoja no encontrada en la lista de hijos de su padre durante underflow.",
+        "INCONSISTENT_TREE"
+      );
+    }
 
     const left = idx > 0 ? kids[idx - 1] : null;
     const right = idx + 1 < kids.length ? kids[idx + 1] : null;
@@ -638,14 +719,16 @@ export class ArbolBPlus<K, V = K> {
     }
   }
 
-  /* ───────────────────────────── Utilidades ───────────────────────────── */
+  /* ───────────────────────────── Utilidades / estructura ───────────────────────────── */
 
   private keyCount(n: BPlusNode<K, V>): number {
     return n.getKeyCount();
   }
+
   private minKeys(): number {
     return this.t - 1;
   }
+
   private maxKeys(): number {
     return 2 * this.t - 1;
   }
@@ -667,14 +750,6 @@ export class ArbolBPlus<K, V = K> {
     for (const h of n.getChildren())
       total += this.contarHojasAux(h as BPlusNode<K, V>);
     return total;
-  }
-
-  private checkCap(extraNodes = 0) {
-    if (this.tamanio + extraNodes > this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
-      );
-    }
   }
 
   /** Encuentra la hoja que contiene la primera clave >= k, y el índice dentro de la hoja. */

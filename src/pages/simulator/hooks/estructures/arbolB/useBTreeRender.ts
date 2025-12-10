@@ -1451,27 +1451,82 @@ export function useBTreeRender(
   useEffect(() => {
     if (!svgRef.current || !query.toClear) return;
 
-    const svg = d3.select(svgRef.current);
-    const treeG = svg.select<SVGGElement>("g.tree-container");
-    const seqG = svg.select<SVGGElement>("g.seq-container");
+    const labels = BT_CODE.clean.labels ?? {};
+    type LabelKey = keyof typeof labels | string;
 
-    animateClearTree(
-      treeG,
-      seqG,
-      { nodePositions, seqPositions },
-      resetQueryValues,
-      setIsAnimating
-    );
+    const stepId = `btree-clean-${Date.now()}`;
+    let cancelled = false;
 
-    svg.selectAll("g.nary-search-overlay").remove();
-    svg.selectAll("g.nary-move-overlay").remove();
+    const step = async (labelName: LabelKey, ms: number = 520) => {
+      const lineIndex = (labels as Record<string, number | undefined>)[
+        labelName as string
+      ];
+
+      if (typeof lineIndex === "number") {
+        bus.emit("step:progress", { stepId, lineIndex });
+      } else {
+        console.warn("[BTree clean] label no encontrado:", labelName);
+      }
+
+      await delay(ms);
+      if (cancelled) return;
+    };
+
+    runExclusive(async () => {
+      if (!svgRef.current) return;
+
+      const svg = d3.select<SVGSVGElement, unknown>(svgRef.current);
+      const treeG = svg.select<SVGGElement>("g.tree-container");
+      const seqG = svg.select<SVGGElement>("g.seq-container");
+
+      // Interrumpir y limpiar cualquier overlay / banda anterior
+      seqG.selectAll("*").interrupt().remove();
+      svg
+        .selectAll(
+          "g.tt-traverse-overlay, g.b-traverse-overlay, .b-runner, .b-step-ring, .b-target-ring"
+        )
+        .interrupt()
+        .remove();
+
+      // Notificar inicio de operación de limpieza (pseudocódigo clean())
+      bus.emit("op:start", { op: "clean" });
+
+      // Única línea relevante en el pseudocódigo: this.root = null;
+      await step("CLEAR_ROOT", 600);
+      if (cancelled) return;
+
+      // Animación de borrado visual + reset del query/toClear
+      await animateClearTree(
+        treeG,
+        seqG,
+        { nodePositions, seqPositions },
+        resetQueryValues,
+        setIsAnimating
+      );
+
+      // Limpieza extra de overlays genéricos n-arios
+      svg.selectAll("g.nary-search-overlay").remove();
+      svg.selectAll("g.nary-move-overlay").remove();
+
+      if (!cancelled) {
+        bus.emit("op:done", { op: "clean" });
+      }
+    }).catch((e) => {
+      if (!cancelled) console.error("[B-tree clean anim]", e);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     query.toClear,
     resetQueryValues,
     setIsAnimating,
     nodePositions,
     seqPositions,
+    bus,
   ]);
+
 
   return { svgRef };
 }
