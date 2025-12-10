@@ -47,6 +47,9 @@ export const SIZES: Record<PrimitiveType, number> = {
   string: 4, // tamaño inline = puntero u32 al header
 };
 
+// Nota: mantenemos ALIGN para arrays/objetos, pero
+// los PRIMITIVOS ya no se alinean individualmente en RAM.
+// Esto evita “huecos” entre int, long, etc. para estudiantes novatos.
 export const ALIGN: Record<PrimitiveType, number> = {
   boolean: 1,
   byte: 1,
@@ -79,16 +82,15 @@ export function allocUtf16String(
   s: string,
   label?: string
 ): Addr {
-  const hdr = store.reservarAlineado(8, 4, label ? `${label}#hdr` : undefined);
+const hdr = store.reservar(8, label ? `${label}#hdr` : undefined);
   const len = s.length;
   store.writeU32(hdr, len);
 
   const dataBytes = Math.max(1, len) * 2; // evita alloc(0)
-  const data = store.reservarAlineado(
-    dataBytes,
-    2,
-    label ? `${label}#data` : undefined
-  );
+const data = store.reservar(
+  dataBytes,
+  label ? `${label}#data` : undefined
+);
   store.writeU32(hdr + 4, data);
 
   for (let i = 0; i < len; i++) {
@@ -114,6 +116,9 @@ export function readUtf16String(store: ByteStore, headerAddr: Addr): string {
  * Escribe un PRIMITIVO (o puntero a string) reservando espacio nuevo.
  * - string: crea su header/data y escribe un puntero u32; devuelve la dir del puntero.
  * - otros: escribe valor en el bloque recién reservado.
+ *
+ * Simplificación docente: los primitivos se reservan SIN alineación especial
+ * para que queden pegados (int, luego long, etc.) sin padding visible.
  */
 function writePrimitive(
   store: ByteStore,
@@ -133,11 +138,8 @@ function writePrimitive(
   }
 
   const sz = sizeOf(type);
-  const alg = alignOf(type);
-  const addr =
-    alg > 1
-      ? store.reservarAlineado(sz, alg, label)
-      : store.reservar(sz, label);
+  // ⬇ Antes usábamos alignOf + reservarAlineado. Ahora siempre es contiguo.
+  const addr = store.reservar(sz, label);
 
   writePrimitiveAt(store, type, value, addr, label);
   return { addr, size: sz };
@@ -156,32 +158,105 @@ function writePrimitiveAt(
   label?: string
 ) {
   switch (type) {
-    case "boolean":
+    case "boolean": {
       store.writeBool(addr, !!value);
       break;
-    case "byte":
-      store.writeU8(addr, (value | 0) & 0xff);
+    }
+
+    case "byte": {
+      const n = Number(value);
+      if (!Number.isFinite(n) || !Number.isInteger(n)) {
+        throw new RangeError(
+          `byte solo admite enteros en 0..255 (recibido: ${value}).`
+        );
+      }
+      if (n < 0 || n > 255) {
+        throw new RangeError(`Valor ${n} fuera de rango para byte (0..255).`);
+      }
+      store.writeU8(addr, n);
       break;
-    case "short":
-      store.writeI16(addr, value | 0);
+    }
+
+    case "short": {
+      const n = Number(value);
+      if (!Number.isFinite(n) || !Number.isInteger(n)) {
+        throw new RangeError(
+          `short solo admite enteros en -32768..32767 (recibido: ${value}).`
+        );
+      }
+      if (n < -32768 || n > 32767) {
+        throw new RangeError(
+          `Valor ${n} fuera de rango para short (-32768..32767).`
+        );
+      }
+      store.writeI16(addr, n);
       break;
+    }
+
     case "char": {
-      const cu = typeof value === "string" ? value.charCodeAt(0) : value | 0;
+      const cu =
+        typeof value === "string" ? value.charCodeAt(0) : Number(value);
+      if (!Number.isFinite(cu) || !Number.isInteger(cu)) {
+        throw new RangeError(
+          `char solo admite un carácter o un entero en 0..65535 (recibido: ${value}).`
+        );
+      }
+      if (cu < 0 || cu > 0xffff) {
+        throw new RangeError(
+          `Valor ${cu} fuera de rango para char (0..65535).`
+        );
+      }
       store.writeCharU16(addr, cu & 0xffff);
       break;
     }
-    case "int":
-      store.writeI32(addr, value | 0);
+
+    case "int": {
+      const n = Number(value);
+      if (!Number.isFinite(n) || !Number.isInteger(n)) {
+        throw new RangeError(
+          `int solo admite enteros en -2147483648..2147483647 (recibido: ${value}).`
+        );
+      }
+      if (n < -2147483648 || n > 2147483647) {
+        throw new RangeError(
+          `Valor ${n} fuera de rango para int (-2147483648..2147483647).`
+        );
+      }
+      store.writeI32(addr, n);
       break;
-    case "long":
-      store.writeI64(addr, BigInt(value));
-      break; // signed 64
-    case "float":
+    }
+
+    case "long": {
+      let big: bigint;
+      try {
+        big = typeof value === "bigint" ? value : BigInt(value);
+      } catch {
+        throw new RangeError(
+          `Valor ${value} no es válido para long (usa enteros sin punto).`
+        );
+      }
+      const MIN = -(1n << 63n);
+      const MAX = (1n << 63n) - 1n;
+      if (big < MIN || big > MAX) {
+        throw new RangeError(
+          `Valor ${value} fuera de rango para long (-2^63 .. 2^63-1).`
+        );
+      }
+      store.writeI64(addr, big);
+      break;
+    }
+
+    case "float": {
+      // Para float/double dejamos que IEEE haga lo suyo (NaN/∞).
       store.writeF32(addr, Number(value));
       break;
-    case "double":
+    }
+
+    case "double": {
       store.writeF64(addr, Number(value));
       break;
+    }
+
     case "string": {
       const sh = allocUtf16String(
         store,
@@ -194,6 +269,7 @@ function writePrimitiveAt(
   }
   return { addr, size: sizeOf(type) };
 }
+
 
 /** Lee un PRIMITIVO desde `addr`. Para string, sigue el puntero al header. */
 function readPrimitive(store: ByteStore, type: PrimitiveType, addr: Addr): any {
@@ -240,11 +316,7 @@ function writeArrayInlinePrim<T>(
   const elemSize = sizeOf(elemType);
   const elemAlign = alignOf(elemType);
 
-  const hdr = store.reservarAlineado(
-    8,
-    4,
-    label ? `${label}#arrHdr` : undefined
-  );
+const hdr = store.reservar(8, label ? `${label}#arrHdr` : undefined);
   store.writeU32(hdr, values.length);
 
   const dataBytes = Math.max(1, values.length) * elemSize; // evita alloc(0)
@@ -303,11 +375,7 @@ function writeArrayOfStrings(
   values: string[],
   label?: string
 ) {
-  const hdr = store.reservarAlineado(
-    8,
-    4,
-    label ? `${label}#arrStrHdr` : undefined
-  );
+const hdr = store.reservar(8, label ? `${label}#arrStrHdr` : undefined);
   store.writeU32(hdr, values.length);
 
   const table = store.reservarAlineado(
@@ -482,6 +550,7 @@ function writeObjectCompact(
 function readObjectCompact(
   store: ByteStore,
   schema: Array<{ key: string; type: PrimitiveType | "ptr32" }>,
+
   addr: Addr
 ): Record<string, unknown> {
   const len = store.readU32(addr);
@@ -511,18 +580,17 @@ function readObjectCompact(
 // API de RESERVA (sin escribir datos) — para “ocupado pero no tocado”
 // ---------------------------------------------------------------------------
 
-/** Reserva un bloque para un primitivo y NO escribe su valor (solo marca ocupado). */
+/** Reserva un bloque para un primitivo y NO escribe su valor (solo marca ocupado).
+ *  Simplificación docente: sin alineación, para que los primitivos queden contiguos.
+ */
 export function allocPrimitiveReserve(
   store: ByteStore,
   type: PrimitiveType,
   label?: string
 ) {
   const sz = sizeOf(type);
-  const alg = alignOf(type);
-  const addr =
-    alg > 1
-      ? store.reservarAlineado(sz, alg, label ?? `prim#reserve`)
-      : store.reservar(sz, label ?? `prim#reserve`);
+  // ⬇ Antes usábamos alignOf + reservarAlineado; ahora solo reservar.
+  const addr = store.reservar(sz, label ?? `prim#reserve`);
   return { addr, size: sz };
 }
 

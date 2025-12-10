@@ -1,7 +1,11 @@
 // src/hooks/estructures/twoThree/use123Tree.ts
 import { useState } from "react";
 import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
-import { Arbol23 } from "../../../../../shared/utils/structures/Arbol23";
+import {
+  Arbol23,
+  type Tree23ErrorCode,
+} from "../../../../../shared/utils/structures/Arbol23";
+import { DomainError } from "../../../../../shared/utils/error/DomainError";
 
 const DEBUG_TT = true;
 const dlog = (...a: any[]) => {
@@ -16,6 +20,27 @@ type N = {
   getId(): number;
   getKeys(): number[];
   getHijos(): N[];
+};
+
+/* ────────────────── Tipos de op / error para el simulador ────────────────── */
+
+type TwoThreeOp =
+  | "insert"
+  | "delete"
+  | "search"
+  | "getPreOrder"
+  | "getInOrder"
+  | "getPostOrder"
+  | "getLevelOrder"
+  | "clean";
+
+type TwoThreeErrorPlanId = Tree23ErrorCode;
+
+export type TwoThreeError = {
+  id: number; // necesario para <Simulator>
+  message: string;
+  op: TwoThreeOp;
+  planId?: TwoThreeErrorPlanId | null;
 };
 
 /** Helpers de recorridos 2-3 que generan directamente TraversalNodeType[] */
@@ -36,6 +61,7 @@ function inOrderSeq(n: N | null, out: TraversalNodeType[]) {
   const keys = n.getKeys();
   const kids = n.getHijos();
   const m = keys.length; // 1 o 2
+
   // In-order generalizado: T0, k0, T1, k1, ..., k(m-1), Tm
   for (let i = 0; i < m; i++) {
     if (kids[i]) inOrderSeq(kids[i], out);
@@ -93,9 +119,7 @@ function onlySeq<K extends keyof BaseQueryOperations<"arbol_123">>(
 
 export function useTwoThreeTree(structure: Arbol23<number>) {
   const [tree, setTree] = useState(structure);
-  const [error, setError] = useState<{ message: string; id: number } | null>(
-    null
-  );
+  const [error, setError] = useState<TwoThreeError | null>(null);
 
   const [query, setQuery] = useState<BaseQueryOperations<"arbol_123">>({
     toInsert: null,
@@ -107,6 +131,36 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
     toGetLevelOrder: [],
     toClear: false,
   });
+
+  /* ─────────────────────────── helper de errores ─────────────────────────── */
+
+  const handleError = (err: unknown, op: TwoThreeOp) => {
+    if (err instanceof DomainError) {
+      dlog(op, "DomainError:", err.message, "code:", err.code);
+      setError({
+        id: Date.now(),
+        message: err.message,
+        op,
+        planId: (err.code as TwoThreeErrorPlanId) ?? null,
+      });
+      return;
+    }
+
+    const msg =
+      err && typeof (err as any).message === "string"
+        ? (err as any).message
+        : "Ocurrió un error inesperado en la operación del árbol 1-2-3.";
+    dlog(op, "GENERIC_ERROR:", msg, "| raw:", err);
+
+    setError({
+      id: Date.now(),
+      message: msg,
+      op,
+      planId: null,
+    });
+  };
+
+  /* ─────────────────────────────── operaciones ─────────────────────────────── */
 
   // Inserción
   const insert = (value: number) => {
@@ -127,9 +181,8 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
         toClear: false,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("insert(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "insert");
     }
   };
 
@@ -152,19 +205,23 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
         toClear: false,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("delete(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "delete");
     }
   };
 
-  // Búsqueda
+  // Búsqueda (apoyado en DomainError para mapear a KEY_NOT_FOUND)
   const search = (value: number) => {
     dlog("search(arg):", value);
     try {
       if (!tree.contiene(value)) {
-        throw new Error("No fue posible encontrar la clave en el árbol.");
+        // Lanzamos DomainError aquí para enganchar con el errorPlan `KEY_NOT_FOUND`
+        throw new DomainError(
+          "No fue posible encontrar la clave en el árbol.",
+          "KEY_NOT_FOUND"
+        );
       }
+
       setQuery((prev) => ({
         ...prev,
         toSearch: value,
@@ -174,25 +231,28 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
         toGetLevelOrder: [],
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("search(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "search");
     }
   };
 
-  // Recorridos (usando la estructura real del árbol)
+  /* ───────────────────────────── Recorridos ───────────────────────────── */
+
   const getPreOrder = () => {
     dlog("getPreOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer en preorden (el árbol se encuentra vacío)."
+        );
+      }
       const seq: TraversalNodeType[] = [];
       preOrderSeq(raiz, seq);
       setQuery(onlySeq("toGetPreOrder", seq));
       setError(null);
-    } catch (e: any) {
-      dlog("getPreOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getPreOrder");
     }
   };
 
@@ -200,14 +260,17 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
     dlog("getInOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer en inorden (el árbol se encuentra vacío)."
+        );
+      }
       const seq: TraversalNodeType[] = [];
       inOrderSeq(raiz, seq);
       setQuery(onlySeq("toGetInOrder", seq));
       setError(null);
-    } catch (e: any) {
-      dlog("getInOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getInOrder");
     }
   };
 
@@ -215,14 +278,17 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
     dlog("getPostOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer en postorden (el árbol se encuentra vacío)."
+        );
+      }
       const seq: TraversalNodeType[] = [];
       postOrderSeq(raiz, seq);
       setQuery(onlySeq("toGetPostOrder", seq));
       setError(null);
-    } catch (e: any) {
-      dlog("getPostOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getPostOrder");
     }
   };
 
@@ -230,13 +296,16 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
     dlog("getLevelOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer por niveles (el árbol se encuentra vacío)."
+        );
+      }
       const seq = levelOrderSeq(raiz);
       setQuery(onlySeq("toGetLevelOrder", seq));
       setError(null);
-    } catch (e: any) {
-      dlog("getLevelOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getLevelOrder");
     }
   };
 
@@ -244,7 +313,7 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
   const clean = () => {
     dlog("clean()");
     const cloned = tree.clonar();
-    cloned.vaciar(true);
+    cloned.vaciar(true); // resetear ids de Nodo23 para que D3 no se vuelva loco
     setTree(cloned);
     setQuery({
       toInsert: null,
@@ -256,6 +325,7 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
       toGetLevelOrder: [],
       toClear: true,
     });
+    setError(null);
   };
 
   const resetQueryValues = () => {
@@ -275,6 +345,7 @@ export function useTwoThreeTree(structure: Arbol23<number>) {
   return {
     tree,
     query,
+    // TwoThreeError | null, compatible con LooseError del <Simulator>
     error,
     operations: {
       insert,

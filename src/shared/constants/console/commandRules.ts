@@ -431,16 +431,115 @@ export const commandRules: Record<
   tabla_hash: (parts: string[]) => {
     const keyword = parts[0]?.toLowerCase();
 
+    if (!keyword) {
+      return {
+        valid: false,
+        message:
+          "Debes escribir una operación para tabla_hash (create, set, get, delete o clean).",
+      };
+    }
+
+    // Helper para validar que un argumento es un número válido (sin hablar de rangos)
+    const isNumeric = (s: string | undefined) => {
+      if (s === undefined) return false;
+      const n = Number(s);
+      return !isNaN(n);
+    };
+
     switch (keyword) {
-      case "create":
-      case "set":
-      case "get":
-      case "delete":
-      case "clean": {
+      case "create": {
+        // tabla_hash create <slots>
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              parts.length === 1
+                ? "El comando create espera un argumento numérico: create <slots>."
+                : "El comando create solo recibe un argumento: create <slots>.",
+          };
+        }
+        if (!isNumeric(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El número de slots debe ser un valor numérico válido. Ej: create 8",
+          };
+        }
         return true;
       }
+
+      case "set": {
+        // tabla_hash set <key> <value>
+        if (parts.length !== 3) {
+          return {
+            valid: false,
+            message:
+              "El comando set espera dos argumentos: set <clave> <valor>.",
+          };
+        }
+        if (!isNumeric(parts[1]) || !isNumeric(parts[2])) {
+          return {
+            valid: false,
+            message:
+              "La clave y el valor en set deben ser numéricos. Ej: set 12 45",
+          };
+        }
+        return true;
+      }
+
+      case "get": {
+        // tabla_hash get <key>
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message: "El comando get espera un solo argumento: get <clave>.",
+          };
+        }
+        if (!isNumeric(parts[1])) {
+          return {
+            valid: false,
+            message: "La clave en get debe ser un número. Ej: get 21",
+          };
+        }
+        return true;
+      }
+
+      case "delete": {
+        // tabla_hash delete <key>
+        if (parts.length !== 2) {
+          return {
+            valid: false,
+            message:
+              "El comando delete espera un solo argumento: delete <clave>.",
+          };
+        }
+        if (!isNumeric(parts[1])) {
+          return {
+            valid: false,
+            message: "La clave en delete debe ser un número. Ej: delete 21",
+          };
+        }
+        return true;
+      }
+
+      case "clean": {
+        // tabla_hash clean
+        if (parts.length !== 1) {
+          return {
+            valid: false,
+            message:
+              "El comando clean no recibe argumentos: solo escribe clean.",
+          };
+        }
+        return true;
+      }
+
       default:
-        return false;
+        return {
+          valid: false,
+          message:
+            "Operación no válida para tabla_hash. Usa create, set, get, delete o clean.",
+        };
     }
   },
 
@@ -874,152 +973,172 @@ export const commandRules: Record<
     );
   },
 
-  arbol_nario: (parts) => {
-    // k puede no ser string si parts[0] viniera mal
-    const k = typeof parts[0] === "string" ? parts[0].toLowerCase() : "";
+  arbol_nario: (parts: string[]) => {
+    const keyword = parts[0]?.toLowerCase();
 
-    // ---- helpers robustos (aceptan number | string | undefined) ----
-    const asStr = (v: unknown) => (v == null ? "" : String(v));
-    const stripQuotes = (v: unknown) => asStr(v).replace(/^['"]|['"]$/g, "");
-    const isIntStr = (v: unknown) => /^\d+$/.test(asStr(v)); // "0", "35"
-    const isTwoDigits = (v: unknown) => /^\d{1,2}$/.test(asStr(v)); // 1..99
-    const normId = (v: unknown) => {
-      const n = Number(stripQuotes(v));
-      return Number.isFinite(n) ? String(n) : asStr(v);
+    if (!keyword) {
+      return {
+        valid: false,
+        message:
+          "Debes escribir una operación para arbol_nario (createRoot, insertChild, deleteNode, moveNode, updateValue, search, getPreOrder, getPostOrder, getLevelOrder o clean).",
+      };
+    }
+
+    // Helper simple: solo valida que pueda convertirse a número
+    const isNumeric = (s: string | undefined) => {
+      if (s === undefined) return false;
+      const n = Number(s);
+      return !isNaN(n);
     };
 
-    switch (k) {
+    switch (keyword) {
       case "createroot": {
+        // arbol_nario createRoot <valor>
         if (parts.length !== 2) {
           return {
             valid: false,
             message:
               parts.length === 1
-                ? "Debe proporcionar el valor de la raíz como argumento."
-                : "El método únicamente espera el valor de la raíz.",
+                ? "El comando createRoot espera un argumento: createRoot <valor>."
+                : "El comando createRoot solo recibe un argumento: createRoot <valor>.",
           };
         }
-        if (!isTwoDigits(parts[1])) {
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
-            message:
-              "El valor de la raíz debe ser un entero positivo de hasta 2 dígitos.",
+            message: "El valor de la raíz debe ser numérico. Ej: createRoot 10",
           };
         }
         return true;
       }
 
       case "insertchild": {
-        // insertChild parentId value [index]
+        // arbol_nario insertChild <parentId> <valor> [index]
         if (parts.length !== 3 && parts.length !== 4) {
           return {
             valid: false,
             message:
-              "Uso: insertChild idPadre valor [index]. Ej.: insertChild 1 25 0",
+              "Uso: insertChild <idPadre> <valor> [index]. Ej: insertChild 1 25 0",
           };
         }
-        if (!isIntStr(parts[1])) {
+
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
-            message: "El id del padre debe ser un entero (ej.: 1, '1', \"1\").",
+            message: "El id del padre debe ser numérico. Ej: insertChild 1 25",
           };
         }
-        // normaliza a string numérica sin comillas / ceros a la izquierda
-        parts[1] = normId(parts[1]);
 
-        if (!isTwoDigits(parts[2])) {
+        if (!isNumeric(parts[2])) {
           return {
             valid: false,
             message:
-              "El valor a insertar debe ser un entero positivo de hasta 2 dígitos.",
+              "El valor a insertar debe ser numérico. Ej: insertChild 1 25",
           };
         }
-        if (parts.length === 4 && !isIntStr(parts[3])) {
+
+        if (parts.length === 4 && !isNumeric(parts[3])) {
           return {
             valid: false,
-            message: "El índice (si se indica) debe ser un entero >= 0.",
+            message:
+              "El índice (si se indica) debe ser numérico. Ej: insertChild 1 25 0",
           };
         }
+
         return true;
       }
 
       case "deletenode": {
+        // arbol_nario deleteNode <id>
         if (parts.length !== 2) {
           return {
             valid: false,
-            message: "Uso: deleteNode id. Ej.: deleteNode 3",
+            message: "Uso: deleteNode <id>. Ej: deleteNode 3",
           };
         }
-        if (!isIntStr(parts[1])) {
-          return { valid: false, message: "El id debe ser un entero." };
+
+        if (!isNumeric(parts[1])) {
+          return {
+            valid: false,
+            message:
+              "El id del nodo a eliminar debe ser numérico. Ej: deleteNode 3",
+          };
         }
-        parts[1] = normId(parts[1]);
+
         return true;
       }
 
       case "movenode": {
-        // moveNode id newParentId [index]
+        // arbol_nario moveNode <id> <nuevoPadreId> [index]
         if (parts.length !== 3 && parts.length !== 4) {
           return {
             valid: false,
-            message: "Uso: moveNode id nuevoPadre [index]. Ej.: moveNode 5 1 2",
+            message:
+              "Uso: moveNode <id> <nuevoPadreId> [index]. Ej: moveNode 5 1 2",
           };
         }
-        if (!isIntStr(parts[1]) || !isIntStr(parts[2])) {
-          return {
-            valid: false,
-            message: "Los ids deben ser enteros (ej.: 5, 1).",
-          };
-        }
-        parts[1] = normId(parts[1]);
-        parts[2] = normId(parts[2]);
 
-        if (parts.length === 4 && !isIntStr(parts[3])) {
+        if (!isNumeric(parts[1]) || !isNumeric(parts[2])) {
           return {
             valid: false,
-            message: "El índice debe ser un entero >= 0.",
+            message:
+              "Los ids del nodo y del nuevo padre deben ser numéricos. Ej: moveNode 5 1",
           };
         }
+
+        if (parts.length === 4 && !isNumeric(parts[3])) {
+          return {
+            valid: false,
+            message:
+              "El índice (si se indica) debe ser numérico. Ej: moveNode 5 1 2",
+          };
+        }
+
         return true;
       }
 
       case "updatevalue": {
-        // updateValue id newValue
+        // arbol_nario updateValue <id> <nuevoValor>
         if (parts.length !== 3) {
           return {
             valid: false,
-            message: "Uso: updateValue id nuevoValor. Ej.: updateValue 7 42",
+            message: "Uso: updateValue <id> <nuevoValor>. Ej: updateValue 7 42",
           };
         }
-        if (!isIntStr(parts[1])) {
-          return { valid: false, message: "El id debe ser un entero." };
-        }
-        parts[1] = normId(parts[1]);
 
-        if (!isTwoDigits(parts[2])) {
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
-            message:
-              "El nuevo valor debe ser un entero positivo de hasta 2 dígitos.",
+            message: "El id del nodo debe ser numérico. Ej: updateValue 7 42",
           };
         }
+
+        if (!isNumeric(parts[2])) {
+          return {
+            valid: false,
+            message: "El nuevo valor debe ser numérico. Ej: updateValue 7 42",
+          };
+        }
+
         return true;
       }
 
       case "search": {
+        // arbol_nario search <valor>
         if (parts.length !== 2) {
           return {
             valid: false,
-            message: "Debe proporcionar el valor a buscar. Ej.: search 25",
+            message: "Uso: search <valor>. Ej: search 25",
           };
         }
-        if (!isTwoDigits(parts[1])) {
+
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
-            message:
-              "El valor a buscar debe ser un entero positivo de hasta 2 dígitos.",
+            message: "El valor a buscar debe ser numérico. Ej: search 25",
           };
         }
+
         return true;
       }
 
@@ -1027,80 +1146,106 @@ export const commandRules: Record<
       case "getpostorder":
       case "getlevelorder":
       case "clean": {
+        // sin argumentos
         if (parts.length !== 1) {
           return {
             valid: false,
-            message: "El método no espera ningún argumento.",
+            message: "Este comando no recibe argumentos. Ej: getPreOrder",
           };
         }
         return true;
       }
 
       default:
-        return false;
+        return {
+          valid: false,
+          message:
+            "Operación no válida para arbol_nario. Usa createRoot, insertChild, deleteNode, moveNode, updateValue, search, getPreOrder, getPostOrder, getLevelOrder o clean.",
+        };
     }
   },
 
-  arbol_123: (parts) => {
+  arbol_123: (parts: string[]) => {
     const keyword = parts[0]?.toLowerCase();
+
+    if (!keyword) {
+      return {
+        valid: false,
+        message:
+          "Debes escribir una operación para arbol_123 (insert, delete, search, getPreOrder, getInOrder, getPostOrder, getLevelOrder o clean).",
+      };
+    }
+
+    // Helper para validar que un argumento es un número (sin hablar de rangos)
+    const isNumeric = (s: string | undefined) => {
+      if (s === undefined) return false;
+      const n = Number(s);
+      return !isNaN(n);
+    };
 
     switch (keyword) {
       case "insert": {
+        // arbol_123 insert <valor>
         if (parts.length !== 2) {
           return {
             valid: false,
             message:
               parts.length === 1
-                ? "Debe proporcionar el valor a insertar como argumento."
-                : "El método únicamente espera el valor a insertar como argumento.",
+                ? "El comando insert espera un argumento numérico: insert <valor>."
+                : "El comando insert solo recibe un argumento: insert <valor>.",
           };
         }
-        const insertPattern = /^\d{1,2}$/; // hasta 2 dígitos (consistente con arbol_binario)
-        if (!insertPattern.test(parts[1])) {
+
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
             message:
-              "El valor a insertar debe ser un número entero positivo de hasta 2 dígitos.",
+              "El valor a insertar debe ser un número válido. Ej: insert 12",
           };
         }
+
         return true;
       }
 
       case "delete": {
+        // arbol_123 delete <valor>
         if (parts.length !== 2) {
           return {
             valid: false,
             message:
-              parts.length === 1
-                ? "Debe proporcionar el valor a eliminar como argumento."
-                : "El método únicamente espera el valor a eliminar como argumento.",
+              "El comando delete espera un solo argumento numérico: delete <valor>.",
           };
         }
-        if (isNaN(Number(parts[1]))) {
+
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
-            message: "El valor a eliminar debe ser un número válido.",
+            message:
+              "El valor a eliminar debe ser un número válido. Ej: delete 7",
           };
         }
+
         return true;
       }
 
       case "search": {
+        // arbol_123 search <valor>
         if (parts.length !== 2) {
           return {
             valid: false,
             message:
-              parts.length === 1
-                ? "Debe proporcionar el valor a buscar como argumento."
-                : "El método únicamente espera el valor a buscar como argumento.",
+              "El comando search espera un solo argumento numérico: search <valor>.",
           };
         }
-        if (isNaN(Number(parts[1]))) {
+
+        if (!isNumeric(parts[1])) {
           return {
             valid: false,
-            message: "El valor a buscar debe ser un número válido.",
+            message:
+              "El valor a buscar debe ser un número válido. Ej: search 5",
           };
         }
+
         return true;
       }
 
@@ -1109,19 +1254,25 @@ export const commandRules: Record<
       case "getpostorder":
       case "getlevelorder":
       case "clean": {
+        // arbol_123 <comando>   (sin argumentos)
         if (parts.length !== 1) {
           return {
             valid: false,
-            message: "El método no espera ningún argumento.",
+            message: "Este comando no recibe argumentos adicionales.",
           };
         }
         return true;
       }
 
       default:
-        return false;
+        return {
+          valid: false,
+          message:
+            "Operación no válida para arbol_123. Usa insert, delete, search, getPreOrder, getInOrder, getPostOrder, getLevelOrder o clean.",
+        };
     }
   },
+
   arbol_b: (parts) => {
     const keyword = parts[0]?.toLowerCase();
 
@@ -1401,7 +1552,6 @@ export const commandRules: Record<
         }
         return true;
       }
-
 
       case "getlevelorder":
       case "clean": {

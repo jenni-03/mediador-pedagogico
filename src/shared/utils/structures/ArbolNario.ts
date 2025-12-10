@@ -1,6 +1,24 @@
 import { EqualityFn, HierarchyNodeData } from "../../../types";
 import { Cola } from "./Cola";
 import { NodoNario } from "../nodes/NodoNario";
+import { DomainError } from "../error/DomainError";
+
+/**
+ * Códigos de error de dominio para el Árbol N-ario.
+ * Deben corresponder (cuando aplique) con los `errorPlans` del pseudocódigo.
+ */
+export type NaryErrorCode =
+  | "ROOT_ALREADY_EXISTS"
+  | "TREE_NOT_CREATED"
+  | "MAX_NODES_REACHED"
+  | "PARENT_NOT_FOUND"
+  | "NODE_NOT_FOUND"
+  | "SAME_ORIGIN_AND_DESTINATION"
+  | "MOVE_CREATES_CYCLE"
+  | "MOVE_ROOT_FORBIDDEN"
+  | "TREE_EMPTY"
+  | "VALUE_NOT_FOUND"
+  | "INCONSISTENT_TREE";
 
 /**
  * Árbol N-ario genérico.
@@ -13,15 +31,25 @@ export class ArbolNario<T> {
 
   constructor(private equals: EqualityFn<T> = (a, b) => a === b) {}
 
+  /* ─────────────────────────────── Helpers de error ─────────────────────────────── */
+
+  private raise(message: string, code: NaryErrorCode): never {
+    throw new DomainError(message, code);
+  }
+
   /* ─────────────────────────────── API Pública ─────────────────────────────── */
 
   public crearRaiz(valor: T): NodoNario<T> {
-    if (this.raiz) throw new Error("La raíz ya existe.");
+    if (this.raiz) {
+      this.raise("La raíz ya existe.", "ROOT_ALREADY_EXISTS");
+    }
     if (this.tamanio >= this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible crear la raíz: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
+      this.raise(
+        `No fue posible crear la raíz: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`,
+        "MAX_NODES_REACHED"
       );
     }
+
     this.raiz = new NodoNario<T>(valor);
     this.tamanio = 1;
     return this.raiz;
@@ -33,19 +61,30 @@ export class ArbolNario<T> {
     valor: T,
     index?: number
   ): NodoNario<T> {
-    if (!this.raiz)
-      throw new Error("Árbol vacío. Debes crear la raíz primero.");
-    if (this.tamanio >= this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
+    if (!this.raiz) {
+      this.raise(
+        "Árbol vacío. Debes crear la raíz primero con createRoot(valor).",
+        "TREE_NOT_CREATED"
       );
     }
+    if (this.tamanio >= this.MAX_NODOS) {
+      this.raise(
+        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`,
+        "MAX_NODES_REACHED"
+      );
+    }
+
     const padre = this.getById(parentId);
-    if (!padre) throw new Error(`No existe el padre con id: ${parentId}`);
+    if (!padre) {
+      this.raise(`No existe el padre con id: ${parentId}`, "PARENT_NOT_FOUND");
+    }
 
     const nuevo = new NodoNario<T>(valor);
-    if (index === undefined) padre.agregarHijo(nuevo);
-    else padre.insertarHijoEn(index, nuevo);
+    if (index === undefined) {
+      padre.agregarHijo(nuevo);
+    } else {
+      padre.insertarHijoEn(index, nuevo);
+    }
 
     this.tamanio++;
     return nuevo;
@@ -53,9 +92,17 @@ export class ArbolNario<T> {
 
   /** Elimina un nodo (y su subárbol) por id numérico. */
   public eliminarNodo(id: number): NodoNario<T> {
-    if (!this.raiz) throw new Error("Árbol vacío.");
+    if (!this.raiz) {
+      this.raise(
+        "No fue posible eliminar: el árbol se encuentra vacío.",
+        "TREE_EMPTY"
+      );
+    }
+
     const objetivo = this.getById(id);
-    if (!objetivo) throw new Error(`No existe el nodo con id: ${id}`);
+    if (!objetivo) {
+      this.raise(`No existe el nodo con id: ${id}`, "NODE_NOT_FOUND");
+    }
 
     if (objetivo === this.raiz) {
       const removed = this.raiz;
@@ -64,12 +111,20 @@ export class ArbolNario<T> {
     }
 
     const padre = objetivo.getParent();
-    if (!padre)
-      throw new Error("Inconsistencia: nodo sin padre que no es la raíz.");
+    if (!padre) {
+      this.raise(
+        "Inconsistencia interna: nodo sin padre que no es la raíz.",
+        "INCONSISTENT_TREE"
+      );
+    }
 
     const idx = padre.indexOfHijoId(id);
-    if (idx === -1)
-      throw new Error("Inconsistencia: hijo no encontrado en el padre.");
+    if (idx === -1) {
+      this.raise(
+        "Inconsistencia interna: hijo no encontrado en la lista de hijos de su padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
 
     const cuenta = this.contarSubarbol(objetivo);
     const eliminado = padre.eliminarHijoEn(idx)!;
@@ -79,43 +134,115 @@ export class ArbolNario<T> {
 
   /** Mueve un subárbol `id` a `nuevoPadreId`. */
   public moverNodo(id: number, nuevoPadreId: number, index?: number): void {
-    if (!this.raiz) throw new Error("Árbol vacío.");
-    if (id === nuevoPadreId)
-      throw new Error("No puedes mover un nodo dentro de sí mismo.");
-
-    const nodo = this.getById(id);
-    const nuevoPadre = this.getById(nuevoPadreId);
-    if (!nodo) throw new Error(`No existe el nodo con id: ${id}`);
-    if (!nuevoPadre)
-      throw new Error(`No existe el padre destino con id: ${nuevoPadreId}`);
-
-    if (this.esDescendiente(nuevoPadre, nodo)) {
-      throw new Error("Movimiento inválido: crearía un ciclo.");
-    }
-    if (nodo === this.raiz) {
-      throw new Error(
-        "No puedes mover la raíz. Considera reconstruir el árbol."
+    if (!this.raiz) {
+      this.raise(
+        "Árbol vacío. Debes crear la raíz primero con createRoot(valor).",
+        "TREE_NOT_CREATED"
       );
     }
 
-    const padreActual = nodo.getParent();
-    if (!padreActual) throw new Error("Inconsistencia: nodo sin padre.");
+    if (id === nuevoPadreId) {
+      this.raise(
+        "Movimiento inválido: origen y destino no pueden ser el mismo nodo.",
+        "SAME_ORIGIN_AND_DESTINATION"
+      );
+    }
 
-    const idx = padreActual.indexOfHijoId(id);
-    if (idx === -1)
-      throw new Error("Inconsistencia: hijo no encontrado en su padre.");
-    padreActual.eliminarHijoEn(idx);
+    const nodo = this.getById(id);
+    const nuevoPadre = this.getById(nuevoPadreId);
 
-    if (index === undefined) nuevoPadre.agregarHijo(nodo);
-    else nuevoPadre.insertarHijoEn(index, nodo);
+    if (!nodo || !nuevoPadre) {
+      this.raise(
+        "No fue posible mover el nodo: al menos uno de los ids no existe en el árbol.",
+        "NODE_NOT_FOUND"
+      );
+    }
+
+    // En este punto TS sabe que `nodo` y `nuevoPadre` no son null
+    const nodoSafe = nodo!;
+    const nuevoPadreSafe = nuevoPadre!;
+
+    if (this.esDescendiente(nuevoPadreSafe, nodoSafe)) {
+      this.raise(
+        "Movimiento inválido: el nuevo padre es descendiente del nodo a mover (crearía un ciclo).",
+        "MOVE_CREATES_CYCLE"
+      );
+    }
+
+    if (nodoSafe === this.raiz) {
+      this.raise(
+        "No se puede mover la raíz. Considera reconstruir el árbol.",
+        "MOVE_ROOT_FORBIDDEN"
+      );
+    }
+
+    const padreActual = nodoSafe.getParent();
+    if (!padreActual) {
+      this.raise(
+        "Inconsistencia interna: el nodo a mover no tiene padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
+
+    const idx = padreActual!.indexOfHijoId(id);
+    if (idx === -1) {
+      this.raise(
+        "Inconsistencia interna: el nodo a mover no se encontró en la lista de hijos de su padre.",
+        "INCONSISTENT_TREE"
+      );
+    }
+
+    // Desvincular de su padre actual
+    padreActual!.eliminarHijoEn(idx);
+
+    // Vincular en el nuevo padre
+    if (index === undefined) {
+      nuevoPadreSafe.agregarHijo(nodoSafe);
+    } else {
+      nuevoPadreSafe.insertarHijoEn(index, nodoSafe);
+    }
   }
 
   /** Actualiza el valor de un nodo por id. */
   public actualizarValor(id: number, nuevoValor: T): void {
-    if (!this.raiz) throw new Error("Árbol vacío.");
+    if (!this.raiz) {
+      this.raise(
+        "Árbol vacío. Debes crear la raíz primero con createRoot(valor).",
+        "TREE_NOT_CREATED"
+      );
+    }
+
     const n = this.getById(id);
-    if (!n) throw new Error(`No existe el nodo con id: ${id}`);
-    n.setInfo(nuevoValor);
+    if (!n) {
+      this.raise(`No existe el nodo con id: ${id}`, "NODE_NOT_FOUND");
+    }
+
+    n!.setInfo(nuevoValor);
+  }
+
+  /**
+   * Búsqueda estricta por valor (lanza DomainError si falla).
+   * Útil para el comando `search`.
+   */
+  public buscarPorValor(valor: T): NodoNario<T> {
+    if (!this.raiz) {
+      this.raise(
+        "No fue posible buscar: el árbol se encuentra vacío.",
+        "TREE_EMPTY"
+      );
+    }
+
+    const encontrado = this.raiz!.findBFS((n) =>
+      this.equals(n.getInfo(), valor)
+    );
+    if (!encontrado) {
+      this.raise(
+        "No fue posible encontrar un nodo con ese valor en el árbol.",
+        "VALUE_NOT_FOUND"
+      );
+    }
+
+    return encontrado!;
   }
 
   /**
@@ -135,23 +262,32 @@ export class ArbolNario<T> {
   public esVacio(): boolean {
     return this.raiz === null;
   }
+
   public getPeso(): number {
     return this.tamanio;
   }
+
   public getAltura(): number {
     return this.alturaNodo(this.raiz);
   }
+
   public getTamanio(): number {
     return this.tamanio;
   }
+
   public getRaiz(): NodoNario<T> | null {
     return this.raiz;
   }
 
+  /**
+   * Búsqueda suave por valor (no lanza, solo retorna null si no encuentra).
+   * La búsqueda estricta con errores de dominio es `buscarPorValor`.
+   */
   public getPorValor(valor: T): NodoNario<T> | null {
     if (!this.raiz) return null;
     return this.raiz.findBFS((n) => this.equals(n.getInfo(), valor));
   }
+
   public esta(valor: T): boolean {
     return this.getPorValor(valor) !== null;
   }
@@ -215,7 +351,7 @@ export class ArbolNario<T> {
     return nuevo;
   }
 
-  /* ─────────────────────────────── Helpers ─────────────────────────────── */
+  /* ─────────────────────────────── Helpers internos ─────────────────────────────── */
 
   private alturaNodo(n: NodoNario<T> | null): number {
     if (!n) return 0;
@@ -232,6 +368,7 @@ export class ArbolNario<T> {
     return count;
   }
 
+  /** Comprueba si `ancestro` está en la cadena de padres de `posibleDesc`. */
   private esDescendiente(
     posibleDesc: NodoNario<T>,
     ancestro: NodoNario<T>

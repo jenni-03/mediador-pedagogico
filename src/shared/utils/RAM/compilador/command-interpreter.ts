@@ -656,7 +656,9 @@ function stripCommentsPreservingStrings(input: string): string {
 // === NUEVO: AST para asignaciones =============================
 export type LValue =
   | { kind: "var"; name: string }
-  | { kind: "index"; name: string; index: number };
+  | { kind: "index"; name: string; index: number }
+  | { kind: "field"; base: string; field: string }
+  | { kind: "fieldIndex"; base: string; field: string; index: number };
 
 export type AssignAST = {
   kind: "assign";
@@ -667,6 +669,41 @@ export type AssignAST = {
 // Parseo simple:  id = expr;   |   id[123] = expr;
 export function parseAssignment(source: string): AssignAST {
   const src = preprocess(source);
+
+  // OBJ.campo[idx] = expr;
+  {
+    const m = src.match(
+      /^\s*([A-Za-z_]\w*)\s*\.\s*([A-Za-z_]\w*)\s*\[\s*(\d+)\s*\]\s*=\s*([\s\S]*?)\s*;\s*$/
+    );
+    if (m) {
+      const [, base, field, idx, rhs] = m;
+      return {
+        kind: "assign",
+        target: {
+          kind: "fieldIndex",
+          base,
+          field,
+          index: Number(idx),
+        },
+        expr: parseExpr(rhs.trim()),
+      };
+    }
+  }
+
+  // OBJ.campo = expr;
+  {
+    const m = src.match(
+      /^\s*([A-Za-z_]\w*)\s*\.\s*([A-Za-z_]\w*)\s*=\s*([\s\S]*?)\s*;\s*$/
+    );
+    if (m) {
+      const [, base, field, rhs] = m;
+      return {
+        kind: "assign",
+        target: { kind: "field", base, field },
+        expr: parseExpr(rhs.trim()),
+      };
+    }
+  }
 
   // id[index] = expr;
   {
@@ -697,7 +734,11 @@ export function parseAssignment(source: string): AssignAST {
   }
 
   throw new Error(
-    `No reconocí una asignación. Formatos: id = expr;  |  id[n] = expr;`
+    `No reconocí una asignación. Formatos:
+     • id = expr;
+     • id[n] = expr;
+     • obj.campo = expr;
+     • obj.campo[n] = expr;`
   );
 }
 
@@ -705,15 +746,37 @@ export function parseAssignment(source: string): AssignAST {
 export function validateAssignment(src: string): EvalResult {
   try {
     const ast = parseAssignment(src);
+
     if (ast.target.kind === "index") {
-      if (!Number.isInteger(ast.target.index) || ast.target.index < 0) {
+      const idx = ast.target.index;
+      if (!Number.isInteger(idx) || idx < 0) {
         return { ok: false, message: `❌ El índice debe ser un entero ≥ 0.` };
       }
       return {
         ok: true,
-        message: `✅ Asignación a ${ast.target.name}[${ast.target.index}].`,
+        message: `✅ Asignación a ${ast.target.name}[${idx}].`,
       };
     }
+
+    if (ast.target.kind === "fieldIndex") {
+      const idx = ast.target.index;
+      if (!Number.isInteger(idx) || idx < 0) {
+        return { ok: false, message: `❌ El índice debe ser un entero ≥ 0.` };
+      }
+      return {
+        ok: true,
+        message: `✅ Asignación a ${ast.target.base}.${ast.target.field}[${idx}].`,
+      };
+    }
+
+    if (ast.target.kind === "field") {
+      return {
+        ok: true,
+        message: `✅ Asignación a ${ast.target.base}.${ast.target.field}.`,
+      };
+    }
+
+    // var
     return { ok: true, message: `✅ Asignación a ${ast.target.name}.` };
   } catch (e: any) {
     return { ok: false, message: `❌ ${e?.message ?? String(e)}` };

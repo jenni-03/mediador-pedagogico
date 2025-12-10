@@ -34,13 +34,16 @@ const toU8 = (x: unknown): Uint8Array =>
   x instanceof Uint8Array
     ? x
     : Array.isArray(x)
-    ? new Uint8Array(x as number[])
-    : new Uint8Array(0);
+      ? new Uint8Array(x as number[])
+      : new Uint8Array(0);
 
 function splitRows(bytes: Uint8Array, baseAddr: number, bytesPerRow: number) {
   const rows: { addr: number; slice: Uint8Array }[] = [];
   for (let i = 0; i < bytes.length; i += bytesPerRow) {
-    rows.push({ addr: baseAddr + i, slice: bytes.subarray(i, i + bytesPerRow) });
+    rows.push({
+      addr: baseAddr + i,
+      slice: bytes.subarray(i, i + bytesPerRow),
+    });
   }
   return rows;
 }
@@ -74,9 +77,11 @@ const normalizeTone = (t: ByteRange["tone"] | undefined): Tone =>
   t === "slot" ||
   t === "data"
     ? t
-    : "slot";
+    : "data";
+
 const inRange = (addr: number, r: ByteRange) =>
   addr >= r.start && addr < r.start + r.size;
+
 const toneWeight: Record<Tone, number> = {
   data: 5,
   header: 4,
@@ -105,15 +110,13 @@ function pickBestRangeAt(
   const candidates = ranges.filter((r) => inRange(addr, r));
   if (!candidates.length) return null;
   if (prefer && inRange(addr, prefer)) return prefer;
-  return candidates
-    .slice()
-    .sort((a, b) => {
-      if (!!b.emph !== !!a.emph) return (b.emph ? 1 : 0) - (a.emph ? 1 : 0);
-      if (a.size !== b.size) return a.size - b.size;
-      return (
-        toneWeight[normalizeTone(b.tone)] - toneWeight[normalizeTone(a.tone)]
-      );
-    })[0];
+  return candidates.slice().sort((a, b) => {
+    if (!!b.emph !== !!a.emph) return (b.emph ? 1 : 0) - (a.emph ? 1 : 0);
+    if (a.size !== b.size) return a.size - b.size;
+    return (
+      toneWeight[normalizeTone(b.tone)] - toneWeight[normalizeTone(a.tone)]
+    );
+  })[0];
 }
 
 function groupBgCSS(bytesPerRow: number, groupSize: number) {
@@ -255,8 +258,59 @@ function GoldPins() {
   );
 }
 
+/* ===== Leyenda de tonos (para estudiantes) ===== */
+function LegendChip({ tone, label }: { tone: Tone; label: string }) {
+  const c = TONE_CLS[tone];
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[10px] ring-1",
+        c.bg,
+        c.text,
+        c.ring,
+      ].join(" ")}
+    >
+      <span className="h-2 w-2 rounded-full bg-white/80" />
+      {label}
+    </span>
+  );
+}
+
+function LegendBar() {
+  return (
+    <div className="relative z-10 px-4 pb-2 flex flex-wrap items-center gap-2 text-[10px]">
+      <LegendChip tone="header" label="header · metadatos" />
+      <LegendChip tone="prim" label="prim · valor directo" />
+      <LegendChip tone="string" label="string · texto / ref" />
+      <LegendChip tone="object" label="object · campos" />
+      <LegendChip tone="data" label="data · bloque de datos" />
+      <LegendChip tone="slot" label="slot · puntero / stack" />
+      <span className="ml-auto text-emerald-100/70">
+        Tip: algunos campos guardan un puntero (ptr →) a otro bloque.
+      </span>
+    </div>
+  );
+}
+
 /* ===== Burbuja centrada para spans ===== */
-function RowLabel({ tone, text }: { tone: Tone; text: string }) {
+
+function RowLabel({ range }: { range: ByteRange }) {
+  const tone = normalizeTone(range.tone);
+  const raw = (range.label ?? "").trim();
+
+  const parts = raw.split(":");
+  const namePart = parts[0]?.trim() ?? "";
+  const typePart = parts[1]?.trim() ?? "";
+
+  const isField = !!typePart;
+  const isPtrField =
+    isField &&
+    range.size === 4 &&
+    (tone === "string" || tone === "array" || tone === "object");
+
+  const mainText = namePart || raw || "campo";
+  const typeText = !typePart ? "" : isPtrField ? `ptr → ${typePart}` : typePart;
+
   return (
     <span
       className={`inline-flex items-center justify-center px-2 py-[2px] text-[10px] rounded-md ring-1 ${TONE_CLS[tone].text}`}
@@ -267,7 +321,18 @@ function RowLabel({ tone, text }: { tone: Tone; text: string }) {
         position: "relative",
       }}
     >
-      {text}
+      {isField ? (
+        <span className="flex flex-col items-center leading-tight">
+          <span className="font-medium">{mainText}</span>
+          {typeText && (
+            <span className="text-[9px] opacity-85 uppercase tracking-wide">
+              {typeText}
+            </span>
+          )}
+        </span>
+      ) : (
+        <span>{mainText}</span>
+      )}
       <span
         aria-hidden
         className="absolute left-1/2 -translate-x-1/2 bottom-[-7px] h-2 w-2 rotate-45"
@@ -282,7 +347,8 @@ function RowLabel({ tone, text }: { tone: Tone; text: string }) {
 }
 
 /* ===== Cálculo de spans por fila (label centrada) ===== */
-type LabelSpan = { start: number; end: number; text: string; tone: Tone };
+type LabelSpan = { start: number; end: number; range: ByteRange };
+
 function computeLabelSpans(
   rowAddr: number,
   count: number,
@@ -295,15 +361,18 @@ function computeLabelSpans(
   for (let i = 0; i < count; i++) {
     const addr = rowAddr + i;
     const best = pickBestRangeAt(addr, ranges, prefer);
-    const text = best?.label?.trim();
-    const tone = normalizeTone(best?.tone);
 
-    if (text) {
-      if (current && current.text === text && current.tone === tone) {
+    const label = best?.label?.trim();
+    if (label) {
+      if (
+        current &&
+        current.range.label?.trim() === label &&
+        normalizeTone(current.range.tone) === normalizeTone(best!.tone)
+      ) {
         current.end = i;
       } else {
         if (current) spans.push(current);
-        current = { start: i, end: i, text, tone };
+        current = { start: i, end: i, range: best! };
       }
     } else {
       if (current) {
@@ -450,18 +519,62 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
   React.useEffect(() => {
     if (typeof snap?.activeAddr !== "number") return;
     const el = document.getElementById(`ram-${snap.activeAddr >>> 0}`);
-    el?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    el?.scrollIntoView({
+      block: "center",
+      inline: "nearest",
+      behavior: "smooth",
+    });
   }, [snap?.activeAddr]);
 
   return (
     <section
       className={[
-        "relative w-full h-full rounded-2xl border bg-emerald-950/20 text-zinc-100 shadow-2xl",
+        "relative w-full rounded-2xl border bg-emerald-950/20 text-zinc-100 shadow-2xl",
         "border-emerald-900/60 overflow-hidden flex flex-col",
       ].join(" ")}
+      data-tour="panelRamView"
+      style={{
+        height: "clamp(360px,48vh,680px)", // 💡 misma altura que RamIndexPanel
+      }}
       role="region"
       aria-label="Módulo de memoria RAM"
     >
+      {/* 🎨 Estilo de scroll específico para RamView */}
+      <style>{`
+        .ramview-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148,163,184,0.8) transparent; /* Firefox */
+        }
+        .ramview-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        .ramview-scroll::-webkit-scrollbar-track {
+          background: radial-gradient(circle at 50% 0%, rgba(148,163,184,0.18), transparent 55%);
+          border-radius: 9999px;
+        }
+        .ramview-scroll::-webkit-scrollbar-thumb {
+          background-image: linear-gradient(
+            to bottom,
+            rgba(148,163,184,0.95),
+            rgba(56,189,248,0.95)
+          );
+          border-radius: 9999px;
+          box-shadow:
+            0 0 0 1px rgba(15,23,42,0.95),
+            0 0 8px rgba(56,189,248,0.65);
+        }
+        .ramview-scroll::-webkit-scrollbar-thumb:hover {
+          background-image: linear-gradient(
+            to bottom,
+            rgba(226,232,240,0.98),
+            rgba(59,130,246,0.98)
+          );
+        }
+        .ramview-scroll::-webkit-scrollbar-corner {
+          background: transparent;
+        }
+      `}</style>
+
       <PcbBoard />
       <ModuleNotch />
       <GoldPins />
@@ -492,16 +605,15 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
         )}
       </div>
 
+      {/* Leyenda de colores */}
+      <LegendBar />
+
       {/* Área de bytes */}
       <div className="relative z-10 px-4 pb-6 w-full flex-1 min-h-0">
-        <div className="h-full pr-1 overflow-y-auto overflow-x-hidden">
+        <div className="h-full pr-1 overflow-y-auto overflow-x-hidden ramview-scroll">
           {isEmpty ? (
             <div className="mb-4 rounded-2xl border border-emerald-800/50 bg-zinc-950/60 shadow-[inset_0_1px_0_rgba(255,255,255,.04),0_8px_24px_rgba(0,0,0,.35)] overflow-hidden min-h-[240px]">
-              <EmptyState
-                baseAddr={baseAddr}
-                bytesPerRow={BPR}
-                groupSize={G}
-              />
+              <EmptyState baseAddr={baseAddr} bytesPerRow={BPR} groupSize={G} />
             </div>
           ) : (
             chips.map((chip) => (
@@ -554,46 +666,52 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                     return (
                       <div
                         key={`${row.addr}-${ridx}`}
-                        className="grid items-center px-3 py-2.5 transition-colors hover:bg-zinc-900/55"
-                        style={{ gridTemplateColumns: `${ADDR_COL} 1fr` }}
+                        className="grid px-3 py-3 transition-colors hover:bg-zinc-900/55"
+                        style={{
+                          gridTemplateColumns: `${ADDR_COL} 1fr`,
+                          gridTemplateRows: "auto auto",
+                          rowGap: "0.35rem",
+                        }}
                       >
-                        {/* dirección */}
+                        {/* fila 1, col 1: vacío */}
+                        <div />
+
+                        {/* fila 1, col 2: etiquetas */}
+                        <div
+                          className="grid"
+                          style={{
+                            gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
+                            columnGap: GAP,
+                          }}
+                        >
+                          {spans.map((s, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                gridColumn: `${s.start + 1} / ${s.end + 2}`,
+                              }}
+                              className="justify-self-center"
+                            >
+                              <RowLabel range={s.range} />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* fila 2, col 1: dirección */}
                         <div className="font-mono text-xs text-emerald-100/90">
                           <span className="inline-block px-2 py-1 rounded-lg bg-zinc-900/70 border border-emerald-800/60">
                             {toHex8(row.addr)}
                           </span>
                         </div>
 
-                        {/* celdas + capa de etiquetas centradas */}
+                        {/* fila 2, col 2: bytes */}
                         <div
-                          className="relative grid pr-2 overflow-visible"
+                          className="grid"
                           style={{
                             gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
                             columnGap: GAP,
                           }}
                         >
-                          {/* overlay de labels (centradas por span) */}
-                          <div
-                            className="pointer-events-none absolute left-0 right-0 -top-3.5 translate-y-[-12px] grid"
-                            style={{
-                              gridTemplateColumns: `repeat(${BPR}, minmax(1rem, 1fr))`,
-                              columnGap: GAP,
-                            }}
-                          >
-                            {spans.map((s, i) => (
-                              <div
-                                key={i}
-                                style={{
-                                  gridColumn: `${s.start + 1} / ${s.end + 2}`,
-                                }}
-                                className="justify-self-center"
-                              >
-                                <RowLabel tone={s.tone} text={s.text} />
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* bytes */}
                           {bytes.map((b, i) => {
                             const addr = row.addr + i;
                             const best = pickBestRangeAt(
@@ -601,12 +719,20 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                               sortedRanges,
                               activeEmphRange
                             );
-                            const tone = normalizeTone(best?.tone);
-                            const isEmph = !!(
-                              activeEmphRange && inRange(addr, activeEmphRange)
-                            );
+                            const hasRange = !!best;
+                            const tone = hasRange
+                              ? normalizeTone(best?.tone)
+                              : "data";
+                            const isEmph =
+                              !!activeEmphRange &&
+                              inRange(addr, activeEmphRange);
                             const isActive = snap?.activeAddr === addr;
                             const groupSep = i % G === 0 && i !== 0;
+
+                            const rangeLabel = best?.label?.trim();
+                            const tooltip = rangeLabel
+                              ? `${toHex8(addr)}  •  dec ${b}  •  ${rangeLabel}`
+                              : `${toHex8(addr)}  •  dec ${b}`;
 
                             return (
                               <div
@@ -615,22 +741,22 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                                 className={[
                                   "relative h-10 rounded-lg border font-mono text-[11px] flex items-center justify-center select-none",
                                   "border-emerald-800/60 text-emerald-50",
-                                  TONE_CLS[tone].bg,
+                                  hasRange
+                                    ? TONE_CLS[tone].bg
+                                    : "bg-zinc-900/40",
                                   "shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_2px_6px_rgba(0,0,0,.25)]",
                                   "transition-transform will-change-transform hover:-translate-y-[1px] active:translate-y-0",
                                   groupSep
                                     ? "border-l-2 border-l-emerald-800/60"
                                     : "",
-                                  isEmph
+                                  hasRange && isEmph
                                     ? `ring-2 ${TONE_CLS[tone].ring} ${TONE_CLS[tone].glow} z-10`
                                     : "",
                                   isActive
                                     ? "outline outline-2 outline-white/40 z-10"
                                     : "",
                                 ].join(" ")}
-                                title={`${toHex8(addr)}  •  dec ${b}${
-                                  best?.label ? `  •  ${best.label}` : ""
-                                }`}
+                                title={tooltip}
                               >
                                 <span className="tracking-tight">
                                   {toHex2(b)}

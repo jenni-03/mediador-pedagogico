@@ -1,10 +1,14 @@
 // src/simulators/hooks/estructures/arbolBPlus/useBPlusRender.ts
 import * as d3 from "d3";
-import { useEffect, useMemo, useRef, useCallback } from "react";
+import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { BPlusHierarchy } from "../../../../../types";
+import { BPlusHierarchy, TraversalNodeType } from "../../../../../types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import type { QueryBPlus } from "./useBPlusTree";
+import { useBus } from "../../../../../shared/hooks/useBus";
+import { usePrevious } from "../../../../../shared/hooks/usePrevious";
+import { delay } from "../../../../../shared/utils/simulatorUtils";
+import { getArbolBPlusCode } from "../../../../../shared/constants/pseudocode/arbolBPlusCode";
 
 /* ─────────── Utilidades específicas B+ ─────────── */
 import {
@@ -19,6 +23,7 @@ import {
 import {
   SVG_NARY_VALUES,
   animateClearTree,
+  drawTraversalSequence,
 } from "../../../../../shared/utils/draw/naryDrawActionsUtilities";
 
 /* ─────────── Animaciones B+ (insert / delete / search / range / scanfrom) ─────────── */
@@ -47,6 +52,8 @@ const HUD = {
   textColor: "#e5e7eb",
   fontWeight: 600 as const,
 };
+
+const BPLUS_CODE = getArbolBPlusCode();
 
 /** Normaliza inputs que pueden venir como {value:x} | string | number */
 const toNum = (x: unknown): number => Number((x as any)?.value ?? x);
@@ -224,6 +231,11 @@ export function useBPlusRender(
 ) {
   const svgRef = useRef<SVGSVGElement>(null);
 
+  const [pendingInsertAnim, setPendingInsertAnim] = useState<{
+    leafId: string;
+    slotIndex: number | null;
+  } | null>(null);
+
   // Caches de posiciones
   const nodePositions = useRef(
     new Map<string, { x: number; y: number }>()
@@ -241,9 +253,36 @@ export function useBPlusRender(
     () => (treeData ? d3.hierarchy<BPlusHierarchy>(treeData) : null),
     [treeData]
   );
+  const prevRoot = usePrevious(root);
   const currentNodes = useMemo(() => (root ? root.descendants() : []), [root]);
 
   const { isAnimating, setIsAnimating } = useAnimation();
+  const bus = useBus();
+
+  // Cola global de animaciones para este simulador (igual que en Árbol B)
+  const animChainRef = useRef<Promise<void>>(Promise.resolve());
+
+  function runExclusive(fn: () => Promise<void>) {
+    const runner = async () => {
+      // Marcamos toda la operación (pseudocódigo + animación) como "animando"
+      setAnimating(true);
+      try {
+        await fn();
+      } finally {
+        setAnimating(false);
+      }
+    };
+
+    const next = animChainRef.current.then(runner, runner);
+    animChainRef.current = next.catch(() => {});
+    return next;
+  }
+
+  // Ref para leer isAnimating dentro de callbacks/efectos largos sin re-dispararlos
+  const isAnimatingRef = useRef(isAnimating);
+  useEffect(() => {
+    isAnimatingRef.current = isAnimating;
+  }, [isAnimating]);
 
   /* Logs básicos */
   useEffect(() => {
@@ -263,7 +302,11 @@ export function useBPlusRender(
       watchdogIdRef.current = window.setTimeout(() => {
         const now = Date.now();
         const age = now - lastTrueAtRef.current;
-        if (isAnimating && age >= 6000 && !hasAliveOverlays(svgRef.current)) {
+        if (
+          isAnimatingRef.current &&
+          age >= 6000 &&
+          !hasAliveOverlays(svgRef.current)
+        ) {
           dbg(
             `watchdog: latch pegado (${Math.round(
               age
@@ -273,7 +316,7 @@ export function useBPlusRender(
         }
       }, 6200);
     },
-    [isAnimating, setIsAnimating]
+    [setIsAnimating]
   );
 
   /* Wrappers de animación */
@@ -296,7 +339,9 @@ export function useBPlusRender(
     (label: string) => {
       const age = Date.now() - lastTrueAtRef.current;
       const stuck =
-        isAnimating && !hasAliveOverlays(svgRef.current) && age > 400;
+        isAnimatingRef.current &&
+        !hasAliveOverlays(svgRef.current) &&
+        age > 400;
       if (stuck) {
         dbg(
           `${label}: isAnimating=true pero SIN overlays (${age}ms) -> desbloqueo forzado`
@@ -305,7 +350,7 @@ export function useBPlusRender(
       }
       return stuck;
     },
-    [isAnimating, setAnimating]
+    [setAnimating]
   );
 
   const setAnimatingDispatch = useCallback<Dispatch<SetStateAction<boolean>>>(
@@ -346,14 +391,33 @@ export function useBPlusRender(
 
   /* ─────────── Deduplicadores / flancos (one-shot) ─────────── */
   const lastInsertRef = useRef<number | null>(null);
+  const prevToInsertRef = useRef<number | null>(null);
+  useEffect(() => {
+    const raw = query.toInsert;
+    const cur = raw == null ? null : toNum(raw);
+
+    // Antes había un insert activo (no null) y ahora ya no → operación cerrada
+    if (prevToInsertRef.current != null && cur == null) {
+      // Muy importante: permitir volver a ejecutar el mismo valor en el futuro
+      lastInsertRef.current = null;
+    }
+
+    prevToInsertRef.current = cur;
+  }, [query.toInsert]);
+
   const lastDeleteRef = useRef<number | null>(null);
   const lastSearchRef = useRef<number | null>(null);
   const lastRangeRef = useRef<string | null>(null); // `${from}-${to}`
   const lastScanRef = useRef<string | null>(null); // `${start}|${limit}`
+
   const prevAnyCommandRef = useRef(false);
 
   const prevInOrderTickRef = useRef<number | null>(null);
   const prevLevelTickRef = useRef<number | null>(null);
+
+  // Cache de nodos con coordenadas (HPN) para animaciones que lo requieren
+  const pointRootRef = useRef<HPN | null>(null);
+  const pointNodesRef = useRef<HPN[]>([]);
 
   /* ───────────────── Render base ───────────────── */
   useEffect(() => {
@@ -361,6 +425,22 @@ export function useBPlusRender(
     const svgEl = svgRef.current;
     if (!svgEl) {
       dbg("render base: skip (no svg)");
+      return;
+    }
+
+    // Insert activo = hay una operación de insert en curso
+    const insertActive = query.toInsert != null;
+
+    // Congelamos el árbol estático en dos fases:
+    // 1) Mientras se ejecuta el pseudocódigo (pendingInsertAnim === null)
+    // 2) Mientras corre la animación visual (isAnimating === true)
+    const freezeInsertStatic =
+      insertActive && (!pendingInsertAnim || isAnimating);
+
+    if (freezeInsertStatic) {
+      dbg(
+        "render base: insert pseudocode running -> freeze static tree (no redraw)"
+      );
       return;
     }
 
@@ -473,7 +553,7 @@ export function useBPlusRender(
     pointRootRef.current = pRoot as HPN;
     pointNodesRef.current = nodesP as HPN[];
 
-    // Guard ultra-defensivo: raíz “vacía” (no debería pasar si el modelo está bien)
+    // Guard ultra-defensivo: raíz “vacía”
     const emptyTree =
       nodesP.length === 1 &&
       (nodesP[0].data.keys?.length ?? 0) === 0 &&
@@ -608,11 +688,15 @@ export function useBPlusRender(
     d3.select(svgEl).attr("width", width).attr("height", height);
 
     dbg("render base: done", { width, height, nodes: nodesP.length });
-  }, [root, treeData?.order, nodePositions, seqPositions, isAnimating]);
-
-  // Cache de nodos con coordenadas (HPN) para animaciones que lo requieren
-  const pointRootRef = useRef<HPN | null>(null);
-  const pointNodesRef = useRef<HPN[]>([]);
+  }, [
+    root,
+    treeData?.order,
+    nodePositions,
+    seqPositions,
+    isAnimating,
+    query.toInsert,
+    pendingInsertAnim,
+  ]);
 
   /* ───────── Limpieza robusta ante nuevas operaciones (solo flanco de subida) ───────── */
   useEffect(() => {
@@ -634,8 +718,8 @@ export function useBPlusRender(
       (query.toGetRange?.length ?? 0) > 0 ||
       (query.toScanFrom?.length ?? 0) > 0 ||
       !!query.range ||
-      iTick != null || // ✅ tick inorder cuenta como comando
-      lTick != null; // ✅ tick level cuenta como comando
+      iTick != null ||
+      lTick != null;
 
     // flanco: aparece comando nuevo, o cambió cualquiera de los ticks
     const risingEdge =
@@ -645,6 +729,8 @@ export function useBPlusRender(
 
     // guarda estado actual
     prevAnyCommandRef.current = anyCommandNow;
+    prevInOrderTickRef.current = iTick;
+    prevLevelTickRef.current = lTick;
 
     if (!risingEdge) return;
 
@@ -681,7 +767,7 @@ export function useBPlusRender(
     svg.selectAll("g.bp-range-overlay").interrupt().remove();
     svg.selectAll("g.bp-scanfrom-overlay").interrupt().remove();
     svg.selectAll("g.bp-inorder-overlay").interrupt().remove();
-    svg.selectAll("g.bp-level-overlay").interrupt().remove(); // ⬅️ NUEVO
+    svg.selectAll("g.bp-level-overlay").interrupt().remove();
 
     // Limpia banda inferior
     seqG.selectAll("*").remove();
@@ -703,7 +789,7 @@ export function useBPlusRender(
     query.range?.from,
     query.range?.to,
     (query as any)?.inOrderTick,
-    (query as any)?.levelTick, // ⬅️ NUEVO
+    (query as any)?.levelTick,
     seqPositions,
     isAnimating,
     setAnimating,
@@ -715,41 +801,27 @@ export function useBPlusRender(
 
     const raw = query.toInsert;
     if (raw == null) return;
+
     const value = toNum(raw);
     if (!Number.isFinite(value)) return;
 
+    // Deduplicador: solo bloquea mientras la operación actual sigue viva.
     if (lastInsertRef.current === value) {
       dbg("insert: ignored (same key)", { value });
       return;
     }
-    if (isAnimating) {
-      if (latchIfStuck("insert")) return;
-      dbg("insert: ignorado (isAnimating=true)", { value });
-      return;
+
+    // Si venimos de un latch viejo, intentamos soltarlo, pero no abortamos.
+    if (isAnimatingRef.current) {
+      latchIfStuck("insert");
+      dbg("insert: isAnimating=true al entrar, continúo igualmente", { value });
     }
+
     lastInsertRef.current = value;
 
     dbg("insert: trigger", { value });
 
-    const svg = d3.select(svgRef.current);
-    const treeG = svg.select<SVGGElement>("g.tree-container");
-
-    let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
-    if (overlayRoot.empty()) {
-      overlayRoot = svg
-        .append("g")
-        .attr("class", "bp-overlays-root")
-        .style("pointer-events", "none")
-        .style("isolation", "isolate");
-    }
-    overlayRoot.attr("transform", treeG.attr("transform") || null);
-    if (overlayRoot.select("g.bp-insert-overlay").empty()) {
-      overlayRoot
-        .append("g")
-        .attr("class", "bp-insert-overlay")
-        .attr("data-probe", "1");
-    }
-
+    // Hoja en la que terminó la clave (árbol YA mutado)
     const hit = findLeafWithKey(currentNodes as any, value);
     const leafId =
       hit?.node.data.id ??
@@ -757,92 +829,511 @@ export function useBPlusRender(
     const slotIndex =
       typeof hit?.keyIndex === "number" ? (hit!.keyIndex as number) : null;
 
-    dbg("insert: calling animateBPlusInsertLeaf", {
+    // Camino raíz -> hoja después del insert (para simular insertNonFull)
+    let insertPath: d3.HierarchyNode<BPlusHierarchy>[] = [];
+    if (hit?.node && root) {
+      try {
+        insertPath = (root as any).path(
+          hit.node
+        ) as d3.HierarchyNode<BPlusHierarchy>[];
+      } catch {
+        insertPath = [];
+      }
+    }
+    if (!insertPath.length && root) {
+      insertPath = [root];
+    }
+
+    // Estado ANTES del insert (prevRoot)
+    const prevNodes = prevRoot ? prevRoot.descendants() : [];
+    const prevLeafCount = prevNodes.filter((n) => n.data.isLeaf).length;
+    const prevInternalCount = prevNodes.filter((n) => !n.data.isLeaf).length;
+    const prevHeight = prevNodes.reduce((max, n) => Math.max(max, n.depth), 0);
+
+    const curNodes = currentNodes;
+    const curLeafCount = curNodes.filter((n) => n.data.isLeaf).length;
+    const curInternalCount = curNodes.filter((n) => !n.data.isLeaf).length;
+    const curHeight = curNodes.reduce((max, n) => Math.max(max, n.depth), 0);
+
+    const leafSplitHappened = curLeafCount > prevLeafCount;
+    const internalSplitHappened = curInternalCount > prevInternalCount;
+
+    const hadNodesBefore =
+      !!prevRoot && prevNodes.some((d) => !(d.data as any).isPlaceholder);
+    const treeWasEmptyBefore = !hadNodesBefore;
+
+    const prevRootNode = prevRoot as
+      | d3.HierarchyNode<BPlusHierarchy>
+      | null
+      | undefined;
+    const rootWasLeafBefore = !!prevRootNode?.data.isLeaf;
+
+    const orderVal = treeData?.order ?? 0;
+    const prevRootKeyCount = prevRootNode?.data.keys?.length ?? 0;
+    const rootWasFullBefore =
+      !!prevRootNode && orderVal > 0 && prevRootKeyCount >= orderVal - 1;
+    const rootHeightIncreased = curHeight > prevHeight;
+    const rootSplitLikely = rootWasFullBefore && rootHeightIncreased;
+
+    const rootIsLeafNow = !!(root && root.data.isLeaf); // por si quieres usarlo luego
+
+    // Pseudocódigo INSERT B+ (labels)
+    const labels = BPLUS_CODE.insert.labels!;
+    type LabelKey = keyof typeof labels;
+
+    const stepId = `bplus-insert-${Date.now()}`;
+
+    const step = async (labelName: LabelKey, ms = 600) => {
+      const lineIndex = labels[labelName];
+      if (typeof lineIndex !== "number") return;
+      bus.emit("step:progress", { stepId, lineIndex });
+      await delay(ms);
+    };
+
+    const svgEl = svgRef.current;
+
+    (async () => {
+      const svg = d3.select(svgEl);
+      const treeG = svg.select<SVGGElement>("g.tree-container");
+
+      // Overlay para insert (watchdog)
+      let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
+      if (overlayRoot.empty()) {
+        overlayRoot = svg
+          .append("g")
+          .attr("class", "bp-overlays-root")
+          .style("pointer-events", "none")
+          .style("isolation", "isolate");
+      }
+      overlayRoot.attr("transform", treeG.attr("transform") || null);
+      if (overlayRoot.select("g.bp-insert-overlay").empty()) {
+        overlayRoot
+          .append("g")
+          .attr("class", "bp-insert-overlay")
+          .attr("data-probe", "1");
+      }
+
+      // Arranca operación para el panel de pseudocódigo
+      bus.emit("op:start", { op: "insert" });
+
+      // Para no repetir el detalle de splitChild en varios niveles
+      let splitDetailed = false;
+      const anySplitHappened =
+        leafSplitHappened || internalSplitHappened || rootSplitLikely;
+
+      // Si ocurre un error antes de lanzar la animación,
+      // esta flag define si debemos emitir op:done aquí.
+      let emitDoneHere = false;
+
+      try {
+        /* ─────────── Bloque public void insert(...) ─────────── */
+
+        await step("BPLUS_INSERT_HEADER", 450);
+
+        if (treeWasEmptyBefore) {
+          // (1) Árbol vacío -> crear raíz hoja
+          await step("BPLUS_INSERT_EMPTY_IF", 450);
+          await step("BPLUS_INSERT_CREATE_ROOT", 450);
+          await step("BPLUS_INSERT_INSERT_ROOT_KEY", 450);
+          await step("BPLUS_INSERT_RETURN_AFTER_NEW_ROOT", 450);
+        } else {
+          // (2) Árbol no vacío
+          await step("BPLUS_INSERT_EMPTY_IF", 250); // condición false
+          await step("BPLUS_INSERT_DUP_CHECK_COMMENT", 300);
+
+          if (rootSplitLikely) {
+            // (3) Raíz llena -> split de la antigua raíz
+            await step("BPLUS_INSERT_ROOT_FULL_IF", 350);
+            await step("BPLUS_INSERT_NEW_INTERNAL_ROOT", 350);
+            await step("BPLUS_INSERT_ATTACH_OLD_ROOT", 320);
+
+            // Detalle de splitChild(s, 0) una sola vez
+            await step("BPLUS_SPLIT_CHILD_HEADER", 320);
+            if (leafSplitHappened || rootWasLeafBefore) {
+              await step("BPLUS_SPLIT_CHILD_LEAF_IF", 260);
+              await step("BPLUS_SPLIT_CHILD_LEAF_MOVE_KEYS", 260);
+              await step("BPLUS_SPLIT_CHILD_LEAF_LINKS", 260);
+              await step("BPLUS_SPLIT_CHILD_LEAF_SEP", 260);
+              await step("BPLUS_SPLIT_CHILD_LEAF_INSERT_SEP", 260);
+            } else if (internalSplitHappened) {
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_IF", 260);
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_UP", 260);
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_MOVE_KEYS", 260);
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_MOVE_CHILDREN", 260);
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_KEYS", 260);
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_CHILDREN", 260);
+              await step("BPLUS_SPLIT_CHILD_INTERNAL_INSERT_UP", 260);
+            }
+            splitDetailed = true;
+
+            await step("BPLUS_INSERT_SPLIT_OLD_ROOT", 320);
+            await step("BPLUS_INSERT_SET_NEW_ROOT", 340);
+          } else {
+            // Raíz no llena: solo se evalúa el if (isFull(root))
+            await step("BPLUS_INSERT_ROOT_FULL_IF", 300);
+          }
+
+          // (4) Insertar en subárbol cuya raíz ya no está llena
+          await step("BPLUS_INSERT_CALL_NONFULL_ROOT", 450);
+
+          /* ─────────── Bloque insertNonFull(...) ─────────── */
+
+          await step("BPLUS_INSERT_NONFULL_HEADER", 450);
+
+          const pathLen = insertPath.length;
+
+          for (let depth = 0; depth < pathLen; depth++) {
+            const node = insertPath[depth];
+            const isLeaf = !!node.data.isLeaf;
+
+            // if (x.leaf) { ... } else { ... }
+            await step("BPLUS_INSERT_NONFULL_IF_LEAF", 260);
+            if (isLeaf) {
+              // Caso hoja: lowerBound + add
+              await step("BPLUS_INSERT_NONFULL_LOWER_BOUND", 260);
+              await step("BPLUS_INSERT_NONFULL_LEAF_INSERT", 320);
+              break;
+            } else {
+              // Caso interno: descenso por intervalo
+              await step("BPLUS_INSERT_NONFULL_INTERNAL_ELSE", 260);
+              await step("BPLUS_INSERT_NONFULL_CHILD_INDEX", 260);
+
+              const shouldDetailSplitHere = anySplitHappened && !splitDetailed;
+
+              if (shouldDetailSplitHere) {
+                // Hijo lleno -> splitChild(...)
+                await step("BPLUS_INSERT_NONFULL_CHILD_FULL_IF", 260);
+                await step("BPLUS_INSERT_NONFULL_CHILD_SPLIT", 260);
+
+                // Detalle de splitChild en nivel interno (si no lo hicimos ya en la raíz)
+                await step("BPLUS_SPLIT_CHILD_HEADER", 320);
+                if (leafSplitHappened) {
+                  await step("BPLUS_SPLIT_CHILD_LEAF_IF", 260);
+                  await step("BPLUS_SPLIT_CHILD_LEAF_MOVE_KEYS", 260);
+                  await step("BPLUS_SPLIT_CHILD_LEAF_LINKS", 260);
+                  await step("BPLUS_SPLIT_CHILD_LEAF_SEP", 260);
+                  await step("BPLUS_SPLIT_CHILD_LEAF_INSERT_SEP", 260);
+                } else if (internalSplitHappened) {
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_IF", 260);
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_UP", 260);
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_MOVE_KEYS", 260);
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_MOVE_CHILDREN", 260);
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_KEYS", 260);
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_CHILDREN", 260);
+                  await step("BPLUS_SPLIT_CHILD_INTERNAL_INSERT_UP", 260);
+                }
+                splitDetailed = true;
+
+                await step("BPLUS_INSERT_NONFULL_CHILD_DECIDE_SIDE", 260);
+              } else {
+                // No hubo split en este nivel (o ya lo detallamos)
+                await step("BPLUS_INSERT_NONFULL_CHILD_FULL_IF", 260);
+              }
+
+              // Llamada recursiva insertNonFull(x.child[i], k)
+              await step("BPLUS_INSERT_NONFULL_RECURSE", 280);
+            }
+          }
+        }
+
+        /* ─────────── FIN del recorrido de pseudocódigo ─────────── */
+
+        dbg("insert: pseudocode done, scheduling visual animation", {
+          leafId,
+          slotIndex,
+          nodes: currentNodes.length,
+        });
+
+        // Lanzamos la animación visual (otro efecto la consume)
+        setPendingInsertAnim({ leafId, slotIndex });
+
+        // IMPORTANTE:
+        // No emitimos op:done aquí; la operación se cerrará
+        // cuando termine la animación (useEffect de insert-visual).
+      } catch (e) {
+        dbg("insert: pseudocode error", e);
+        // Si algo peta antes de la animación, limpiamos el query.
+        resetQueryValues();
+        // En este caso NO habrá animación -> cerramos la operación aquí.
+        emitDoneHere = true;
+      } finally {
+        if (emitDoneHere) {
+          bus.emit("op:done", { op: "insert" });
+        }
+      }
+    })();
+  }, [
+    root,
+    prevRoot,
+    currentNodes,
+    treeData?.order,
+    query.toInsert,
+    nodePositions,
+    resetQueryValues,
+    setAnimating,
+    latchIfStuck,
+    bus,
+  ]);
+
+  /* ─────────────────────────── Animación gráfica de insert ─────────────────────────── */
+  const insertVisualRunningRef = useRef(false);
+
+  useEffect(() => {
+    if (!root || !svgRef.current) return;
+    if (!pendingInsertAnim) return;
+
+    // Evita reentradas (StrictMode / errores que reprovoquen el efecto)
+    if (insertVisualRunningRef.current) {
+      dbg("insert-visual: already running, skip");
+      return;
+    }
+    insertVisualRunningRef.current = true;
+
+    const { leafId, slotIndex } = pendingInsertAnim;
+
+    const svg = d3.select(svgRef.current);
+    const treeG = svg.select<SVGGElement>("g.tree-container");
+
+    dbg("insert-visual: calling animateBPlusInsertLeaf", {
       leafId,
       slotIndex,
       nodes: currentNodes.length,
     });
 
-    animateBPlusInsertLeaf(
-      treeG,
-      {
-        leafId,
-        rootHierarchy: root as any,
-        nodesData: currentNodes as any,
-        slotIndex,
-      },
-      nodePositions,
-      resetQueryValues,
-      setAnimating
-    ).catch((e) => {
-      dbg("insert: animation error -> reset", e);
-      resetQueryValues();
-    });
+    (async () => {
+      try {
+        await animateBPlusInsertLeaf(
+          treeG,
+          {
+            leafId,
+            // Usamos el layout con coordenadas, igual que en getInOrder / getLevelOrder
+            rootHierarchy: (pointRootRef.current ?? root) as any,
+            nodesData: (pointNodesRef.current.length
+              ? pointNodesRef.current
+              : currentNodes) as any,
+            slotIndex,
+          },
+          nodePositions,
+          resetQueryValues,
+          setAnimating
+        );
+      } catch (e) {
+        // Si la animación peta, NO reintentamos sin más: limpiamos estado y salimos.
+        dbg("insert-visual: animation error", e);
+        resetQueryValues();
+      } finally {
+        insertVisualRunningRef.current = false;
+        setPendingInsertAnim(null);
+        bus.emit("op:done", { op: "insert" });
+      }
+    })();
   }, [
+    pendingInsertAnim,
     root,
     currentNodes,
-    query.toInsert,
-    isAnimating,
     nodePositions,
     resetQueryValues,
     setAnimating,
-    latchIfStuck,
+    bus,
   ]);
 
   /* ─────────────────────────── Eliminación ─────────────────────────── */
   useEffect(() => {
-    if (!root || !svgRef.current) return;
+    if (!svgRef.current) return;
 
     const raw = query.toDelete;
     if (raw == null) return;
     const value = toNum(raw);
     if (!Number.isFinite(value)) return;
 
+    // Deduplicador simple (evitar reentradas mismas key/mismo tick)
     if (lastDeleteRef.current === value) {
       dbg("delete: ignored (same key)", { value });
       return;
     }
+
     if (isAnimating) {
       if (latchIfStuck("delete")) return;
       dbg("delete: ignorado (isAnimating=true)", { value });
       return;
     }
+
     lastDeleteRef.current = value;
 
     dbg("delete: trigger", { value });
 
-    const svg = d3.select(svgRef.current);
-    const treeG = svg.select<SVGGElement>("g.tree-container");
+    const svgEl = svgRef.current;
 
-    const hit = findLeafWithKey(currentNodes as any, value);
-    if (!hit) {
-      dbg("delete: leaf not found -> resetQueryValues()");
-      resetQueryValues();
-      return;
-    }
+    const deleteCode = BPLUS_CODE.delete;
+    const labels = deleteCode.labels!;
+    type LabelKey = keyof typeof labels;
 
-    dbg("delete: calling animateBPlusDelete", {
-      leafId: hit.node.data.id,
-      slotIndex: hit.keyIndex,
-      keyValue: value, // 👈 nuevo
-    });
+    const stepId = `bplus-delete-${Date.now()}`;
 
-    animateBPlusDelete(
-      treeG,
-      {
-        leafId: hit.node.data.id,
-        slotIndex: hit.keyIndex, // fallback por si hiciera falta
-        keyValue: value, // 👈 targeting estable por valor
-        rootHierarchy: root as any,
-        nodesData: currentNodes as any,
-      },
-      nodePositions,
-      resetQueryValues,
-      setAnimating
-    ).catch((e) => {
-      dbg("delete: animation error -> reset", e);
-      resetQueryValues();
-    });
+    const step = async (labelName: LabelKey, ms = 600) => {
+      const lineIndex = labels[labelName];
+      if (typeof lineIndex !== "number") return;
+      bus.emit("step:progress", { stepId, lineIndex });
+      await delay(ms);
+    };
+
+    const stepErrorPlan = async (planKey: "TREE_EMPTY" | "KEY_NOT_FOUND") => {
+      const plan = deleteCode.errorPlans?.[planKey];
+      if (!plan) return;
+      for (const p of plan) {
+        const labelName = p.lineLabel as LabelKey;
+        const lineIndex = labels[labelName];
+        if (typeof lineIndex !== "number") continue;
+        bus.emit("step:progress", { stepId, lineIndex });
+        await delay(p.hold ?? 800);
+      }
+    };
+
+    (async () => {
+      const svg = d3.select(svgEl);
+      const treeG = svg.select<SVGGElement>("g.tree-container");
+
+      let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
+      if (overlayRoot.empty()) {
+        overlayRoot = svg
+          .append("g")
+          .attr("class", "bp-overlays-root")
+          .style("pointer-events", "none")
+          .style("isolation", "isolate");
+      }
+      overlayRoot.attr("transform", treeG.attr("transform") || null);
+
+      let deleteOverlay = overlayRoot.select<SVGGElement>(
+        "g.bp-delete-overlay"
+      );
+      if (deleteOverlay.empty()) {
+        deleteOverlay = overlayRoot
+          .append("g")
+          .attr("class", "bp-delete-overlay");
+      } else {
+        deleteOverlay.selectAll("*").interrupt().remove();
+      }
+      deleteOverlay.attr("data-probe", "1");
+
+      // Inicia operación para el pseudocódigo
+      bus.emit("op:start", { op: "delete" });
+
+      const treeIsEmpty = !root;
+      if (treeIsEmpty) {
+        dbg("delete: TREE_EMPTY (root == null)");
+        await stepErrorPlan("TREE_EMPTY");
+        resetQueryValues();
+        bus.emit("op:done", { op: "delete" });
+        return;
+      }
+
+      const hit = findLeafWithKey(currentNodes as any, value);
+
+      if (!hit) {
+        dbg("delete: KEY_NOT_FOUND (leaf not found)");
+        await stepErrorPlan("KEY_NOT_FOUND");
+        resetQueryValues();
+        bus.emit("op:done", { op: "delete" });
+        return;
+      }
+
+      const leafId = hit.node.data.id;
+      const slotIndex = hit.keyIndex;
+
+      let deletePath: d3.HierarchyNode<BPlusHierarchy>[] = [];
+      if (root) {
+        try {
+          deletePath = (root as any).path(
+            hit.node
+          ) as d3.HierarchyNode<BPlusHierarchy>[];
+        } catch {
+          deletePath = [];
+        }
+      }
+      if (!deletePath.length) {
+        deletePath = [hit.node];
+      }
+
+      try {
+        await step("BPLUS_DELETE_HEADER", 450);
+        await step("BPLUS_DELETE_PRECOND_COMMENT", 350);
+        await step("BPLUS_DELETE_ROOT_NULL_IF", 350);
+        await step("BPLUS_DELETE_CALL_DELETE_FROM", 450);
+
+        await step("BPLUS_DELETE_FROM_HEADER", 450);
+
+        for (let depth = 0; depth < deletePath.length; depth++) {
+          const node = deletePath[depth];
+          const isLeaf = !!node.data.isLeaf;
+
+          await step("BPLUS_DELETE_FROM_LEAF_IF", 260);
+
+          if (isLeaf) {
+            await step("BPLUS_DELETE_FROM_LEAF_INDEX", 260);
+            await step("BPLUS_DELETE_FROM_LEAF_NOT_FOUND_IF", 260);
+            await step("BPLUS_DELETE_FROM_LEAF_REMOVE", 260);
+            await step("BPLUS_DELETE_FROM_LEAF_UPDATE_SEP_IF", 260);
+            await step("BPLUS_DELETE_FROM_LEAF_UNDERMIN_IF", 260);
+          } else {
+            await step("BPLUS_DELETE_FROM_INTERNAL_ELSE", 260);
+            await step("BPLUS_DELETE_FROM_INTERNAL_CHILD_INDEX", 260);
+            await step("BPLUS_DELETE_FROM_INTERNAL_CHILD_REF", 260);
+            await step("BPLUS_DELETE_FROM_INTERNAL_RECURSE", 260);
+            await step("BPLUS_DELETE_FROM_INTERNAL_FIX_UNDERMIN_IF", 260);
+          }
+        }
+
+        await step("BPLUS_FIX_LEAF_UNDERFLOW_HEADER", 320);
+        await step("BPLUS_FIX_LEAF_FIND_PARENT", 260);
+        await step("BPLUS_FIX_LEAF_PARENT_NULL_IF", 260);
+        await step("BPLUS_FIX_LEAF_BORROW_LEFT_IF", 260);
+        await step("BPLUS_FIX_LEAF_BORROW_RIGHT_IF", 260);
+        await step("BPLUS_FIX_LEAF_MERGE", 260);
+
+        await step("BPLUS_BORROW_PREV_LEAF_HEADER", 260);
+        await step("BPLUS_BORROW_NEXT_LEAF_HEADER", 260);
+        await step("BPLUS_MERGE_LEAVES_HEADER", 260);
+
+        await step("BPLUS_FIX_INTERNAL_UNDERFLOW_HEADER", 320);
+        await step("BPLUS_FIX_INTERNAL_BORROW_LEFT_IF", 260);
+        await step("BPLUS_FIX_INTERNAL_BORROW_RIGHT_IF", 260);
+        await step("BPLUS_FIX_INTERNAL_MERGE_IF", 260);
+
+        await step("BPLUS_UPDATE_SEP_UPWARDS_HEADER", 320);
+        await step("BPLUS_UPDATE_SEP_NEWFIRST_ASSIGN", 260);
+
+        await step("BPLUS_DELETE_CONTRACT_ROOT_INTERNAL", 320);
+        await step("BPLUS_DELETE_CONTRACT_ROOT_LEAF_EMPTY", 320);
+
+        dbg("delete: pseudocode done, calling animateBPlusDelete", {
+          leafId,
+          slotIndex,
+          keyValue: value,
+        });
+
+        await animateBPlusDelete(
+          treeG,
+          {
+            leafId,
+            slotIndex,
+            keyValue: value,
+            rootHierarchy: root as any,
+            nodesData: currentNodes as any,
+          },
+          nodePositions,
+          resetQueryValues,
+          setAnimating
+        );
+
+        dbg("delete: animation done");
+      } catch (e) {
+        dbg("delete: animation/pseudocode error -> reset", e);
+        resetQueryValues();
+      } finally {
+        // IMPORTANTE: siempre cerrar la operación
+        bus.emit("op:done", { op: "delete" });
+      }
+    })();
   }, [
     root,
     currentNodes,
@@ -852,20 +1343,19 @@ export function useBPlusRender(
     resetQueryValues,
     setAnimating,
     latchIfStuck,
+    bus,
   ]);
 
   /* ─────────────────────────── GetInOrder por inOrderTick ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
 
-    // ✅ leer tick y detectar flanco (tick nuevo)
     const tick = (query as any)?.inOrderTick ?? null;
     const prevTick = prevInOrderTickRef.current;
     const risingEdge = tick != null && tick !== prevTick;
     if (!risingEdge) return;
     prevInOrderTickRef.current = tick;
 
-    // Si llega mezclado con otros comandos, no ejecutamos (defensivo)
     const hasOtherPending =
       query.toInsert != null ||
       query.toDelete != null ||
@@ -879,7 +1369,6 @@ export function useBPlusRender(
       return;
     }
 
-    // Gating por latch actual
     if (isAnimating) {
       const noOverlays = !hasAliveOverlays(svgRef.current);
       if (noOverlays) {
@@ -898,7 +1387,6 @@ export function useBPlusRender(
     const svg = d3.select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    // Asegurar overlay root + overlay inorder
     let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
     if (overlayRoot.empty()) {
       overlayRoot = svg
@@ -933,7 +1421,7 @@ export function useBPlusRender(
               : currentNodes) as any,
           },
           nodePositions,
-          resetQueryValues, // ← tu reset ya conserva el tick, así no re-dispara
+          resetQueryValues,
           setAnimating
         );
         dbg("getInOrder: done");
@@ -943,7 +1431,6 @@ export function useBPlusRender(
       }
     })();
 
-    // Cleanup
     return () => {
       d3.select(svgRef.current)
         .selectAll("g.bp-inorder-overlay")
@@ -954,7 +1441,7 @@ export function useBPlusRender(
     root,
     currentNodes,
     nodePositions,
-    (query as any)?.inOrderTick, // ✅ dependencia principal
+    (query as any)?.inOrderTick,
     query.toInsert,
     query.toDelete,
     query.toSearch,
@@ -967,18 +1454,17 @@ export function useBPlusRender(
     resetQueryValues,
     setAnimating,
   ]);
+
   /* ─────────────────────────── GetLevelOrder por levelTick ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
 
-    // detectar flanco de levelTick
     const tick = (query as any)?.levelTick ?? null;
     const prevTick = prevLevelTickRef.current;
     const risingEdge = tick != null && tick !== prevTick;
     if (!risingEdge) return;
     prevLevelTickRef.current = tick;
 
-    // si viene mezclado con otros comandos, no ejecutamos
     const hasOtherPending =
       query.toInsert != null ||
       query.toDelete != null ||
@@ -992,7 +1478,6 @@ export function useBPlusRender(
       return;
     }
 
-    // gating por latch actual
     if (isAnimating) {
       const noOverlays = !hasAliveOverlays(svgRef.current);
       if (noOverlays) {
@@ -1011,7 +1496,6 @@ export function useBPlusRender(
     const svg = d3.select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    // asegurar overlay root + overlay level
     let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
     if (overlayRoot.empty()) {
       overlayRoot = svg
@@ -1052,7 +1536,6 @@ export function useBPlusRender(
       }
     })();
 
-    // cleanup del overlay
     return () => {
       d3.select(svgRef.current)
         .selectAll("g.bp-level-overlay")
@@ -1063,7 +1546,7 @@ export function useBPlusRender(
     root,
     currentNodes,
     nodePositions,
-    (query as any)?.levelTick, // ⬅️ dependencia principal
+    (query as any)?.levelTick,
     query.toInsert,
     query.toDelete,
     query.toSearch,
@@ -1141,7 +1624,7 @@ export function useBPlusRender(
     latchIfStuck,
   ]);
 
-  /* ─────────────────────────── ScanFrom (secuencial hacia la derecha) ─────────────────────────── */
+  /* ─────────────────────────── ScanFrom ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
 
@@ -1183,7 +1666,6 @@ export function useBPlusRender(
     const svg = d3.select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    // asegura overlay root y probe dentro de él
     let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
     if (overlayRoot.empty()) {
       overlayRoot = svg
@@ -1251,6 +1733,11 @@ export function useBPlusRender(
       return;
 
     const key = `${limits.from}-${limits.to}`;
+    if (lastRangeRef.current === key) {
+      dbg("range: ignored (same key)", { key });
+      return;
+    }
+    lastRangeRef.current = key;
 
     if (isAnimating) {
       if (latchIfStuck("range")) return;
@@ -1263,7 +1750,6 @@ export function useBPlusRender(
     const svg = d3.select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.tree-container");
 
-    // Prepara overlay root + overlay RANGE (para el watchdog)
     let overlayRoot = svg.select<SVGGElement>("g.bp-overlays-root");
     if (overlayRoot.empty()) {
       overlayRoot = svg
@@ -1303,7 +1789,6 @@ export function useBPlusRender(
       }
     })();
 
-    // Cleanup: vacía overlay y permite re-disparar
     return () => {
       const svg2 = d3.select(svgRef.current);
       const ov = svg2.select<SVGGElement>("g.bp-range-overlay");
@@ -1315,7 +1800,7 @@ export function useBPlusRender(
     currentNodes,
     nodePositions,
     isAnimating,
-    query.range, // identidad del objeto importa
+    query.range,
     query.range?.from,
     query.range?.to,
     resetQueryValues,
@@ -1349,8 +1834,15 @@ export function useBPlusRender(
       setAnimatingDispatch
     );
 
+    // Limpieza de overlays genéricos y específicos de B+
     svg.selectAll("g.nary-search-overlay").remove();
     svg.selectAll("g.nary-move-overlay").remove();
+    svg
+      .selectAll(
+        "g.bp-insert-overlay, g.bp-delete-overlay, g.bp-search-overlay, g.bp-range-overlay, g.bp-scanfrom-overlay, g.bp-inorder-overlay, g.bp-level-overlay"
+      )
+      .interrupt()
+      .remove();
   }, [
     query.toClear,
     resetQueryValues,

@@ -2,6 +2,19 @@
 import { BHierarchy } from "../../../types"; // Asegúrate del path
 import { BNodo, Par, Cmp as KeyCmp } from "../nodes/NodoB"; // Asegúrate del path
 import { Cola } from "./Cola"; // Igual que en Arbol23
+import { DomainError } from "../error/DomainError";
+
+/**
+ * Códigos de error de dominio para el Árbol B.
+ * Se alinean con los usados en Arbol23 para que la UI/pseudocódigo pueda reaprovechar planes.
+ */
+export type BTreeErrorCode =
+  | "ROOT_ALREADY_EXISTS"
+  | "TREE_EMPTY"
+  | "KEY_ALREADY_EXISTS"
+  | "KEY_NOT_FOUND"
+  | "MAX_NODES_REACHED"
+  | "INCONSISTENT_TREE";
 
 export class ArbolB<K, V = K> {
   private raiz: BNodo<K, V> | null = null;
@@ -18,13 +31,34 @@ export class ArbolB<K, V = K> {
     private t: number,
     private mapValue: (k: K) => V = (k) => k as unknown as V
   ) {
-    if (t < 2) throw new Error("El grado mínimo t debe ser >= 2.");
+    if (t < 2) {
+      // Esto es un error de configuración, no de dominio.
+      throw new Error("El grado mínimo t debe ser >= 2.");
+    }
+  }
+
+  /* ───────────────────────────── Helpers de error ───────────────────────────── */
+
+  private raise(message: string, code: BTreeErrorCode): never {
+    throw new DomainError(message, code);
+  }
+
+  private checkCap(extraNodes = 0) {
+    if (this.tamanio + extraNodes > this.MAX_NODOS) {
+      this.raise(
+        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`,
+        "MAX_NODES_REACHED"
+      );
+    }
   }
 
   /* ───────────────────────────── API PÚBLICA ───────────────────────────── */
 
   public crearRaiz(k: K, v?: V): BNodo<K, V> {
-    if (this.raiz) throw new Error("La raíz ya existe.");
+    if (this.raiz) {
+      this.raise("La raíz ya existe.", "ROOT_ALREADY_EXISTS");
+    }
+
     this.checkCap(1);
     const val = v ?? this.mapValue(k);
     this.raiz = new BNodo<K, V>([{ key: k, value: val }]);
@@ -36,15 +70,24 @@ export class ArbolB<K, V = K> {
   public insertar(k: K, v?: V): void {
     const val = v ?? this.mapValue(k);
 
+    // Árbol vacío → crear raíz
     if (!this.raiz) {
       this.crearRaiz(k, val);
       return;
     }
-    if (this.contiene(k)) throw new Error(`La clave ya existe: ${String(k)}`);
+
+    // No se permiten claves duplicadas
+    if (this.contiene(k)) {
+      this.raise(
+        `No fue posible insertar: la clave ya existe en el árbol (${String(k)}).`,
+        "KEY_ALREADY_EXISTS"
+      );
+    }
 
     // Si la raíz está llena (2t-1), dividir antes de descender.
     if (this.raiz.getNumeroKeys() === this.maxKeys()) {
-      this.checkCap(2); // nueva raíz + un nodo derecho
+      // nueva raíz + un nodo derecho (producto del split de la vieja raíz)
+      this.checkCap(2);
       const nuevaRaiz = new BNodo<K, V>(); // vacía
       nuevaRaiz.setHijos([this.raiz]); // antigua raíz pasa a hijo 0
       this.raiz.setParent(nuevaRaiz);
@@ -58,10 +101,20 @@ export class ArbolB<K, V = K> {
 
   /** Elimina k si existe; lanza error si no está. */
   public eliminar(k: K): void {
-    if (!this.raiz) throw new Error("Árbol vacío.");
-    if (!this.contiene(k)) throw new Error(`La clave no está: ${String(k)}`);
+    if (!this.raiz) {
+      this.raise(
+        "No fue posible eliminar: el árbol se encuentra vacío.",
+        "TREE_EMPTY"
+      );
+    }
+    if (!this.contiene(k)) {
+      this.raise(
+        `No fue posible eliminar: la clave no está en el árbol (${String(k)}).`,
+        "KEY_NOT_FOUND"
+      );
+    }
 
-    this.deleteRec(this.raiz, k);
+    this.deleteRec(this.raiz!, k);
 
     // Contraer raíz si se quedó sin claves
     if (this.raiz && this.raiz.getNumeroKeys() === 0) {
@@ -75,7 +128,10 @@ export class ArbolB<K, V = K> {
         this.tamanio = 0;
       } else {
         // raíz interna con 0 claves y >1 hijos no debería ocurrir en B-tree correcto
-        throw new Error("Inconsistencia: raíz sin claves con múltiples hijos.");
+        this.raise(
+          "Inconsistencia interna: raíz sin claves con múltiples hijos.",
+          "INCONSISTENT_TREE"
+        );
       }
     }
   }
@@ -85,7 +141,7 @@ export class ArbolB<K, V = K> {
     return this.getNodoYPos(k) !== null;
   }
 
-  /** Busca y retorna el valor asociado, o null si no existe. */
+  /** Busca y retorna el valor asociado, o null si no existe. (NO lanza error de dominio.) */
   public get(k: K): V | null {
     const r = this.getNodoYPos(k);
     return r ? r.nodo.getValues()[r.posKey] : null;
@@ -164,10 +220,21 @@ export class ArbolB<K, V = K> {
   /** Divide el hijo `i` de `parent` (debe estar FULL: 2t-1 claves). */
   private splitChild(parent: BNodo<K, V>, i: number): void {
     const child = parent.getHijo(i);
-    if (!child) throw new Error("splitChild: hijo inexistente.");
-    if (child.getNumeroKeys() !== this.maxKeys()) {
-      throw new Error("splitChild: el hijo no está lleno.");
+    if (!child) {
+      this.raise(
+        "Inconsistencia interna: splitChild con hijo inexistente.",
+        "INCONSISTENT_TREE"
+      );
     }
+    if (child.getNumeroKeys() !== this.maxKeys()) {
+      this.raise(
+        "Inconsistencia interna: splitChild llamado sobre nodo que no está lleno.",
+        "INCONSISTENT_TREE"
+      );
+    }
+
+    // Se va a crear efectivamente un nodo nuevo (right)
+    this.checkCap(1);
 
     const mid = this.t - 1; // separador en índice t-1
     const { separador, left, right } = child.separarEn(mid);
@@ -229,8 +296,11 @@ export class ArbolB<K, V = K> {
 
     // Caso 2: k NO está en este nodo.
     if (n.isHoja()) {
-      // no existe
-      throw new Error(`Clave no encontrada durante delete: ${String(k)}`);
+      // No debería ocurrir si antes verificamos contiene(k).
+      this.raise(
+        "Inconsistencia interna: clave no encontrada en hoja durante delete.",
+        "INCONSISTENT_TREE"
+      );
     }
 
     // Asegurar que el hijo por el que bajaremos tenga al menos t claves.
@@ -271,12 +341,16 @@ export class ArbolB<K, V = K> {
     left: BNodo<K, V>,
     child: BNodo<K, V>
   ) {
-    // Tomamos la entrada de parent[childIdx-1] y la movemos a child.
-    // Sube la última entrada de left a parent[childIdx-1].
     const pKeys = parent.getKeys();
     const pVals = parent.getValues();
 
     const leftEntries = left.getEntries();
+    if (!leftEntries.length) {
+      this.raise(
+        "Inconsistencia interna: hermano izquierdo sin entradas al hacer borrow.",
+        "INCONSISTENT_TREE"
+      );
+    }
     const borrow = leftEntries[leftEntries.length - 1]; // última de left
 
     // La clave del padre que separa left/child baja al child.
@@ -294,6 +368,12 @@ export class ArbolB<K, V = K> {
     // Ajustar hijos si son internos
     if (!left.isHoja()) {
       const leftChildren = [...(left.getHijos() as BNodo<K, V>[])];
+      if (!leftChildren.length) {
+        this.raise(
+          "Inconsistencia interna: hermano izquierdo sin hijos al hacer borrow.",
+          "INCONSISTENT_TREE"
+        );
+      }
       const moved = leftChildren.pop()!;
       left.setHijos(leftChildren);
       const cChildren = [...(child.getHijos() as BNodo<K, V>[])];
@@ -315,6 +395,12 @@ export class ArbolB<K, V = K> {
     const pVals = parent.getValues();
 
     const rightEntries = right.getEntries();
+    if (!rightEntries.length) {
+      this.raise(
+        "Inconsistencia interna: hermano derecho sin entradas al hacer borrow.",
+        "INCONSISTENT_TREE"
+      );
+    }
     const borrow = rightEntries[0]; // primera de right
 
     // La clave separadora parent[childIdx] baja a child
@@ -329,6 +415,12 @@ export class ArbolB<K, V = K> {
     // mover primer hijo de right al final de child si son internos
     if (!right.isHoja()) {
       const rChildren = [...(right.getHijos() as BNodo<K, V>[])];
+      if (!rChildren.length) {
+        this.raise(
+          "Inconsistencia interna: hermano derecho sin hijos al hacer borrow.",
+          "INCONSISTENT_TREE"
+        );
+      }
       const moved = rChildren.shift()!;
       right.setHijos(rChildren);
       const cChildren = [...(child.getHijos() as BNodo<K, V>[])];
@@ -346,10 +438,15 @@ export class ArbolB<K, V = K> {
 
     // Tomar separador del padre
     const sepKV = parent.eliminarEntradaEn(i);
-    if (!sepKV) throw new Error("mergeChildren: separador inexistente.");
+    if (!sepKV) {
+      this.raise(
+        "Inconsistencia interna: separador inexistente durante mergeChildren.",
+        "INCONSISTENT_TREE"
+      );
+    }
 
     // left absorbe sep + right
-    left.fusionarCon(sepKV, right);
+    left.fusionarCon(sepKV!, right);
 
     // El padre elimina right de la lista de hijos
     const pChildren = [...(parent.getHijos() as BNodo<K, V>[])];
@@ -377,9 +474,21 @@ export class ArbolB<K, V = K> {
     let cur = root;
     while (!cur.isHoja()) {
       const hijos = cur.getHijos() as BNodo<K, V>[];
+      if (!hijos.length) {
+        this.raise(
+          "Inconsistencia interna: nodo interno sin hijos al buscar predecesor.",
+          "INCONSISTENT_TREE"
+        );
+      }
       cur = hijos[hijos.length - 1];
     }
     const entries = cur.getEntries();
+    if (!entries.length) {
+      this.raise(
+        "Inconsistencia interna: hoja sin entradas al buscar predecesor.",
+        "INCONSISTENT_TREE"
+      );
+    }
     const last = entries[entries.length - 1];
     return { predKey: last.key, predVal: last.value };
   }
@@ -388,9 +497,21 @@ export class ArbolB<K, V = K> {
     let cur = root;
     while (!cur.isHoja()) {
       const hijos = cur.getHijos() as BNodo<K, V>[];
+      if (!hijos.length) {
+        this.raise(
+          "Inconsistencia interna: nodo interno sin hijos al buscar sucesor.",
+          "INCONSISTENT_TREE"
+        );
+      }
       cur = hijos[0];
     }
     const entries = cur.getEntries();
+    if (!entries.length) {
+      this.raise(
+        "Inconsistencia interna: hoja sin entradas al buscar sucesor.",
+        "INCONSISTENT_TREE"
+      );
+    }
     const first = entries[0];
     return { succKey: first.key, succVal: first.value };
   }
@@ -450,14 +571,6 @@ export class ArbolB<K, V = K> {
       copia.agregarHijo(hc);
     }
     return copia;
-  }
-
-  private checkCap(extraNodes = 0) {
-    if (this.tamanio + extraNodes > this.MAX_NODOS) {
-      throw new Error(
-        `No fue posible insertar: límite máximo de nodos alcanzado (${this.MAX_NODOS}).`
-      );
-    }
   }
 
   private getNodoYPos(k: K): { nodo: BNodo<K, V>; posKey: number } | null {

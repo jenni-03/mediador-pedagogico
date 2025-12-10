@@ -15,12 +15,14 @@ export function HashTableSimulator() {
     query,
     error: hookError,
     lastAction,
-    actions, // { create, set, get, remove, clean }
+    actions, // { create, set, get, delete, clean }
     resetQueryValues,
   } = useHashTable(0); // ← sin slots iniciales
 
   /* 2) error adaptado al formato <Simulator> */
-  const simError = hookError ? { message: hookError, id: Date.now() } : null;
+  // HashError es estructuralmente compatible con LooseError,
+  // solo necesitamos quitar el null (prop es opcional, no acepta null).
+  const simError = hookError ?? undefined;
 
   /* 3) Acciones con la clave exacta que espera <Simulator> */
   const simActions: BaseStructureActions<TableKey> = {
@@ -54,7 +56,9 @@ export function HashTableSimulator() {
           result.push({
             key: bucket[j].key,
             value: bucket[j].value,
-            memoryAddress: `0x${(baseAddress + j).toString(16).padStart(6, "0")}`,
+            memoryAddress: `0x${(baseAddress + j)
+              .toString(16)
+              .padStart(6, "0")}`,
           });
         }
       }
@@ -77,10 +81,10 @@ export function HashTableSimulator() {
         memory={memory}
         query={query}
         lastAction={lastAction}
+        error={hookError}
         resetQueryValues={resetQueryValues}
         style={
           {
-            // sobrescribe aquí si lo necesitas
             // bucketWidth: 120,
             // hitFill: "#ef4444",
           }

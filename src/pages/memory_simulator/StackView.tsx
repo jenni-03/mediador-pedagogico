@@ -178,6 +178,7 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
       {/* Cuerpo sólido */}
       <div
         className="relative h-full min-h-0 min-w-0 flex flex-col rounded-3xl p-3 overflow-hidden"
+        data-tour="panelStack"
         style={{ background: C.panel }}
       >
         {/* Header */}
