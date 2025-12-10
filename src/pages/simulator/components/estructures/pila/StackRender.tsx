@@ -1,4 +1,4 @@
-import { BaseQueryOperations, StackNodeData } from "../../../../../types";
+import { BaseQueryOperations, StackNodeData } from "../../../../../domain/utils/types";
 import { useStackRender } from "../../../hooks/estructures/pila/useStackRender";
 
 export function StackRender({

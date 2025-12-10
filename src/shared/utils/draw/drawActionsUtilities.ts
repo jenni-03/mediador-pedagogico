@@ -11,18 +11,17 @@ import {
   TraversalNodeType,
   TreeLinkData,
   TreeTraversalAnimOptions,
-} from "../../../types";
+} from "../../../domain/utils/types";
 import {
   SVG_BINARY_TREE_VALUES,
   SVG_LINKED_LIST_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 import { type HierarchyNode, type Selection, easePolyInOut } from "d3";
-import { straightPath } from "../treeUtils";
-import { buildListPath } from "../listUtils";
+import { straightPath } from "../../../domain/utils/treeUtils";
+import { buildListPath } from "../../../domain/utils/listUtils";
 import { type EventBus } from "../../events/eventBus";
-import { getPilaCode } from "../../constants/pseudocode/pilaCode";
-import { delay } from "../simulatorUtils";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.

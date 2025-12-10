@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { Pila } from "../../shared/utils/structures/Pila";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { Pila } from "../../domain/structures/Pila";
 import { StackRender } from "./components/estructures/pila/StackRender";
 import { Simulator } from "./components/templates/Simulator";
 import { useStack } from "./hooks/estructures/pila/useStack";
-import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { dynamicAddressGenerator } from "../../domain/utils/memoryAllocator";
 
 export function StackSimulator() {
     // Instanciación de la estructura Pila

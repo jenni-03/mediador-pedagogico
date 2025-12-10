@@ -1,12 +1,12 @@
 import type { HierarchyNode, Selection } from "d3";
-import { getArbolBinarioBusquedaCode } from "../../constants/pseudocode/arbolBinarioBusquedaCode";
-import { BSTDeleteStep, BSTInsertStep, BSTSearchStep, HierarchyNodeData, TreeLinkData } from "../../../types";
+import { getArbolBinarioBusquedaCode } from "../../../domain/constants/pseudocode/arbolBinarioBusquedaCode";
+import { BSTDeleteStep, BSTInsertStep, BSTSearchStep, HierarchyNodeData, TreeLinkData } from "../../../domain/utils/types";
 import { type EventBus } from "../../events/eventBus";
 import type { Dispatch, SetStateAction } from "react";
-import { delay } from "../simulatorUtils";
+import { delay } from "../../../domain/utils/simulatorUtils";
 import { defaultAppearTreeNode, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { straightPath } from "../treeUtils";
-import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { straightPath } from "../../../domain/utils/treeUtils";
+import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { animateGetInOrderSuccessor, animateReplaceChildNode } from "./BinaryTreeDrawActions";
 
 const arbolABBCode = getArbolBinarioBusquedaCode();

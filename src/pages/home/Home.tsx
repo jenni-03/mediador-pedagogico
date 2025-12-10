@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { CardList } from "./components/CardList";
 import { NavBar } from "./components/NavBar";
-import { FilterState } from "../../types";
-import { data } from "../../shared/constants/data-cards";
+import { FilterState } from "../../domain/utils/types";
+import { data } from "../../domain/constants/data-cards";
 import { Welcome } from "./components/Welcome";
 import { Filters } from "./components/Filters";
 import { Introduction } from "./components/Introduction";

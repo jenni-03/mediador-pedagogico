@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
-import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { dynamicAddressGenerator } from "../../domain/utils/memoryAllocator";
 import { useLinkedList } from "./hooks/estructures/listas/useLinkedList";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ListaCircularSimple } from "../../shared/utils/structures/ListaCircularSimple";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ListaCircularSimple } from "../../domain/structures/ListaCircularSimple";
 import { CircularSimpleLinkedListRender } from "./components/estructures/listas/CircularSimpleLinkedListRender";
 
 export function CircularSimpleLinkedListSimulator() {

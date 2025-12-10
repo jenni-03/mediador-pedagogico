@@ -1,11 +1,10 @@
-// src/hooks/estructures/twoThree/use123Tree.ts
 import { useState } from "react";
-import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
+import { BaseQueryOperations, TraversalNodeType } from "../../../../../domain/utils/types";
 import {
   Arbol23,
   type Tree23ErrorCode,
-} from "../../../../../shared/utils/structures/Arbol23";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+} from "../../../../../domain/structures/Arbol23";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 const DEBUG_TT = true;
 const dlog = (...a: any[]) => {

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { HiOutlineChip } from "react-icons/hi";
 import { FaProjectDiagram } from "react-icons/fa";
 import { TiArrowForward } from "react-icons/ti";
-import { Modal } from "./Modal"; // importa tu Modal
+import { Modal } from "./Modal";
 
 export function Introduction() {
   const [modalOpen, setModalOpen] = useState<string | null>(null);

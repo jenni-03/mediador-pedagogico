@@ -1,16 +1,15 @@
-// src/hooks/estructures/arbol123/useTwoThreeTreeRender.ts
 import * as d3 from "d3";
 import { useEffect, useMemo, useRef } from "react";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getArbol123Code } from "../../../../../shared/constants/pseudocode/arbol123Code";
-import { delay } from "../../../../../shared/utils/simulatorUtils";
+import { getArbol123Code } from "../../../../../domain/constants/pseudocode/arbol123Code";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
 
 import {
   BaseQueryOperations,
   HierarchyNodeData,
   TraversalNodeType,
   TreeLinkData,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";

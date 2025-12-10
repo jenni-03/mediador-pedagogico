@@ -1,8 +1,8 @@
 // src/app/HeapSimulator.tsx
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolHeap } from "../../shared/utils/structures/ArbolHeap";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolHeap } from "../../domain/structures/ArbolHeap";
 
 import { useHeap } from "./hooks/estructures/arbolHeap/useHeap";
 import { HeapRender } from "./components/estructures/arboles/HeapRender";

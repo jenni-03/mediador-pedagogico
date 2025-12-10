@@ -1,13 +1,13 @@
-import { StackNodeData } from "../../../types";
+import { StackNodeData } from "../../../domain/utils/types";
 import * as d3 from "d3";
 import {
   SVG_QUEUE_VALUES,
   SVG_STACK_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 import { EventBus } from "../../events/eventBus";
-import { getPilaCode } from "../../constants/pseudocode/pilaCode";
-import { delay } from "../simulatorUtils";
+import { getPilaCode } from "../../../domain/constants/pseudocode/pilaCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const stackCode = getPilaCode();
 

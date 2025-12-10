@@ -1,4 +1,3 @@
-// src/hooks/estructures/arbolNario/useNaryTreeRender.ts
 import * as d3 from "d3";
 import { useEffect, useMemo, useRef } from "react";
 import {
@@ -6,12 +5,12 @@ import {
   HierarchyNodeData,
   TraversalNodeType,
   TreeLinkData,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getArbolNarioCode } from "../../../../../shared/constants/pseudocode/arbolNarioCode";
-import { delay } from "../../../../../shared/utils/simulatorUtils";
+import { getArbolNarioCode } from "../../../../../domain/constants/pseudocode/arbolNarioCode";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
 
 /* ───────────────────────── Utilidades genéricas n-ario ───────────────────────── */
 import {

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { type ArbolAVL } from "../../../../../shared/utils/structures/ArbolAVL";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { type ArbolAVL } from "../../../../../domain/structures/ArbolAVL";
 
 export function useAVLTree(structure: ArbolAVL<number>) {
   // Estado para manejar el árbol AVL

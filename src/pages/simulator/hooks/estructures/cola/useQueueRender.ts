@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
-import {BaseQueryOperations, IndicatorPositioningConfig, ListLinkData, QueueNodeData} from "../../../../../types";
-import {SVG_QUEUE_VALUES, SVG_STYLE_VALUES,} from "../../../../../shared/constants/consts";
+import {BaseQueryOperations, IndicatorPositioningConfig, ListLinkData, QueueNodeData} from "../../../../../domain/utils/types";
+import {SVG_QUEUE_VALUES, SVG_STYLE_VALUES,} from "../../../../../domain/constants/consts";
 import {drawQueueNodes, animateDequeueNode, animateEnqueueNode, animateClearQueue,} from "../../../../../shared/utils/draw/queueDrawActions";
 import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import {drawArrowIndicator, drawListLinks, animateHighlightNode,} from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { getColaCode } from "../../../../../shared/constants/pseudocode/colaCode";
+import { getColaCode } from "../../../../../domain/constants/pseudocode/colaCode";
 import { useBus } from "../../../../../shared/hooks/useBus";
 
 export function useQueueRender(

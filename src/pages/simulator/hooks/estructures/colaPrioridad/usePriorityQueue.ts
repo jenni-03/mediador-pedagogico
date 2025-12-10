@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { type ColaDePrioridad } from "../../../../../shared/utils/structures/ColaPrioridad";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { type ColaDePrioridad } from "../../../../../domain/structures/ColaPrioridad";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 export function usePriorityQueue(structure: ColaDePrioridad<number>) {
     // Estado para gestionar la cola de prioridad

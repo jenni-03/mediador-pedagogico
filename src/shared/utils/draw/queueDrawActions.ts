@@ -1,6 +1,6 @@
-import { ListLinkData, QueueNodeData } from "../../../types";
+import { ListLinkData, QueueNodeData } from "../../../domain/utils/types";
 import { Selection } from "d3";
-import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { Dispatch, SetStateAction } from "react";
 import {
   animateAppearListNode,
@@ -8,8 +8,8 @@ import {
 } from "./simpleLinkedListDrawActions";
 import { repositionList } from "./drawActionsUtilities";
 import { type EventBus } from "../../events/eventBus";
-import { getColaCode } from "../../constants/pseudocode/colaCode";
-import { delay } from "../simulatorUtils";
+import { getColaCode } from "../../../domain/constants/pseudocode/colaCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const queueCode = getColaCode();
 

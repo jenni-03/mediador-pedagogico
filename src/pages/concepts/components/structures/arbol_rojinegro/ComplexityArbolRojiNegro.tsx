@@ -1,4 +1,4 @@
-import { complexityArbolRojiNegro } from "../../../../../shared/constants/complexityStructures/complexityArbolRojiNegro";
+import { complexityArbolRojiNegro } from "../../../../../domain/constants/complexityStructures/complexityArbolRojiNegro";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityArbolRojinegro() {

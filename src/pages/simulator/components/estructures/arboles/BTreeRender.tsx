@@ -1,6 +1,4 @@
-// src/components/estructures/arboles/BTreeRender.tsx
-
-import { BaseQueryOperations, BHierarchy } from "../../../../../types";
+import { BaseQueryOperations, BHierarchy } from "../../../../../domain/utils/types";
 import { useBTreeRender } from "../../../hooks/estructures/arbolB/useBTreeRender";
 
 type Props = {

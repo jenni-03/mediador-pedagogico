@@ -1,9 +1,8 @@
-// src/components/simulators/HashTableSimulator.tsx
 import { useHashTable } from "./hooks/estructures/hashTable/useHashTable";
 import { Simulator } from "./components/templates/Simulator";
 import { HashTableRender } from "./components/estructures/hash/HashTableRender";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import type { BaseStructureActions, SimulatorProps } from "../../types";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import type { BaseStructureActions, SimulatorProps } from "../../domain/utils/types";
 
 type TableKey = "tabla_hash";
 

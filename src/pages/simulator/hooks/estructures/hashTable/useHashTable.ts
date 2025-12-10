@@ -1,9 +1,7 @@
-// src/hooks/estructures/hashTable/useHashTable.ts
 import { useReducer, useState } from "react";
-import type { BaseStructureActions } from "../../../../../types";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+import type { BaseStructureActions } from "../../../../../domain/utils/types";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
-/* ── Tipos ─────────────────────────────────────────────────── */
 export type HashNode = { key: number; value: number };
 export type Bucket = HashNode[];
 

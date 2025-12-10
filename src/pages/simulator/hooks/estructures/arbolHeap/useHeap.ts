@@ -1,18 +1,16 @@
-// src/hooks/estructures/arbolHeap/useHeap.ts
 import { useCallback, useMemo, useState } from "react";
 import {
   BaseQueryOperations,
   TraversalNodeType,
   Comparator,
-} from "../../../../../types";
-import { ArbolHeap } from "../../../../../shared/utils/structures/ArbolHeap";
+} from "../../../../../domain/utils/types";
+import { ArbolHeap } from "../../../../../domain/structures/ArbolHeap";
 
-// 👇 importa también el transcript de Level-Order
 import type {
   InsertTranscript,
   DeleteTranscript,
   LevelOrderTranscript,
-} from "../../../../../shared/utils/structures/ArbolHeap";
+} from "../../../../../domain/structures/ArbolHeap";
 
 export type UseHeapOptions = {
   min?: boolean;
@@ -20,7 +18,6 @@ export type UseHeapOptions = {
   maxNodos?: number;
 };
 
-// 🔸 Unificación de transcripts
 type HeapTranscript =
   | InsertTranscript
   | DeleteTranscript
@@ -36,7 +33,6 @@ export function useHeap(
     null
   );
 
-  // 🔸 Estado de consulta/ordenes para el renderer, con nonce para LO
   const [query, setQuery] = useState<
     BaseQueryOperations<"arbol_heap"> & {
       heapTranscript: HeapTranscript;
@@ -63,9 +59,6 @@ export function useHeap(
     levelOrderReqId: null,
   });
 
-  /* ───────── Utilidades internas ───────── */
-
-  // ⬇️ CLAVE: clonar preservando IDs (no reconstruir desde valores)
   const cloneHeap = useCallback((): ArbolHeap<number> => {
     return tree.clonePreservingIds();
   }, [tree]);
@@ -80,8 +73,6 @@ export function useHeap(
     },
     []
   );
-
-  /* ───────── Operaciones ───────── */
 
   const insert = useCallback(
     (value: number) => {

@@ -1,10 +1,10 @@
 import type { HierarchyNode, Selection } from "d3";
-import { HierarchyNodeData, TreeLinkData } from "../../../types";
+import { HierarchyNodeData, TreeLinkData } from "../../../domain/utils/types";
 import { repositionTree } from "./drawActionsUtilities";
 import {
   SVG_STYLE_VALUES,
   SVG_BINARY_TREE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 
 export async function animateInsertHeapNode(
   treeG: Selection<SVGGElement, unknown, null, undefined>,

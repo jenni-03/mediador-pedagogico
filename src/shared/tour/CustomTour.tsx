@@ -5,8 +5,8 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { getTourByStructure } from "../constants/tours/getTourByStructure";
-import { TourStep } from "../constants/typesTour";
+import { getTourByStructure } from "../../domain/constants/tours/getTourByStructure";
+import { TourStep } from "../../domain/constants/typesTour";
 
 import HighlightBox from "./HighlightBox";
 import TourTooltip from "./TourTooltip";

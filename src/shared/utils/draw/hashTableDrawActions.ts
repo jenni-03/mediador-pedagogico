@@ -1,7 +1,4 @@
-// src/shared/utils/draw/hashTableDrawActions.ts
 import * as d3 from "d3";
-
-/* ---------- Tipos ---------- */
 export interface HashNode {
   key: number;
   value: number;

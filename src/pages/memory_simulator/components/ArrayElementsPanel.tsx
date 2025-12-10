@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PrimitiveType } from "../../../shared/utils/RAM/memoria/layout";
+import type { PrimitiveType } from "../../../domain/RAM/memoria/layout";
 
 type Props = {
   length: number;

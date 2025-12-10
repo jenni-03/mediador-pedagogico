@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolAVL } from "../../shared/utils/structures/ArbolAVL";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolAVL } from "../../domain/structures/ArbolAVL";
 import { useAVLTree } from "./hooks/estructures/arbolAVL/useAVLTree";
 import { AvlTreeRender } from "./components/estructures/arboles/AvlTreeRender";
 

@@ -1,14 +1,13 @@
-// src/simulators/hooks/estructures/arbolBPlus/useBPlusRender.ts
 import * as d3 from "d3";
 import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { BPlusHierarchy, TraversalNodeType } from "../../../../../types";
+import { BPlusHierarchy, TraversalNodeType } from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import type { QueryBPlus } from "./useBPlusTree";
 import { useBus } from "../../../../../shared/hooks/useBus";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { delay } from "../../../../../shared/utils/simulatorUtils";
-import { getArbolBPlusCode } from "../../../../../shared/constants/pseudocode/arbolBPlusCode";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
+import { getArbolBPlusCode } from "../../../../../domain/constants/pseudocode/arbolBPlusCode";
 
 /* ─────────── Utilidades específicas B+ ─────────── */
 import {

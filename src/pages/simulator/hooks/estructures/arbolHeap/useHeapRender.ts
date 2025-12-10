@@ -1,15 +1,14 @@
-// src/shared/hooks/render/useHeapRender.ts
 import { useEffect, useMemo, useRef } from "react";
 import {
   BaseQueryOperations,
   HierarchyNodeData,
   TreeLinkData,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_BINARY_TREE_VALUES } from "../../../../../domain/constants/consts";
 import { hierarchy, select, type HierarchyNode } from "d3";
-import { simulateHeapInsert } from "../../../../../shared/utils/heapSimulator";
+import { simulateHeapInsert } from "../../../../../domain/utils/heapSimulator";
 
 import {
   drawHeapNodes,

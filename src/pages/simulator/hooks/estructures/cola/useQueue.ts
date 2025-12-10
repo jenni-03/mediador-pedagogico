@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { type Cola } from "../../../../../shared/utils/structures/Cola";
-import { BaseQueryOperations } from "../../../../../types";
-import { DomainError } from "../../../../../../src/shared/utils/error/DomainError";
+import { type Cola } from "../../../../../domain/structures/Cola";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 export function useQueue(structure: Cola<number>) {
   // Estado para manejar la cola

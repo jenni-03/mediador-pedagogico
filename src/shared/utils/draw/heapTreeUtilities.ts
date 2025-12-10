@@ -1,9 +1,9 @@
 import { Selection } from "d3";
-import { TraversalNodeType, TreeLinkData } from "../../../types";
+import { TraversalNodeType, TreeLinkData } from "../../../domain/utils/types";
 import {
   SVG_BINARY_TREE_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Tipos base para el renderer del Heap (diseño)

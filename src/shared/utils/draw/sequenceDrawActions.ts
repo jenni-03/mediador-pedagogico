@@ -1,9 +1,9 @@
 import { easeBounce, easeCubicInOut, easeQuad, select, Selection } from "d3";
-import { SVG_SEQUENCE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_SEQUENCE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { type EventBus } from "../../events/eventBus";
-import { getSecuenciaCode } from "../../constants/pseudocode/secuenciaCode";
+import { getSecuenciaCode } from "../../../domain/constants/pseudocode/secuenciaCode";
 import { Dispatch, SetStateAction } from "react";
-import { delay } from "../simulatorUtils";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const seqCode = getSecuenciaCode();
 

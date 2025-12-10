@@ -1,5 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { conceptosData } from "../../shared/constants/conceptsData";
+import { conceptosData } from "../../domain/constants/conceptsData";
 import {
   ComplexityArbolB2,
   ComplexityArbolB,

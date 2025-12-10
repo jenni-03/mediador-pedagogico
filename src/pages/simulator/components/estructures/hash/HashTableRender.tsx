@@ -1,4 +1,3 @@
-// src/components/estructures/hash/HashTableRender.tsx
 import { useHashTableRender } from "../../../hooks/estructures/hashTable/useHashTableRender";
 import type {
   HashQuery,
@@ -13,7 +12,7 @@ export interface HashTableRenderProps {
   memory: number[];
   query: HashQuery;
   lastAction?: LastAction;
-  error: HashError | null;           // 👈 se añade el error aquí
+  error: HashError | null;        
   resetQueryValues: () => void;
   /** (Opcional) – override de colores/tamaños si lo deseas */
   style?: Partial<StyleConfig>;

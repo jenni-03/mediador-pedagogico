@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
-import { ListaDoble } from "../../shared/utils/structures/ListaDoble";
-import { doubleNodeAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { ListaDoble } from "../../domain/structures/ListaDoble";
+import { doubleNodeAddressGenerator } from "../../domain/utils/memoryAllocator";
 import { useLinkedList } from "./hooks/estructures/listas/useLinkedList";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
 import { DoublyLinkedListRender } from "./components/estructures/listas/DoublyLinkedListRender";
 
 export function DoublyLinkedListSimulator() {

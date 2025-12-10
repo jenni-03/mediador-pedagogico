@@ -1,4 +1,4 @@
-import { BaseQueryOperations } from "../../../../../types";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
 import { useSequenceRender } from "../../../hooks/estructures/secuencia/useSequenceRender";
 
 export function SequenceRender({

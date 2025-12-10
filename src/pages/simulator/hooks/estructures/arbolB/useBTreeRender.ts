@@ -1,22 +1,21 @@
-// src/hooks/estructures/btree/useBTreeRender.ts
 import * as d3 from "d3";
 import {
   useEffect,
   useMemo,
   useRef,
-  useLayoutEffect, // ← importante
+  useLayoutEffect,
 } from "react";
 import {
   BaseQueryOperations,
   TraversalNodeType,
   BHierarchy,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { delay } from "../../../../../shared/utils/simulatorUtils";
-import { getArbolBCode } from "../../../../../shared/constants/pseudocode/arbolBCode";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
+import { getArbolBCode } from "../../../../../domain/constants/pseudocode/arbolBCode";
 
 import {
   computeNodeWidth,

@@ -1,8 +1,7 @@
-// src/simulators/BTreeSimulator.tsx
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolB } from "../../shared/utils/structures/ArbolB";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolB } from "../../domain/structures/ArbolB";
 import { useBTree } from "./hooks/estructures/arbolB/useBTree";
 import { BTreeRender } from "./components/estructures/arboles/BTreeRender";
 

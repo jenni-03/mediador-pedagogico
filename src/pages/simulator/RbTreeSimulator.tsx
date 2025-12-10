@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolRojoNegro } from "../../shared/utils/structures/ArbolRojoNegro";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolRojoNegro } from "../../domain/structures/ArbolRojoNegro";
 import { useRBTree } from "./hooks/estructures/arbolRN/useRBTree";
 import { RbTreeRender } from "./components/estructures/arboles/RbTreeRender";
 

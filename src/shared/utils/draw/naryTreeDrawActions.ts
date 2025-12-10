@@ -1,7 +1,6 @@
-// src/shared/utils/draw/NaryTreeDrawActions.ts
 import * as d3 from "d3";
 import { HierarchyNode } from "d3";
-import { HierarchyNodeData, TreeLinkData } from "../../../types";
+import { HierarchyNodeData, TreeLinkData } from "../../../domain/utils/types";
 
 import {
   SVG_NARY_VALUES,

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { type ArbolRojoNegro } from "../../../../../shared/utils/structures/ArbolRojoNegro";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { type ArbolRojoNegro } from "../../../../../domain/structures/ArbolRojoNegro";
 
 export function useRBTree(structure: ArbolRojoNegro<number>) {
   // Estado para manejar el árbol RB

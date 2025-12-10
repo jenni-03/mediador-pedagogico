@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, ListLinkData, ListNodeData } from "../../../../../types";
+import { BaseQueryOperations, ListLinkData, ListNodeData } from "../../../../../domain/utils/types";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import { select } from "d3";
 import { animateClearList, drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateDoublyDeleteAt, animateDoublyDeleteFirst, animateDoublyDeleteLast, animateDoublyInsertAt, animateDoublyInsertFirst, animateDoublyInsertLast } from "../../../../../shared/utils/draw/doublyLinkedListDrawActions";
 import { animateSearchElement } from "../../../../../shared/utils/draw/simpleLinkedListDrawActions";
-import { getListaDoblementeEnlazadaCode } from "../../../../../shared/constants/pseudocode/listDoblementeEnlazadaCode";
+import { getListaDoblementeEnlazadaCode } from "../../../../../domain/constants/pseudocode/listDoblementeEnlazadaCode";
 
 export function useDoublyLinkedListRender(
     listNodes: ListNodeData<number>[],

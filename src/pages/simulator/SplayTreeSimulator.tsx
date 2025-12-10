@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolSplay } from "../../shared/utils/structures/ArbolSplay";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolSplay } from "../../domain/structures/ArbolSplay";
 import { useSplayTree } from "./hooks/estructures/arbolSplay/useSplayTree";
 import { SplayTreeRender } from "./components/estructures/arboles/SplayTreeRender";
 

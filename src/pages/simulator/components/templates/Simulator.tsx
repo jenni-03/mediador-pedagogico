@@ -1,18 +1,17 @@
-// src/pages/simulator/components/organisms/Simulator.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../molecules/Header";
 import { ConsoleComponent } from "../atoms/ConsoleComponent";
 import { DataStructureInfo } from "../atoms/DataStructureInfo";
 import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
 import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
-import { commandsData } from "../../../../shared/constants/commandsData";
-import { getPseudoCodeByStructure } from "../../../../shared/constants/pseudocode/getPseudoCodeByStructure";
+import { commandsData } from "../../../../domain/constants/commandsData";
+import { getPseudoCodeByStructure } from "../../../../domain/constants/pseudocode/getPseudoCodeByStructure";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
-import { SimulatorProps } from "../../../../types";
+import { SimulatorProps } from "../../../../domain/utils/types";
 import { createBus } from "../../../../shared/events/eventBus";
 import { BusProvider } from "../../../../shared/context/BusProvider";
-import { delay } from "../../../../shared/utils/simulatorUtils";
+import { delay } from "../../../../domain/utils/simulatorUtils";
 
 // tipo local laxo para error (temporal)
 type LooseError =

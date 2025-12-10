@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { Pila } from "../../../../../shared/utils/structures/Pila";
-import { DomainError } from "../../../../../../src/shared/utils/error/DomainError";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { Pila } from "../../../../../domain/structures/Pila";
+import { DomainError } from "../../../../../../src/domain/error/DomainError";
 
 export function useStack(structure: Pila<number>) {
     // Estado para manejar la pila

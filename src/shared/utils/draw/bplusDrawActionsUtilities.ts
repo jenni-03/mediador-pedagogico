@@ -1,6 +1,5 @@
-// shared/utils/draw/bplusDrawActionsUtilities.ts
 import * as d3 from "d3";
-import { BPlusHierarchy, TreeLinkData } from "../../../types";
+import { BPlusHierarchy, TreeLinkData } from "../../../domain/utils/types";
 import { curvedLinkPath } from "./naryDrawActionsUtilities";
 
 /* ──────────────────────────── Constantes SVG (skin dark slate+accent) ──────────────────────────── */

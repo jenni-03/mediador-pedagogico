@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { data } from "../../../../shared/constants/data-cards";
+import { data } from "../../../../domain/constants/data-cards";
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { DropdownMenu } from "./DropdownMenu";

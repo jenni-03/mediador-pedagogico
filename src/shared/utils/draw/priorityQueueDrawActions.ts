@@ -1,13 +1,13 @@
-import { ListLinkData, PriorityQueueNodeData, QueueNodeData } from "../../../types";
+import { ListLinkData, PriorityQueueNodeData, QueueNodeData } from "../../../domain/utils/types";
 import { color, Selection } from "d3";
-import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { Dispatch, SetStateAction } from "react";
 import { repositionList } from "./drawActionsUtilities";
 import { animateAppearListNode, animateExitListNode } from "./simpleLinkedListDrawActions";
-import { buildListPath } from "../listUtils";
+import { buildListPath } from "../../../domain/utils/listUtils";
 import { EventBus } from "../../events/eventBus";
-import { getColaPrioridadCode } from "../../constants/pseudocode/colaPrioridadCode";
-import { delay } from "../simulatorUtils";
+import { getColaPrioridadCode } from "../../../domain/constants/pseudocode/colaPrioridadCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const queueCode = getColaPrioridadCode();
 

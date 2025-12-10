@@ -1,5 +1,4 @@
-// src/shared/components/estructures/HeapRender.tsx
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
 import { useHeapRender } from "../../../hooks/estructures/arbolHeap/useHeapRender";
 
 export function HeapRender({

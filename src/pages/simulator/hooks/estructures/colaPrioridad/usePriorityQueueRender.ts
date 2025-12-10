@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, ListLinkData, PriorityQueueNodeData } from "../../../../../types";
-import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { BaseQueryOperations, ListLinkData, PriorityQueueNodeData } from "../../../../../domain/utils/types";
+import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import { drawPriorityQueueNodes, animateEnqueuePriorityNode, animateDequeuePriorityNode, getPriorityColor } from "../../../../../shared/utils/draw/priorityQueueDrawActions";
 import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { animateHighlightNode, drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { getColaPrioridadCode } from "../../../../../shared/constants/pseudocode/colaPrioridadCode";
+import { getColaPrioridadCode } from "../../../../../domain/constants/pseudocode/colaPrioridadCode";
 import { useBus } from "../../../../../shared/hooks/useBus";
 import { animateClearQueue } from "../../../../../shared/utils/draw/queueDrawActions";
 

@@ -1,14 +1,13 @@
-// src/hooks/estructures/nario/useNaryTree.ts
 import { useState } from "react";
 import {
   BaseQueryOperations,
   TraversalNodeType,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import {
   ArbolNario,
   type NaryErrorCode,
-} from "../../../../../shared/utils/structures/ArbolNario";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+} from "../../../../../domain/structures/ArbolNario";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 const DEBUG_NARY = true;
 const dlog = (...a: any[]) => {

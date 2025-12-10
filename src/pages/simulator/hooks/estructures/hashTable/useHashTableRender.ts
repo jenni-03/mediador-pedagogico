@@ -1,4 +1,3 @@
-// src/hooks/estructures/hashTable/useHashTableRender.ts
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import {
@@ -17,8 +16,8 @@ import {
 } from "./useHashTable";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getTablaHashCode } from "../../../../../shared/constants/pseudocode/tablaHashCode";
-import { delay } from "../../../../../shared/utils/simulatorUtils";
+import { getTablaHashCode } from "../../../../../domain/constants/pseudocode/tablaHashCode";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
 
 // ✅ se calcula UNA sola vez al cargar el módulo
 const HASH_CODE = getTablaHashCode();

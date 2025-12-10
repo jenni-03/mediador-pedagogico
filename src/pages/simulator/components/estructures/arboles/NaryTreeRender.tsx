@@ -1,6 +1,4 @@
-// src/components/estructures/arboles/NaryTreeRender.tsx
-
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
 import { useNaryTreeRender } from "../../../hooks/estructures/arbolNario/useNaryTreeRender";
 
 type Props = {

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AnimatedButtonModalProps } from "../../types";
+import { AnimatedButtonModalProps } from "../../domain/utils/types";
 
 export function AnimatedButtonModal({
     bgColor,

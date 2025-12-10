@@ -1,12 +1,12 @@
 import type { HierarchyNode, Selection } from "d3";
-import { BinaryTreeGetStep, BinaryTreeLevelStep, BinaryTreeTraversalStep, HierarchyNodeData, LinkPathFn, TreeLinkData } from "../../../types";
+import { BinaryTreeGetStep, BinaryTreeLevelStep, BinaryTreeTraversalStep, HierarchyNodeData, LinkPathFn, TreeLinkData } from "../../../domain/utils/types";
 import { defaultAppearTreeNode, defaultDeleteTreeNode, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import type { Dispatch, SetStateAction } from "react";
-import { straightPath } from "../treeUtils";
+import { straightPath } from "../../../domain/utils/treeUtils";
 import { type EventBus } from "../../events/eventBus";
-import { getArbolBinarioCode } from "../../constants/pseudocode/arbolBinarioCode";
-import { delay } from "../simulatorUtils";
+import { getArbolBinarioCode } from "../../../domain/constants/pseudocode/arbolBinarioCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const arbolBinarioCode = getArbolBinarioCode();
 

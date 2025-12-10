@@ -1,11 +1,10 @@
-// src/hooks/estructures/btree/useBTree.ts
 import { useState } from "react";
-import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
+import { BaseQueryOperations, TraversalNodeType } from "../../../../../domain/utils/types";
 import {
   ArbolB,
   type BTreeErrorCode,
-} from "../../../../../shared/utils/structures/ArbolB";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+} from "../../../../../domain/structures/ArbolB";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 const DEBUG_B = true;
 const dlog = (...a: any[]) => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react"
-import { BaseQueryOperations } from "../../../../../types";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
 import { select } from "d3";
 import { drawBaseSequence, animateInsertionSequence, animateGetElementSequence, animateUpdateSequence, animateDeleteElementSequence, animateSearchSequence, animateClearSequence } from "../../../../../shared/utils/draw/sequenceDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";

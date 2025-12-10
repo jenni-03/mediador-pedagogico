@@ -1,5 +1,5 @@
 // Adaptador: UiSnapshot (builder) -> UiRamSnapshot (RamView)
-import type { UiSnapshot } from "../../shared/utils/RAM/snapshot-builder";
+import type { UiSnapshot } from "../../domain/RAM/snapshot-builder";
 import type { UiRamSnapshot as RamSnap, ByteRange } from "./RamView";
 
 type PeekRange = { start: number; size: number } | null;

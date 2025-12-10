@@ -1,7 +1,6 @@
-// src/shared/utils/draw/bplusDrawActions.ts
 import * as d3 from "d3";
 import { HierarchyNode } from "d3";
-import { BPlusHierarchy, TreeLinkData } from "../../../types";
+import { BPlusHierarchy, TreeLinkData } from "../../../domain/utils/types";
 
 // Banda de recorrido (re-export desde utilities)
 import { drawTraversalSequence as baseDrawTraversalSequence } from "./bplusDrawActionsUtilities";

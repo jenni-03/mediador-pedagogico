@@ -1,10 +1,10 @@
 import type { HierarchyNode, Selection } from "d3";
-import { AvlFrame, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../types";
+import { AvlFrame, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../domain/utils/types";
 import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { animateBSTInsertCore, animateEspecialBSTsRotation, animateLeafOrSingleChild, animateTwoChildren, highlightBinaryTreePath } from "./BinaryTreeDrawActions";
 import type { Dispatch, SetStateAction } from "react";
-import { straightPath } from "../treeUtils";
+import { straightPath } from "../../../domain/utils/treeUtils";
 
 /**
  * Función encargada de animar el proceso de inserción de un nuevo nodo en el árbol AVL.

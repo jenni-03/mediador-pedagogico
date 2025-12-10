@@ -1,11 +1,10 @@
-// src/simulators/hooks/estructures/arbolBPlus/useBPlusTree.ts
 import { useRef, useState } from "react";
-import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
+import { BaseQueryOperations, TraversalNodeType } from "../../../../../domain/utils/types";
 import {
   ArbolBPlus,
   type BPlusErrorCode,
-} from "../../../../../shared/utils/structures/ArbolBPlus";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+} from "../../../../../domain/structures/ArbolBPlus";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 export type QueryBPlus = BaseQueryOperations<"arbol_bplus"> & {
   /** Triggers “amigables” para el renderer */
@@ -16,9 +15,6 @@ export type QueryBPlus = BaseQueryOperations<"arbol_bplus"> & {
   levelTick?: number;
 };
 
-/* ╔══════════════════════════════════════════════════════════════════════════╗
-   ║                             Debug / logging                              ║
-   ╚══════════════════════════════════════════════════════════════════════════╝ */
 const DEBUG_BPLUS = true;
 const dlog = (...a: any[]) => {
   if (DEBUG_BPLUS) console.log("[useBPlusTree]", ...a);

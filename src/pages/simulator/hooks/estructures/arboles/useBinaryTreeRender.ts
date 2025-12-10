@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, BinaryTreeTraversalStep, HierarchyNodeData, TraversalNodeType } from "../../../../../types";
+import { BaseQueryOperations, BinaryTreeTraversalStep, HierarchyNodeData, TraversalNodeType } from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import { animateClearTree, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateDeleteBinaryNode, animateInsertBinaryNode, animateLevelOrderTraversal, animateRecursiveTraversal, animateSearchBinaryNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { select } from "d3";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getArbolBinarioCode } from "../../../../../shared/constants/pseudocode/arbolBinarioCode";
+import { getArbolBinarioCode } from "../../../../../domain/constants/pseudocode/arbolBinarioCode";
 
 export function useBinaryTreeRender(
     treeData: HierarchyNodeData<number> | null,

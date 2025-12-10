@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { BaseQueryOperations, StackNodeData } from "../../../../../types";
+import { BaseQueryOperations, StackNodeData } from "../../../../../domain/utils/types";
 import {
   SVG_STACK_VALUES,
   SVG_STYLE_VALUES,
-} from "../../../../../shared/constants/consts";
+} from "../../../../../domain/constants/consts";
 import * as d3 from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
@@ -18,7 +18,7 @@ import {
   animateHighlightNode,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getPilaCode } from "../../../../../shared/constants/pseudocode/pilaCode";
+import { getPilaCode } from "../../../../../domain/constants/pseudocode/pilaCode";
 
 export function useStackRender(
   stackNodes: StackNodeData[],
