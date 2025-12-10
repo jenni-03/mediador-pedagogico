@@ -1,7 +1,7 @@
 import * as d3 from "d3";
-import { useEffect, useMemo, useRef, useCallback, useState } from "react";
+import { useEffect, useMemo, useRef, useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { BPlusHierarchy, TraversalNodeType } from "../../../../../domain/utils/types";
+import { BPlusHierarchy } from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import type { QueryBPlus } from "./useBPlusTree";
 import { useBus } from "../../../../../shared/hooks/useBus";
@@ -22,7 +22,6 @@ import {
 import {
   SVG_NARY_VALUES,
   animateClearTree,
-  drawTraversalSequence,
 } from "../../../../../shared/utils/draw/naryDrawActionsUtilities";
 
 /* ─────────── Animaciones B+ (insert / delete / search / range / scanfrom) ─────────── */
@@ -230,10 +229,7 @@ export function useBPlusRender(
 ) {
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const [pendingInsertAnim, setPendingInsertAnim] = useState<{
-    leafId: string;
-    slotIndex: number | null;
-  } | null>(null);
+
 
   // Caches de posiciones
   const nodePositions = useRef(
@@ -258,7 +254,7 @@ export function useBPlusRender(
   const { isAnimating, setIsAnimating } = useAnimation();
   const bus = useBus();
 
-  // Cola global de animaciones para este simulador (igual que en Árbol B)
+  // Cola global de animaciones
   const animChainRef = useRef<Promise<void>>(Promise.resolve());
 
   function runExclusive(fn: () => Promise<void>) {
@@ -424,22 +420,6 @@ export function useBPlusRender(
     const svgEl = svgRef.current;
     if (!svgEl) {
       dbg("render base: skip (no svg)");
-      return;
-    }
-
-    // Insert activo = hay una operación de insert en curso
-    const insertActive = query.toInsert != null;
-
-    // Congelamos el árbol estático en dos fases:
-    // 1) Mientras se ejecuta el pseudocódigo (pendingInsertAnim === null)
-    // 2) Mientras corre la animación visual (isAnimating === true)
-    const freezeInsertStatic =
-      insertActive && (!pendingInsertAnim || isAnimating);
-
-    if (freezeInsertStatic) {
-      dbg(
-        "render base: insert pseudocode running -> freeze static tree (no redraw)"
-      );
       return;
     }
 
@@ -693,8 +673,6 @@ export function useBPlusRender(
     nodePositions,
     seqPositions,
     isAnimating,
-    query.toInsert,
-    pendingInsertAnim,
   ]);
 
   /* ───────── Limpieza robusta ante nuevas operaciones (solo flanco de subida) ───────── */
@@ -794,7 +772,7 @@ export function useBPlusRender(
     setAnimating,
   ]);
 
-  /* ─────────────────────────── Inserción ─────────────────────────── */
+   /* ─────────────────────────── Inserción ─────────────────────────── */
   useEffect(() => {
     if (!root || !svgRef.current) return;
 
@@ -808,12 +786,6 @@ export function useBPlusRender(
     if (lastInsertRef.current === value) {
       dbg("insert: ignored (same key)", { value });
       return;
-    }
-
-    // Si venimos de un latch viejo, intentamos soltarlo, pero no abortamos.
-    if (isAnimatingRef.current) {
-      latchIfStuck("insert");
-      dbg("insert: isAnimating=true al entrar, continúo igualmente", { value });
     }
 
     lastInsertRef.current = value;
@@ -889,9 +861,19 @@ export function useBPlusRender(
       await delay(ms);
     };
 
-    const svgEl = svgRef.current;
+    // Encolamos TODA la operación (pseudocódigo + animación)
+    runExclusive(async () => {
+      const svgEl = svgRef.current;
+      if (!svgEl) return;
 
-    (async () => {
+      // Si venimos de un latch viejo, intentamos soltarlo antes de empezar
+      if (isAnimatingRef.current) {
+        latchIfStuck("insert");
+        dbg("insert: isAnimating=true al entrar, intento desbloquear latch", {
+          value,
+        });
+      }
+
       const svg = d3.select(svgEl);
       const treeG = svg.select<SVGGElement>("g.tree-container");
 
@@ -905,12 +887,18 @@ export function useBPlusRender(
           .style("isolation", "isolate");
       }
       overlayRoot.attr("transform", treeG.attr("transform") || null);
-      if (overlayRoot.select("g.bp-insert-overlay").empty()) {
-        overlayRoot
+
+      let insertOverlay = overlayRoot.select<SVGGElement>(
+        "g.bp-insert-overlay"
+      );
+      if (insertOverlay.empty()) {
+        insertOverlay = overlayRoot
           .append("g")
-          .attr("class", "bp-insert-overlay")
-          .attr("data-probe", "1");
+          .attr("class", "bp-insert-overlay");
+      } else {
+        insertOverlay.selectAll("*").interrupt().remove();
       }
+      insertOverlay.attr("data-probe", "1");
 
       // Arranca operación para el panel de pseudocódigo
       bus.emit("op:start", { op: "insert" });
@@ -919,10 +907,6 @@ export function useBPlusRender(
       let splitDetailed = false;
       const anySplitHappened =
         leafSplitHappened || internalSplitHappened || rootSplitLikely;
-
-      // Si ocurre un error antes de lanzar la animación,
-      // esta flag define si debemos emitir op:done aquí.
-      let emitDoneHere = false;
 
       try {
         /* ─────────── Bloque public void insert(...) ─────────── */
@@ -997,7 +981,8 @@ export function useBPlusRender(
               await step("BPLUS_INSERT_NONFULL_INTERNAL_ELSE", 260);
               await step("BPLUS_INSERT_NONFULL_CHILD_INDEX", 260);
 
-              const shouldDetailSplitHere = anySplitHappened && !splitDetailed;
+              const shouldDetailSplitHere =
+                anySplitHappened && !splitDetailed;
 
               if (shouldDetailSplitHere) {
                 // Hijo lleno -> splitChild(...)
@@ -1016,10 +1001,22 @@ export function useBPlusRender(
                   await step("BPLUS_SPLIT_CHILD_INTERNAL_IF", 260);
                   await step("BPLUS_SPLIT_CHILD_INTERNAL_UP", 260);
                   await step("BPLUS_SPLIT_CHILD_INTERNAL_MOVE_KEYS", 260);
-                  await step("BPLUS_SPLIT_CHILD_INTERNAL_MOVE_CHILDREN", 260);
-                  await step("BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_KEYS", 260);
-                  await step("BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_CHILDREN", 260);
-                  await step("BPLUS_SPLIT_CHILD_INTERNAL_INSERT_UP", 260);
+                  await step(
+                    "BPLUS_SPLIT_CHILD_INTERNAL_MOVE_CHILDREN",
+                    260
+                  );
+                  await step(
+                    "BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_KEYS",
+                    260
+                  );
+                  await step(
+                    "BPLUS_SPLIT_CHILD_INTERNAL_SHRINK_CHILDREN",
+                    260
+                  );
+                  await step(
+                    "BPLUS_SPLIT_CHILD_INTERNAL_INSERT_UP",
+                    260
+                  );
                 }
                 splitDetailed = true;
 
@@ -1037,70 +1034,13 @@ export function useBPlusRender(
 
         /* ─────────── FIN del recorrido de pseudocódigo ─────────── */
 
-        dbg("insert: pseudocode done, scheduling visual animation", {
+        dbg("insert: pseudocode done, calling animateBPlusInsertLeaf", {
           leafId,
           slotIndex,
           nodes: currentNodes.length,
         });
 
-        // Lanzamos la animación visual (otro efecto la consume)
-        setPendingInsertAnim({ leafId, slotIndex });
-
-        // IMPORTANTE:
-        // No emitimos op:done aquí; la operación se cerrará
-        // cuando termine la animación (useEffect de insert-visual).
-      } catch (e) {
-        dbg("insert: pseudocode error", e);
-        // Si algo peta antes de la animación, limpiamos el query.
-        resetQueryValues();
-        // En este caso NO habrá animación -> cerramos la operación aquí.
-        emitDoneHere = true;
-      } finally {
-        if (emitDoneHere) {
-          bus.emit("op:done", { op: "insert" });
-        }
-      }
-    })();
-  }, [
-    root,
-    prevRoot,
-    currentNodes,
-    treeData?.order,
-    query.toInsert,
-    nodePositions,
-    resetQueryValues,
-    setAnimating,
-    latchIfStuck,
-    bus,
-  ]);
-
-  /* ─────────────────────────── Animación gráfica de insert ─────────────────────────── */
-  const insertVisualRunningRef = useRef(false);
-
-  useEffect(() => {
-    if (!root || !svgRef.current) return;
-    if (!pendingInsertAnim) return;
-
-    // Evita reentradas (StrictMode / errores que reprovoquen el efecto)
-    if (insertVisualRunningRef.current) {
-      dbg("insert-visual: already running, skip");
-      return;
-    }
-    insertVisualRunningRef.current = true;
-
-    const { leafId, slotIndex } = pendingInsertAnim;
-
-    const svg = d3.select(svgRef.current);
-    const treeG = svg.select<SVGGElement>("g.tree-container");
-
-    dbg("insert-visual: calling animateBPlusInsertLeaf", {
-      leafId,
-      slotIndex,
-      nodes: currentNodes.length,
-    });
-
-    (async () => {
-      try {
+        // Animación visual directa (sin segundo useEffect)
         await animateBPlusInsertLeaf(
           treeG,
           {
@@ -1116,25 +1056,28 @@ export function useBPlusRender(
           resetQueryValues,
           setAnimating
         );
+
+        dbg("insert: animation done");
       } catch (e) {
-        // Si la animación peta, NO reintentamos sin más: limpiamos estado y salimos.
-        dbg("insert-visual: animation error", e);
+        dbg("insert: error", e);
+        // Si algo peta, limpiamos el query para no dejar el simulador bloqueado.
         resetQueryValues();
       } finally {
-        insertVisualRunningRef.current = false;
-        setPendingInsertAnim(null);
         bus.emit("op:done", { op: "insert" });
       }
-    })();
+    });
   }, [
-    pendingInsertAnim,
     root,
+    prevRoot,
     currentNodes,
+    treeData?.order,
+    query.toInsert,
     nodePositions,
     resetQueryValues,
-    setAnimating,
+    latchIfStuck,
     bus,
   ]);
+
 
   /* ─────────────────────────── Eliminación ─────────────────────────── */
   useEffect(() => {

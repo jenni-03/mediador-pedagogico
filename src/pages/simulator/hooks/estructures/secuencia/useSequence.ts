@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { Secuencia } from "../../../../../shared/utils/structures/Secuencia";
+import { Secuencia } from "../../../../../domain/structures/Secuencia";
 import { BaseQueryOperations } from "../../../../../domain/utils/types";
-import { DomainError } from "../../../../../shared/utils/error/DomainError";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 export function useSequence(structure: Secuencia<number>) {
     // Estado para gestionar la secuencia
