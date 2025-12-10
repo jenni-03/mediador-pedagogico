@@ -1,6 +1,7 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { EqualityFn, HierarchyNodeData } from "../../../types";
+import { BinaryTreeDeleteOutput, BinaryTreeGetStep, BinaryTreeInsertOutput, BinaryTreeLevelOutput, BinaryTreeLevelStep, BinaryTreeSearchOutput, BinaryTreeTraversalStep, BinaryTreeTraverseOutput, EqualityFn, HierarchyNodeData } from "../../../types";
+import { DomainError } from "../error/DomainError";
 import { NodoBin } from "../nodes/NodoBin";
 import { Cola } from "./Cola";
 
@@ -8,7 +9,6 @@ import { Cola } from "./Cola";
  * Clase que representa el funcionamiento de un árbol binario.
  */
 export class ArbolBinario<T> {
-
     // Nodo raíz del árbol binario.
     private raiz: NodoBin<T> | null;
 
@@ -29,143 +29,213 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que inserta un nuevo nodo como hijo izquierdo.
-     * @param padre Padre del nuevo nodo.
+     * Método que inserta un nuevo elemento en el árbol binario como hijo izquierdo del elemento padre dado.
+     * @param padre Elemento al que se añadirá el hijo.
      * @param info Elemento a insertar.
-     * @returns Nodo izquierdo insertado.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+     *    del nodo padre (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `parent`: Nodo padre donde se intentó insertar el nuevo nodo. Será `null` en 2 casos:
+     *    1. Si el árbol estaba vacío.
+     *    2. Si no se encontró el nodo padre indicado o si el nodo padre ya tenía un hijo izquierdo.
+     * 
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado.
+     * 
+     * - `inserted`: Booleano que indica si el elemento fue insertado o no.
      */
-    public insertarHijoIzq(padre: T, info: T): NodoBin<T> {
+    public insertarHijoIzq(padre: T, info: T): BinaryTreeInsertOutput<T> {
         if (this.tamanio >= this.MAX_NODOS) {
             throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
         }
 
-        if (this.esta(info)) {
+        if (this.esta(this.getRaiz(), info)) {
             throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
         }
 
         const nuevoNodo = new NodoBin(info);
-
+        let nodoPadre: NodoBin<T> | null = null;
+        let steps: BinaryTreeGetStep[] = [];
         if (this.esVacio()) {
             this.setRaiz(nuevoNodo);
         } else {
-            const nodoPadre = this.get(padre);
+            const result = this.get(padre);
+            nodoPadre = result.node;
+            steps = result.steps;
 
-            if (nodoPadre === null) {
-                throw new Error(`No fue posible insertar el nodo: El nodo padre con valor ${padre} no existe.`);
+            if (nodoPadre === null || nodoPadre.getIzq() !== null) {
+                return { steps, parent: nodoPadre, targetNode: nuevoNodo, inserted: false };
             }
-
-            if (nodoPadre.getIzq() !== null) {
-                throw new Error(`No fue posible insertar el nodo: El nodo padre con valor ${padre} ya cuenta con un hijo izquierdo.`);
-            }
-
             nodoPadre.setIzq(nuevoNodo);
         }
 
         this.tamanio++;
-        return nuevoNodo;
+        return { steps, parent: nodoPadre, targetNode: nuevoNodo, inserted: true };
     }
 
     /**
-     * Método que inserta un nuevo nodo como hijo derecho.
-     * @param padre Padre del nuevo nodo.
+     * Método que inserta un nuevo elemento en el árbol binario como hijo derecho del elemento padre dado.
+     * @param padre Elemento al que se añadirá el hijo.
      * @param info Elemento a insertar.
-     * @returns Nodo derecho insertado.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+     *    del nodo padre (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `parent`: Nodo padre donde se intentó insertar el nuevo nodo. Será `null` en 2 casos:
+     *    1. Si el árbol estaba vacío.
+     *    2. Si no se encontró el nodo padre indicado o si el nodo padre ya tenía un hijo derecho.
+     * 
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado.
+     * 
+     * - `inserted`: Booleano que indica si el elemento fue insertado o no.
      */
-    public insertarHijoDer(padre: T, info: T): NodoBin<T> {
+    public insertarHijoDer(padre: T, info: T): BinaryTreeInsertOutput<T> {
         if (this.tamanio >= this.MAX_NODOS) {
             throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
         }
 
-        if (this.esta(info)) {
+        if (this.esta(this.getRaiz(), info)) {
             throw new Error(`No fue posible insertar el nodo: El elemento ya existe en el árbol.`);
         }
 
         const nuevoNodo = new NodoBin(info);
-
+        let nodoPadre: NodoBin<T> | null = null;
+        let steps: BinaryTreeGetStep[] = [];
         if (this.esVacio()) {
             this.setRaiz(nuevoNodo);
         } else {
-            const nodoPadre = this.get(padre);
+            const result = this.get(padre);
+            nodoPadre = result.node;
+            steps = result.steps;
 
-            if (nodoPadre === null) {
-                throw new Error(`No fue posible insertar el nodo: El nodo padre con valor ${padre} no existe.`);
+            if (nodoPadre === null || nodoPadre.getDer() !== null) {
+                return { steps, parent: nodoPadre, targetNode: nuevoNodo, inserted: false };
             }
-
-            if (nodoPadre.getDer() !== null) {
-                throw new Error(`No fue posible insertar el nodo: El nodo padre con valor ${padre} ya cuenta con un hijo derecho.`);
-            }
-
             nodoPadre.setDer(nuevoNodo);
         }
 
         this.tamanio++;
-        return nuevoNodo;
+        return { steps, parent: nodoPadre, targetNode: nuevoNodo, inserted: true };
     }
 
     /**
-     * Método que elimina un nodo del árbol binario dado su info especificada.
-     * @param info Información del nodo a eliminar.
-     * @returns Objeto que contiene el nodo eliminado y el nodo actualizado.
+     * Método que elimina el elemento específicado del árbol binario.
+     * @param info Elemento a eliminar.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+     *    del nodo padre (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `parent`: Nodo padre del nodo eliminado. Será `null` en 2 casos:
+     *    1. Si el nodo eliminado era la raíz.
+     *    2. Si el elemento no se encontró en el árbol.
+     * 
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si el elemento no se encuentra en el árbol.
+     * 
+     * - `targetSide`: Dirección del nodo correspondiente al elemento proporcionado ("left", "right"). 
+     *    Será `null` si el elemento no se encuentra en el árbol o si el nodo cuenta con 2 hijos.
+     * 
+     * - `pathToSuccessorIds`: Arreglo con los IDs de los nodos visitados durante la búsqueda del sucesor in-order (solo si el nodo eliminado tenía dos hijos).
+     * 
+     * - `successor`: Nodo que reemplaza lógicamente al nodo eliminado en el caso de dos hijos (nodo cuyo valor fue copiado al nodo objetivo).  
+     *    Será `null` en los demás casos.
+     * 
+     * - `successorParent`: Nodo padre del nodo sucesor (solo si el nodo eliminado tenía dos hijos).
+     * 
+     * - `replacement`: Nodo que ocupa físicamente el lugar del nodo eliminado en el árbol. Puede ser:
+     *    1. El hijo izquierdo o derecho (si existía uno).
+     *    2. `null` si se eliminó una hoja.
+     *    3. El hijo derecho del sucesor in-order (en el caso de dos hijos).
+     * 
+     * - `deleted`: Booleano que indica si el elemento fue eliminado o no.
      */
-    public eliminar(info: T): { removed: NodoBin<T>, updated: NodoBin<T> | null } {
-        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
-
-        if (this.equals(this.getRaiz()!.getInfo(), info)) {
-            return this.eliminarRaiz();
+    public eliminar(info: T): BinaryTreeDeleteOutput<T> {
+        if (this.esVacio()) {
+            throw new DomainError("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).", "DELETE_EMPTY");
         }
 
-        const padre = this.getPadre(info);
-        if (!padre) throw new Error("No fue posible eliminar el nodo: El elemento no existe en el árbol.");
+        const { parent: nodoPadre, steps } = this.getPadre(info);
+        const pathToSuccessorIds: string[] = [];
 
-        let nodo = padre.getIzq();
-        if (!nodo || (nodo && !this.equals(nodo.getInfo(), info))) {
-            nodo = padre.getDer()!;
+        let nodo: NodoBin<T> | null = null;
+        let lado: "left" | "right" | null = null;
+        if (nodoPadre === null) {
+            nodo = this.getRaiz();
+        } else {
+            nodo = nodoPadre.getIzq();
+            lado = "left";
+            if (!nodo || !this.equals(nodo.getInfo(), info)) {
+                nodo = nodoPadre.getDer();
+                lado = "right";
+            }
         }
 
+        if (!nodo || !this.equals(nodo.getInfo(), info)) {
+            return { steps, parent: nodoPadre, targetNode: nodo!, targetSide: null, pathToSuccessorIds, successor: null, successorParent: null, replacement: null, deleted: false };
+        }
         const izq = nodo.getIzq();
         const der = nodo.getDer();
 
         // CASO 1 – nodo hoja
-        if (this.esHoja(nodo)) {
-            this.reemplazarHijo(padre, nodo, null);
+        let reemplazo: NodoBin<T> | null = null;
+        if (!izq && !der) {
+            this.reemplazarHijo(nodoPadre, nodo, null);
             this.tamanio--;
-            return { removed: nodo, updated: null };
+            return { steps, parent: nodoPadre, targetNode: nodo, targetSide: lado, pathToSuccessorIds, successor: null, successorParent: null, replacement: reemplazo, deleted: true };
         }
 
         // CASO 2 – un solo hijo
         if (!izq || !der) {
-            const unico = izq ? izq : der;
-            this.reemplazarHijo(padre, nodo, unico);
+            reemplazo = izq ?? der;
+            this.reemplazarHijo(nodoPadre, nodo, reemplazo);
             this.tamanio--;
-            return { removed: nodo, updated: null };
+            return { steps, parent: nodoPadre, targetNode: nodo, targetSide: lado, pathToSuccessorIds, successor: null, successorParent: null, replacement: reemplazo, deleted: true };
         }
 
         // CASO 3 – dos hijos
         let sucPadre = nodo;
         let succ = der;
         while (succ.getIzq()) {
+            pathToSuccessorIds.push(succ.getId());
             sucPadre = succ;
             succ = succ.getIzq()!;
         }
+        pathToSuccessorIds.push(succ.getId());
+
+        reemplazo = succ.getDer();
         nodo.setInfo(succ.getInfo());
-        this.reemplazarHijo(sucPadre, succ, succ.getDer());
+        this.reemplazarHijo(sucPadre, succ, reemplazo);
 
         this.tamanio--;
-        return { removed: succ, updated: nodo };
+        return { steps, parent: nodoPadre, targetNode: nodo, targetSide: lado, pathToSuccessorIds, successor: succ, successorParent: sucPadre, replacement: reemplazo, deleted: true };
     }
 
     /**
-     * Método que verifica la existencia de un elemento dentro del árbol binario.
-     * @param Info Información del elemento a buscar.
-     * @returns Booleano que indica si el elemento fue encontrado o no. 
+     * Método que comprueba la existencia del elemento especificado en el árbol binario.
+     * @param info Elemento a buscar
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+     *    del nodo (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si no fue encontrado.  
+     * 
+     * - `found`: Booleano que indica si el nodo fue encontrado o no.
      */
-    public esta(info: T): boolean {
-        return this.buscar(this.getRaiz(), info);
+    public buscar(info: T): BinaryTreeSearchOutput<T> {
+        const { node, steps } = this.get(info);
+        return {
+            steps,
+            targetNode: node,
+            found: node !== null
+        };
     }
 
     /**
-     * Método que obtiene todos los nodos hojas del árbol binario.
-     * @returns Array que contiene todos los nodos hoja del árbol.
+     * Método que obtiene todos los nodos hojas presentes en el árbol binario.
+     * @returns Arreglo que contiene todos los nodos hoja presentes en el árbol.
      */
     public getHojas(): NodoBin<T>[] {
         const hojas: NodoBin<T>[] = [];
@@ -174,8 +244,8 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que cuenta el número de nodos hoja del árbol binario.
-     * @returns Número de nodos hoja del árbol.
+     * Método que cuenta el número de nodos hoja presentes en el árbol binario.
+     * @returns Número de nodos hoja presentes en el árbol.
      */
     public contarHojas(): number {
         return this.contarHojasAux(this.getRaiz());
@@ -199,7 +269,7 @@ export class ArbolBinario<T> {
 
     /**
      * Método que verifica si el árbol binario está vacío.
-     * @returns True si se encuentra vacío, false en caso contrario.
+     * @returns true si se encuentra vacío, false en caso contrario.
      */
     public esVacio(): boolean {
         return this.raiz === null;
@@ -214,76 +284,98 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que devuelve el grado (número de hijos no nulos) del nodo con la info especificada.
-     * @param info Información del nodo.
-     * @returns Grado del nodo.
+     * Método que realiza el recorrido inorden del árbol binario.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia inorden.
      */
-    public getGrado(info: T): number {
-        const nodo = this.get(info);
-
-        if (!nodo) return -1;
-
-        if (this.esHoja(nodo)) return 0;
-
-        let ramas = 0;
-
-        if (nodo.getIzq()) ramas++;
-        if (nodo.getDer()) ramas++;
-
-        return ramas;
+    public inOrden(): BinaryTreeTraverseOutput<T> {
+        const steps: BinaryTreeTraversalStep[] = [];
+        const nodos: NodoBin<T>[] = [];
+        this.getInOrden(this.getRaiz(), nodos, steps);
+        return { steps, visited: nodos };
     }
 
     /**
-     * Método que realiza el recorrido in-orden del árbol binario.
-     * @returns Array que contiene los nodos del árbol en secuencia in-orden.
+     * Método que realiza el recorrido preorden del árbol binario.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia preorden.
      */
-    public inOrden(): NodoBin<T>[] {
+    public preOrden(): BinaryTreeTraverseOutput<T> {
+        const steps: BinaryTreeTraversalStep[] = [];
         const nodos: NodoBin<T>[] = [];
-        this.getInOrden(this.getRaiz(), nodos);
-        return nodos;
+        this.getPreOrden(this.getRaiz(), nodos, steps);
+        return { steps, visited: nodos };
     }
 
     /**
-     * Método que realiza el recorrido pre-orden del árbol binario.
-     * @returns Array que contiene los nodos del árbol en secuencia pre-orden.
+     * Método que realiza el recorrido postorden del árbol binario.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia postorden.
      */
-    public preOrden(): NodoBin<T>[] {
+    public postOrden(): BinaryTreeTraverseOutput<T> {
+        const steps: BinaryTreeTraversalStep[] = [];
         const nodos: NodoBin<T>[] = [];
-        this.getPreOrden(this.getRaiz(), nodos);
-        return nodos;
-    }
-
-    /**
-     * Método que realiza el recorrido post-orden del árbol binario.
-     * @returns Array que contiene los nodos del árbol en secuencia post-orden.
-     */
-    public postOrden(): NodoBin<T>[] {
-        const nodos: NodoBin<T>[] = [];
-        this.getPostOrden(this.getRaiz(), nodos);
-        return nodos;
+        this.getPostOrden(this.getRaiz(), nodos, steps);
+        return { steps, visited: nodos };
     }
 
     /**
      * Método que realiza el recorrido por niveles del árbol binario.
-     * @returns Array que contiene los nodos del árbol por niveles.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido por niveles.
      */
-    public getNodosPorNiveles(): NodoBin<T>[] {
+    public getNodosPorNiveles(): BinaryTreeLevelOutput<T> {
+        const steps: BinaryTreeLevelStep[] = [];
         const nodos: NodoBin<T>[] = [];
 
         if (!this.esVacio()) {
             const cola = new Cola<NodoBin<T>>();
             cola.encolar(this.getRaiz()!);
-            let x: NodoBin<T>;
+            steps.push({ type: "enqueue", at: this.getRaiz()!.getId(), origin: "root" });
 
+            let x: NodoBin<T>;
             while (!cola.esVacia()) {
+                steps.push({ type: "checkEmpty", isEmpty: cola.esVacia() });
+
                 x = cola.decolar().getValor();
+                steps.push({ type: "dequeue", at: x.getId() });
+
                 nodos.push(x);
-                if (x.getIzq() !== null) cola.encolar(x.getIzq()!);
-                if (x.getDer() !== null) cola.encolar(x.getDer()!);
+                steps.push({ type: "visit", at: x.getId() });
+
+                const izq = x.getIzq();
+                steps.push({ type: "checkChild", side: "left" });
+                if (izq !== null) {
+                    cola.encolar(izq);
+                    steps.push({ type: "enqueue", at: izq.getId(), origin: "left" });
+                }
+
+                const der = x.getDer();
+                steps.push({ type: "checkChild", side: "right" });
+                if (der !== null) {
+                    cola.encolar(der);
+                    steps.push({ type: "enqueue", at: der.getId(), origin: "right" });
+                }
             }
         }
 
-        return nodos;
+        return { steps, visited: nodos };
     }
 
     /**
@@ -323,16 +415,22 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que obtiene el nodo padre de un elemento particular.
+     * Método que obtiene el nodo padre del elemento proporcionado.
      * @param info Elemento a buscar.
-     * @returns El nodo padre del elemento almacenado en el árbol o null en caso de no existir.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `parent`: Nodo padre encontrado si existe, de lo contrario null.
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda
+     *    del nodo (comprobaciones, visitas, movimientos y retornos).
      */
-    protected getPadre(info: T): NodoBin<T> | null {
+    protected getPadre(info: T): { parent: NodoBin<T> | null, steps: BinaryTreeGetStep[] } {
+        const steps: BinaryTreeGetStep[] = [];
         if (!this.raiz || this.equals(this.raiz.getInfo(), info)) {
-            return null;
+            return { parent: null, steps };
         }
-
-        return this.getPadreAux(this.getRaiz(), info);
+        const parent = this.getPadreAux(this.getRaiz(), info, steps);
+        return { parent, steps };
     }
 
     /**
@@ -345,7 +443,7 @@ export class ArbolBinario<T> {
 
     /**
      * Método que modifica el valor del contador de nodos del árbol.
-     * @param tamanio Nuevo valor del contador de nodos del árbol.
+     * @param tamanio Nuevo valor para el contador de nodos del árbol.
      */
     protected setTamanio(tamanio: number) {
         this.tamanio = tamanio;
@@ -365,9 +463,9 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que crea una copia profunda del árbol binario dado un nodo raíz.
-     * @param root Nodo raíz del árbol binario a clonar.
-     * @returns Nodo raíz del árbol binario clonado.
+     * Método auxiliar que crea una copia profunda del árbol binario dado un nodo raíz.
+     * @param root Nodo raíz del árbol subárbol actual a clonar.
+     * @returns Nodo raíz del árbol clonado.
      */
     private clonarAB(root: NodoBin<T> | null): NodoBin<T> | null {
         if (root === null) return null;
@@ -380,9 +478,9 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que transforma el árbol binario en una estructura jerárquica.
-     * @param root Nodo raíz del árbol binario.
-     * @returns Estructura jerárquica representando el árbol.
+     * Método auxiliar que transforma el árbol binario en una estructura jerárquica.
+     * @param root Nodo raíz del árbol.
+     * @returns Estructura jerárquica representativa del árbol.
      */
     private toHierarchy(root: NodoBin<T>): HierarchyNodeData<T> {
         const left = root.getIzq() ? this.toHierarchy(root.getIzq()!) : null;
@@ -408,46 +506,148 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que realiza el recorrido in-orden del árbol binario iniciando desde el nodo raíz dado.
+     * Método auxiliar que realiza el recorrido inorden en el subárbol dado.
      * @param root Nodo raíz del subárbol actual.
-     * @param nodos Array que acumula los nodos visitados durante el recorrido en in-orden.
+     * @param visited Arreglo donde se almacenan los nodos visitados en secuencia inorden.
+     * @param steps Arreglo para acumular los pasos del recorrido para la visualización del algoritmo.
+     * @param parentId Id del nodo padre del nodo actual.
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      */
-    private getInOrden(root: NodoBin<T> | null, nodos: NodoBin<T>[]) {
-        if (root === null) return;
+    private getInOrden(
+        root: NodoBin<T> | null,
+        visited: NodoBin<T>[],
+        steps: BinaryTreeTraversalStep[],
+        parentId: string | null = null,
+        via: "left" | "right" | "root" = "root"
+    ) {
+        steps.push({
+            type: "checkNull",
+            at: root?.getId() ?? null,
+            isNull: root === null
+        });
+        if (root === null) {
+            steps.push({ type: "return", from: null, to: parentId, via });
+            return;
+        };
 
-        this.getInOrden(root.getIzq(), nodos);
-        nodos.push(root);
-        this.getInOrden(root.getDer(), nodos);
+        const izq = root.getIzq();
+        steps.push({
+            type: "goLeft",
+            from: root.getId(),
+            to: izq?.getId() ?? null
+        });
+        this.getInOrden(root.getIzq(), visited, steps, root.getId(), "left");
+
+        steps.push({ type: "visit", at: root.getId() });
+        visited.push(root);
+
+        const der = root.getDer();
+        steps.push({
+            type: "goRight",
+            from: root.getId(),
+            to: der?.getId() ?? null
+        });
+        this.getInOrden(root.getDer(), visited, steps, root.getId(), "right");
+
+        steps.push({ type: "return", from: root.getId(), to: parentId, via });
     }
 
     /**
-     * Método recursivo que realiza el recorrido pre-orden del árbol binario iniciando desde el nodo raíz dado.
+     * Método auxiliar que realiza el recorrido preorden en el subárbol dado.
      * @param root Nodo raíz del subárbol actual.
-     * @param nodos Array que acumula los nodos visitados durante el recorrido en pre-orden.
+     * @param visited Arreglo donde se almacenan los nodos visitados en secuencia preorden.
+     * @param steps Arreglo para acumular los pasos del recorrido para la visualización del algoritmo.
+     * @param parentId Id del nodo padre del nodo actual.
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      */
-    private getPreOrden(root: NodoBin<T> | null, nodos: NodoBin<T>[]) {
-        if (root === null) return;
+    private getPreOrden(
+        root: NodoBin<T> | null,
+        visited: NodoBin<T>[],
+        steps: BinaryTreeTraversalStep[],
+        parentId: string | null = null,
+        via: "left" | "right" | "root" = "root"
+    ) {
+        steps.push({
+            type: "checkNull",
+            at: root?.getId() ?? null,
+            isNull: root === null
+        });
+        if (root === null) {
+            steps.push({ type: "return", from: null, to: parentId, via });
+            return;
+        }
 
-        nodos.push(root);
-        this.getPreOrden(root.getIzq(), nodos);
-        this.getPreOrden(root.getDer(), nodos);
+        steps.push({ type: "visit", at: root.getId() });
+        visited.push(root);
+
+        const izq = root.getIzq();
+        steps.push({
+            type: "goLeft",
+            from: root.getId(),
+            to: izq?.getId() ?? null
+        });
+        this.getPreOrden(root.getIzq(), visited, steps, root.getId(), "left");
+
+        const der = root.getDer();
+        steps.push({
+            type: "goRight",
+            from: root.getId(),
+            to: der?.getId() ?? null
+        });
+        this.getPreOrden(root.getDer(), visited, steps, root.getId(), "right");
+
+        steps.push({ type: "return", from: root.getId(), to: parentId, via });
     }
 
     /**
-     * Método recursivo que realiza el recorrido post-orden del árbol binario iniciando desde el nodo raíz dado.
+     * Método auxiliar que realiza el recorrido postorden en el subárbol dado.
      * @param root Nodo raíz del subárbol actual.
-     * @param nodos Array que acumula los nodos visitados durante el recorrido en post-orden.
+     * @param visited Arreglo donde se almacenan los nodos visitados en secuencia postorden.
+     * @param steps Arreglo para acumular los pasos del recorrido para la visualización del algoritmo.
+     * @param parentId Id del nodo padre del nodo actual.
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      */
-    private getPostOrden(root: NodoBin<T> | null, nodos: NodoBin<T>[]) {
-        if (root === null) return;
+    private getPostOrden(
+        root: NodoBin<T> | null,
+        visited: NodoBin<T>[],
+        steps: BinaryTreeTraversalStep[],
+        parentId: string | null = null,
+        via: "left" | "right" | "root" = "root"
+    ) {
+        steps.push({
+            type: "checkNull",
+            at: root?.getId() ?? null,
+            isNull: root === null
+        });
+        if (root === null) {
+            steps.push({ type: "return", from: null, to: parentId, via });
+            return;
+        }
 
-        this.getPostOrden(root.getIzq(), nodos);
-        this.getPostOrden(root.getDer(), nodos);
-        nodos.push(root);
+        const izq = root.getIzq();
+        steps.push({
+            type: "goLeft",
+            from: root.getId(),
+            to: izq?.getId() ?? null
+        });
+        this.getPostOrden(root.getIzq(), visited, steps, root.getId(), "left");
+
+        const der = root.getDer();
+        steps.push({
+            type: "goRight",
+            from: root.getId(),
+            to: der?.getId() ?? null
+        });
+        this.getPostOrden(root.getDer(), visited, steps, root.getId(), "right");
+
+        steps.push({ type: "visit", at: root.getId() });
+        visited.push(root);
+
+        steps.push({ type: "return", from: root.getId(), to: parentId, via });
     }
 
     /**
-     * Método recursivo que calcula la altura del árbol binario iniciando en un nodo raíz dado.
+     * Método auxiliar que calcula la altura del árbol binario a partir del nodo raíz dado.
      * @param root Nodo raíz del subárbol actual.
      * @returns Altura del árbol enraizado en el nodo dado.
      */
@@ -459,9 +659,9 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que calcula el número de nodos (peso) del árbol binario.
+     * Método auxiliar que calcula el número total de nodos (peso) presentes en el árbol binario.
      * @param root Nodo raíz del subárbol actual.
-     * @returns Número total de nodos del árbol.
+     * @returns Número total de nodos presentes en el árbol.
      */
     private getPesoAux(root: NodoBin<T> | null): number {
         if (root === null) {
@@ -471,28 +671,71 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que obtiene el nodo padre de un elemento particular.
-     * @param root Raíz del árbol binario.
+     * Método auxiliar que realiza una búsqueda en el subárbol dado para
+     * obtener el nodo padre nodo cuyo hijo izquierdo o derecho corresponde al elemento proporcionado.
+     * @param root Nodo raíz del subárbol actual donde se va a buscar.
      * @param info Elemento a buscar.
-     * @returns Nodo padre del elemento almacenado en el árbol o null en caso de no existir.
+     * @param steps Arreglo para acumular los pasos de búsqueda para la visualización del algoritmo.
+     * @param parentId Id del nodo padre del nodo actual.
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or null para la raíz).
+     * @returns Nodo padre encontrado o null si no existe.
      */
-    private getPadreAux(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
+    private getPadreAux(
+        root: NodoBin<T> | null,
+        info: T,
+        steps: BinaryTreeGetStep[],
+        parentId: string | null = null,
+        via: "left" | "right" | "root" = "root"
+    ): NodoBin<T> | null {
+        steps.push({
+            type: "checkNull",
+            at: root?.getId() ?? null,
+            isNull: root === null
+        });
         if (root === null) {
+            steps.push({ type: "return", from: null, to: parentId, via, found: false });
             return null;
         }
 
-        if ((root.getIzq() !== null && this.equals(root.getIzq()!.getInfo(), info)) || (root.getDer() !== null && this.equals(root.getDer()!.getInfo(), info))) {
+        const izq = root.getIzq();
+        const der = root.getDer();
+
+        const izqMatch = izq !== null && this.equals(izq.getInfo(), info);
+        const derMatch = der !== null && this.equals(der.getInfo(), info);
+        steps.push({ type: "match", at: root.getId(), found: izqMatch || derMatch });
+        if (izqMatch || derMatch) {
+            steps.push({ type: "return", from: root.getId(), to: parentId, via, found: true });
             return root;
         }
 
-        const izq = this.getPadreAux(root.getIzq(), info);
-        if (izq) return izq;
+        steps.push({
+            type: "goLeft",
+            from: root.getId(),
+            to: izq?.getId() ?? null
+        });
+        const resIzq = this.getPadreAux(izq, info, steps, root.getId(), "left");
+        steps.push({
+            type: "checkLeftResult",
+            from: root.getId(),
+            found: resIzq !== null
+        });
+        if (resIzq !== null) {
+            steps.push({ type: "return", from: root.getId(), to: parentId, via, found: true });
+            return resIzq;
+        };
 
-        return this.getPadreAux(root.getDer(), info);
+        steps.push({
+            type: "goRight",
+            from: root.getId(),
+            to: der?.getId() ?? null
+        });
+        const resDer = this.getPadreAux(der, info, steps, root.getId(), "right");
+        steps.push({ type: "return", from: root.getId(), to: parentId, via, found: resDer !== null });
+        return resDer;
     }
 
     /**
-     * Método que verifica si un nodo es una hoja.
+     * Método auxiliar que verifica si un nodo es una hoja.
      * @param nodo Nodo a verificar.
      * @returns True si sus 2 hijos son nulos.
      */
@@ -501,9 +744,9 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que cuenta el número de nodos hoja en un árbol binario.
+     * Método auxiliar que cuenta el número de nodos hoja presentes en el árbol binario.
      * @param root Nodo raíz del subárbol actual.
-     * @returns Número de nodos hoja en el árbol binario.
+     * @returns Número de nodos hoja presentes en el árbol binario.
      */
     private contarHojasAux(root: NodoBin<T> | null): number {
         if (root === null) return 0;
@@ -518,10 +761,10 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que recolecta todas las hojas de un árbol binario.
+     * Método auxiliar que recolecta todas las hojas presentes en el árbol binario.
      * @param root Nodo raíz del sunárbol actual.
-     * @param hojas Array para almacenar los nodos hoja ubicados.
-     * @returns Array que contiene todos los nodos hoja encontrados en el árbol.
+     * @param hojas Arreglo para almacenar los nodos hoja ubicados.
+     * @returns Arreglo que contiene todos los nodos hoja encontrados en el árbol.
      */
     private getArrayHojas(root: NodoBin<T> | null, hojas: NodoBin<T>[] = []): NodoBin<T>[] {
         if (!root) return hojas;
@@ -537,94 +780,105 @@ export class ArbolBinario<T> {
     }
 
     /**
-     * Método que elimina el nodo raíz del árbol binario.
-     * @returns El nodo raíz eliminado o null si el árbol se encontraba vacío.
+     * Método auxiliar que reemplaza un hijo de un nodo padre por otro nodo.
+     * @param padre Nodo padre.
+     * @param antiguo Nodo hijo a reemplazar.
+     * @param nuevo Nuevo nodo hijo.
      */
-    private eliminarRaiz(): { removed: NodoBin<T>, updated: NodoBin<T> | null } {
-        const r = this.raiz!;
-        const izq = r.getIzq(), der = r.getDer();
-
-        if (!izq && !der) {
-            this.setRaiz(null);
-            this.tamanio--;
-            return { removed: r, updated: null };
-        }
-
-        if (!izq || !der) {
-            this.setRaiz(izq ? izq : der);
-            this.tamanio--;
-            return { removed: r, updated: null };
-        }
-
-        let sucPadre = r, succ = der;
-        while (succ.getIzq()) {
-            sucPadre = succ;
-            succ = succ.getIzq()!;
-        }
-        r.setInfo(succ.getInfo());
-
-        const hijoSucc = succ.getDer();
-        this.reemplazarHijo(sucPadre, succ, hijoSucc);
-
-        this.tamanio--;
-        return { removed: succ, updated: r };
-    }
-
-    /**
-     * Método que reemplaza uno de los nodos hijos del nodo padre con uno nodo nuevo.
-     * @param padre Nodo padre cuyo hijo será reemplazado.
-     * @param antiguo Nodo hijo a ser reemplazado.
-     * @param nuevo Nuevo nodo para reemplazar el nodo antiguo.
-     */
-    private reemplazarHijo(padre: NodoBin<T>, antiguo: NodoBin<T>, nuevo: NodoBin<T> | null) {
-        if (padre.getIzq() === antiguo) padre.setIzq(nuevo);
+    private reemplazarHijo(padre: NodoBin<T> | null, antiguo: NodoBin<T>, nuevo: NodoBin<T> | null) {
+        if (padre === null) this.setRaiz(nuevo);
+        else if (padre.getIzq() === antiguo) padre.setIzq(nuevo);
         else padre.setDer(nuevo);
     }
 
     /**
-     * Método recursivo que busca un elemento dentro del árbol binario.
-     * @param root Nodo raíz del subárbol actual.
-     * @param info Información del elemento a buscar.
-     * @returns Booleano que indica si el elemento fue encontrado o no.
+     * Método auxiliar que verifica la existencia de un nodo dentro del dentro del árbol binario.
+     * @param root Nodo raíz del subárbol actual donde se va a buscar.
+     * @param info Info del nodo a buscar 
+     * @returns true si el elemento existe en el árbol, false en caso contrario.
      */
-    private buscar(root: NodoBin<T> | null, info: T): boolean {
+    private esta(root: NodoBin<T> | null, info: T): boolean {
         if (root === null) return false;
+        if (this.equals(root.getInfo(), info)) return true;
+        return this.esta(root.getIzq(), info) || this.esta(root.getDer(), info);
+    }
 
-        if (this.equals(root.getInfo(), info)) {
-            return true;
+    /**
+     * Método auxiliar que obtiene el nodo correspondiente al elemento proporcionado.
+     * @param info Elemento a obtener.
+     * @returns Objeto con la siguiente información:
+     * 
+     *  - `node`: Nodo encontrado si existe, de lo contrario null.
+     * 
+     *  - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda
+     *    del nodo (comprobaciones, visitas, movimientos y retornos).
+     */
+    private get(info: T): { node: NodoBin<T> | null, steps: BinaryTreeGetStep[] } {
+        const steps: BinaryTreeGetStep[] = [];
+        const node = this.getNodo(this.getRaiz(), info, steps);
+        return { node, steps }
+    }
+
+    /**
+     * Método auxiliar que realiza una búsqueda en el subárbol dado para
+     * obtener el primer nodo correspondiente al elemento proporcionado.
+     * @param root Nodo raíz del subárbol actual donde se va a buscar.
+     * @param info Elemento a buscar.
+     * @param steps Arreglo para acumular los pasos de búsqueda para la visualización del algoritmo.
+     * @param parentId Id del nodo padre del nodo actual.
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or null para la raíz).
+     * @returns Nodo encontrado o null si no existe.
+     */
+    private getNodo(
+        root: NodoBin<T> | null,
+        info: T,
+        steps: BinaryTreeGetStep[],
+        parentId: string | null = null,
+        via: "left" | "right" | "root" = "root"
+    ): NodoBin<T> | null {
+        steps.push({
+            type: "checkNull",
+            at: root?.getId() ?? null,
+            isNull: root === null
+        });
+        if (root === null) {
+            steps.push({ type: "return", from: null, to: parentId, via, found: false });
+            return null;
         }
 
-        return (this.buscar(root.getIzq(), info) || this.buscar(root.getDer(), info));
-    }
+        const izq = root.getIzq();
+        const der = root.getDer();
 
-    /**
-     * Método que obtiene un elemento existente dentro del árbol binario.
-     * @param info Información del elemento a obtener.
-     * @returns Nodo encontrado o null si no existe.
-     */
-    private get(info: T): NodoBin<T> | null {
-        return this.getNodo(this.getRaiz(), info);
-    }
-
-    /**
-     * Método recursivo que obtiene un elemento existente dentro del árbol binario. 
-     * @param root Nodo raíz del subárbol actual.
-     * @param info Información del elemento a obtener.
-     * @returns Nodo encontrado o null si no existe.
-     */
-    private getNodo(root: NodoBin<T> | null, info: T): NodoBin<T> | null {
-        if (root === null) return null;
-
-        if (this.equals(root.getInfo(), info)) {
+        const found = this.equals(root.getInfo(), info);
+        steps.push({ type: "match", at: root.getId(), found });
+        if (found) {
+            steps.push({ type: "return", from: root.getId(), to: parentId, via, found: true });
             return root;
         }
 
-        const left = this.getNodo(root.getIzq(), info);
-        if (left !== null) {
-            return left;
-        } else {
-            return this.getNodo(root.getDer(), info);
+        steps.push({
+            type: "goLeft",
+            from: root.getId(),
+            to: izq?.getId() ?? null
+        });
+        const resIzq = this.getNodo(izq, info, steps, root.getId(), "left");
+        steps.push({
+            type: "checkLeftResult",
+            from: root.getId(),
+            found: resIzq !== null
+        });
+        if (resIzq !== null) {
+            steps.push({ type: "return", from: root.getId(), to: parentId, via, found: true });
+            return resIzq;
         }
-    }
 
+        steps.push({
+            type: "goRight",
+            from: root.getId(),
+            to: der?.getId() ?? null
+        });
+        const resDer = this.getNodo(der, info, steps, root.getId(), "right");
+        steps.push({ type: "return", from: root.getId(), to: parentId, via, found: resDer !== null });
+        return resDer;
+    }
 }

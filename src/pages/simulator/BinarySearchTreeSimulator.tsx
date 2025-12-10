@@ -6,7 +6,7 @@ import { useBinarySearchTree } from "./hooks/estructures/arboles/useBinarySearch
 import { BinarySearchTreeRender } from "./components/estructures/arboles/BinarySearchTreeRender";
 
 export function BinarySearchTreeSimulator() {
-    // Instanciación del árbol binario
+    // Instanciación del árbol binario de búsqueda
     const structure = useRef(new ArbolBinarioBusqueda<number>()).current;
 
     // Llamada al hook useBinaryTree para gestionar el estado del árbol binario de búsqueda

@@ -560,11 +560,15 @@ export async function animateHighlightNode(
 
 /**
  * Función encargada de eliminar todos los nodos y enlaces dentro del lienzo.
- * @param nodesG Selección D3 del grupo <g> que contiene los nodos de la lista enlazada.
- * @param linksG Selección D3 del grupo <g> que contiene los enlaces entre nodos.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la limpieza.
  * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
+ * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
+ * @param stepId Identificador del paso de animación actual; reenviado en los eventos de progreso emitidos.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animateClearList(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
@@ -630,18 +634,24 @@ export async function animateClearList(
 
 /**
  * Función encargada de eliminar todos los nodos y enlaces dentro del lienzo.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la limpieza.
  * @param elementPositions Objeto que contiene los mapas de posiciones (x, y) de los elementos dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
+ * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animateClearTree(
-  treeG: Selection<SVGGElement, unknown, null, undefined>,
-  seqG: Selection<SVGGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   elementPositions: {
     nodePositions: Map<string, { x: number; y: number }>;
     seqPositions: Map<string, { x: number; y: number }>;
+  },
+  bus: EventBus,
+  labels: {
+    CLEAR_ROOT: number;
   },
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
@@ -649,43 +659,53 @@ export async function animateClearTree(
   // Obtenemos los mapas de posiciones de los elementos
   const { nodePositions, seqPositions } = elementPositions;
 
-  // Animación de salida de los enlaces
-  await treeG
-    .selectAll("g.link")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "clean" });
 
-  // Animación de salida de los nodos
-  await treeG
-    .selectAll("g.node")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+    // Elementos dentro del lienzo
+    const treeG = svg.select<SVGGElement>("g#tree-container");
+    const seqG = svg.select<SVGGElement>("g#seq-container");
 
-  // Animación de salida de los valores de recorrido
-  await seqG
-    .selectAll("text.seq")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+    // Salida de los enlaces
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAR_ROOT });
+    await treeG
+      .selectAll("g.link")
+      .transition()
+      .duration(800)
+      .style("opacity", 0)
+      .end();
 
-  // Eliminación de los grupos contenedores del DOM
-  treeG.remove();
-  seqG.remove();
+    // Salida de los nodos
+    await treeG
+      .selectAll("g.node")
+      .transition()
+      .duration(800)
+      .style("opacity", 0)
+      .end();
 
-  // Limpieza de los mapas de posiciones
-  nodePositions.clear();
-  seqPositions.clear();
+    // Salida de los valores de la secuencia de recorrido
+    await seqG
+      .selectAll("text.seq")
+      .transition()
+      .duration(800)
+      .style("opacity", 0)
+      .end();
 
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
+    // Eliminación de los grupos contenedores del DOM
+    treeG.remove();
+    seqG.remove();
 
-  // Finalización de la animación
-  setIsAnimating(false);
+    // Limpieza de los mapas de posiciones
+    nodePositions.clear();
+    seqPositions.clear();
+
+    // Fin de la operación
+    bus.emit("op:done", { op: "clean" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
 }
 
 /**
