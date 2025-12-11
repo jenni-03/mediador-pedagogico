@@ -1,5 +1,8 @@
 import { useRef, useState } from "react";
-import { BaseQueryOperations, TraversalNodeType } from "../../../../../domain/utils/types";
+import {
+  BaseQueryOperations,
+  TraversalNodeType,
+} from "../../../../../domain/utils/types";
 import {
   ArbolBPlus,
   type BPlusErrorCode,
@@ -206,12 +209,23 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
   const search = (value: number) => {
     dlog("search(arg):", value);
     try {
+      // 1) árbol vacío -> TREE_EMPTY (para errorPlan.TREE_EMPTY)
+      if (tree.esVacio?.()) {
+        throw new DomainError(
+          "No fue posible buscar: el árbol se encuentra vacío.",
+          "TREE_EMPTY"
+        );
+      }
+
+      // 2) clave no encontrada -> KEY_NOT_FOUND (para errorPlan.KEY_NOT_FOUND)
       if (!tree.contiene?.(value)) {
         throw new DomainError(
           "No fue posible encontrar la clave en el árbol.",
           "KEY_NOT_FOUND"
         );
       }
+
+      // 3) Éxito: solo animación, sin mutar estructura
       setQuery((prev) => ({
         ...prev,
         toSearch: value,
@@ -285,8 +299,26 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
   const range = (from: number, to: number) => {
     dlog("range(arg):", from, to);
     try {
+      // 1) Árbol vacío -> TREE_EMPTY
+      if (tree.esVacio?.()) {
+        throw new DomainError(
+          "No fue posible ejecutar range: el árbol se encuentra vacío.",
+          "TREE_EMPTY"
+        );
+      }
+
+      // 2) Rango inválido -> INVALID_RANGE
+      if (from > to) {
+        throw new DomainError(
+          "No fue posible ejecutar range: el rango [from, to] es inválido (from > to).",
+          "INVALID_RANGE"
+        );
+      }
+
+      // 3) Ejecución normal de range
       const vals = tree.range(from, to);
       const seq = toTraversal(vals, "range");
+
       setQuery((_prev) => ({
         toGetInOrder: sanitizeSeq(seq),
         toGetLevelOrder: undefined,
@@ -304,6 +336,7 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
         inOrderTick: undefined,
         levelTick: undefined,
       }));
+
       setError(null);
     } catch (e) {
       handleError(e, "range");
@@ -313,8 +346,26 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
   const scanFrom = (start: number, limit: number) => {
     dlog("scanFrom(arg):", start, limit);
     try {
+      // 1) Árbol vacío -> TREE_EMPTY
+      if (tree.esVacio?.()) {
+        throw new DomainError(
+          "No fue posible ejecutar scanFrom: el árbol se encuentra vacío.",
+          "TREE_EMPTY"
+        );
+      }
+
+      // 2) Límite inválido -> INVALID_SCAN_LIMIT
+      if (limit <= 0) {
+        throw new DomainError(
+          "No fue posible ejecutar scanFrom: el límite debe ser un entero positivo.",
+          "INVALID_SCAN_LIMIT"
+        );
+      }
+
+      // 3) Ejecución normal de scanFrom
       const vals = tree.scanFrom(start, limit);
       const seq = toTraversal(vals, "scan");
+
       setQuery((_prev) => ({
         toGetInOrder: sanitizeSeq(seq),
         toGetLevelOrder: undefined,
@@ -332,6 +383,7 @@ export function useBPlusTree(structure: ArbolBPlus<number, number>) {
         inOrderTick: undefined,
         levelTick: undefined,
       }));
+
       setError(null);
     } catch (e) {
       handleError(e, "scanFrom");

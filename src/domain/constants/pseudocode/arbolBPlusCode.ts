@@ -354,7 +354,7 @@ export const getArbolBPlusCode = (): Record<string, OperationCode> => ({
   /* ╔════════════════════════════════════════════╗
      ║                 SEARCH                    ║
      ╚════════════════════════════════════════════╝ */
-  search: {
+   search: {
     lines: [
       `/** Busca k en el B+: baja por internos y verifica en hoja. */`, // 0
       `public boolean search(T {0}) {`, // 1
@@ -378,12 +378,27 @@ export const getArbolBPlusCode = (): Record<string, OperationCode> => ({
       BPLUS_SEARCH_LOWER_BOUND: 8,
       BPLUS_SEARCH_RETURN_CMP: 9,
     },
+    errorPlans: {
+      TREE_EMPTY: [
+        // search sobre árbol vacío
+        { lineLabel: "BPLUS_SEARCH_HEADER", hold: 600 },
+        { lineLabel: "BPLUS_SEARCH_INIT_X", hold: 800 },
+        { lineLabel: "BPLUS_SEARCH_X_NULL_IF", hold: 900 },
+      ],
+      KEY_NOT_FOUND: [
+        // clave no encontrada (tu capa de dominio decide lanzar DomainError)
+        { lineLabel: "BPLUS_SEARCH_HEADER", hold: 600 },
+        { lineLabel: "BPLUS_SEARCH_LOWER_BOUND", hold: 800 },
+        { lineLabel: "BPLUS_SEARCH_RETURN_CMP", hold: 900 },
+      ],
+    },
   },
+
 
   /* ╔════════════════════════════════════════════╗
      ║                 RANGE / SCAN               ║
      ╚════════════════════════════════════════════╝ */
-  range: {
+   range: {
     lines: [
       `/** Emite claves en [from, to] recorriendo hojas con nextLeaf. */`, // 0
       `public ListaCD<T> range(T {0}, T {1}) {`, // 1
@@ -423,9 +438,22 @@ export const getArbolBPlusCode = (): Record<string, OperationCode> => ({
       BPLUS_RANGE_NEXT_LEAF: 17,
       BPLUS_RANGE_RETURN_OUT: 20,
     },
+    errorPlans: {
+      TREE_EMPTY: [
+        // range sobre árbol vacío
+        { lineLabel: "BPLUS_RANGE_HEADER", hold: 600 },
+        { lineLabel: "BPLUS_RANGE_ROOT_NULL_OR_INVALID_IF", hold: 900 },
+      ],
+      INVALID_RANGE: [
+        // from > to
+        { lineLabel: "BPLUS_RANGE_HEADER", hold: 600 },
+        { lineLabel: "BPLUS_RANGE_ROOT_NULL_OR_INVALID_IF", hold: 900 },
+      ],
+    },
   },
 
-  scanFrom: {
+
+    scanFrom: {
     lines: [
       `/** Emite hasta 'limit' claves comenzando en 'start' (inclusive). */`, // 0
       `public ListaCD<T> scanFrom(T {0}, int {1}) {`, // 1
@@ -464,7 +492,20 @@ export const getArbolBPlusCode = (): Record<string, OperationCode> => ({
       BPLUS_SCAN_NEXT_LEAF: 16,
       BPLUS_SCAN_RETURN_OUT: 19,
     },
+    errorPlans: {
+      TREE_EMPTY: [
+        // scanFrom sobre árbol vacío
+        { lineLabel: "BPLUS_SCAN_HEADER", hold: 600 },
+        { lineLabel: "BPLUS_SCAN_ROOT_NULL_OR_LIMIT_IF", hold: 900 },
+      ],
+      INVALID_SCAN_LIMIT: [
+        // limit <= 0
+        { lineLabel: "BPLUS_SCAN_HEADER", hold: 600 },
+        { lineLabel: "BPLUS_SCAN_ROOT_NULL_OR_LIMIT_IF", hold: 900 },
+      ],
+    },
   },
+
 
   /* ╔════════════════════════════════════════════╗
      ║              TRAVERSALS UI                 ║

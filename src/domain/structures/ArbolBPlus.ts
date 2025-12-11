@@ -14,7 +14,9 @@ export type BPlusErrorCode =
   | "KEY_ALREADY_EXISTS"
   | "KEY_NOT_FOUND"
   | "MAX_NODES_REACHED"
-  | "INCONSISTENT_TREE";
+  | "INCONSISTENT_TREE"
+  | "INVALID_RANGE"
+  | "INVALID_SCAN_LIMIT";
 
 export class ArbolBPlus<K, V = K> {
   private raiz: BPlusNode<K, V> | null = null;
