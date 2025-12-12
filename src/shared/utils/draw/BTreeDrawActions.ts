@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import { HierarchyNode } from "d3";
-import { BHierarchy, TreeLinkData, TraversalNodeType } from "../../../types";
+import { BHierarchy, TreeLinkData, TraversalNodeType } from "../../../domain/utils/types";
 
 import { drawTraversalSequence as baseDrawTraversalSequence } from "./btreeDrawActionsUtilities";
 

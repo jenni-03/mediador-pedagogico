@@ -1,12 +1,12 @@
 import { Dispatch, SetStateAction } from "react";
 import { Selection } from "d3";
-import { ListLinkData, ListNodeData } from "../../../types";
+import { ListLinkData, ListNodeData } from "../../../domain/utils/types";
 import { repositionList } from "./drawActionsUtilities";
-import { buildListPath } from "../listUtils";
-import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { buildListPath } from "../../../domain/utils/listUtils";
+import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { type EventBus } from "../../events/eventBus";
-import { getListaSimplementeEnlazadaCode } from "../../constants/pseudocode/listaSimplementeEnlazadaCode";
-import { delay } from "../simulatorUtils";
+import { getListaSimplementeEnlazadaCode } from "../../../domain/constants/pseudocode/listaSimplementeEnlazadaCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const listaSimpleCode = getListaSimplementeEnlazadaCode();
 

@@ -1,13 +1,13 @@
-import { ListLinkData, ListNodeData } from "../../../types";
+import { ListLinkData, ListNodeData } from "../../../domain/utils/types";
 import { Selection } from "d3";
 import { type EventBus } from "../../events/eventBus";
 import { Dispatch, SetStateAction } from "react";
-import { delay } from "../simulatorUtils";
+import { delay } from "../../../domain/utils/simulatorUtils";
 import { animateAppearListNode, animateExitListNode, animateGetListNodePos } from "./simpleLinkedListDrawActions";
-import { SVG_LINKED_LIST_VALUES } from "../../constants/consts";
+import { SVG_LINKED_LIST_VALUES } from "../../../domain/constants/consts";
 import { repositionList } from "./drawActionsUtilities";
-import { buildListPath } from "../listUtils";
-import { getListaCircularDoblementeEnlazadaCode } from "../../constants/pseudocode/listaCircularDoblementeEnlazadaCode";
+import { buildListPath } from "../../../domain/utils/listUtils";
+import { getListaCircularDoblementeEnlazadaCode } from "../../../domain/constants/pseudocode/listaCircularDoblementeEnlazadaCode";
 
 const listaCircularDobleCode = getListaCircularDoblementeEnlazadaCode();
 

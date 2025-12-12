@@ -1,4 +1,4 @@
-import { complexityArbolBinarioBusqueda } from "../../../../../shared/constants/complexityStructures/complexityArbolBinarioBusqueda";
+import { complexityArbolBinarioBusqueda } from "../../../../../domain/constants/complexityStructures/complexityArbolBinarioBusqueda";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityArbolBinarioBusqueda() {

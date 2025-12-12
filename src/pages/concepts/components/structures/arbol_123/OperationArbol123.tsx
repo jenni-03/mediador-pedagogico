@@ -1,7 +1,3 @@
-/* OperationArbol123.tsx
-   © 2025 – componente educativo / SEED
-*/
-
 export function OperationArbol123() {
   return (
     <div className="py-8 px-3 sm:px-10 text-white bg-[#0f0f0f] min-h-screen max-w-5xl mx-auto">

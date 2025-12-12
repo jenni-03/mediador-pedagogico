@@ -1,4 +1,3 @@
-// src/shared/utils/draw/naryDrawActionsUtilities.ts
 import * as d3 from "d3";
 import { HierarchyNode, easePolyInOut } from "d3";
 import {
@@ -6,7 +5,7 @@ import {
   IndicatorPositioningConfig,
   TraversalNodeType,
   TreeLinkData,
-} from "../../../types";
+} from "../../../domain/utils/types";
 
 /* ────────────────────────── Valores neutrales para n-arios ────────────────────────── */
 export const SVG_NARY_VALUES = {

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType, TreeLinkData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData, TraversalNodeType, TreeLinkData } from "../../../../../domain/utils/types";
 import { hierarchy, HierarchyNode, select, tree } from "d3";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
-import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES } from "../../../../../shared/constants/consts";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
+import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES } from "../../../../../domain/constants/consts";
 import { animateSplayDeleteNode, animateSplayInsertNode, animateSplaySearch } from "../../../../../shared/utils/draw/SplayTreeDrawActions";
 import { animateClearTree, animateTreeTraversal, drawTraversalSequence } from "../../../../../shared/utils/draw/drawActionsUtilities";
 

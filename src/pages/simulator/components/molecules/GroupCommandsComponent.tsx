@@ -1,4 +1,4 @@
-import { GroupCommandProps } from "../../../../types";
+import { GroupCommandProps } from "../../../../domain/utils/types";
 import { ButtonCommandsComponent } from "../atoms/ButtonCommandsComponent";
 
 export function GroupCommandsComponent({ buttons }: GroupCommandProps) {

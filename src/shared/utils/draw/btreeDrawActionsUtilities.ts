@@ -1,7 +1,6 @@
-// src/shared/utils/draw/btreeDrawActionsUtilities.ts
 import * as d3 from "d3";
 import { curvedLinkPath } from "./naryDrawActionsUtilities";
-import { BHierarchy, TreeLinkData } from "../../../types";
+import { BHierarchy, TreeLinkData } from "../../../domain/utils/types";
 
 /* ──────────────────────────── Constantes SVG para B-tree ──────────────────────────── */
 export const SVG_B_VALUES = {

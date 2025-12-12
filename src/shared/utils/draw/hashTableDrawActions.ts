@@ -1,7 +1,4 @@
-// src/shared/utils/draw/hashTableDrawActions.ts
 import * as d3 from "d3";
-
-/* ---------- Tipos ---------- */
 export interface HashNode {
   key: number;
   value: number;
@@ -167,10 +164,12 @@ function readDataNumber(
 export function drawHashTable(
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
   buckets: HashNode[][],
-  memory: number[], // ← direcciones de cada bucket
+  memory: number[],
   style?: Partial<StyleConfig>,
-  activeBucketIdx?: number
+  activeBucketIdx?: number,
+  onFirstCreateDone?: () => void
 ) {
+
   let root = svg.select<SVGGElement>("g.ht-root");
   if (root.empty()) {
     root = svg.append("g").attr("class", "ht-root");
@@ -660,20 +659,23 @@ export function drawHashTable(
     });
   // ====== FIN MEJORAS ======
 
-  /* ── ANIMACIÓN “drop-in” ───────────────── */
+   /* ── ANIMACIÓN “drop-in” ───────────────── */
   const isFirstCreation = !svg.attr("data-buckets-init");
 
   bucketEnter
     .attr("transform", (d) =>
       isFirstCreation
         ? `translate(${d * (bucketWidth + padding) + padding},
-                   ${bucketStartY - 120}) scale(0.3) rotate(-25)`
+                     ${bucketStartY - 120}) scale(0.3) rotate(-25)`
         : `translate(${d * (bucketWidth + padding) + padding},
-                   ${bucketStartY})`
+                     ${bucketStartY})`
     )
     .style("opacity", isFirstCreation ? 0 : 1);
 
   if (isFirstCreation) {
+    // queremos saber cuándo termina el ÚLTIMO bucket
+    let pending = slots;
+
     bucketEnter
       .transition()
       .delay((d) => d * 90)
@@ -683,7 +685,7 @@ export function drawHashTable(
         "transform",
         (d) =>
           `translate(${d * (bucketWidth + padding) + padding},
-                   ${bucketStartY}) scale(1) rotate(0)`
+                     ${bucketStartY}) scale(1) rotate(0)`
       )
       .style("opacity", 1)
       .transition()
@@ -696,11 +698,19 @@ export function drawHashTable(
           .map(Number);
         return (t) =>
           `translate(${tx},${ty})
-         scale(${1 + 0.08 * Math.sin(Math.PI * t)} ,
-               ${1 - 0.08 * Math.sin(Math.PI * t)})`;
+           scale(${1 + 0.08 * Math.sin(Math.PI * t)},
+                 ${1 - 0.08 * Math.sin(Math.PI * t)})`;
       })
-      .on("end", () => svg.attr("data-buckets-init", "1"));
+      .on("end", () => {
+        pending -= 1;
+        if (pending === 0) {
+          // última tapa que termina su animación
+          svg.attr("data-buckets-init", "1");
+          if (onFirstCreateDone) onFirstCreateDone();
+        }
+      });
   }
+
 
   /* ========== NODOS (auto-resize + centrado) ========== */
   const flat = flatten(buckets);

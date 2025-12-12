@@ -1,5 +1,4 @@
-// src/pages/simulator/components/estructures/arbolBPlus/BPlusTreeRender.tsx
-import { BPlusHierarchy } from "../../../../../types";
+import { BPlusHierarchy } from "../../../../../domain/utils/types";
 import { useBPlusRender } from "../../../hooks/estructures/arbolBPlus/useBPlusRender";
 import type { QueryBPlus } from "../../../hooks/estructures/arbolBPlus/useBPlusTree";
 

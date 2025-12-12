@@ -1,14 +1,17 @@
-// src/hooks/estructures/btree/useBTree.ts
 import { useState } from "react";
-import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
-import { ArbolB } from "../../../../../shared/utils/structures/ArbolB";
+import { BaseQueryOperations, TraversalNodeType } from "../../../../../domain/utils/types";
+import {
+  ArbolB,
+  type BTreeErrorCode,
+} from "../../../../../domain/structures/ArbolB";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 const DEBUG_B = true;
 const dlog = (...a: any[]) => {
   if (DEBUG_B) console.log("[useBTree]", ...a);
 };
 
-// helper: normali  za a id de DOM (string con prefijo) para el renderer/D3
+// helper: normaliza a id de DOM (string con prefijo) para el renderer/D3
 const toDomId = (id: number | string) =>
   typeof id === "number" ? `n-${id}` : id;
 
@@ -25,6 +28,28 @@ const kidsOf = (n: N) => (n.getHijos?.() ?? []).filter(Boolean) as N[];
 // helper: limpia cualquier item inválido en la banda de recorrido
 const sanitizeSeq = (arr: TraversalNodeType[]) =>
   arr.filter((d): d is TraversalNodeType => !!d && typeof d.id === "string");
+
+/* ────────────────── Tipos de op / error para el simulador ────────────────── */
+
+type BTreeOp =
+  | "insert"
+  | "delete"
+  | "search"
+  | "getPreOrder"
+  | "getInOrder"
+  | "getPostOrder"
+  | "getLevelOrder"
+  | "clean";
+
+type BTreeErrorPlanId = BTreeErrorCode;
+
+export type BTreeError = {
+  id: number;
+  message: string;
+  op: BTreeOp;
+  planId?: BTreeErrorPlanId | null;
+};
+
 /* ───────── Recorridos multi-clave (usar kidsOf) ───────── */
 
 function preOrderSeq(n: N | null, out: TraversalNodeType[]) {
@@ -95,9 +120,7 @@ function onlySeq<K extends keyof BaseQueryOperations<"arbol_b">>(
 
 export function useBTree(structure: ArbolB<number, number>) {
   const [tree, setTree] = useState(structure);
-  const [error, setError] = useState<{ message: string; id: number } | null>(
-    null
-  );
+  const [error, setError] = useState<BTreeError | null>(null);
 
   const [query, setQuery] = useState<BaseQueryOperations<"arbol_b">>({
     toInsert: null,
@@ -110,6 +133,34 @@ export function useBTree(structure: ArbolB<number, number>) {
     toClear: false,
     bFix: null, // opcional: logs de split/merge/redistribución si los emites desde ArbolB
   });
+
+  /* ─────────────────────────── helper de errores ─────────────────────────── */
+
+  const handleError = (err: unknown, op: BTreeOp) => {
+    if (err instanceof DomainError) {
+      dlog(op, "DomainError:", err.message, "code:", err.code);
+      setError({
+        id: Date.now(),
+        message: err.message,
+        op,
+        planId: (err.code as BTreeErrorPlanId) ?? null,
+      });
+      return;
+    }
+
+    const msg =
+      err && typeof (err as any).message === "string"
+        ? (err as any).message
+        : "Ocurrió un error inesperado en la operación del Árbol B.";
+    dlog(op, "GENERIC_ERROR:", msg, "| raw:", err);
+
+    setError({
+      id: Date.now(),
+      message: msg,
+      op,
+      planId: null,
+    });
+  };
 
   /* ───────────── Inserción ───────────── */
   const insert = (value: number) => {
@@ -131,9 +182,8 @@ export function useBTree(structure: ArbolB<number, number>) {
         // bFix: cloned.getLastFixLog?.() ?? null, // si decides exponerlo
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("insert(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "insert");
     }
   };
 
@@ -157,9 +207,8 @@ export function useBTree(structure: ArbolB<number, number>) {
         // bFix: cloned.getLastFixLog?.() ?? null,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("delete(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "delete");
     }
   };
 
@@ -168,8 +217,13 @@ export function useBTree(structure: ArbolB<number, number>) {
     dlog("search(arg):", value);
     try {
       if (!tree.contiene(value)) {
-        throw new Error("No fue posible encontrar la clave en el árbol.");
+        // Igual que en Arbol23: levantamos DomainError para enganchar errorPlan KEY_NOT_FOUND
+        throw new DomainError(
+          "No fue posible encontrar la clave en el Árbol B.",
+          "KEY_NOT_FOUND"
+        );
       }
+
       setQuery((prev) => ({
         ...prev,
         toSearch: value,
@@ -179,26 +233,28 @@ export function useBTree(structure: ArbolB<number, number>) {
         toGetLevelOrder: [],
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("search(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "search");
     }
   };
 
-  /* ───────── Al setear query, sanitizar la secuencia ───────── */
+  /* ───────── Recorridos (sanitizando la banda) ───────── */
 
   const getPreOrder = () => {
     dlog("getPreOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer en preorden (el Árbol B se encuentra vacío)."
+        );
+      }
       const seq: TraversalNodeType[] = [];
       preOrderSeq(raiz, seq);
-      setQuery(onlySeq("toGetPreOrder", sanitizeSeq(seq))); // ← sanitize
+      setQuery(onlySeq("toGetPreOrder", sanitizeSeq(seq)));
       setError(null);
-    } catch (e: any) {
-      dlog("getPreOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getPreOrder");
     }
   };
 
@@ -206,14 +262,17 @@ export function useBTree(structure: ArbolB<number, number>) {
     dlog("getInOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer en inorden (el Árbol B se encuentra vacío)."
+        );
+      }
       const seq: TraversalNodeType[] = [];
       inOrderSeq(raiz, seq);
-      setQuery(onlySeq("toGetInOrder", sanitizeSeq(seq))); // ← sanitize
+      setQuery(onlySeq("toGetInOrder", sanitizeSeq(seq)));
       setError(null);
-    } catch (e: any) {
-      dlog("getInOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getInOrder");
     }
   };
 
@@ -221,14 +280,17 @@ export function useBTree(structure: ArbolB<number, number>) {
     dlog("getPostOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer en postorden (el Árbol B se encuentra vacío)."
+        );
+      }
       const seq: TraversalNodeType[] = [];
       postOrderSeq(raiz, seq);
-      setQuery(onlySeq("toGetPostOrder", sanitizeSeq(seq))); // ← sanitize
+      setQuery(onlySeq("toGetPostOrder", sanitizeSeq(seq)));
       setError(null);
-    } catch (e: any) {
-      dlog("getPostOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getPostOrder");
     }
   };
 
@@ -236,21 +298,26 @@ export function useBTree(structure: ArbolB<number, number>) {
     dlog("getLevelOrder()");
     try {
       const raiz = tree.getRaiz() as unknown as N | null;
-      if (!raiz) throw new Error("Árbol vacío.");
+      if (!raiz) {
+        throw new Error(
+          "No fue posible recorrer por niveles (el Árbol B se encuentra vacío)."
+        );
+      }
       const seq = levelOrderSeq(raiz);
-      setQuery(onlySeq("toGetLevelOrder", sanitizeSeq(seq))); // ← sanitize
+      setQuery(onlySeq("toGetLevelOrder", sanitizeSeq(seq)));
       setError(null);
-    } catch (e: any) {
-      dlog("getLevelOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getLevelOrder");
     }
   };
 
   /* ───────────── Limpieza ───────────── */
   const clean = () => {
     dlog("clean()");
-    const fresh = new ArbolB<number, number>((a, b) => a - b, 2); // o conserva el t actual si lo guardas aparte
-    setTree(fresh);
+    // Igual que en Arbol23: vaciamos el árbol actual (mismo t, mismo cmp)
+    const cloned = tree.clonar();
+    cloned.vaciar(true); // si BNodo.reset(1) existe, esto mantiene los ids consistentes
+    setTree(cloned);
     setQuery({
       toInsert: null,
       toDelete: null,
@@ -262,6 +329,7 @@ export function useBTree(structure: ArbolB<number, number>) {
       toClear: true,
       bFix: null,
     });
+    setError(null);
   };
 
   const resetQueryValues = () => {
@@ -282,6 +350,7 @@ export function useBTree(structure: ArbolB<number, number>) {
   return {
     tree,
     query,
+    // BTreeError | null, compatible con LooseError del <Simulator>
     error,
     operations: {
       insert,

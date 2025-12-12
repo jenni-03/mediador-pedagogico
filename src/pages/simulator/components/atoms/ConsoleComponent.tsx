@@ -1,8 +1,7 @@
-// src/pages/simulator/components/atoms/ConsoleComponent.tsx
 import { useEffect, useRef, useState } from "react";
-import { commandRules } from "../../../../shared/constants/console/commandRules";
+import { commandRules } from "../../../../domain/constants/console/commandRules";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
-import { parseCommand } from "../../../../shared/constants/console/parseCommand";
+import { parseCommand } from "../../../../domain/constants/console/parseCommand";
 import { CreatedBadge } from "./CreateBadge";
 
 export const structureNames: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { complexityArbolB } from "../../../../../shared/constants/complexityStructures/complexityArbolB";
+import { complexityArbolB } from "../../../../../domain/constants/complexityStructures/complexityArbolB";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityArbolB() {

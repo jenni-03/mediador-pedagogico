@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolBinario } from "../../shared/utils/structures/ArbolBinario";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolBinario } from "../../domain/structures/ArbolBinario";
 import { useBinaryTree } from "./hooks/estructures/arboles/useBinaryTree";
 import { BinaryTreeRender } from "./components/estructures/arboles/BinaryTreeRender";
 

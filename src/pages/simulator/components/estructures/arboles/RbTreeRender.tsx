@@ -1,5 +1,5 @@
-import { RB_COLORS } from "../../../../../shared/constants/consts";
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
+import { RB_COLORS } from "../../../../../domain/constants/consts";
+import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
 import { useRBTreeRender } from "../../../hooks/estructures/arbolRN/useRBTreeRender";
 
 export function RbTreeRender({

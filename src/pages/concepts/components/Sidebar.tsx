@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { SideBarProps } from "../../../types";
+import { SideBarProps } from "../../../domain/utils/types";
 import { SidebarItem } from "./SidebarItem";
 
 const HEADER_HEIGHT = 64; // altura del header sticky

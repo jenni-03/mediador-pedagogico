@@ -1,4 +1,4 @@
-import { CardData } from "../../../types";
+import { CardData } from "../../../domain/utils/types";
 import { motion } from "framer-motion";
 import { AnimatedButtonLink } from "../../../shared/components/AnimatedButtonLink";
 

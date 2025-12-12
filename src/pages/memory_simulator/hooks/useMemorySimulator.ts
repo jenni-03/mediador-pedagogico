@@ -1,8 +1,7 @@
-// src/app/MemoryApp/hooks/useMemorySimulator.ts
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { Memory } from "../../../shared/utils/RAM/memoria/Memory";
-import { VmController } from "../../../shared/utils/RAM/vm-controller";
-import type { UiSnapshot } from "../../../shared/utils/RAM/snapshot-builder";
+import { Memory } from "../../../domain/RAM/memoria/Memory";
+import { VmController } from "../../../domain/RAM/vm-controller";
+import type { UiSnapshot } from "../../../domain/RAM/snapshot-builder";
 
 function normErr(e: unknown) {
   if (e instanceof Error) return e.message || String(e);

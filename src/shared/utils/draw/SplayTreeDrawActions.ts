@@ -1,10 +1,10 @@
 import { type HierarchyNode, type Selection } from "d3";
-import { HierarchyNodeData, RotationType, SplayFrame, SplayRotation, SplayRotationTag, TreeLinkData } from "../../../types";
+import { HierarchyNodeData, RotationType, SplayFrame, SplayRotation, SplayRotationTag, TreeLinkData } from "../../../domain/utils/types";
 import type { Dispatch, SetStateAction } from "react";
 import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { animateBSTInsertCore, animateEspecialBSTsRotation, highlightBinaryTreePath } from "./BinaryTreeDrawActions";
-import { straightPath } from "../treeUtils";
+import { straightPath } from "../../../domain/utils/treeUtils";
 
 /**
  * Función encargada de animar el proceso de inserción de un nuevo nodo dentro de un árbol Splay.

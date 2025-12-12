@@ -1,10 +1,9 @@
-// src/shared/utils/draw/heapDrawActions.ts
 import { select, easePolyInOut, type Selection } from "d3";
-import { TreeLinkData } from "../../../types";
+import { TreeLinkData } from "../../../domain/utils/types";
 import {
   SVG_BINARY_TREE_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 
 /* ───────────────────────── Config & timings ───────────────────────── */
 const R = SVG_BINARY_TREE_VALUES?.NODE_RADIUS ?? 25;

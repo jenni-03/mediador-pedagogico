@@ -1,8 +1,8 @@
-import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import {
     BaseQueryOperations,
     PriorityQueueNodeData,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import { usePriorityQueueRender } from "../../../hooks/estructures/colaPrioridad/usePriorityQueueRender";
 
 export function PriorityQueueRender({

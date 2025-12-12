@@ -1,4 +1,4 @@
-import { complexityArbolEneario } from "../../../../../shared/constants/complexityStructures/complexityArbolEneario";
+import { complexityArbolEneario } from "../../../../../domain/constants/complexityStructures/complexityArbolEneario";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityArbolEneario() {

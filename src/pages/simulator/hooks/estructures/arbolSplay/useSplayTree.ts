@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { type ArbolSplay } from "../../../../../shared/utils/structures/ArbolSplay";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { type ArbolSplay } from "../../../../../domain/structures/ArbolSplay";
 
 export function useSplayTree(structure: ArbolSplay<number>) {
     // Estado para manejar el árbol Splay

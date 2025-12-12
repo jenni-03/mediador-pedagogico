@@ -1,4 +1,4 @@
-import { complexityArbolHeap } from "../../../../../shared/constants/complexityStructures/complexityArbolHeap";
+import { complexityArbolHeap } from "../../../../../domain/constants/complexityStructures/complexityArbolHeap";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityArbolHeap() {

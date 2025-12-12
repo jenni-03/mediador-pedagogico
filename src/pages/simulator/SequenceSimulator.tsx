@@ -1,8 +1,8 @@
 import { useSequence } from "./hooks/estructures/secuencia/useSequence";
 import { Simulator } from "./components/templates/Simulator";
 import { SequenceRender } from "./components/estructures/secuencia/SequenceRender";
-import { Secuencia } from "../../shared/utils/structures/Secuencia";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
+import { Secuencia } from "../../domain/structures/Secuencia";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
 import { useMemo, useRef } from "react";
 
 export function SequenceSimulator() {

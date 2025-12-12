@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { Pila } from "../../../../../shared/utils/structures/Pila";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { Pila } from "../../../../../domain/structures/Pila";
+import { DomainError } from "../../../../../../src/domain/error/DomainError";
 
 export function useStack(structure: Pila<number>) {
     // Estado para manejar la pila
     const [stack, setStack] = useState(structure);
 
     // Estado para manejar el error
-    const [error, setError] = useState<{ message: string, id: number } | null>(null);
+    const [error, setError] = useState<{ message: string, id: number, op: string, planId?: string | null } | null>(null);
 
     // Estado para manejar la operación solicitada por el usuario
     const [query, setQuery] = useState<BaseQueryOperations<"pila">>({
@@ -41,7 +42,7 @@ export function useStack(structure: Pila<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "push" });
         }
     }
 
@@ -69,7 +70,7 @@ export function useStack(structure: Pila<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "pop", planId: error?.code ?? null });
         }
     }
 
@@ -80,7 +81,7 @@ export function useStack(structure: Pila<number>) {
             const topNode = stack.getTope();
 
             // Verificar su existencia
-            if (!topNode) throw new Error("No fue posible obtener el elemento tope: No hay elementos en la pila.");
+            if (!topNode) throw new DomainError("No fue posible obtener el elemento tope: No hay elementos en la pila.", "STACK_EMPTY");
 
             // Actualizar la query para informar de la operación realizada
             setQuery((prev) => ({
@@ -91,7 +92,7 @@ export function useStack(structure: Pila<number>) {
             // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "getTop", planId: error?.code ?? null });
         }
     };
 

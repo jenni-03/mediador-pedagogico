@@ -1,5 +1,5 @@
-import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { BaseQueryOperations, QueueNodeData } from "../../../../../types";
+import { SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
+import { BaseQueryOperations, QueueNodeData } from "../../../../../domain/utils/types";
 import { useQueueRender } from "../../../hooks/estructures/cola/useQueueRender";
 
 export function QueueRender({

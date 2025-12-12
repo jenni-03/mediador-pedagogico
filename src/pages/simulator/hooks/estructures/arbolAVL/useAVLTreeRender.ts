@@ -3,17 +3,17 @@ import {
   BaseQueryOperations,
   HierarchyNodeData,
   TraversalNodeType,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES } from "../../../../../domain/constants/consts";
 import {
   animateClearTree,
   animateTreeTraversal,
   drawTraversalSequence,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+// import { animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { animateAVLTreeDelete, animateAVLTreeInsert } from "../../../../../shared/utils/draw/avlTreeDrawActions";
 import { select } from "d3";
 

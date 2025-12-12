@@ -1,4 +1,4 @@
-import { CardListProps } from "../../../types";
+import { CardListProps } from "../../../domain/utils/types";
 import { Card } from "./Card";
 import { useFilteredCard } from "../hooks/useFilteredCard";
 import { AnimatePresence, motion } from "framer-motion";

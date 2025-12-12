@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { CardList } from "./components/CardList";
 import { NavBar } from "./components/NavBar";
-import { FilterState } from "../../types";
-import { data } from "../../shared/constants/data-cards";
+import { FilterState } from "../../domain/utils/types";
+import { data } from "../../domain/constants/data-cards";
 import { Welcome } from "./components/Welcome";
 import { Filters } from "./components/Filters";
 import { Introduction } from "./components/Introduction";
@@ -31,7 +31,7 @@ export function Home() {
   };
 
   return (
-    <div className="bg-[#0f0f0f] min-h-screen text-white">
+    <div className="bg-[#141821] min-h-screen text-white">
       <NavBar />
       <Welcome />
       <Introduction />

@@ -1,4 +1,4 @@
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
 import { useAVLTreeRender } from "../../../hooks/estructures/arbolAVL/useAVLTreeRender";
 
 export function AvlTreeRender({

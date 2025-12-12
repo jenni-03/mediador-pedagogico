@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CommandProps } from "../../../../types";
+import { CommandProps } from "../../../../domain/utils/types";
 import { CustomModal } from "../molecules/CustomModal";
 import { motion } from "framer-motion";
 

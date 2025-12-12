@@ -3,9 +3,9 @@ import {
   BaseQueryOperations,
   HierarchyNodeData,
   TraversalNodeType
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { RB_COLORS, SVG_BINARY_TREE_VALUES, SVG_RB_TREE_VALUES } from "../../../../../shared/constants/consts";
+import { RB_COLORS, SVG_BINARY_TREE_VALUES, SVG_RB_TREE_VALUES } from "../../../../../domain/constants/consts";
 import {
   animateClearTree,
   animateTreeTraversal,
@@ -18,7 +18,7 @@ import {
   animateRBSearch,
 } from "../../../../../shared/utils/draw/RedBlackTreeDrawActions";
 import { type HierarchyNode, select } from "d3";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 
 export function useRBTreeRender(
   treeData: HierarchyNodeData<number> | null,

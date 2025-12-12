@@ -1,12 +1,12 @@
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolBinarioBusqueda } from "../../shared/utils/structures/ArbolBinarioBusqueda";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolBinarioBusqueda } from "../../domain/structures/ArbolBinarioBusqueda";
 import { useBinarySearchTree } from "./hooks/estructures/arboles/useBinarySearchTree";
 import { BinarySearchTreeRender } from "./components/estructures/arboles/BinarySearchTreeRender";
 
 export function BinarySearchTreeSimulator() {
-    // Instanciación del árbol binario
+    // Instanciación del árbol binario de búsqueda
     const structure = useRef(new ArbolBinarioBusqueda<number>()).current;
 
     // Llamada al hook useBinaryTree para gestionar el estado del árbol binario de búsqueda

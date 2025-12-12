@@ -1,4 +1,4 @@
-import { complexityColaPrioridad } from "../../../../../shared/constants/complexityStructures/complexityColaPrioridad";
+import { complexityColaPrioridad } from "../../../../../domain/constants/complexityStructures/complexityColaPrioridad";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityColaPrioridad() {

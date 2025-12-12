@@ -10,17 +10,18 @@ import {
   ListNodeData,
   TraversalNodeType,
   TreeLinkData,
-  TreeTraversalAnimOptions
-} from "../../../types";
+  TreeTraversalAnimOptions,
+} from "../../../domain/utils/types";
 import {
   SVG_BINARY_TREE_VALUES,
   SVG_LINKED_LIST_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 import { type HierarchyNode, type Selection, easePolyInOut } from "d3";
-import { straightPath } from "../treeUtils";
-import { buildListPath } from "../listUtils";
+import { straightPath } from "../../../domain/utils/treeUtils";
+import { buildListPath } from "../../../domain/utils/listUtils";
 import { type EventBus } from "../../events/eventBus";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 /**
  * Función encargada de renderizar un indicador de flecha dentro del lienzo.
@@ -119,7 +120,7 @@ export function drawTreeNodes(
   g.selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.node")
     .data(nodes, (d) => d.data.id)
     .join(
-      enter => {
+      (enter) => {
         // Creación del grupo para cada nodo entrante
         const gEnter = enter
           .append("g")
@@ -153,7 +154,7 @@ export function drawTreeNodes(
 
         return gEnter;
       },
-      update => {
+      (update) => {
         // Guarda la posición actualizada para cada nodo presente en el DOM
         update.each((d) => {
           positions.set(d.data.id, { x: d.x!, y: d.y! });
@@ -168,7 +169,7 @@ export function drawTreeNodes(
 
         return update;
       },
-      exit => exit
+      (exit) => exit
     );
 }
 
@@ -181,25 +182,27 @@ export function drawTreeNodes(
 export function drawTreeLinks(
   g: Selection<SVGGElement, unknown, null, undefined>,
   linksData: TreeLinkData[],
-  positions: Map<string, { x: number, y: number }>,
+  positions: Map<string, { x: number; y: number }>
 ) {
   // Data join para la creación de los enlaces entre nodos
   g.selectAll<SVGGElement, TreeLinkData>("g.link")
-    .data(linksData, d => `link-${d.sourceId}-${d.targetId}`)
+    .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}`)
     .join(
-      enter => {
+      (enter) => {
         // Creación del grupo para cada nuevo enlace
-        const gLink = enter.append("g")
+        const gLink = enter
+          .append("g")
           .attr("class", "link")
           .attr("id", (d) => `link-${d.sourceId}-${d.targetId}`);
 
         // Path del enlace
-        gLink.append("path")
+        gLink
+          .append("path")
           .attr("class", `tree-link`)
           .attr("fill", "none")
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
           .attr("stroke-width", 1.5)
-          .attr("d", d => {
+          .attr("d", (d) => {
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
             const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
@@ -208,9 +211,9 @@ export function drawTreeLinks(
 
         return gLink;
       },
-      update => update,
-      exit => exit
-    )
+      (update) => update,
+      (exit) => exit
+    );
 }
 
 /**
@@ -236,10 +239,11 @@ export function drawListNodes(
   const { margin, elementWidth, elementHeight, nodeSpacing, height } = dims;
 
   // Data join para la creación de los nodos
-  nodesLayer.selectAll<SVGGElement, ListNodeData<number>>("g.node")
+  nodesLayer
+    .selectAll<SVGGElement, ListNodeData<number>>("g.node")
     .data(listNodes, (d) => d.id)
     .join(
-      enter => {
+      (enter) => {
         // Creación del grupo para cada nodo entrante
         const gEnter = enter
           .append("g")
@@ -306,7 +310,7 @@ export function drawListNodes(
 
         return gEnter;
       },
-      update => {
+      (update) => {
         // Guarda la posición actualizada para cada nodo presente en el DOM
         update.each((d, i) => {
           const x = margin.left + i * nodeSpacing;
@@ -323,7 +327,7 @@ export function drawListNodes(
 
         return update;
       },
-      exit => exit
+      (exit) => exit
     );
 }
 
@@ -343,10 +347,11 @@ export function drawListLinks(
   elementHeight: number
 ) {
   // Data join para la creación de los enlaces entre nodos
-  linksLayer.selectAll<SVGGElement, ListLinkData>("g.link")
+  linksLayer
+    .selectAll<SVGGElement, ListLinkData>("g.link")
     .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`)
     .join(
-      enter => {
+      (enter) => {
         // Creación del grupo para cada nuevo enlace
         const gLink = enter
           .append("g")
@@ -375,8 +380,8 @@ export function drawListLinks(
 
         return gLink;
       },
-      update => update,
-      exit => exit
+      (update) => update,
+      (exit) => exit
     );
 }
 
@@ -403,7 +408,7 @@ export function drawTraversalSequence(
   g.selectAll<SVGGElement, TraversalNodeType>("text.seq")
     .data(values, (d) => d.id)
     .join(
-      enter => {
+      (enter) => {
         // Creación del grupo para cada nodo entrante
         const textEnter = enter
           .append("text")
@@ -427,7 +432,7 @@ export function drawTraversalSequence(
 
         return textEnter;
       },
-      update => {
+      (update) => {
         // Actualizar la posición y el valor del elemento
         update
           .attr("transform", (d, i) => {
@@ -444,7 +449,7 @@ export function drawTraversalSequence(
 
         return update;
       },
-      exit =>
+      (exit) =>
         exit
           .each((d) => {
             seqPositions.delete(d.id);
@@ -462,7 +467,7 @@ export function drawTraversalSequence(
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  */
-export function animateHighlightNode(
+export async function animateHighlightNode(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodeId: string,
   rectValues: {
@@ -475,9 +480,19 @@ export function animateHighlightNode(
     textFontSize: string;
     textFontWeight: string;
   },
+  bus: EventBus,
+  labels: {
+    START: number;
+    RETURN_TOP?: number;
+    RETURN_HEAD?: number;
+    RETURN_INFO?: number;
+  },
+  stepId: string,
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+  // Etiquetas para el registro de eventos
+
   // Estilos para contenedor y texto del nodo
   const { highlightColor, rectStrokeColor, rectStrokeWidth } = rectValues;
   const { textFillColor, textFontSize, textFontWeight } = textValues;
@@ -485,9 +500,26 @@ export function animateHighlightNode(
   // Grupo del lienzo correspondiente al nodo a resaltar
   const nodeGroup = svg.select<SVGGElement>(`#${nodeId}`);
 
+  // Inicio de la operación
+  bus.emit("op:start", { op: stepId });
+
   // Grupo correspondiente al contenedor principal del nodo y al valor de este
   const rect = nodeGroup.select("rect");
   const text = nodeGroup.select("text");
+
+  bus.emit("step:progress", { stepId, lineIndex: labels.START });
+  await delay(400);
+
+  if (labels.RETURN_TOP) {
+      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
+      await delay(700);
+  } else if (labels.RETURN_HEAD) {
+      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_HEAD });
+      await delay(700);
+  } else if (labels.RETURN_INFO) {
+      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_INFO });
+      await delay(700);
+  }
 
   // Animación de sobresalto del contenedor del nodo
   rect
@@ -515,6 +547,9 @@ export function animateHighlightNode(
     .style("font-size", textFontSize)
     .style("font-weight", textFontWeight);
 
+  // Fin de la operación
+  bus.emit("op:done", { op: stepId });
+
   // Restablecimiento de los valores de las queries del usuario
   resetQueryValues();
 
@@ -524,11 +559,15 @@ export function animateHighlightNode(
 
 /**
  * Función encargada de eliminar todos los nodos y enlaces dentro del lienzo.
- * @param nodesG Selección D3 del grupo <g> que contiene los nodos de la lista enlazada.
- * @param linksG Selección D3 del grupo <g> que contiene los enlaces entre nodos.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la limpieza.
  * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
+ * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
+ * @param stepId Identificador del paso de animación actual; reenviado en los eventos de progreso emitidos.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animateClearList(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
@@ -576,20 +615,10 @@ export async function animateClearList(
 
     // salida de los enlaces
     bus.emit("step:progress", { stepId, lineIndex: labels.RESET_SIZE });
-    await linksG
-      .transition()
-      .duration(800)
-      .style("opacity", 0)
-      .remove()
-      .end();
+    await linksG.transition().duration(800).style("opacity", 0).remove().end();
 
     // salida de los nodos
-    await nodesG
-      .transition()
-      .duration(800)
-      .style("opacity", 0)
-      .remove()
-      .end();
+    await nodesG.transition().duration(800).style("opacity", 0).remove().end();
 
     // Limpieza del mapa de posiciones
     nodePositions.clear();
@@ -604,18 +633,24 @@ export async function animateClearList(
 
 /**
  * Función encargada de eliminar todos los nodos y enlaces dentro del lienzo.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la limpieza.
  * @param elementPositions Objeto que contiene los mapas de posiciones (x, y) de los elementos dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
+ * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animateClearTree(
-  treeG: Selection<SVGGElement, unknown, null, undefined>,
-  seqG: Selection<SVGGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   elementPositions: {
     nodePositions: Map<string, { x: number; y: number }>;
     seqPositions: Map<string, { x: number; y: number }>;
+  },
+  bus: EventBus,
+  labels: {
+    CLEAR_ROOT: number;
   },
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
@@ -623,43 +658,53 @@ export async function animateClearTree(
   // Obtenemos los mapas de posiciones de los elementos
   const { nodePositions, seqPositions } = elementPositions;
 
-  // Animación de salida de los enlaces
-  await treeG
-    .selectAll("g.link")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "clean" });
 
-  // Animación de salida de los nodos
-  await treeG
-    .selectAll("g.node")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+    // Elementos dentro del lienzo
+    const treeG = svg.select<SVGGElement>("g#tree-container");
+    const seqG = svg.select<SVGGElement>("g#seq-container");
 
-  // Animación de salida de los valores de recorrido
-  await seqG
-    .selectAll("text.seq")
-    .transition()
-    .duration(800)
-    .style("opacity", 0)
-    .end();
+    // Salida de los enlaces
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAR_ROOT });
+    await treeG
+      .selectAll("g.link")
+      .transition()
+      .duration(800)
+      .style("opacity", 0)
+      .end();
 
-  // Eliminación de los grupos contenedores del DOM
-  treeG.remove();
-  seqG.remove();
+    // Salida de los nodos
+    await treeG
+      .selectAll("g.node")
+      .transition()
+      .duration(800)
+      .style("opacity", 0)
+      .end();
 
-  // Limpieza de los mapas de posiciones
-  nodePositions.clear();
-  seqPositions.clear();
+    // Salida de los valores de la secuencia de recorrido
+    await seqG
+      .selectAll("text.seq")
+      .transition()
+      .duration(800)
+      .style("opacity", 0)
+      .end();
 
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
+    // Eliminación de los grupos contenedores del DOM
+    treeG.remove();
+    seqG.remove();
 
-  // Finalización de la animación
-  setIsAnimating(false);
+    // Limpieza de los mapas de posiciones
+    nodePositions.clear();
+    seqPositions.clear();
+
+    // Fin de la operación
+    bus.emit("op:done", { op: "clean" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
 }
 
 /**
@@ -684,7 +729,8 @@ export async function repositionList(
     tailNodeId: string | null;
   }
 ) {
-  const { headIndicator, headNodeId, tailIndicator, tailNodeId } = repositionOptions;
+  const { headIndicator, headNodeId, tailIndicator, tailNodeId } =
+    repositionOptions;
   const promises: Promise<void>[] = [];
 
   // Selección de nodos a desplazar (re-vinculación de datos)
@@ -708,10 +754,7 @@ export async function repositionList(
   // Selección de enlaces a ajustar (re-vinculación de datos)
   const linksSel = svg
     .selectAll<SVGGElement, ListLinkData>("g.link")
-    .data(
-      linksData,
-      (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`
-    );
+    .data(linksData, (d) => `link-${d.sourceId}-${d.targetId}-${d.type}`);
 
   // Promesa para ajuste de enlaces
   promises.push(
@@ -723,7 +766,13 @@ export async function repositionList(
       .attr("d", (d) => {
         const sourcePos = positions.get(d.sourceId) ?? null;
         const targetPos = positions.get(d.targetId) ?? null;
-        return buildListPath(d.type, sourcePos, targetPos, SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH, SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT)
+        return buildListPath(
+          d.type,
+          sourcePos,
+          targetPos,
+          SVG_LINKED_LIST_VALUES.ELEMENT_WIDTH,
+          SVG_LINKED_LIST_VALUES.ELEMENT_HEIGHT
+        );
       })
       .end()
   );
@@ -766,7 +815,7 @@ export async function repositionList(
     }
   }
 
-  return Promise.all(promises).then(() => { });
+  return Promise.all(promises).then(() => {});
 }
 
 /**
@@ -820,7 +869,7 @@ export async function repositionTree(
     })
     .end();
 
-  return Promise.all([p1, p2]).then(() => { });
+  return Promise.all([p1, p2]).then(() => {});
 }
 
 /**
@@ -842,10 +891,7 @@ export async function animateTreeTraversal(
   setIsAnimating: Dispatch<SetStateAction<boolean>>,
   opts: TreeTraversalAnimOptions = {}
 ) {
-  const {
-    recolor = true,
-    strokeColor = "#8aa0ff",
-  } = opts;
+  const { recolor = true, strokeColor = "#8aa0ff" } = opts;
 
   // Restablecimiento del fondo original de los nodos
   if (recolor) {
@@ -859,7 +905,9 @@ export async function animateTreeTraversal(
 
   for (const node of targetNodes) {
     // Selección de los elementos del nodo
-    const nodeCircle = treeG.select<SVGCircleElement>(`g#${node.id} circle.node-container`);
+    const nodeCircle = treeG.select<SVGCircleElement>(
+      `g#${node.id} circle.node-container`
+    );
     const seqText = seqG.select<SVGTextElement>(`text#${node.id}`);
 
     // Color y tamaño original del borde del círculo contenedor del nodo
@@ -952,23 +1000,31 @@ export async function showTreeHint(
 ) {
   // Valores por defecto
   const palette = {
-    bg: "#1b2330", stroke: "#ff6b6b", label: "#f4a6a6", value: "#ffd5d5",
-    ...(opts.palette ?? {})
+    bg: "#1b2330",
+    stroke: "#ff6b6b",
+    label: "#f4a6a6",
+    value: "#ffd5d5",
+    ...(opts.palette ?? {}),
   };
   const size = {
-    width: 50, height: 34, radius: 10, scaleFrom: 0.92,
-    ...(opts.size ?? {})
+    width: 50,
+    height: 34,
+    radius: 10,
+    scaleFrom: 0.92,
+    ...(opts.size ?? {}),
   };
   const anchor = {
-    side: "right" as const, dx: 0, dy: -10,
-    ...(opts.anchor ?? {})
+    side: "right" as const,
+    dx: 0,
+    dy: -10,
+    ...(opts.anchor ?? {}),
   };
   const typography = {
     labelFz: "9px",
     valueFz: "11px",
     labelFw: 600,
     valueFw: 800,
-    ...(opts.typography ?? {})
+    ...(opts.typography ?? {}),
   };
 
   // Capa overlay
@@ -983,9 +1039,13 @@ export async function showTreeHint(
       if (!p) return null;
       return { x: treeOffset.x + p.x, y: treeOffset.y + p.y };
     } else {
-      const s = positions.get(target.sourceId), t = positions.get(target.targetId);
+      const s = positions.get(target.sourceId),
+        t = positions.get(target.targetId);
       if (!s || !t) return;
-      return { x: treeOffset.x + (s.x + t.x) / 2, y: treeOffset.y + (s.y + t.y) / 2 };
+      return {
+        x: treeOffset.x + (s.x + t.x) / 2,
+        y: treeOffset.y + (s.y + t.y) / 2,
+      };
     }
   })();
   if (!anchorXY) return;
@@ -993,46 +1053,70 @@ export async function showTreeHint(
   // Aplicación de offset por lado
   const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
   const sideOffset =
-    anchor.side === "left" ? -r - 13 :
-      anchor.side === "right" ? +r + 13 :
-        0;
+    anchor.side === "left" ? -r - 13 : anchor.side === "right" ? +r + 13 : 0;
 
-  const cx = anchorXY.x + (anchor.side === "left" || anchor.side === "right" ? sideOffset : 0) + (anchor.dx ?? 0);
-  const cy = anchorXY.y + (anchor.side === "above" ? -(r + 13) : anchor.side === "below" ? +(r + 13) : 0) + (anchor.dy ?? 0);
+  const cx =
+    anchorXY.x +
+    (anchor.side === "left" || anchor.side === "right" ? sideOffset : 0) +
+    (anchor.dx ?? 0);
+  const cy =
+    anchorXY.y +
+    (anchor.side === "above"
+      ? -(r + 13)
+      : anchor.side === "below"
+        ? +(r + 13)
+        : 0) +
+    (anchor.dy ?? 0);
 
   // Grupo contenedor del badge
-  const g = overlay.append("g")
+  const g = overlay
+    .append("g")
     .attr("class", "tree-hint")
     .attr("transform", `translate(${cx}, ${cy}) scale(0.92)`)
     .style("opacity", 0);
 
   // Fondo
   g.append("rect")
-    .attr("x", -size.width / 2).attr("y", -size.height / 2)
-    .attr("width", size.width).attr("height", size.height)
-    .attr("rx", size.radius).attr("ry", size.radius)
-    .attr("fill", palette.bg).attr("stroke", palette.stroke).attr("stroke-width", 1);
+    .attr("x", -size.width / 2)
+    .attr("y", -size.height / 2)
+    .attr("width", size.width)
+    .attr("height", size.height)
+    .attr("rx", size.radius)
+    .attr("ry", size.radius)
+    .attr("fill", palette.bg)
+    .attr("stroke", palette.stroke)
+    .attr("stroke-width", 1);
 
   // Textos (centrados dentro del chip de tamaño fijo)
   const textG = g.append("g").attr("class", "txt");
-  textG.append("text")
-    .attr("text-anchor", "middle").attr("y", -4)
-    .style("font-size", `${typography.labelFz}`).style("font-weight", `${typography.labelFw}`)
-    .attr("fill", palette.label).text(content.label);
+  textG
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("y", -4)
+    .style("font-size", `${typography.labelFz}`)
+    .style("font-weight", `${typography.labelFw}`)
+    .attr("fill", palette.label)
+    .text(content.label);
 
-  textG.append("text")
-    .attr("text-anchor", "middle").attr("y", 12)
-    .style("font-size", `${typography.valueFz}`).style("font-weight", `${typography.valueFw}`)
-    .attr("fill", palette.value).text(content.value);
+  textG
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("y", 12)
+    .style("font-size", `${typography.valueFz}`)
+    .style("font-weight", `${typography.valueFw}`)
+    .attr("fill", palette.value)
+    .text(content.value);
 
   // Animación: pop-in y fade-out
-  await g.transition()
+  await g
+    .transition()
     .duration(500)
     .style("opacity", 1)
     .attr("transform", `translate(${cx}, ${cy}) scale(1)`)
     .end();
 
-  await g.transition()
+  await g
+    .transition()
     .delay(1000)
     .duration(800)
     .style("opacity", 0)
@@ -1048,16 +1132,23 @@ export async function defaultAppearTreeNode(
   nodeGroup: Selection<SVGGElement, unknown, null, undefined>
 ) {
   // Selección de los elementos del nodo y configuración inicial
-  nodeGroup
-    .style("opacity", 1);
-  const circle = nodeGroup.select<SVGCircleElement>("circle.node-container").attr("r", 0);
-  const text = nodeGroup.select<SVGTextElement>("text.node-value").style("opacity", 0);
+  nodeGroup.style("opacity", 1);
+  const circle = nodeGroup
+    .select<SVGCircleElement>("circle.node-container")
+    .attr("r", 0);
+  const text = nodeGroup
+    .select<SVGTextElement>("text.node-value")
+    .style("opacity", 0);
 
   // Animaciones de entrada
-  const p1 = circle.transition().duration(750)
+  const p1 = circle
+    .transition()
+    .duration(750)
     .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.15)
-    .transition().duration(750)
-    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS).end();
+    .transition()
+    .duration(750)
+    .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+    .end();
   const p2 = text.transition().duration(650).style("opacity", 1).end();
 
   await Promise.all([p1, p2]);
@@ -1075,15 +1166,12 @@ export async function defaultDeleteTreeNode(
   const value = nodeGroup.select<SVGCircleElement>("text.node-value");
 
   // Animaciones de salida
-  const p1 = circle.transition().duration(750)
-    .attr("r", 0).end();
+  const p1 = circle.transition().duration(750).attr("r", 0).end();
 
-  const p2 = value.transition().duration(500)
-    .style("opacity", 0).end();
+  const p2 = value.transition().duration(500).style("opacity", 0).end();
 
   await Promise.all([p1, p2]);
 
   // Eliminación del grupo del DOM
-  await nodeGroup.transition().duration(500)
-    .style("opacity", 0).remove().end();
+  await nodeGroup.transition().duration(500).style("opacity", 0).remove().end();
 }

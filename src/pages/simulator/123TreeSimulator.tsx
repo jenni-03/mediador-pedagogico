@@ -1,9 +1,7 @@
-// src/simulators/123TreeSimulator.tsx
-
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { Arbol23 } from "../../shared/utils/structures/Arbol23";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { Arbol23 } from "../../domain/structures/Arbol23";
 import { useTwoThreeTree } from "./hooks/estructures/arbol123/use123Tree";
 import { TwoThreeTreeRender } from "./components/estructures/arboles/TwoThreeTreeRender";
 

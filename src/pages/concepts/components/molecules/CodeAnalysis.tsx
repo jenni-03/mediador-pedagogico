@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { CodeAnalysisProps } from "../../../../types";
+import { CodeAnalysisProps } from "../../../../domain/utils/types";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 
 export function CodeAnalysis({

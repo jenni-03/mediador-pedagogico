@@ -1,6 +1,5 @@
-// src/shared/utils/draw/twoThreeDrawActionsUtilities.ts
 import * as d3 from "d3";
-import { HierarchyNodeData } from "../../../types";
+import { HierarchyNodeData } from "../../../domain/utils/types";
 
 /* ────────── Dimensiones base para 2-3 ────────── */
 export const SVG_TT_VALUES = {

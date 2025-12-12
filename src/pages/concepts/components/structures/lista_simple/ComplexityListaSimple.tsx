@@ -1,4 +1,4 @@
-import { complexityListaSimple } from "../../../../../shared/constants/complexityStructures/complexityListaSimple";
+import { complexityListaSimple } from "../../../../../domain/constants/complexityStructures/complexityListaSimple";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityListaSimple() {
