@@ -9,6 +9,9 @@ import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { SVG_BINARY_TREE_VALUES } from "../../../../../domain/constants/consts";
 import { hierarchy, select, type HierarchyNode } from "d3";
 import { simulateHeapInsert } from "../../../../../domain/utils/heapSimulator";
+import { useBus } from "../../../../../shared/hooks/useBus";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
+import { getArbolHeapCode } from "../../../../../domain/constants/pseudocode/arbolHeapCode";
 
 import {
   drawHeapNodes,
@@ -25,6 +28,8 @@ import {
 
 /* ───────── Toggle de logs ───────── */
 const DEBUG_TRANSCRIPT = true;
+
+const HEAP_CODE = getArbolHeapCode();
 
 /* ───────── Util: level-order (id,value) desde jerarquía ───────── */
 function toHeapItemsLevelOrder(
@@ -309,7 +314,9 @@ export function useHeapRender(
   const nodePositions = useRef(
     new Map<string, { x: number; y: number }>()
   ).current;
+
   const treeOffset = useRef({ x: 0, y: 0 }).current;
+  const lastInsertedRef = useRef<string | null>(null);
 
   const root = useMemo(
     () => (heapData ? hierarchy(heapData) : null),
@@ -317,6 +324,7 @@ export function useHeapRender(
   );
   const prevRoot = usePrevious(root);
   const { setIsAnimating } = useAnimation();
+  const bus = useBus();
 
   /* ───────── Proyección a arreglo level-order (sin placeholders) ───────── */
   const heapArray = useMemo(() => {
@@ -380,6 +388,7 @@ export function useHeapRender(
   }, [heapArray]);
 
   /* ───────── Render base ───────── */
+  /* ───────── Render base ───────── */
   useEffect(() => {
     if (!svgRef.current || !heapArray.length) return;
 
@@ -400,6 +409,7 @@ export function useHeapRender(
       radius: r,
     });
 
+    // Siempre mantenemos nodePositions al día (el animador los necesita)
     nodePositions.clear();
     positions.forEach((p: any, id: string) => nodePositions.set(id, p));
 
@@ -426,9 +436,22 @@ export function useHeapRender(
     }
     treeG.attr("transform", `translate(${treeOffset.x}, ${treeOffset.y})`);
 
+    // 🔒 Congelar DOM mientras haya INSERT o DELETE en curso
+    const insertedId = (query as any).insertedId as string | null;
+    const hasDelete =
+      (query as any).deletedId != null || !!(query as any).toDeleteRoot;
+
+    if (insertedId || hasDelete) {
+      // No redibujamos el heap con heapArray (que ya es el estado NUEVO).
+      // El DOM se queda en el estado anterior; los efectos de insert/delete
+      // se encargan de pintar el estado final en el momento correcto.
+      return;
+    }
+
+    // Render normal cuando no hay operaciones animadas en curso
     drawHeapNodes(treeG as any, heapArray as any, nodePositions);
     drawHeapLinks(treeG as any, linksData, nodePositions);
-  }, [heapArray, linksData, nodePositions]);
+  }, [heapArray, linksData, nodePositions, query]);
 
   /* ───────── Inserción ───────── */
   useEffect(() => {
@@ -437,8 +460,13 @@ export function useHeapRender(
     const insertedId = (query as any).insertedId as string | null;
     if (!insertedId || !heapArray.length) return;
 
+    // Deduplicador: evita re-animar el mismo insert
+    if (lastInsertedRef.current === insertedId) return;
+    lastInsertedRef.current = insertedId;
+
     const svg = select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.heap-container");
+    if (treeG.empty()) return;
 
     (async () => {
       setIsAnimating(true);
@@ -451,9 +479,11 @@ export function useHeapRender(
         return;
       }
 
+      // Estado previo (antes del insert) desde prevRoot
       const prevArray = toHeapItemsLevelOrder(prevRoot ?? null);
       const domIds = new Set(heapArray.map((n) => n.id));
 
+      // Preferimos transcript REAL del dominio si calza con el DOM
       const transcriptFromLogic =
         (query as any).heapTranscript?.kind === "insert"
           ? (query as any).heapTranscript
@@ -485,13 +515,75 @@ export function useHeapRender(
         });
       }
 
-      await animateHeapInsert(
-        treeG,
-        { transcript, linksData },
-        nodePositions,
-        resetQueryValues,
-        setIsAnimating
-      );
+      // ───────── Pseudocódigo HEAP.insert(...) ─────────
+      const insertCode = HEAP_CODE.insert;
+      const labels = insertCode.labels!;
+      type LabelKey = keyof typeof labels;
+
+      const stepId = `heap-insert-${Date.now()}`;
+      const step = async (labelName: LabelKey, ms = 600) => {
+        const lineIndex = labels[labelName];
+        if (typeof lineIndex !== "number") return;
+        bus.emit("step:progress", { stepId, lineIndex });
+        await delay(ms);
+      };
+
+      bus.emit("op:start", { op: "insert" });
+
+      try {
+        // (header + precondición)
+        await step("HEAP_INSERT_HEADER", 450);
+        await step("HEAP_INSERT_MAX_CAP_COMMENT", 300);
+        await step("HEAP_INSERT_MAX_CAP_IF", 300);
+
+        // (1) Append
+        await step("HEAP_INSERT_NEW_NODE", 350);
+        await step("HEAP_INSERT_APPEND_ARRAY", 350);
+
+        // (2) Heapify-up: usamos TODOS los pasos del transcript
+        const tSteps: any[] = Array.isArray(transcript?.steps)
+          ? transcript.steps
+          : [];
+
+        if (!tSteps.length) {
+          // Fallback mínimo: una iteración genérica
+          await step("HEAP_INSERT_HEAPIFY_WHILE", 380);
+          await step("HEAP_INSERT_HEAPIFY_SWAP", 380);
+        } else {
+          for (const s of tSteps) {
+            // siempre marcamos evaluación del while
+            await step("HEAP_INSERT_HEAPIFY_WHILE", 260);
+
+            const typeStr = (s.type ?? "").toString().toLowerCase();
+            const hasSwapFlag = s.swap === true;
+            const hasSwapName = typeStr.includes("swap");
+
+            if (hasSwapFlag || hasSwapName) {
+              await step("HEAP_INSERT_HEAPIFY_SWAP", 260);
+            }
+          }
+        }
+
+        // ⛔️ HASTA AQUÍ solo se ha mostrado pseudocódigo.
+        // AHORA recién pintamos el heap FINAL en el DOM.
+        drawHeapNodes(treeG as any, heapArray as any, nodePositions);
+        drawHeapLinks(treeG as any, linksData, nodePositions);
+
+        // Y luego lanzamos la animación explicativa de heapify
+        await animateHeapInsert(
+          treeG,
+          { transcript, linksData },
+          nodePositions,
+          resetQueryValues,
+          setIsAnimating
+        );
+      } catch (err) {
+        console.warn("[HeapRender] insert error:", err);
+        resetQueryValues();
+        setIsAnimating(false);
+      } finally {
+        bus.emit("op:done", { op: "insert" });
+      }
     })();
   }, [
     svgRef,
@@ -502,6 +594,7 @@ export function useHeapRender(
     prevRoot,
     resetQueryValues,
     setIsAnimating,
+    bus,
   ]);
 
   /* ───────── Level-Order: SOLO cuando lo pida (nonce levelOrderReqId) ───────── */
@@ -539,12 +632,11 @@ export function useHeapRender(
     if (loRunningRef.current) return;
 
     const svgEl = svgRefLive.current;
-    if (!svgEl) {
-      try {
-        resetRef.current();
-      } catch {}
-      return;
-    }
+
+    // OJO: para level-order sí queremos poder mostrar pseudocódigo aunque no haya DOM,
+    // pero si no hay SVG y el heap NO está vacío, abortamos.
+    const svg = svgEl ? select(svgEl) : null;
+    const treeG = svg ? svg.select<SVGGElement>("g.heap-container") : null;
 
     // preferimos el transcript de la lógica
     const t = (queryRef.current as any).heapTranscript;
@@ -557,32 +649,74 @@ export function useHeapRender(
           ).map((x) => x.id)
         : undefined;
 
-    const svg = select(svgEl);
-    const treeG = svg.select<SVGGElement>("g.heap-container");
-    if (treeG.empty()) {
-      try {
-        resetRef.current();
-      } catch {}
-      return;
-    }
-
-    const hasNodes = !treeG.select<SVGGElement>("g.heap-node").empty();
-    const hasLinks = (linksRef.current?.length ?? 0) > 0;
+    const hasContainer = !!treeG && !treeG.empty();
+    const hasNodes =
+      hasContainer && !treeG!.select<SVGGElement>("g.heap-node").empty();
+    const hasLinks = hasContainer && (linksRef.current?.length ?? 0) > 0;
     const willInfer = !orderIds || orderIds.length === 0;
-    if (!hasNodes || (willInfer && !hasLinks)) {
-      try {
-        resetRef.current();
-      } catch {}
-      return;
-    }
 
     loRunningRef.current = true;
     lastHandledReqId.current = reqId;
 
     (async () => {
       try {
+        animRef.current(true);
+
+        // ───── Config de pseudocódigo (puede NO existir) ─────
+        const levelCode: any =
+          (HEAP_CODE as any).levelOrder ?? (HEAP_CODE as any).getLevelOrder; // fallback por si acaso
+        const labels = (levelCode?.labels ?? null) as Record<
+          string,
+          number
+        > | null;
+
+        const stepId = `heap-levelorder-${Date.now()}`;
+        const step = async (labelName: string, ms = 600) => {
+          if (!labels) return;
+          const lineIndex = labels[labelName];
+          if (typeof lineIndex !== "number") return;
+          bus.emit("step:progress", { stepId, lineIndex });
+          await delay(ms);
+        };
+
+        bus.emit("op:start", { op: "levelOrder" });
+
+        // ───────── Caso 1: NO hay DOM con árbol para animar ─────────
+        if (!hasContainer) {
+          await step("HEAP_LEVEL_HEADER", 450);
+          await step("HEAP_LEVEL_EMPTY_IF", 900);
+
+          resetRef.current();
+          animRef.current(false);
+          return;
+        }
+
+        // ───────── Caso 2: heap vacío o sin información suficiente para animar ─────────
+        if (!hasNodes || (!hasLinks && willInfer)) {
+          await step("HEAP_LEVEL_HEADER", 450);
+          await step("HEAP_LEVEL_EMPTY_IF", 900);
+
+          resetRef.current();
+          animRef.current(false);
+          return;
+        }
+
+        // ───────── Caso 3: heap NO vacío ─────────
+        await step("HEAP_LEVEL_HEADER", 450);
+        await step("HEAP_LEVEL_EMPTY_IF", 320); // condición falsa aquí
+
+        // Simulamos el for (i = 0; i < array.size(); i++)
+        const count = orderIds ? orderIds.length : linksRef.current.length + 1;
+        for (let i = 0; i < count; i++) {
+          await step("HEAP_LEVEL_FOR_LOOP", 260);
+        }
+
+        // return out;
+        await step("HEAP_LEVEL_RETURN", 380);
+
+        // ───────── Fin pseudocódigo: ahora sí animamos el recorrido ─────────
         await animateHeapGetLevelOrder(
-          treeG,
+          treeG!,
           {
             linksData: linksRef.current,
             orderIds,
@@ -592,6 +726,7 @@ export function useHeapRender(
           animRef.current
         );
       } catch (err) {
+        console.warn("[HeapRender] levelOrder error:", err);
         try {
           resetRef.current();
         } catch {}
@@ -601,8 +736,10 @@ export function useHeapRender(
       } finally {
         loRunningRef.current = false;
         lastHandledReqId.current = null; // permitir re-disparar
+        bus.emit("op:done", { op: "levelOrder" });
       }
     })();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [(query as any).levelOrderReqId]);
 
@@ -616,6 +753,7 @@ export function useHeapRender(
 
     const svg = select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.heap-container");
+    if (treeG.empty()) return;
 
     const targetId =
       deletedId ?? inferDeletedIdFromPrev(prevRoot ?? null, root);
@@ -643,6 +781,7 @@ export function useHeapRender(
     const levelSpacing = SVG_BINARY_TREE_VALUES.LEVEL_SPACING;
     const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
 
+    // Estado PREVIO al delete (desde prevRoot)
     const prevArr = (() => {
       if (!prevRoot) return [] as any[];
       const q = [prevRoot];
@@ -671,6 +810,9 @@ export function useHeapRender(
       }
       return out;
     })();
+
+    const nPrev = prevArr.length;
+    const isTrivialDelete = nPrev === 1;
 
     const { positions: prevPos } = layoutHeapGrid(prevArr as any, {
       margin,
@@ -709,32 +851,131 @@ export function useHeapRender(
     (async () => {
       setIsAnimating(true);
 
-      await animateHeapDelete(
-        treeG,
-        {
-          deletedId: targetId,
-          updatedRootId,
-          linksData,
-          heapFix: (query as any).heapFix ?? null,
-          transcript: transcriptFromLogic ?? null,
-          preview: replacerId
-            ? {
-                fromId: replacerId,
-                toId: targetId,
-                fromXY: prevXY.get(replacerId),
-                toXY: prevXY.get(targetId),
-                fromValue: transcriptFromLogic?.initial?.find?.(
-                  (x: any) => x.id === replacerId
-                )?.value,
+      // ───────── Pseudocódigo HEAP.delete(...) ─────────
+      const deleteCode = HEAP_CODE.delete;
+      const labels = deleteCode.labels!;
+      type LabelKey = keyof typeof labels;
+
+      const stepId = `heap-delete-${Date.now()}`;
+      const step = async (labelName: LabelKey, ms = 600) => {
+        const lineIndex = labels[labelName];
+        if (typeof lineIndex !== "number") return;
+        bus.emit("step:progress", { stepId, lineIndex });
+        await delay(ms);
+      };
+
+      bus.emit("op:start", { op: "delete" });
+
+      try {
+        // (1) Header + precondición HEAP_EMPTY (falsa aquí)
+        await step("HEAP_DELETE_HEADER", 450);
+        await step("HEAP_DELETE_EMPTY_COMMENT", 320);
+        await step("HEAP_DELETE_EMPTY_IF", 320);
+
+        // (2) Búsqueda de índice + TARGET_NOT_FOUND (falsa aquí)
+        await step("HEAP_DELETE_INDEXOF", 380);
+        await step("HEAP_DELETE_NOT_FOUND_COMMENT", 320);
+        await step("HEAP_DELETE_NOT_FOUND_IF", 320);
+
+        // (3) n / lastIdx (sin labels; se omiten visualmente)
+
+        // (4) Caso trivial n == 1
+        if (isTrivialDelete) {
+          await step("HEAP_DELETE_TRIVIAL_IF", 380);
+          await step("HEAP_DELETE_CLEAR_ARRAY", 380);
+        } else {
+          // if (n == 1) { ... } condición falsa
+          await step("HEAP_DELETE_TRIVIAL_IF", 260);
+
+          // (5) Mover último nodo al hueco
+          await step("HEAP_DELETE_MOVE_LAST_SET", 380);
+          await step("HEAP_DELETE_MOVE_LAST_REMOVE", 380);
+
+          // (6) Decidir dirección (up/down) según transcript
+          const tSteps: any[] = Array.isArray(transcriptFromLogic?.steps)
+            ? transcriptFromLogic!.steps
+            : [];
+
+          let dir: "up" | "down" | null = null;
+          for (const s of tSteps) {
+            const typeStr = (s.type ?? "").toString().toLowerCase();
+            const sDir = (s.dir ?? "").toString().toLowerCase();
+            if (sDir === "up" || typeStr.includes("up")) {
+              dir = "up";
+              break;
+            }
+            if (sDir === "down" || typeStr.includes("down")) {
+              dir = "down";
+              break;
+            }
+          }
+
+          await step("HEAP_DELETE_DECIDE_DIR_IF", 360);
+
+          // Steps relevantes de heapify (comparaciones / swaps / pickChild)
+          const relevantSteps = tSteps.filter((s: any) => {
+            const typeStr = (s.type ?? "").toString().toLowerCase();
+            return (
+              typeStr.includes("compare") ||
+              typeStr.includes("swap") ||
+              typeStr.includes("pickchild") ||
+              s.swap === true
+            );
+          });
+
+          if (!relevantSteps.length) {
+            // Sin transcript “rico”: al menos un toque básico
+            if (dir === "up") {
+              await step("HEAP_DELETE_HEAPIFY_UP", 380);
+            } else {
+              await step("HEAP_DELETE_HEAPIFY_DOWN", 380);
+            }
+          } else {
+            // Repetimos la línea de heapify según la dirección
+            for (const _ of relevantSteps) {
+              if (dir === "up") {
+                await step("HEAP_DELETE_HEAPIFY_UP", 260);
+              } else {
+                await step("HEAP_DELETE_HEAPIFY_DOWN", 260);
               }
-            : undefined,
-          initialPositionsById: prevPos,
-          initialLinksData: prevLinksData,
-        } as any,
-        nodePositions,
-        resetQueryValues,
-        setIsAnimating
-      );
+            }
+          }
+        }
+
+        // ───────── Fin pseudocódigo: ahora sí animamos el delete ─────────
+        await animateHeapDelete(
+          treeG,
+          {
+            deletedId: targetId,
+            updatedRootId,
+            linksData,
+            heapFix: (query as any).heapFix ?? null,
+            transcript: transcriptFromLogic ?? null,
+            preview: replacerId
+              ? {
+                  fromId: replacerId,
+                  toId: targetId,
+                  fromXY: prevXY.get(replacerId),
+                  toXY: prevXY.get(targetId),
+                  fromValue: transcriptFromLogic?.initial?.find?.(
+                    (x: any) => x.id === replacerId
+                  )?.value,
+                }
+              : undefined,
+            initialPositionsById: prevPos,
+            initialLinksData: prevLinksData,
+          } as any,
+          nodePositions,
+          resetQueryValues,
+          setIsAnimating
+        );
+      } catch (err) {
+        console.warn("[HeapRender] delete error:", err);
+        resetQueryValues();
+        setIsAnimating(false);
+      } finally {
+        bus.emit("op:done", { op: "delete" });
+      }
     })();
   }, [
     svgRef,
@@ -746,24 +987,96 @@ export function useHeapRender(
     root,
     resetQueryValues,
     setIsAnimating,
+    bus,
   ]);
 
   /* ───────── Búsqueda ───────── */
   useEffect(() => {
     if (!svgRef.current) return;
-    if ((query as any).toSearch == null) return;
 
-    const matches = heapArray
-      .filter((n) => n.value === (query as any).toSearch)
-      .map((n) => n.id);
-    if (matches.length === 0) return;
+    const valueToSearch = (query as any).toSearch as number | null | undefined;
+    if (valueToSearch == null) return;
 
     const svg = select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.heap-container");
+    if (treeG.empty()) {
+      // No hay DOM para animar, limpiamos estado de la operación
+      resetQueryValues();
+      return;
+    }
+
+    // Nodos que coinciden (para la animación final)
+    const matches = heapArray
+      .filter((n) => n.value === valueToSearch)
+      .map((n) => n.id);
 
     (async () => {
       setIsAnimating(true);
-      await animateHeapSearch(treeG, matches, resetQueryValues, setIsAnimating);
+
+      const searchCode = HEAP_CODE.search;
+      const labels = searchCode.labels!;
+      type LabelKey = keyof typeof labels;
+
+      const stepId = `heap-search-${Date.now()}`;
+      const step = async (labelName: LabelKey, ms = 600) => {
+        const lineIndex = labels[labelName];
+        if (typeof lineIndex !== "number") return;
+        bus.emit("step:progress", { stepId, lineIndex });
+        await delay(ms);
+      };
+
+      bus.emit("op:start", { op: "search" });
+
+      try {
+        // ───────── Caso 1: heap vacío ─────────
+        if (heapArray.length === 0) {
+          await step("HEAP_SEARCH_HEADER", 450);
+          await step("HEAP_SEARCH_EMPTY_IF", 900);
+
+          resetQueryValues();
+          setIsAnimating(false);
+          return;
+        }
+
+        // ───────── Caso 2: heap NO vacío ─────────
+        await step("HEAP_SEARCH_HEADER", 450);
+        await step("HEAP_SEARCH_EMPTY_IF", 320); // condición falsa aquí
+
+        // Simulamos el for (level-order sobre heapArray)
+        let found = false;
+        for (const node of heapArray) {
+          await step("HEAP_SEARCH_FOR_LOOP", 260); // línea del for
+          await step("HEAP_SEARCH_FOUND_IF", 260); // línea del if
+
+          if (node.value === valueToSearch) {
+            found = true;
+            break; // simulamos el break del pseudocódigo
+          }
+        }
+
+        // No encontrado: TARGET_NOT_FOUND
+        if (!found) {
+          await step("HEAP_SEARCH_NOT_FOUND_IF", 600);
+          resetQueryValues();
+          setIsAnimating(false);
+          return;
+        }
+
+        // ───────── Fin pseudocódigo: ahora sí animamos la búsqueda ─────────
+        // En tu caso animateHeapSearch solo necesita los ids encontrados.
+        await animateHeapSearch(
+          treeG,
+          matches,
+          resetQueryValues,
+          setIsAnimating
+        );
+      } catch (err) {
+        console.warn("[HeapRender] search error:", err);
+        resetQueryValues();
+        setIsAnimating(false);
+      } finally {
+        bus.emit("op:done", { op: "search" });
+      }
     })();
   }, [
     svgRef,
@@ -771,33 +1084,71 @@ export function useHeapRender(
     (query as any).toSearch,
     resetQueryValues,
     setIsAnimating,
+    bus,
   ]);
 
   /* ───────── Limpiar ───────── */
   useEffect(() => {
-    if (!svgRef.current || !(query as any).toClear) return;
+    const toClear = (query as any).toClear;
+    if (!svgRef.current || !toClear) return;
 
     const svg = select(svgRef.current);
     const treeG = svg.select<SVGGElement>("g.heap-container");
 
     (async () => {
       setIsAnimating(true);
-      await treeG
-        .selectAll("g.heap-link")
-        .transition()
-        .duration(600)
-        .style("opacity", 0)
-        .end();
-      await treeG
-        .selectAll("g.heap-node")
-        .transition()
-        .duration(600)
-        .style("opacity", 0)
-        .end();
-      treeG.selectAll("*").remove();
-      nodePositions.clear();
-      resetQueryValues();
-      setIsAnimating(false);
+
+      // ───── Config de pseudocódigo (puede NO existir) ─────
+      const cleanCode: any = (HEAP_CODE as any).clear; // 👈 AHORA .clear
+      const labels = (cleanCode?.labels ?? null) as Record<
+        string,
+        number
+      > | null;
+
+      const stepId = `heap-clean-${Date.now()}`;
+      const step = async (labelName: string, ms = 600) => {
+        if (!labels) return; // si no hay config, solo no marcamos
+        const lineIndex = labels[labelName];
+        if (typeof lineIndex !== "number") return;
+        bus.emit("step:progress", { stepId, lineIndex });
+        await delay(ms);
+      };
+
+      // IMPORTANTE: usar SIEMPRE el mismo op que la clave del pseudocódigo
+      bus.emit("op:start", { op: "clear" }); // 👈 "clear"
+
+      try {
+        // Marcamos la línea donde realmente se limpia el heap
+        await step("CLEAR_ROOT", 600);
+
+        // Animación de fade-out
+        if (!treeG.empty()) {
+          await treeG
+            .selectAll("g.heap-link")
+            .transition()
+            .duration(600)
+            .style("opacity", 0)
+            .end();
+
+          await treeG
+            .selectAll("g.heap-node")
+            .transition()
+            .duration(600)
+            .style("opacity", 0)
+            .end();
+
+          treeG.selectAll("*").remove();
+        }
+
+        nodePositions.clear();
+        resetQueryValues();
+      } catch (err) {
+        console.warn("[HeapRender] clean error:", err);
+        resetQueryValues();
+      } finally {
+        setIsAnimating(false);
+        bus.emit("op:done", { op: "clear" }); // 👈 mismo op que en start
+      }
     })();
   }, [
     svgRef,
@@ -805,6 +1156,7 @@ export function useHeapRender(
     nodePositions,
     resetQueryValues,
     setIsAnimating,
+    bus,
   ]);
 
   return { svgRef };
