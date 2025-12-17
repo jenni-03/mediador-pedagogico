@@ -1,13 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
-import { BaseQueryOperations } from "../../../../../types";
-import { type ColaDePrioridad } from "../../../../../shared/utils/structures/ColaPrioridad";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
+import { type ColaDePrioridad } from "../../../../../domain/structures/ColaPrioridad";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 export function usePriorityQueue(structure: ColaDePrioridad<number>) {
     // Estado para gestionar la cola de prioridad
     const [queue, setQueue] = useState(structure);
 
     // Estado para gestionar el error
-    const [error, setError] = useState<{ message: string, id: number } | null>(null);
+    const [error, setError] = useState<{
+        message: string;
+        id: number;
+        op: string;
+        planId?: string | null;
+    } | null>(null);
 
     // Estado para gestionar la operación solicitada por el usuario
     const [query, setQuery] = useState<BaseQueryOperations<"cola_de_prioridad">>({
@@ -30,7 +36,7 @@ export function usePriorityQueue(structure: ColaDePrioridad<number>) {
             }));
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "enqueue" });
         }
     }, [queue]);
 
@@ -47,7 +53,7 @@ export function usePriorityQueue(structure: ColaDePrioridad<number>) {
             }));
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "dequeue", planId: error?.code ?? null  });
         }
     }, [queue]);
 
@@ -55,7 +61,7 @@ export function usePriorityQueue(structure: ColaDePrioridad<number>) {
     const getFront = useCallback(() => {
         try {
             const frontNode = queue.getInicio();
-            if (!frontNode) throw new Error("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).");
+            if (!frontNode) throw new DomainError("No fue posible obtener el elemento cabeza: La cola está vacía (tamaño actual: 0).", "QUEUE_EMPTY");
 
             setQuery((prev) => ({
                 ...prev,
@@ -63,7 +69,7 @@ export function usePriorityQueue(structure: ColaDePrioridad<number>) {
             }));
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "getFront", planId: error?.code ?? null  });
         }
     }, [queue]);
 

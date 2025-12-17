@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { HiOutlineChip } from "react-icons/hi";
 import { FaProjectDiagram } from "react-icons/fa";
 import { TiArrowForward } from "react-icons/ti";
-import { Modal } from "./Modal"; // importa tu Modal
+import { Modal } from "./Modal";
 
 export function Introduction() {
   const [modalOpen, setModalOpen] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export function Introduction() {
   return (
     <div
       id="introduction-section"
-      className="scroll-mt-20 sm:scroll-mt-16 md:scroll-mt-16 lg:scroll-mt-8 w-full min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center py-10"
+      className="scroll-mt-20 sm:scroll-mt-16 md:scroll-mt-16 lg:scroll-mt-8 w-full min-h-screen bg-[#141821] text-white flex items-center justify-center py-10"
     >
       <div className="max-w-[1300px] w-full px-6 space-y-12">
         {/* Texto principal */}
@@ -42,7 +42,7 @@ export function Introduction() {
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
-            className="relative group bg-gradient-to-br from-[#1a1a1a] to-[#222] border border-red-600/40 rounded-2xl p-8 shadow-[0_0_20px_rgba(255,0,0,0.18)]
+            className="relative group bg-gradient-to-br from-[#1a1a1a] to-[#222] border border-white/40 rounded-2xl p-8 shadow-[0_0_20px_rgba(255,0,0,0.18)]
                transition-all flex flex-col h-full"
           >
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-red-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
@@ -91,7 +91,7 @@ export function Introduction() {
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
-            className="relative group bg-gradient-to-br from-[#1a1a1a] to-[#222] border border-red-600/40 rounded-2xl p-8 shadow-[0_0_20px_rgba(255,0,0,0.18)]
+            className="relative group bg-gradient-to-br from-[#1a1a1a] to-[#222] border border-white/40 rounded-2xl p-8 shadow-[0_0_20px_rgba(255,0,0,0.18)]
                transition-all flex flex-col h-full"
           >
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-red-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>

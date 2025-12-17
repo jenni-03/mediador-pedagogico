@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CustomModalProps } from "../../../../types";
+import { CustomModalProps } from "../../../../domain/utils/types";
 import { AnimatedButtonModal } from "../../../../shared/components/AnimatedButtonModal";
 
 export function CustomModal({

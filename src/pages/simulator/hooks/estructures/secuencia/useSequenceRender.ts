@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react"
-import { BaseQueryOperations } from "../../../../../types";
+import { BaseQueryOperations } from "../../../../../domain/utils/types";
 import { select } from "d3";
 import { drawBaseSequence, animateInsertionSequence, animateGetElementSequence, animateUpdateSequence, animateDeleteElementSequence, animateSearchSequence, animateClearSequence } from "../../../../../shared/utils/draw/sequenceDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { SVG_SEQUENCE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_SEQUENCE_VALUES } from "../../../../../domain/constants/consts";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getSecuenciaCode } from "../../../../../shared/constants/pseudocode/secuenciaCode";
-import { delay } from "../../../../../shared/utils/simulatorUtils";
+import { getSecuenciaCode } from "../../../../../domain/constants/pseudocode/secuenciaCode";
+import { delay } from "../../../../../domain/utils/simulatorUtils";
 
 export function useSequenceRender(sequence: (number | null)[], memory: string[], query: BaseQueryOperations<"secuencia">, resetQueryValues: () => void) {
     // Referencia que apunta al elemento SVG del DOM

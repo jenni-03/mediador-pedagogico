@@ -11,12 +11,10 @@ export function NavBar() {
     };
 
   return (
-    <header className="fixed top-0 w-full z-50 bg-[#0f0f0f] border-b border-red-600 shadow-xl">
+    <header className="fixed top-0 w-full z-50 bg-[#0c0e14] border-b border-white shadow-xl">
       <div className="max-w-[1400px] m-auto px-6 py-4 flex items-center gap-3">
         {/* Logo y título */}
         <h1 className="text-2xl sm:text-3xl font-bold tracking-wide">
-          {/* <span className="text-white">Mediador</span>
-          <span className="text-red-500">Pedagógico</span> */}
           <a href="#welcome-section" onClick={handleScroll("welcome-section")}>
             <img
               src={img1}

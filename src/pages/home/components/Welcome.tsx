@@ -5,7 +5,7 @@ export function Welcome() {
   return (
     <div
       id="welcome-section"
-      className="mt-20 sm:mt-16 md:mt-28 lg:mt-8 w-full min-h-screen bg-[#0f0f0f] text-white flex items-center justify-center py-10"
+      className="mt-20 sm:mt-16 md:mt-28 lg:mt-8 w-full min-h-screen bg-[#141821] text-white flex items-center justify-center py-10"
     >
       <div className="max-w-[1400px] w-full px-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-12 items-center">
         {/* Texto principal */}
@@ -47,7 +47,7 @@ export function Welcome() {
               href="https://gitlab.com/estructuras-de-datos/proyecto-seed"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full px-6 py-3 bg-[#1a1a1a] text-white border-2 border-red-500 rounded-3xl font-semibold shadow-md flex items-center justify-center gap-2 transition-transform"
+              className="w-full px-6 py-3 bg-[#0c0e14] text-white border-2 border-red-500 rounded-3xl font-semibold shadow-md flex items-center justify-center gap-2 transition-transform"
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -59,7 +59,7 @@ export function Welcome() {
               href="https://drive.google.com/drive/folders/10qYKRHiiglCxTYODmgtDQRTxi7WJaqio?usp=sharing"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full px-6 py-3 bg-[#1a1a1a] text-white border-2 border-red-500 rounded-3xl font-semibold shadow-md flex items-center justify-center gap-2 transition-transform"
+              className="w-full px-6 py-3 bg-[#0c0e14] text-white border-2 border-red-500 rounded-3xl font-semibold shadow-md flex items-center justify-center gap-2 transition-transform"
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.95 }}
             >

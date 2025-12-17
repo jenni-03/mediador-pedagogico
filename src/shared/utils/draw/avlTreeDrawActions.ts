@@ -1,13 +1,13 @@
 import type { HierarchyNode, Selection } from "d3";
-import { AVLDeleteStep, AvlFrame, AVLInsertStep, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../types";
+import { AVLDeleteStep, AvlFrame, AVLInsertStep, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../domain/utils/types";
 import { defaultAppearTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../constants/consts";
+import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import { animateEspecialBSTsRotation, animateGetInOrderSuccessor, animateReplaceChildNode } from "./BinaryTreeDrawActions";
 import type { Dispatch, SetStateAction } from "react";
-import { straightPath } from "../treeUtils";
+import { straightPath } from "../../../domain/utils/treeUtils";
 import { type EventBus } from "../../events/eventBus";
-import { getArbolAVLCode } from "../../constants/pseudocode/arbolAVLCode";
-import { delay } from "../simulatorUtils";
+import { getArbolAVLCode } from "../../../domain/constants/pseudocode/arbolAVLCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
 
 const arbolAVLCode = getArbolAVLCode();
 

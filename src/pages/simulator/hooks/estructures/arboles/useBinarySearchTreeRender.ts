@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, BinaryTreeTraversalStep, HierarchyNodeData, TraversalNodeType } from "../../../../../types";
+import { BaseQueryOperations, BinaryTreeTraversalStep, HierarchyNodeData, TraversalNodeType } from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import { animateClearTree, drawTraversalSequence, drawTreeLinks, drawTreeNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { select } from "d3";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { getArbolBinarioBusquedaCode } from "../../../../../shared/constants/pseudocode/arbolBinarioBusquedaCode";
+import { getArbolBinarioBusquedaCode } from "../../../../../domain/constants/pseudocode/arbolBinarioBusquedaCode";
 import { animateLevelOrderTraversal, animateRecursiveTraversal } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { animateDeleteBSTNode, animateInsertBSTNode, animateSearchBSTNode } from "../../../../../shared/utils/draw/bstDrawActions";
 

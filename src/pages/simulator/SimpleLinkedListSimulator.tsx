@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
-import { ListaSimple } from "../../shared/utils/structures/ListaSimple";
-import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { ListaSimple } from "../../domain/structures/ListaSimple";
+import { dynamicAddressGenerator } from "../../domain/utils/memoryAllocator";
 import { useLinkedList } from "./hooks/estructures/listas/useLinkedList";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
 import { SimpleLinkedListRender } from "./components/estructures/listas/SimpleLinkedListRender";
 
 export function SimpleLinkedListSimulator() {

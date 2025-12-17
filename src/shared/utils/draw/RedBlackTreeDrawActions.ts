@@ -1,13 +1,13 @@
 import { type HierarchyNode, type Selection } from "d3";
-import { HierarchyNodeData, TreeLinkData } from "../../../types";
+import { HierarchyNodeData, TreeLinkData } from "../../../domain/utils/types";
 import {
   RB_COLORS,
   SVG_BINARY_TREE_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
-import { RBFrame, RBAction } from "../../../types";
+} from "../../../domain/constants/consts";
+import { RBFrame, RBAction } from "../../../domain/utils/types";
 import type { Dispatch, SetStateAction } from "react";
-import { curvedPath } from "../treeUtils";
+import { curvedPath } from "../../../domain/utils/treeUtils";
 import { repositionTree, showTreeHint } from "./drawActionsUtilities";
 import { animateBSTInsertCore, animateEspecialBSTsRotation, animateLeafOrSingleChild, updateTreeLinkPath } from "./BinaryTreeDrawActions";
 

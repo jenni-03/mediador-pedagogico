@@ -8,50 +8,64 @@ import img7 from "../../../../../assets/images/operation_heap_7.jpg";
 import img8 from "../../../../../assets/images/operation_heap_8.jpg";
 
 export function OperationArbolHeap() {
+  const insertImages = [img1, img2, img3, img4];
+  const deleteImages = [img5, img6, img7, img8];
+
   return (
     <div className="text-white py-8 px-3 sm:px-10 max-w-4xl mx-auto">
       {/* Header principal */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="h-7 w-2 rounded bg-red-500"></div>
+        <div className="h-7 w-2 rounded bg-red-500" />
         <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
           Operaciones · Árbol Heap
         </h1>
       </div>
       <span className="text-base text-red-500 ml-3 font-medium block mb-2">
-        Cómo funciona la inserción y eliminación
+        Cómo funciona la inserción y la eliminación
       </span>
       <hr className="border-t-2 border-red-500 mb-10 w-40 rounded" />
 
-      {/* Insertar Datos */}
+      {/* Inserción */}
       <section className="mb-14">
-        <h2 className="text-xl font-bold text-red-500 mb-2">
-          Insertar Datos en el Heap
+        <h2 className="text-2xl font-bold text-red-500 mb-3">
+          Insertar datos en el Heap (máx-heap)
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4">
-          <p className="text-gray-100 text-[15px] mb-3">
-            Para <b>insertar</b> un dato en un Heap, sigue estos pasos:
+
+        {/* Idea general */}
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4 text-[15.5px] leading-relaxed">
+          <p className="text-gray-100 mb-3">
+            Para <b>insertar</b> un dato en un <b>máx-heap binario</b> se
+            aprovecha que el árbol es completo. El procedimiento es:
           </p>
-          <ul className="list-disc list-inside space-y-2 text-gray-100 text-[15.5px]">
+          <ol className="list-decimal list-inside space-y-2 text-gray-100">
             <li>
-              Se agrega el nuevo nodo en la siguiente posición libre (de
-              izquierda a derecha).
+              Se coloca el nuevo valor en la <b>siguiente posición libre</b> del
+              heap (de izquierda a derecha en el último nivel).
             </li>
             <li>
-              Se compara con su padre. Si es mayor, se permuta hacia arriba
-              ("flotar") hasta que se cumpla la propiedad de Heap o llegue a la
-              raíz.
+              Se compara con su <b>padre</b>. Si el nuevo valor es{" "}
+              <b>mayor</b>, se intercambian (el nodo “flota” hacia arriba).
             </li>
-          </ul>
+            <li>
+              Se repite el intercambio con el nuevo padre mientras el valor
+              insertado sea mayor o hasta que llegue a la <b>raíz</b>.
+            </li>
+          </ol>
+          <p className="text-gray-300 text-sm mt-3">
+            En un <b>min-heap</b> el proceso es análogo, pero “flota” el{" "}
+            <b>menor</b> en lugar del mayor.
+          </p>
         </div>
+
         <div className="text-[15px] text-gray-300 mb-4 font-semibold">
-          Ejemplo visual de inserción:
+          Ejemplo visual de inserción (con varias inserciones sucesivas):
         </div>
         <div className="flex flex-col items-center gap-8">
-          {[img1, img2, img3, img4].map((img, idx) => (
+          {insertImages.map((img, idx) => (
             <div key={idx} className="flex justify-center w-full">
               <img
                 src={img}
-                alt={`Insertar Heap ${idx + 1}`}
+                alt={`Paso ${idx + 1} de inserción en un heap`}
                 className="bg-white rounded-xl border-2 border-red-500 shadow max-w-2xl w-full p-4"
               />
             </div>
@@ -59,35 +73,54 @@ export function OperationArbolHeap() {
         </div>
       </section>
 
-      {/* Eliminar Datos */}
+      {/* Eliminación */}
       <section>
-        <h2 className="text-xl font-bold text-red-500 mb-2">
-          Eliminar Datos del Heap
+        <h2 className="text-2xl font-bold text-red-500 mb-3">
+          Eliminar datos del Heap (extraer la raíz)
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4">
-          <p className="text-gray-100 text-[15px] mb-3">
-            Para <b>eliminar</b> siempre se extrae la{" "}
-            <span className="text-red-400 font-bold">RAÍZ</span>. Pasos:
+
+        {/* Idea general */}
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4 text-[15.5px] leading-relaxed">
+          <p className="text-gray-100 mb-3">
+            La operación básica de eliminación en un máx-heap es{" "}
+            <b>extraer la raíz</b> (el elemento de mayor prioridad). El
+            procedimiento es:
           </p>
-          <ul className="list-disc list-inside space-y-2 text-gray-100 text-[15.5px]">
-            <li>Elimina la raíz del heap (el elemento de mayor prioridad).</li>
-            <li>Coloca el último nodo en la raíz.</li>
+          <ol className="list-decimal list-inside space-y-2 text-gray-100">
             <li>
-              Compara con los hijos. Si alguno es mayor, permuta con el mayor
-              ("hundir").
+              Se elimina la <b>raíz</b> del heap y se guarda su valor (es el
+              máximo).
             </li>
-            <li>Repite hasta restaurar la propiedad de Heap.</li>
-          </ul>
+            <li>
+              Se toma el <b>último nodo</b> del último nivel y se coloca
+              temporalmente en la raíz.
+            </li>
+            <li>
+              Se compara el nuevo valor de la raíz con sus hijos. Si alguno de
+              ellos es <b>mayor</b>, se intercambia con el <b>hijo mayor</b>.
+              Este proceso se llama <b>“hundir”</b> o <b>heapify-down</b>.
+            </li>
+            <li>
+              Se repite el intercambio hacia abajo hasta que:
+              <br />– El nodo sea mayor que sus hijos, o
+              <br />– Llegue a una hoja.
+            </li>
+          </ol>
+          <p className="text-gray-300 text-sm mt-3">
+            En un <b>min-heap</b> se extrae el mínimo y se “hunde” hacia abajo
+            comparando siempre con el hijo de <b>menor</b> valor.
+          </p>
         </div>
+
         <div className="text-[15px] text-gray-300 mb-4 font-semibold">
-          Ejemplo visual de eliminación:
+          Ejemplo visual de eliminación (extraer varias veces la raíz):
         </div>
         <div className="flex flex-col items-center gap-8">
-          {[img5, img6, img7, img8].map((img, idx) => (
+          {deleteImages.map((img, idx) => (
             <div key={idx} className="flex justify-center w-full">
               <img
                 src={img}
-                alt={`Eliminar Heap ${idx + 1}`}
+                alt={`Paso ${idx + 1} de eliminación en un heap`}
                 className="bg-white rounded-xl border-2 border-red-500 shadow max-w-2xl w-full p-4"
               />
             </div>

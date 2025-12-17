@@ -1,8 +1,7 @@
-// src/simulators/BPlusTreeSimulator.tsx
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolBPlus } from "../../shared/utils/structures/ArbolBPlus";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolBPlus } from "../../domain/structures/ArbolBPlus";
 import { useBPlusTree } from "./hooks/estructures/arbolBPlus/useBPlusTree";
 import { BPlusTreeRender } from "./components/estructures/arboles/BPlusTreeRender";
 

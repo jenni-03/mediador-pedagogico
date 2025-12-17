@@ -1,4 +1,4 @@
-import { complexityPila } from "../../../../../shared/constants/complexityStructures/complexityPila";
+import { complexityPila } from "../../../../../domain/constants/complexityStructures/complexityPila";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityPila() {

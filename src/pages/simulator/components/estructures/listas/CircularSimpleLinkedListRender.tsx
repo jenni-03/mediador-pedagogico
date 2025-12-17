@@ -1,5 +1,5 @@
-import { SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
-import { BaseQueryOperations, ListNodeData } from "../../../../../types";
+import { SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
+import { BaseQueryOperations, ListNodeData } from "../../../../../domain/utils/types";
 import { useCircularSimpleLinkedListRender } from "../../../hooks/estructures/listas/useCircularSimpleLinkedListRender";
 
 export function CircularSimpleLinkedListRender({

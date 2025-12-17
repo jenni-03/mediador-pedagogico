@@ -1,18 +1,17 @@
-// src/pages/simulator/components/organisms/Simulator.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../molecules/Header";
 import { ConsoleComponent } from "../atoms/ConsoleComponent";
 import { DataStructureInfo } from "../atoms/DataStructureInfo";
 import { GroupCommandsComponent } from "../molecules/GroupCommandsComponent";
 import { PseudoCodeRunner } from "../atoms/PseudoCodeRunner";
-import { commandsData } from "../../../../shared/constants/commandsData";
-import { getPseudoCodeByStructure } from "../../../../shared/constants/pseudocode/getPseudoCodeByStructure";
+import { commandsData } from "../../../../domain/constants/commandsData";
+import { getPseudoCodeByStructure } from "../../../../domain/constants/pseudocode/getPseudoCodeByStructure";
 import CustomTour, { TourType } from "../../../../shared/tour/CustomTour";
 import { useAnimation } from "../../../../shared/hooks/useAnimation";
-import { SimulatorProps } from "../../../../types";
+import { SimulatorProps } from "../../../../domain/utils/types";
 import { createBus } from "../../../../shared/events/eventBus";
 import { BusProvider } from "../../../../shared/context/BusProvider";
-import { delay } from "../../../../shared/utils/simulatorUtils";
+import { delay } from "../../../../domain/utils/simulatorUtils";
 
 // tipo local laxo para error (temporal)
 type LooseError =
@@ -229,18 +228,18 @@ export function Simulator<T extends string>({
       <Header />
 
       {/* Lienzo general del simulador */}
-      <div className="min-h-screen bg-gradient-to-br from-[#0E0E11] to-[#0A0A0D] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
+      <div className="min-h-screen bg-[#191f2b] text-[#E0E0E0] py-6 px-4 sm:px-6 xl:px-10 2xl:px-40">
         <div className="flex w-full flex-col gap-6">
           {/* Título */}
           <h1
             data-tour="structure-title"
-            className="mt-2 mb-6 bg-gradient-to-br from-[#E0E0E0] to-[#A0A0A0] bg-clip-text text-center text-2xl font-extrabold uppercase tracking-wide text-transparent sm:text-4xl drop-shadow-[0_2px_6px_rgba(215,38,56,0.5)]"
+            className="mt-2 mb-6 bg-[#E0E0E0] bg-clip-text text-center text-2xl font-extrabold uppercase tracking-wide text-transparent sm:text-4xl"
           >
             {pageTitle.replace(/_/g, " ").toUpperCase()}{" "}
             <span className="text-[#D72638]">&lt;Integer&gt;</span>
           </h1>
 
-          <div className="w-full rounded-2xl border border-[#2E2E2E] bg-[#1A1A1F] px-4 py-6 shadow-xl shadow-black/40">
+          <div className="w-full rounded-2xl border-2 border-[#2E2E2E] bg-[#1A1A1F] px-4 py-6 shadow-xl shadow-black/40">
             <div className="mb-6 flex flex-col gap-6 overflow-hidden lg:flex-row">
               {/* Simulación de la estructura */}
               <div

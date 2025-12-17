@@ -1,6 +1,4 @@
-// src/components/estructures/arboles/TwoThreeTreeRender.tsx
-
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
 import { useTwoThreeTreeRender } from "../../../hooks/estructures/arbol123/use123Render";
 
 type Props = {

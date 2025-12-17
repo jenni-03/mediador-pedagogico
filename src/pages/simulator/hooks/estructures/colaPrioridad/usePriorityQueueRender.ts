@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, ListLinkData, PriorityQueueNodeData } from "../../../../../types";
-import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { BaseQueryOperations, ListLinkData, PriorityQueueNodeData } from "../../../../../domain/utils/types";
+import { SVG_PRIORITY_QUEUE_VALUES, SVG_QUEUE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import { drawPriorityQueueNodes, animateEnqueuePriorityNode, animateDequeuePriorityNode, getPriorityColor } from "../../../../../shared/utils/draw/priorityQueueDrawActions";
 import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { animateHighlightNode, drawArrowIndicator, drawListLinks } from "../../../../../shared/utils/draw/drawActionsUtilities";
-import { getColaPrioridadCode } from "../../../../../shared/constants/pseudocode/colaPrioridadCode";
+import { getColaPrioridadCode } from "../../../../../domain/constants/pseudocode/colaPrioridadCode";
 import { useBus } from "../../../../../shared/hooks/useBus";
 import { animateClearQueue } from "../../../../../shared/utils/draw/queueDrawActions";
 
@@ -151,10 +151,11 @@ export function usePriorityQueueRender(
                 linksData,
                 positions: nodePositions
             },
+            bus,
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toEnqueuedNode, queueNodes, linksData, resetQueryValues, setIsAnimating]);
+    }, [query.toEnqueuedNode, queueNodes, linksData, bus, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
@@ -184,10 +185,11 @@ export function usePriorityQueueRender(
                 remainingLinksData: linksData,
                 positions: nodePositions
             },
+            bus,
             resetQueryValues,
             setIsAnimating
         );
-    }, [query.toDequeuedNode, queueNodes, linksData, resetQueryValues, setIsAnimating]);
+    }, [query.toDequeuedNode, queueNodes, linksData, bus, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar el resaltado del nodo inicial
     useEffect(() => {
@@ -207,12 +209,21 @@ export function usePriorityQueueRender(
         // Prioridad del nodo inicial
         const initialNodePriority = queueNodes[0].priority;
 
+        const queueCode = getColaPrioridadCode();
+        const labels = queueCode.getFront.labels!;
+
         // Animación de resaltado para el nodo inicial de la cola de prioridad
         animateHighlightNode(
             svg,
             initialNodeId,
             { highlightColor: "#0066CC", rectStrokeColor: getPriorityColor(initialNodePriority).stroke, rectStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH },
             { textFillColor: "black", textFontSize: SVG_PRIORITY_QUEUE_VALUES.ELEMENT_TEXT_SIZE, textFontWeight: SVG_PRIORITY_QUEUE_VALUES.ELEMENT_TEXT_WEIGHT },
+            bus,
+        {
+            START: labels.START,
+            RETURN_INFO: labels.RETURN_INFO,
+        },
+        "getFront",
             resetQueryValues,
             setIsAnimating
         );

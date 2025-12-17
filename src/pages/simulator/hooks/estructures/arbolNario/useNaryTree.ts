@@ -1,7 +1,13 @@
-// src/hooks/estructures/nario/useNaryTree.ts
 import { useState } from "react";
-import { BaseQueryOperations, TraversalNodeType } from "../../../../../types";
-import { ArbolNario } from "../../../../../shared/utils/structures/ArbolNario";
+import {
+  BaseQueryOperations,
+  TraversalNodeType,
+} from "../../../../../domain/utils/types";
+import {
+  ArbolNario,
+  type NaryErrorCode,
+} from "../../../../../domain/structures/ArbolNario";
+import { DomainError } from "../../../../../domain/error/DomainError";
 
 const DEBUG_NARY = true;
 const dlog = (...a: any[]) => {
@@ -12,11 +18,32 @@ const dlog = (...a: any[]) => {
 const toDomId = (id: number | string) =>
   typeof id === "number" ? `n-${id}` : id;
 
+/* ────────────────── Tipos de error/op para el simulador ────────────────── */
+
+type NaryOp =
+  | "createRoot"
+  | "insertChild"
+  | "deleteNode"
+  | "moveNode"
+  | "updateValue"
+  | "search"
+  | "getPreOrder"
+  | "getPostOrder"
+  | "getLevelOrder"
+  | "clean";
+
+type NaryErrorPlanId = NaryErrorCode;
+
+export type NaryError = {
+  id: number; // necesario para <Simulator>
+  message: string;
+  op: NaryOp;
+  planId?: NaryErrorPlanId | null;
+};
+
 export function useNaryTree(structure: ArbolNario<number>) {
   const [tree, setTree] = useState(structure);
-  const [error, setError] = useState<{ message: string; id: number } | null>(
-    null
-  );
+  const [error, setError] = useState<NaryError | null>(null);
 
   const [query, setQuery] = useState<BaseQueryOperations<"arbol_nario">>({
     toCreateRoot: null,
@@ -30,6 +57,36 @@ export function useNaryTree(structure: ArbolNario<number>) {
     toGetLevelOrder: [],
     toClear: false,
   });
+
+  /* ─────────────────────────── helper de errores ─────────────────────────── */
+
+  const handleError = (err: unknown, op: NaryOp) => {
+    if (err instanceof DomainError) {
+      dlog(op, "DomainError:", err.message, "code:", err.code);
+      setError({
+        id: Date.now(),
+        message: err.message,
+        op,
+        planId: (err.code as NaryErrorPlanId) ?? null,
+      });
+      return;
+    }
+
+    const msg =
+      err && typeof (err as any).message === "string"
+        ? (err as any).message
+        : "Ocurrió un error inesperado en la operación del árbol N-ario.";
+    dlog(op, "GENERIC_ERROR:", msg, "| raw:", err);
+
+    setError({
+      id: Date.now(),
+      message: msg,
+      op,
+      planId: null,
+    });
+  };
+
+  /* ─────────────────────────────── operaciones ─────────────────────────────── */
 
   const createRoot = (value: number) => {
     dlog("createRoot(arg):", value, "typeof:", typeof value);
@@ -47,9 +104,8 @@ export function useNaryTree(structure: ArbolNario<number>) {
         toClear: false,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("createRoot(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "createRoot");
     }
   };
 
@@ -88,16 +144,8 @@ export function useNaryTree(structure: ArbolNario<number>) {
       }));
       setError(null);
       return nuevo.getId();
-    } catch (e: any) {
-      dlog(
-        "insertChild(ERROR):",
-        e?.message,
-        "| received parentId/value/index:",
-        parentId,
-        value,
-        index
-      );
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "insertChild");
       return null;
     }
   };
@@ -121,9 +169,8 @@ export function useNaryTree(structure: ArbolNario<number>) {
         toClear: false,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("deleteNode(ERROR):", e?.message, "| received id:", id);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "deleteNode");
     }
   };
 
@@ -139,8 +186,8 @@ export function useNaryTree(structure: ArbolNario<number>) {
     try {
       const cloned = tree.clonar();
       cloned.moverNodo(id, newParentId, index);
-      const domId = toDomId(id),
-        domParent = toDomId(newParentId);
+      const domId = toDomId(id);
+      const domParent = toDomId(newParentId);
       dlog("moveNode -> domId/domParent:", domId, domParent);
 
       setTree(cloned);
@@ -155,13 +202,8 @@ export function useNaryTree(structure: ArbolNario<number>) {
         toClear: false,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog("moveNode(ERROR):", e?.message, "| received:", {
-        id,
-        newParentId,
-        index,
-      });
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "moveNode");
     }
   };
 
@@ -184,33 +226,25 @@ export function useNaryTree(structure: ArbolNario<number>) {
         toClear: false,
       }));
       setError(null);
-    } catch (e: any) {
-      dlog(
-        "updateValue(ERROR):",
-        e?.message,
-        "| received id/newValue:",
-        id,
-        newValue
-      );
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "updateValue");
     }
   };
 
   const search = (value: number) => {
     dlog("search(arg):", value);
     try {
-      const found = tree.getPorValor(value);
-      if (!found)
-        throw new Error("No fue posible encontrar el nodo con ese valor.");
+      // Versión estricta que lanza DomainError si no encuentra
+      tree.buscarPorValor(value);
       setQuery((prev) => ({ ...prev, toSearch: value }));
       setError(null);
-    } catch (e: any) {
-      dlog("search(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "search");
     }
   };
 
-  // Recorridos (sin cambios de lógica, solo logs mínimos)
+  /* ───────────────────────────── Recorridos ───────────────────────────── */
+
   const mapNodes = (nodes: { getId: () => number; getInfo: () => number }[]) =>
     nodes.map<TraversalNodeType>((n) => ({
       id: toDomId(n.getId()) as any,
@@ -221,15 +255,15 @@ export function useNaryTree(structure: ArbolNario<number>) {
     dlog("getPreOrder()");
     try {
       const pre = tree.preOrden();
-      if (pre.length === 0)
+      if (pre.length === 0) {
         throw new Error(
-          "No fue posible recorrer (El árbol se encuentra vacío)."
+          "No fue posible recorrer en preorden (el árbol se encuentra vacío)."
         );
+      }
       setQuery((p) => ({ ...p, toGetPreOrder: mapNodes(pre as any) }));
       setError(null);
-    } catch (e: any) {
-      dlog("getPreOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getPreOrder");
     }
   };
 
@@ -237,15 +271,15 @@ export function useNaryTree(structure: ArbolNario<number>) {
     dlog("getPostOrder()");
     try {
       const post = tree.postOrden();
-      if (post.length === 0)
+      if (post.length === 0) {
         throw new Error(
-          "No fue posible recorrer (El árbol se encuentra vacío)."
+          "No fue posible recorrer en postorden (el árbol se encuentra vacío)."
         );
+      }
       setQuery((p) => ({ ...p, toGetPostOrder: mapNodes(post as any) }));
       setError(null);
-    } catch (e: any) {
-      dlog("getPostOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getPostOrder");
     }
   };
 
@@ -253,15 +287,15 @@ export function useNaryTree(structure: ArbolNario<number>) {
     dlog("getLevelOrder()");
     try {
       const lvl = tree.getNodosPorNiveles();
-      if (lvl.length === 0)
+      if (lvl.length === 0) {
         throw new Error(
-          "No fue posible recorrer (El árbol se encuentra vacío)."
+          "No fue posible recorrer por niveles (el árbol se encuentra vacío)."
         );
+      }
       setQuery((p) => ({ ...p, toGetLevelOrder: mapNodes(lvl as any) }));
       setError(null);
-    } catch (e: any) {
-      dlog("getLevelOrder(ERROR):", e?.message);
-      setError({ message: e.message, id: Date.now() });
+    } catch (e) {
+      handleError(e, "getLevelOrder");
     }
   };
 
@@ -283,6 +317,7 @@ export function useNaryTree(structure: ArbolNario<number>) {
       toGetPostOrder: [],
       toGetLevelOrder: [],
     }));
+    setError(null);
   };
 
   const resetQueryValues = () => {
@@ -304,7 +339,7 @@ export function useNaryTree(structure: ArbolNario<number>) {
   return {
     tree,
     query,
-    error,
+    error, // NaryError | null (compatible con LooseError del <Simulator>)
     operations: {
       createRoot,
       insertChild,

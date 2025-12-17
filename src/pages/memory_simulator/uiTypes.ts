@@ -1,5 +1,5 @@
 // src/app/MemoryApp/uiTypes.ts
-import type { PrimitiveType } from "../../shared/utils/RAM/memoria/layout";
+import type { PrimitiveType } from "../../domain/RAM/memoria/layout";
 
 /** Campo de un objeto compacto mostrado en StackView */
 export type ObjField =

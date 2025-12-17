@@ -1,6 +1,12 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { getTourByStructure } from "../constants/tours/getTourByStructure";
-import { TourStep } from "../constants/typesTour";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
+import { getTourByStructure } from "../../domain/constants/tours/getTourByStructure";
+import { TourStep } from "../../domain/constants/typesTour";
 
 import HighlightBox from "./HighlightBox";
 import TourTooltip from "./TourTooltip";
@@ -64,10 +70,34 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
   const enterInProgressRef = useRef(false);
 
+  // 🔹 Clave estable en localStorage para este tour (tipo + ruta)
+  const storageKey = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const path = window.location.pathname || "/";
+    return `simTour:${tipo}:${path}`;
+  }, [tipo]);
+
+  // 🔹 Inicialización: decidir si auto-lanzar o no según localStorage
   useEffect(() => {
-    setIsActive(true);
-    setCurrentStep(0);
-  }, []);
+    if (!storageKey || typeof window === "undefined") return;
+
+    const done = window.localStorage.getItem(storageKey);
+    if (done === "1") {
+      // ya se completó este tour en ESTA página → no auto-arranca
+      setIsActive(false);
+      setCurrentStep(0);
+    } else {
+      // primer uso en esta página → arranca desde el paso 0
+      setIsActive(true);
+      setCurrentStep(0);
+    }
+  }, [storageKey]);
+
+  // 🔹 función para marcar el tour como completado en esta página
+  const markTourDone = useCallback(() => {
+    if (!storageKey || typeof window === "undefined") return;
+    window.localStorage.setItem(storageKey, "1");
+  }, [storageKey]);
 
   // Enter global: en 'enter' disparamos triggerEnterStep; en info/element avanzamos
   useEffect(() => {
@@ -90,7 +120,7 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, step?.type]);
+  }, [isActive, step?.type]); // step.type sólo se usa para decidir comportamiento
 
   // Espera condición (sin capturar valores stale)
   function waitUntil(
@@ -255,8 +285,7 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
         el.dispatchEvent(enterEvent);
       }
 
-      // 2) Esperar a que la animación COMIENCE (si aún no empezó)
-      //    Damos una ventana corta (ej. 800ms). Si no empieza, asumimos operación inmediata.
+      // 2) Esperar a que la animación COMIENCE
       const started = animRef.current
         ? true
         : await waitUntil(() => animRef.current === true, {
@@ -264,23 +293,20 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
             timeout: 800,
           });
 
-      // 3) Si empezó (o ya estaba), esperar a que TERMINE; si no, fallback pequeño
+      // 3) Esperar a que TERMINE (si empezó)
       if (started) {
         const ended = await waitUntil(() => animRef.current === false, {
           interval: 60,
           timeout: 20000,
         });
-        // si no terminó por timeout, igual avanzamos para no colgar el tour
         if (!ended) {
           setWarn("La animación tarda más de lo normal. Continuando…");
           setTimeout(() => setWarn(null), 1500);
         }
       } else {
-        // No hubo animación detectable; pequeño buffer para estabilidad visual
         await new Promise((r) => setTimeout(r, 250));
       }
 
-      // 4) Avanzar de paso (si todo sigue válido)
       if (!activeRef.current || stepIndexRef.current !== currentStep) {
         enterInProgressRef.current = false;
         return;
@@ -289,12 +315,10 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       enterInProgressRef.current = false;
     };
 
-    // Si YA está animando cuando llegamos a este paso, mostramos aviso
     if (animRef.current) {
       setWarn("Relax, aún no finaliza la animación…");
     }
 
-    // Ejecutar
     void doEnterAndAdvance();
   };
 
@@ -302,11 +326,19 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
   useEffect(() => {
     if (!isActive) return;
     if (step?.type === "enter") {
-      // microtask para asegurar que el DOM del paso esté listo
       const t = setTimeout(() => triggerEnterStep(), 0);
       return () => clearTimeout(t);
     }
   }, [isActive, step?.type]);
+
+  // 🔹 EFECTO DE “FIN DE TOUR” ROBUSTO (cubre steps auto: action/write/enter)
+  useEffect(() => {
+    if (!isActive) return;
+    if (currentStep >= tourSteps.length) {
+      markTourDone();
+      setIsActive(false);
+    }
+  }, [currentStep, isActive, tourSteps.length, markTourDone]);
 
   // Botones: si es 'enter', ejecutan triggerEnterStep; si no, avanzan normal
   const nextStep = () => {
@@ -319,6 +351,8 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
       if (currentStep < tourSteps.length - 1) {
         setCurrentStep((prev) => prev + 1);
       } else {
+        // fin explícito con botón "Finalizar"
+        markTourDone();
         setIsActive(false);
       }
     });
@@ -360,7 +394,11 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
                 width: viewportWidth,
                 height: viewportHeight,
               }}
-              onClose={() => setIsActive(false)}
+              onClose={() => {
+                // cerrar manual también lo marca como visto
+                markTourDone();
+                setIsActive(false);
+              }}
             />
           </>
         )}

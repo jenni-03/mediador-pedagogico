@@ -1,9 +1,9 @@
 import { Selection } from "d3";
-import { TraversalNodeType, TreeLinkData } from "../../../types";
+import { TraversalNodeType, TreeLinkData } from "../../../domain/utils/types";
 import {
   SVG_BINARY_TREE_VALUES,
   SVG_STYLE_VALUES,
-} from "../../constants/consts";
+} from "../../../domain/constants/consts";
 
 /* ──────────────────────────────────────────────────────────────────────────
    Tipos base para el renderer del Heap (diseño)
@@ -235,8 +235,8 @@ export function drawHeapLinks(
           .append("g")
           .attr("class", "heap-link")
           .attr("id", (d) => `link-${d.sourceId}-${d.targetId}`)
-          .attr("data-source", (d) => d.sourceId) // 👈
-          .attr("data-target", (d) => d.targetId); // 👈
+          .attr("data-source", (d) => d.sourceId)
+          .attr("data-target", (d) => d.targetId);
 
         gl.append("path")
           .attr("class", "tree-link")
@@ -257,15 +257,15 @@ export function drawHeapLinks(
           .attr("d", (d) => {
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
-            return `M${s.x},${s.y + nodeRadius} L${t.x},${t.y - nodeRadius}`;
+            return heapLinkCurvePath(s, t, nodeRadius); // 👈 CURVA
           });
 
         return gl;
       },
       (update) => {
         update
-          .attr("data-source", (d) => d.sourceId) // 👈
-          .attr("data-target", (d) => d.targetId) // 👈
+          .attr("data-source", (d) => d.sourceId)
+          .attr("data-target", (d) => d.targetId)
           .select<SVGPathElement>("path.tree-link")
           .attr("fill", "none")
           .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
@@ -284,7 +284,7 @@ export function drawHeapLinks(
           .attr("d", (d) => {
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
-            return `M${s.x},${s.y + nodeRadius} L${t.x},${t.y - nodeRadius}`;
+            return heapLinkCurvePath(s, t, nodeRadius); // 👈 CURVA
           });
 
         return update;
@@ -403,4 +403,23 @@ export function layoutHeapGrid(
   });
 
   return { width, height, positions };
+}
+
+//helper para path curvo padre→hijo
+function heapLinkCurvePath(
+  s: { x: number; y: number },
+  t: { x: number; y: number },
+  nodeRadius: number
+): string {
+  const x1 = s.x;
+  const y1 = s.y + nodeRadius;
+  const x2 = t.x;
+  const y2 = t.y - nodeRadius;
+
+  // Punto de control a mitad de camino, un poco más abajo
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2 + nodeRadius * 0.6;
+
+  // Curva cuadrática (Q) suave
+  return `M${x1},${y1} Q${mx},${my} ${x2},${y2}`;
 }

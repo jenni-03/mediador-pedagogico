@@ -1,4 +1,4 @@
-import { complexityTablaHash } from "../../../../../shared/constants/complexityStructures/complexityTablaHash";
+import { complexityTablaHash } from "../../../../../domain/constants/complexityStructures/complexityTablaHash";
 import { CodeAnalysis } from "../../molecules/CodeAnalysis";
 
 export function ComplexityTablaHash() {

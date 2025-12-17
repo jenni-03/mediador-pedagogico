@@ -1,8 +1,7 @@
-// src/app/MemoryApp/hooks/useMemorySimulator.ts
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { Memory } from "../../../shared/utils/RAM/memoria/Memory";
-import { VmController } from "../../../shared/utils/RAM/vm-controller";
-import type { UiSnapshot } from "../../../shared/utils/RAM/snapshot-builder";
+import { Memory } from "../../../domain/RAM/memoria/Memory";
+import { VmController } from "../../../domain/RAM/vm-controller";
+import type { UiSnapshot } from "../../../domain/RAM/snapshot-builder";
 
 function normErr(e: unknown) {
   if (e instanceof Error) return e.message || String(e);
@@ -62,12 +61,35 @@ export function useMemorySimulator(sizeBytes = 64 * 1024) {
 
   const clearLogs = useCallback(() => setLogs([]), []);
 
+  // 🔴 Reset completo de la simulación (botón "Limpiar RAM")
+  const reset = useCallback(() => {
+    try {
+      // Limpia stack, heap y RAM (y recrea null-guard + frame global)
+      memory.clearAll();
+
+      // Resincroniza snapshot desde cero
+      const snap = vm.getSnapshot(ramOpts);
+      setSnapshot(snap);
+
+      // Deja rastro en el log (pero NO borra el historial)
+      setLogs((L) =>
+        [...L, "🧹 Memoria reiniciada: stack, heap y RAM limpios."].slice(-500)
+      );
+    } catch (e) {
+      setLogs((L) => [...L, `❌ Error al reiniciar: ${normErr(e)}`].slice(-500));
+    }
+  }, [memory, vm, ramOpts]);
+
   return {
     memory,
     vm,
     snapshot,
     logs,
     animEvents,
-    actions: { executeCommand, clearLogs },
+    actions: {
+      executeCommand,
+      clearLogs,
+      reset, // 👈 aquí queda expuesto para el botón
+    },
   };
 }

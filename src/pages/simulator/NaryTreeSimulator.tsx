@@ -1,11 +1,10 @@
-// src/simulators/NaryTreeSimulator.tsx
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolNario } from "../../shared/utils/structures/ArbolNario";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolNario } from "../../domain/structures/ArbolNario";
 import { useNaryTree } from "./hooks/estructures/arbolNario/useNaryTree";
 import { NaryTreeRender } from "./components/estructures/arboles/NaryTreeRender";
-import type { BaseQueryOperations } from "../../types";
+import type { BaseQueryOperations } from "../../domain/utils/types";
 
 function adapt<F extends (...a: any[]) => any>(fn: F, name: string) {
   return (...args: any[]) => {

@@ -1,4 +1,4 @@
-import { infoStructures } from "../../../../shared/constants/infoStructures";
+import { infoStructures } from "../../../../domain/constants/infoStructures";
 import MemoryAllocationVisualizer from "./MemoryAllocationVisualizer";
 import { InfoModal } from "../molecules/InfoModal";
 

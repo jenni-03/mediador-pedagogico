@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
 import { Simulator } from "./components/templates/Simulator";
-import { priorityQueueAddressGenerator } from "../../shared/utils/memoryAllocator";
-import { ColaDePrioridad } from "../../shared/utils/structures/ColaPrioridad";
+import { priorityQueueAddressGenerator } from "../../domain/utils/memoryAllocator";
+import { ColaDePrioridad } from "../../domain/structures/ColaPrioridad";
 import { usePriorityQueue } from "./hooks/estructures/colaPrioridad/usePriorityQueue";
 import { PriorityQueueRender } from "./components/estructures/colaPrioridad/PriorityQueueRender";
 

@@ -1,6 +1,6 @@
 import { TiDelete } from "react-icons/ti";
-import { FilterTypeValue, NavBarProps } from "../../../types";
-import { TYPE_FILTER } from "../../../shared/constants/consts";
+import { FilterTypeValue, NavBarProps } from "../../../domain/utils/types";
+import { TYPE_FILTER } from "../../../domain/constants/consts";
 
 export function Filters({ filter, setFilter }: NavBarProps) {
   return (

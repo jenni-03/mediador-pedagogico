@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { BaseQueryOperations, LinkedListInterface } from "../../../../../types";
+import { BaseQueryOperations, LinkedListInterface } from "../../../../../domain/utils/types";
 
 export function useLinkedList<T extends LinkedListInterface<number>>(structure: T) {
     // Estado para gestionar la lista

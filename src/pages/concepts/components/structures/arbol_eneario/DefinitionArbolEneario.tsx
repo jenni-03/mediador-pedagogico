@@ -9,7 +9,7 @@ export function DefinitionArbolEneario() {
     <div className="text-white py-8 px-3 sm:px-10 max-w-5xl mx-auto">
       {/* Header principal */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="h-7 w-2 rounded bg-red-500"></div>
+        <div className="h-7 w-2 rounded bg-red-500" />
         <h1 className="text-3xl font-extrabold tracking-wide drop-shadow">
           Árbol Eneario
         </h1>
@@ -24,41 +24,77 @@ export function DefinitionArbolEneario() {
         <h2 className="text-2xl font-bold text-red-500 mb-2">
           Definición de Árbol Eneario
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4">
-          <p className="text-gray-100 text-[15.5px]">
-            Un <span className="font-bold text-red-400">Árbol Eneario</span> es
-            una estructura de datos que se caracteriza porque cada nodo puede
-            tener un número indeterminado de hijos.
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4 text-[15.5px] leading-relaxed">
+          <p className="text-gray-100 mb-2">
+            Un{" "}
+            <span className="font-bold text-red-400">
+              árbol eneario (o n-ario)
+            </span>{" "}
+            es una estructura de datos en la que <b>cada nodo</b> puede tener
+            desde <b>0</b> hasta un <b>número indeterminado de hijos</b>. No hay
+            un límite fijo como en los árboles binarios (2 hijos) o ternarios
+            (3 hijos).
+          </p>
+          <p className="text-gray-100">
+            Este modelo se utiliza para representar <b>jerarquías generales</b>:
+            sistemas de archivos, menús, expresiones con muchos operandos, etc.
           </p>
         </div>
+
         <span className="text-gray-300 text-sm mb-3 block">Por ejemplo:</span>
         <div className="flex justify-center my-5">
           <img
             src={img1}
             className="bg-white rounded-xl border-2 border-red-500 shadow max-w-3xl w-full p-4"
-            alt="Ejemplo Árbol Eneario"
+            alt="Ejemplo de árbol eneario"
           />
         </div>
         <p className="text-gray-200 text-sm mb-2">
-          El Nodo <b>A</b> tiene 4 hijos, los Nodos <b>B, C</b> y <b>E</b> no
-          tienen hijos, y el Nodo <b>D</b> tiene 3 hijos.
+          En el árbol del ejemplo, el nodo <b>A</b> tiene 4 hijos. Los nodos{" "}
+          <b>B, C</b> y <b>E</b> no tienen hijos (son hojas), y el nodo <b>D</b>{" "}
+          tiene 3 hijos.
         </p>
+
+        {/* Resumen visual */}
+        <div className="mt-4 bg-[#111217] border border-cyan-500/70 rounded-lg p-4 text-[14.5px] leading-relaxed">
+          <h3 className="text-cyan-300 font-semibold mb-1">
+            Resumen para recordar
+          </h3>
+          <ul className="list-disc list-inside text-gray-100 space-y-1">
+            <li>Cada nodo puede tener 0, 1, 2, 3, … hijos.</li>
+            <li>
+              No hay límite superior fijo: el “grado” del nodo depende del
+              problema.
+            </li>
+            <li>
+              Lo más natural es pensar en cada nodo con una{" "}
+              <b>lista de hijos</b>.
+            </li>
+          </ul>
+        </div>
       </section>
 
-      {/* Memoria dinámica */}
+      {/* Representación en memoria dinámica */}
       <section className="mb-10">
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4">
-          <p className="text-gray-100 text-[15.5px] mb-2">
-            Esta circunstancia exige que cada Nodo guarde una{" "}
-            <b>Lista de apuntadores</b> para almacenar el número de hijos. El
-            árbol anterior en la memoria dinámica se puede ver así:
+        <h2 className="text-xl font-bold text-red-500 mb-2">
+          Árbol Eneario en memoria dinámica
+        </h2>
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4 text-[15.5px] leading-relaxed">
+          <p className="text-gray-100 mb-2">
+            Como cada nodo puede tener muchos hijos, lo habitual es que cada
+            nodo guarde una <b>lista de apuntadores</b> a sus hijos. De esta
+            forma podemos crecer o reducir el número de hijos dinámicamente.
+          </p>
+          <p className="text-gray-100">
+            El árbol anterior, visto en memoria dinámica, podría representarse
+            así:
           </p>
         </div>
         <div className="flex justify-center my-5">
           <img
             src={img2}
             className="bg-white rounded-xl border-2 border-red-500 shadow max-w-4xl w-full p-4"
-            alt="Memoria dinámica árbol eneario"
+            alt="Árbol eneario con listas de hijos"
           />
         </div>
       </section>
@@ -68,64 +104,69 @@ export function DefinitionArbolEneario() {
         <h2 className="text-xl font-bold text-red-500 mb-2">
           Implementaciones básicas
         </h2>
-        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4">
-          <ul className="space-y-2 text-[15.5px] text-gray-100">
+        <div className="bg-[#19191d] border-l-4 border-red-500 rounded-md p-4 shadow mb-4 text-[15.5px] leading-relaxed">
+          <ul className="space-y-2 text-gray-100">
             <li>
               <span className="font-bold text-red-400">
                 Implementación matricial:
               </span>{" "}
-              El árbol se representa en un vector de enteros, donde cada
-              componente contiene el índice de su nodo padre.
+              el árbol se representa en un <b>vector de enteros</b>, donde cada
+              posición guarda el índice de su nodo padre. La raíz tiene padre{" "}
+              <b>-1</b>.
             </li>
             <li>
               <span className="font-bold text-red-400">
                 Implementación con listas:
               </span>{" "}
-              Se representa mediante un vector de listas. Cada índice del vector
-              se asocia con un nodo y almacena la lista de sus hijos.
+              se usa un <b>vector de listas</b>; cada índice representa un nodo
+              y almacena la lista de índices de sus hijos.
             </li>
             <li>
               <span className="font-bold text-red-400">
                 Implementación con celdas enlazadas:
               </span>{" "}
-              Cada nodo es una celda enlazada con punteros a padre, hijo
-              izquierdo y hermano derecho.
+              cada nodo es una celda con punteros a <b>padre</b>,{" "}
+              <b>primer hijo</b> y <b>hermano derecho</b> (técnica{" "}
+              <i>first-child / next-sibling</i>).
             </li>
             <li>
-              El tipo <b>Nodo</b> del árbol es entero.
+              El tipo <b>Nodo</b> suele ser un entero que actúa como índice.
             </li>
             <li>
-              La <b>relación padre-hijo</b> se representa en un vector P, donde
-              P[i] indica el nodo padre de i. Si el nodo no tiene padre (raíz),
-              P[i] = -1.
-            </li>
-            <li>
-              Las <b>etiquetas</b> de los nodos se representan en otro vector.
+              Las <b>etiquetas</b> o valores de cada nodo se guardan en otro
+              vector paralelo.
             </li>
           </ul>
         </div>
         <div className="text-gray-200 text-sm mb-4">
-          Esta implementación es sencilla y con bajo coste de memoria. Facilita
-          el acceso a ancestros (eficiencia <b>O(log n)</b>), pero puede
-          complicar operaciones con los hijos.
+          La implementación matricial es sencilla y tiene bajo coste de
+          memoria. Facilita el acceso a ancestros (eficiencia aproximada{" "}
+          <b>O(log n)</b>), pero puede complicar algunas operaciones sobre los
+          hijos cuando el grado de los nodos es muy grande.
         </div>
       </section>
 
-      {/* Clase Nodo */}
+      {/* Estructura de cada Nodo (first-child / next-sibling) */}
       <section className="mb-10">
         <h2 className="text-xl font-bold text-red-500 mb-3">
           Estructura de cada Nodo
         </h2>
-        <div className="text-gray-200 text-sm mb-6">
-          El apuntador <b>hijo</b> direcciona al primer hijo (más a la
-          izquierda) y el <b>hermano</b> se usa para formar la lista de
-          hermanos. Por ejemplo, los hijos de <b>A</b> están en la lista:
+        <div className="text-gray-200 text-sm mb-6 leading-relaxed">
+          En la representación con celdas enlazadas, cada nodo mantiene:
+          <br />• Un puntero <b>hijo</b> al primer hijo (el más a la izquierda).
+          <br />• Un puntero <b>hermano</b> al siguiente hermano en la lista.
+          <br />
+          Así, todos los hijos de un nodo se recorren avanzando por la lista de
+          hermanos.
+          <br />
+          <br />
+          Por ejemplo, los hijos de <b>A</b> están en la siguiente lista:
         </div>
         <div className="flex justify-center my-5">
           <img
             src={img4}
             className="bg-white rounded-xl border-2 border-red-500 shadow max-w-2xl w-full p-4"
-            alt="Clase NodoEneario"
+            alt="Lista de hijos de A"
           />
         </div>
         <div className="text-gray-200 text-sm mb-2">
@@ -135,19 +176,21 @@ export function DefinitionArbolEneario() {
           <img
             src={img5}
             className="bg-white rounded-xl border-2 border-red-500 shadow max-w-2xl w-full p-4"
-            alt="Hijos de A"
+            alt="Lista de hijos de D"
           />
         </div>
       </section>
 
       {/* Ejemplo adicional */}
       <section className="mb-10">
-        <div className="text-gray-200 text-sm mb-4">Veamos otro ejemplo:</div>
+        <div className="text-gray-200 text-sm mb-4">
+          Veamos otro ejemplo de árbol eneario con distintos grados:
+        </div>
         <div className="flex justify-center my-5">
           <img
             src={img6}
-            className="bg-white rounded-xl border-2 border-red-500 shadow max-w-2xl w-full p-4"
-            alt="Hijos de D"
+            className="bg-white rounded-xl border-2 border-red-500 shadow max-w-3xl w-full p-4"
+            alt="Ejemplo adicional de árbol eneario"
           />
         </div>
       </section>

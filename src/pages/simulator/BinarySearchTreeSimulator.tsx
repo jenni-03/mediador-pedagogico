@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ArbolBinarioBusqueda } from "../../shared/utils/structures/ArbolBinarioBusqueda";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ArbolBinarioBusqueda } from "../../domain/structures/ArbolBinarioBusqueda";
 import { useBinarySearchTree } from "./hooks/estructures/arboles/useBinarySearchTree";
 import { BinarySearchTreeRender } from "./components/estructures/arboles/BinarySearchTreeRender";
 

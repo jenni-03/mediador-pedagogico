@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { CardData, FilterState } from '../../../types';
+import { CardData, FilterState } from '../../../domain/utils/types';
 
 export function useFilteredCard(
     data: CardData[],

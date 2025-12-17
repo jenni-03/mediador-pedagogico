@@ -1,4 +1,4 @@
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../types";
+import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
 import { useBinaryTreeRender } from "../../../hooks/estructures/arboles/useBinaryTreeRender";
 
 export function BinaryTreeRender({

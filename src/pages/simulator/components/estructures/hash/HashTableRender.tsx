@@ -1,16 +1,19 @@
-// src/components/estructures/hash/HashTableRender.tsx
 import { useHashTableRender } from "../../../hooks/estructures/hashTable/useHashTableRender";
-import type { HashQuery }     from "../../../hooks/estructures/hashTable/useHashTable";
-import type { HashNode }      from "../../../hooks/estructures/hashTable/useHashTable";
-import type { StyleConfig }   from "../../../../../shared/utils/draw/hashTableDrawActions";
-import type { LastAction } from "../../../hooks/estructures/hashTable/useHashTable";
+import type {
+  HashQuery,
+  HashNode,
+  LastAction,
+  HashError,
+} from "../../../hooks/estructures/hashTable/useHashTable";
+import type { StyleConfig } from "../../../../../shared/utils/draw/hashTableDrawActions";
 
 export interface HashTableRenderProps {
-  buckets          : HashNode[][];
-  memory           : number[];
-  query            : HashQuery;
+  buckets: HashNode[][];
+  memory: number[];
+  query: HashQuery;
   lastAction?: LastAction;
-  resetQueryValues : () => void;
+  error: HashError | null;        
+  resetQueryValues: () => void;
   /** (Opcional) – override de colores/tamaños si lo deseas */
   style?: Partial<StyleConfig>;
 }
@@ -20,6 +23,7 @@ export function HashTableRender({
   memory,
   query,
   lastAction,
+  error,
   resetQueryValues,
   style,
 }: HashTableRenderProps) {
@@ -29,8 +33,9 @@ export function HashTableRender({
     memory,
     query,
     lastAction,
+    error,               // 👈 se pasa al hook
     resetQueryValues,
-    style,          
+    style,
   });
 
   return (

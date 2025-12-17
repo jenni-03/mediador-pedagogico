@@ -1,7 +1,6 @@
-// src/shared/utils/draw/NaryTreeDrawActions.ts
 import * as d3 from "d3";
 import { HierarchyNode } from "d3";
-import { HierarchyNodeData, TreeLinkData } from "../../../types";
+import { HierarchyNodeData, TreeLinkData } from "../../../domain/utils/types";
 
 import {
   SVG_NARY_VALUES,
@@ -85,8 +84,6 @@ function ensureSearchDefs(
     g.append("stop").attr("offset", "100%").attr("stop-color", "#22d3ee"); // cyan-400
   }
 }
-
-
 
 /* ─────────────────────────── SKIN: defs públicos ─────────────────────────── */
 // Llama a esto una vez por SVG antes de dibujar nodos
@@ -351,13 +348,8 @@ export async function animateNaryMoveNode(
 ) {
   try {
     setIsAnimating?.(true);
-    ensureArrowDefs(svg);
 
     const movedG = treeG.select<SVGGElement>(`g#${params.movedNodeId}`);
-    const oldP = params.oldParentId
-      ? (nodePositions.get(params.oldParentId) ?? null)
-      : null;
-    const newP = nodePositions.get(params.newParentId) ?? null;
 
     // 1) Flash en viejo y nuevo padre (si hay)
     if (params.oldParentId) {
@@ -366,45 +358,28 @@ export async function animateNaryMoveNode(
           .select<SVGCircleElement>(`g#${params.oldParentId} circle`)
           .node() ??
         treeG.select<SVGRectElement>(`g#${params.oldParentId} rect`).node();
-      if (sel) await flashStroke(d3.select(sel as any));
+
+      if (sel) {
+        await flashStroke(d3.select(sel as any));
+      }
     }
+
     {
       const sel =
         treeG
           .select<SVGCircleElement>(`g#${params.newParentId} circle`)
           .node() ??
         treeG.select<SVGRectElement>(`g#${params.newParentId} rect`).node();
-      if (sel) await flashStroke(d3.select(sel as any), "#8aa0ff");
+
+      if (sel) {
+        await flashStroke(d3.select(sel as any), "#8aa0ff");
+      }
     }
 
-    // 2) Flecha indicativa old→new (si se conoce old)
-    if (oldP && newP) {
-      let overlay = svg.select<SVGGElement>("g.nary-move-overlay");
-      if (overlay.empty())
-        overlay = svg
-          .append("g")
-          .attr("class", "nary-move-overlay")
-          .style("pointer-events", "none");
-
-      const arrow = overlay
-        .append("path")
-        .attr("d", `M ${oldP.x} ${oldP.y} L ${newP.x} ${newP.y}`)
-        .attr("fill", "none")
-        .attr("stroke", "#8aa0ff")
-        .attr("stroke-width", 1.6)
-        .attr("opacity", 0)
-        .attr("marker-end", "url(#naryArrowHead)");
-
-      await arrow
-        .transition()
-        .duration(NARY_ANIM.arrowIn)
-        .style("opacity", 1)
-        .transition()
-        .delay(250)
-        .duration(NARY_ANIM.arrowOut)
-        .style("opacity", 0)
-        .remove()
-        .end();
+    // 2) Indicador visual del NUEVO padre (sin flecha, solo pulso alrededor)
+    const newParentG = treeG.select<SVGGElement>(`g#${params.newParentId}`);
+    if (!newParentG.empty()) {
+      await pulseRing(newParentG, "#8aa0ff");
     }
 
     // 3) Pequeño pulso en el subárbol movido
@@ -609,7 +584,6 @@ export async function animateNarySearchPath(
 
       // 2) Línea animada al siguiente paso
       if (i < path.length - 1) {
-     
         // vuelve a 0.6 el nodo ya “visitado” (deja foco visual en el siguiente)
         if (i < path.length - 1) {
           await gNode.transition().duration(100).style("opacity", 0.6).end();

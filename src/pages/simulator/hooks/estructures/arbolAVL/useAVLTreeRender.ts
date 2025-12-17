@@ -4,7 +4,7 @@ import {
   BinaryTreeTraversalStep,
   HierarchyNodeData,
   TraversalNodeType,
-} from "../../../../../types";
+} from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
 import {
@@ -12,10 +12,10 @@ import {
   drawTraversalSequence,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../shared/utils/treeUtils";
 import { animateDeleteAVLNode, animateInsertAVLNode } from "../../../../../shared/utils/draw/avlTreeDrawActions";
 import { select } from "d3";
 import { useBus } from "../../../../../shared/hooks/useBus";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { animateSearchBSTNode } from "../../../../../shared/utils/draw/bstDrawActions";
 import { animateLevelOrderTraversal, animateRecursiveTraversal } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { getArbolAVLCode } from "../../../../../shared/constants/pseudocode/arbolAVLCode";

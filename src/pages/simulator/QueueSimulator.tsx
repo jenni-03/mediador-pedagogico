@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from "react";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { Cola } from "../../shared/utils/structures/Cola";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { Cola } from "../../domain/structures/Cola";
 import { QueueRender } from "./components/estructures/cola/QueueRender";
 import { Simulator } from "./components/templates/Simulator";
 import { useQueue } from "./hooks/estructures/cola/useQueue";
-import { dynamicAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { dynamicAddressGenerator } from "../../domain/utils/memoryAllocator";
 
 export function QueueSimulator() {
     // Instanciación de la estructura Cola

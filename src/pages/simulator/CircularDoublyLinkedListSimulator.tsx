@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
-import { doubleNodeAddressGenerator } from "../../shared/utils/memoryAllocator";
+import { doubleNodeAddressGenerator } from "../../domain/utils/memoryAllocator";
 import { useLinkedList } from "./hooks/estructures/listas/useLinkedList";
 import { Simulator } from "./components/templates/Simulator";
-import { STRUCTURE_NAME } from "../../shared/constants/consts";
-import { ListaCircularDoble } from "../../shared/utils/structures/ListaCircularDoble";
+import { STRUCTURE_NAME } from "../../domain/constants/consts";
+import { ListaCircularDoble } from "../../domain/structures/ListaCircularDoble";
 import { CircularDoublyLinkedListRender } from "./components/estructures/listas/CircularDoublyLinkedListRender";
 
 export function CircularDoublyLinkedListSimulator() {

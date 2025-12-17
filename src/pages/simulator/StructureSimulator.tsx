@@ -1,5 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { conceptosData } from "../../shared/constants/conceptsData";
+import { conceptosData } from "../../domain/constants/conceptsData";
 import { SequenceSimulator } from "./SequenceSimulator";
 import { QueueSimulator } from "./QueueSimulator";
 import { StackSimulator } from "./StackSimulator";

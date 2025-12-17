@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BaseQueryOperations, ListLinkData, ListNodeData } from "../../../../../types";
+import { BaseQueryOperations, ListLinkData, ListNodeData } from "../../../../../domain/utils/types";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { useBus } from "../../../../../shared/hooks/useBus";
-import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_LINKED_LIST_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import { select } from "d3";
 import { animateClearList, drawArrowIndicator, drawListLinks, drawListNodes } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { animateCircularSearchElement, animateSimpleCircularDeleteAt, animateSimpleCircularDeleteFirst, animateSimpleCircularDeleteLast, animateSimpleCircularInsertAt, animateSimpleCircularInsertFirst, animateSimpleCircularInsertLast } from "../../../../../shared/utils/draw/circularSimpleLinkedListDrawActions";
-import { getListaCircularSimplementeEnlazadaCode } from "../../../../../shared/constants/pseudocode/listaCircularSimplementeEnlazadaCode";
+import { getListaCircularSimplementeEnlazadaCode } from "../../../../../domain/constants/pseudocode/listaCircularSimplementeEnlazadaCode";
 
 export function useCircularSimpleLinkedListRender(
     listNodes: ListNodeData<number>[],

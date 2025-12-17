@@ -1,13 +1,13 @@
-import { ListLinkData, ListNodeData } from "../../../types";
-import { getListaDoblementeEnlazadaCode } from "../../constants/pseudocode/listDoblementeEnlazadaCode";
+import { ListLinkData, ListNodeData } from "../../../domain/utils/types";
+import { getListaDoblementeEnlazadaCode } from "../../../domain/constants/pseudocode/listDoblementeEnlazadaCode";
 import { Selection } from "d3";
 import { type EventBus } from "../../events/eventBus";
 import { Dispatch, SetStateAction } from "react";
-import { delay } from "../simulatorUtils";
+import { delay } from "../../../domain/utils/simulatorUtils";
 import { animateAppearListNode, animateExitListNode, animateGetListNodePos } from "./simpleLinkedListDrawActions";
-import { SVG_LINKED_LIST_VALUES } from "../../constants/consts";
+import { SVG_LINKED_LIST_VALUES } from "../../../domain/constants/consts";
 import { repositionList } from "./drawActionsUtilities";
-import { buildListPath } from "../listUtils";
+import { buildListPath } from "../../../domain/utils/listUtils";
 
 const listaDobleCode = getListaDoblementeEnlazadaCode();
 

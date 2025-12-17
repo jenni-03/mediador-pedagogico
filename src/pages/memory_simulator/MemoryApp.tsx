@@ -11,6 +11,7 @@ import { Header } from "../../pages/simulator/components/molecules/Header";
 import RamIndexPanel from "./RamIndexPanel";
 import { buildRamViewSnap } from "./ramViewAdapter";
 import BrandCanvas from "./BrandCanvas";
+import CustomTour, { TourType } from "../../shared/tour/CustomTour";
 
 function AppInner() {
   const { snapshot, logs, animEvents, actions } = useMemorySimulator(1024 * 8);
@@ -71,32 +72,41 @@ function AppInner() {
     [animEvents]
   );
 
+  // 🔴 Limpiar toda la RAM / estado visual asociado
+  const handleClearMemory = useCallback(() => {
+  if (typeof (actions as any).reset === "function") {
+    (actions as any).reset();
+  } else if (typeof (actions as any).clearAll === "function") {
+    (actions as any).clearAll();
+  } else if (typeof (actions as any).executeCommand === "function") {
+    (actions as any).executeCommand("clear");
+  }
+
+  setSelectedId(null);
+  setPeekRange(null);
+}, [actions]);
+
   return (
     <>
       <Header />
 
-      {/* Fondo reusable: cambia variant/theme según simulador */}
-      <BrandCanvas
-     
-     
-       
-      >
+      <BrandCanvas>
         <div className="flex w-full flex-col gap-6">
-<h1
-  data-tour="structure-title"
-  className="mt-3 mb-7 text-center font-black uppercase tracking-[.18em] leading-tight text-3xl sm:text-5xl"
->
-  <span className="bg-gradient-to-b from-zinc-50 to-zinc-200 bg-clip-text text-transparent">
-    SIMULADOR
-  </span>
-  <span className="ml-3 align-middle rounded-md px-3 py-0.5
+          <h1
+            data-tour="structure-title"
+            className="mt-3 mb-7 text-center font-black uppercase tracking-[.18em] leading-tight text-3xl sm:text-5xl"
+          >
+            <span className="bg-gradient-to-b from-zinc-50 to-zinc-200 bg-clip-text text-transparent">
+              SIMULADOR
+            </span>
+            <span
+              className="ml-3 align-middle rounded-md px-3 py-0.5
                    text-rose-300 ring-1 ring-rose-400/40
-                   bg-gradient-to-b from-rose-500/15 to-rose-500/8">
-    &lt;RAM&gt;
-  </span>
-</h1>
-
-
+                   bg-gradient-to-b from-rose-500/15 to-rose-500/8"
+            >
+              &lt;RAM&gt;
+            </span>
+          </h1>
 
           <div
             className="
@@ -129,6 +139,7 @@ function AppInner() {
                 selectedId={selectedId}
                 onPick={handlePick}
                 onFocusRange={handleFocusRange}
+                onClearAll={handleClearMemory} // 👈 aquí ya está conectado
               />
             </div>
 
@@ -142,9 +153,12 @@ function AppInner() {
   );
 }
 
+
 export default function MemoryApp() {
   return (
+    
     <AnchorRegistryProvider>
+            <CustomTour tipo={"memoria"} />
       <HighlightProvider>
         <AppInner />
       </HighlightProvider>

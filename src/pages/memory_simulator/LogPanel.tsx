@@ -439,6 +439,7 @@ export function LogPanel({
   return (
     <section
       className="relative overflow-hidden rounded-2xl"
+      data-tour="consola"
       style={{
         background: C.panel,
         border: `1px solid ${C.ring}`,
@@ -507,6 +508,7 @@ export function LogPanel({
       {/* Área de logs: sólido + micro-grid */}
       <div
         className="relative max-h-[260px] overflow-auto px-3 py-3 stk-scroll"
+        data-tour="panelLogs"
         style={{ background: C.panelInner }}
       >
         <div
@@ -536,6 +538,7 @@ export function LogPanel({
       {/* Prompt */}
       <div
         className="px-3 py-3"
+        data-tour="divInputConsola"
         style={{ background: C.panelSoft, borderTop: `1px solid ${C.ring}` }}
       >
         <div className="flex items-center gap-2">
@@ -544,6 +547,7 @@ export function LogPanel({
           </span>
           <input
             ref={inputRef}
+            data-tour="inputConsola"
             className="flex-1 rounded-lg px-3 py-2 font-mono text-sm text-zinc-50 placeholder:text-zinc-300/70 focus:outline-none"
             style={{
               background: C.panelInner,
