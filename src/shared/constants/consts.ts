@@ -143,7 +143,8 @@ export const SVG_AVL_TREE_VALUES = {
   ROW_H_LABEL: 7,
   ROW_H_VALUE: 11,
   EXTRA_W: 2,
-  EXTRA_WIDTH: 40
+  EXTRA_WIDTH: 40,
+  EXTRA_HEIGHT: 80
 };
 
 export const SVG_RB_TREE_VALUES = {

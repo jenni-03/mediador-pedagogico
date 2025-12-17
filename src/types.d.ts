@@ -4,6 +4,7 @@ import { TYPE_FILTER } from "./shared/constants/consts";
 import type { NodoS } from "./shared/utils/nodes/NodoS";
 import type { NodoD } from "./shared/utils/nodes/NodoD";
 import type { NodoBin } from "./shared/utils/nodes/NodoBin";
+import type { NodoAVL } from "./shared/utils/nodes/NodoAVL";
 
 /* ─────────────────────────── Base comunes ─────────────────────────── */
 
@@ -284,7 +285,7 @@ export type BinaryTreeGetStep =
 
 export type BSTInsertStep =
   | { type: "checkNull"; at: string | null; isNull: boolean }
-  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right"; newId: string }
+  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right" }
   | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
   | { type: "goLeft"; from: string; to: string | null }
   | { type: "goRight"; from: string; to: string | null }
@@ -325,6 +326,47 @@ export type BSTSearchStep =
 
 type BSTSearchMeta<T> = {
   targetNode: NodoBin<T> | null;
+};
+
+export type AVLInsertStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right" }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "updateHeight"; at: string }
+  | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
+  | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }
+  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1; }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+type AVLInsertMeta<T> = {
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  inserted: boolean;
+};
+
+export type AVLDeleteStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "match"; at: string }
+  | { type: "updateHeight"; at: string }
+  | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
+  | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }
+  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1; }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+export type AVLDeleteMeta<T> = {
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoAVL<T> | null;
+  successorParent: NodoAVL<T> | null;
+  replacement: NodoAVL<T> | null;
+  replacementSide: "left" | "right" | null;
+  deleted: boolean;
 };
 
 export type RotationType = "LL" | "RR" | "LR" | "RL"
@@ -451,6 +493,25 @@ export type BSTDeleteOutput<T> = {
   successor: NodoBin<T> | null;
   successorParent: NodoBin<T> | null;
   replacement: NodoBin<T> | null;
+  replacementSide: "left" | "right" | null;
+  deleted: boolean;
+};
+
+export type AVLInsertOutput<T> = {
+  steps: AVLInsertStep[];
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  inserted: boolean;
+};
+
+export type AVLDeleteOutput<T> = {
+  steps: AVLDeleteStep[];
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoAVL<T> | null;
+  successorParent: NodoAVL<T> | null;
+  replacement: NodoAVL<T> | null;
   replacementSide: "left" | "right" | null;
   deleted: boolean;
 };
@@ -685,13 +746,13 @@ export type BaseQueryOperations<
   : // AVL
   T extends "arbol_avl"
   ? {
-    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
-    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
-    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toInsert: { steps: AVLInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
+    toDelete: { steps: AVLDeleteStep[], parentNodeId: string | null, targetNodeId: string | null, pathToSuccessorIds: string[], successorNodeId: string | null, successorParentNodeId: string | null, replacementNodeId: string | null, replacementSide: "left" | "right" | null, deleted: boolean } | null;
+    toSearch: { steps: BSTSearchStep[], targetNodeId: string | null, found: boolean } | null;
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
     avlTrace: OperationTrace<number> | null;
   }

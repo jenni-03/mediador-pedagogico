@@ -1735,26 +1735,29 @@ export async function animateEspecialBSTsRotation(
         nodes: HierarchyNode<HierarchyNodeData<number>>[];
         links: TreeLinkData[];
         positions: Map<string, { x: number, y: number }>;
+    },
+    highlightCtx: {
+        bus: EventBus;
+        stepId: string;
+        labels: {
+            DECL_MAIN: number;
+            DECL_AUX: number;
+            SET_FIRST_LINK: number;
+            SET_SECOND_LINK: number;
+        }
     }
 ) {
-    // Obtenemos los datos de reposicionamiento
+    // Elementos implicados en el reposicionamiento
     const { nodes, links, positions } = repositionData;
 
-    // Fade out del nuevo enlace entre p y y (si p)
-    if (parentOfUnbalanced) {
-        treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced} path.tree-link`)
-            .style("opacity", 0);
-    }
+    // Elementos implicados en el resaltado del código
+    const { bus, stepId, labels } = highlightCtx;
 
-    // Fade out del nuevo enlace entre y y z
-    treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode} path.tree-link`)
-        .style("opacity", 0);
+    bus.emit("step:progress", { stepId, lineIndex: labels.DECL_MAIN });
+    await delay(600);
 
-    // Fade out del nuevo enlace entre z y B (si B)
-    if (rotationNode) {
-        treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode} path.tree-link`)
-            .style("opacity", 0);
-    }
+    bus.emit("step:progress", { stepId, lineIndex: labels.DECL_AUX });
+    await delay(600);
 
     // Eliminar enlace previo entre p y z (si p)
     if (parentOfUnbalanced) {
@@ -1787,29 +1790,24 @@ export async function animateEspecialBSTsRotation(
     // Reposicionamiento de los nodos y enlaces del árbol
     await repositionStrategy(treeG, nodes, links, positions);
 
-    // Fade in del nuevo enlace entre p y y (si p)
-    if (parentOfUnbalanced) {
-        await treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced} path.tree-link`)
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
-    }
-
     // Fade in del nuevo enlace entre y y z
-    await treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode} path.tree-link`)
+    bus.emit("step:progress", { stepId, lineIndex: labels.SET_FIRST_LINK });
+    await treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode}`)
         .transition()
         .duration(800)
         .style("opacity", 1)
         .end();
 
     // Fade in del nuevo enlace entre z y B (si B)
+    bus.emit("step:progress", { stepId, lineIndex: labels.SET_SECOND_LINK });
     if (rotationNode) {
-        await treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode} path.tree-link`)
+        await treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode}`)
             .transition()
             .duration(800)
             .style("opacity", 1)
             .end();
+    } else {
+        await delay(600);
     }
 }
 

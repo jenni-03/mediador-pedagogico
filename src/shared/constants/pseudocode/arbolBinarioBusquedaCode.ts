@@ -135,7 +135,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       DEC_SIZE: 8,
       RETURN_RESULT: 10,
 
-      // Método eliminar(NodoBin<T> r, T info)
+      // Método delete(NodoBin<T> r, T info)
       IF_NULL_NODE: 16,
       RETURN_NULL: 17,
       DECLARE_CMP: 19,

@@ -41,9 +41,9 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
         const meta: BSTInsertMeta<T> = {
             parent: null,
             targetNode: null,
-            inserted: false,
+            inserted: false
         };
-        const nuevaRaiz = this.insertarABBAux(this.getRaiz(), valor, steps, meta)
+        const nuevaRaiz = this.insertarABBAux(this.getRaiz(), valor, steps, meta);
 
         if (meta.inserted) {
             this.setRaiz(nuevaRaiz);
@@ -87,7 +87,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * - `replacementSide`: Dirección del nodo que ocupa físicamente el lugar del nodo eliminado ("left", "right"). 
      *    Sera `null` si el nodo si el nodo eliminado era un nodo hoja.
      * 
-     * - `deleted`: Booleano que indica si el elemento fue eliminado exitosamente o no.
+     * - `deleted`: Booleano que indica si el elemento fue eliminado.
      */
     public eliminarABB(valor: T): BSTDeleteOutput<T> {
         if (this.esVacio()) {
@@ -103,7 +103,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             successorParent: null,
             replacement: null,
             replacementSide: null,
-            deleted: false,
+            deleted: false
         };
         const nuevaRaiz = this.eliminarABBAux(this.getRaiz(), valor, steps, meta);
 
@@ -117,7 +117,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
                 successorParent: null,
                 replacement: null,
                 replacementSide: null,
-                deleted: false,
+                deleted: false
             }
         }
 
@@ -133,7 +133,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             successorParent: meta.successorParent,
             replacement: meta.replacement,
             replacementSide: meta.replacementSide,
-            deleted: meta.deleted,
+            deleted: meta.deleted
         }
     }
 
@@ -147,7 +147,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * 
      * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si no fue encontrado.  
      * 
-     * - `found`: Booleano que indica si el nodo fue encontrado o no.
+     * - `found`: Booleano que indica si el nodo fue encontrado.
      */
     public buscarABB(valor: T): BSTSearchOutput<T> {
         const steps: BSTSearchStep[] = [];
@@ -298,8 +298,8 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
     }
 
     /**
-     * Método auxiliar que inserta un nuevo nodo en el subárbol dado, 
-     * a partir del elemento proporcionado y aplicando las reglas del árbol binario de búsqueda.
+     * Método auxiliar que inserta un nuevo nodo en el subárbol dado, a partir del elemento proporcionado 
+     * y aplicando las reglas del árbol binario de búsqueda.
      * @param root Nodo raíz del subárbol actual
      * @param valor Elemento a insertar.
      * @param steps Arreglo para acumular los pasos de inserción para la visualización del algoritmo.
@@ -327,15 +327,14 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             steps.push({
                 type: "createLeaf",
                 parent: parentNode?.getId() ?? null,
-                side: parentNode === null ? "root" : via === "left" ? "left" : "right",
-                newId: nuevo.getId()
+                side: parentNode === null ? "root" : via === "left" ? "left" : "right"
             });
             meta.inserted = true;
             meta.targetNode = nuevo;
-            meta.parent = parentNode
+            meta.parent = parentNode;
 
             steps.push({ type: "return", from: nuevo.getId(), to: parentNode?.getId() ?? null, via: via ?? "root" });
-            return nuevo
+            return nuevo;
         }
 
         const cmp = this.compare(valor, root.getInfo());
@@ -523,7 +522,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
     }
 
     /**
-     * Método recursivo que clona un árbol binario de búsqueda iniciando desde el nodo raíz dado.
+     * Método auxiliar que clona un árbol binario de búsqueda iniciando desde el nodo raíz dado.
      * @param root Nodo raíz del árbol BST a clonar.
      * @returns Nuevo subárbol clonado con raíz en el nodo dado.
      */

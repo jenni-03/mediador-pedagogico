@@ -340,7 +340,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que comprueba la existencia del elemento especificado en el árbol binario.
  * @param info Elemento a buscar.
- * @return true si el elemento existe en el árbol; false en caso contrario.
+ * @return true si el elemento existe en el árbol, false en caso contrario.
  */`,
       `public boolean search(T {0}) {`,
       `    return this.get({0}) != null;`,
