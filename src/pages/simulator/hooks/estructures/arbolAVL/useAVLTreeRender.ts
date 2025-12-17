@@ -6,7 +6,7 @@ import {
   TraversalNodeType,
 } from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../shared/constants/consts";
+import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import {
   animateClearTree,
   drawTraversalSequence,
@@ -18,7 +18,7 @@ import { useBus } from "../../../../../shared/hooks/useBus";
 import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { animateSearchBSTNode } from "../../../../../shared/utils/draw/bstDrawActions";
 import { animateLevelOrderTraversal, animateRecursiveTraversal } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
-import { getArbolAVLCode } from "../../../../../shared/constants/pseudocode/arbolAVLCode";
+import { getArbolAVLCode } from "../../../../../domain/constants/pseudocode/arbolAVLCode";
 
 export function useAVLTreeRender(
   treeData: HierarchyNodeData<number> | null,
