@@ -495,7 +495,6 @@ export async function animateDeleteBSTNode(
                 case "return": {
                     const isMatchReturn = lastStep?.type === "match";
                     if ((isMatchReturn && successorNodeId) || (!isMatchReturn && step.from)) {
-                        console.log("MONDONGO")
                         bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_NODE });
                         await delay(600);
                     }

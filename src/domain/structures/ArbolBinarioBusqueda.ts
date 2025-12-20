@@ -27,7 +27,9 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la inserción 
      *    (comprobaciones, visitas, movimientos y retornos).
      * 
-     * - `parent`: Nodo padre del nuevo nodo. Será `null` si el nuevo nodo se insertó en la raíz.
+     * - `parent`: Nodo padre bajo el cual se insertó el nuevo nodo. Será `null` en 2 casos:
+     *    1. Si el elemento ya existía en el árbol.
+     *    2. Si el nuevo nodo se insertó como raíz.
      * 
      * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si ya existía en el árbol.
      * 
@@ -292,7 +294,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      */
     public clonarABB(): ArbolBinarioBusqueda<T> {
         const nuevoArbol = new ArbolBinarioBusqueda<T>(this.compare);
-        nuevoArbol.setRaiz(this.clonarABBrec(this.getRaiz()));
+        nuevoArbol.setRaiz(this.clonarABBAux(this.getRaiz()));
         nuevoArbol.setTamanio(this.getTamanio());
         return nuevoArbol;
     }
@@ -302,10 +304,10 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * y aplicando las reglas del árbol binario de búsqueda.
      * @param root Nodo raíz del subárbol actual
      * @param valor Elemento a insertar.
-     * @param steps Arreglo para acumular los pasos de inserción para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos de inserción realizados durante la operación.
      * @param meta Objeto de metadatos para rastrear el resultado de la inserción y la información del nodo objetivo.
      * @param parentNode Nodo padre del nodo actual.
-     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or null para la raíz).
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      * @returns Nodo raíz del subárbol actualizado tras la inserción.
      */
     private insertarABBAux(
@@ -314,7 +316,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
         steps: BSTInsertStep[],
         meta: BSTInsertMeta<T>,
         parentNode: NodoBin<T> | null = null,
-        via: "left" | "right" | null = null
+        via: "left" | "right" | "root" = "root"
     ): NodoBin<T> | null {
         steps.push({
             type: "checkNull",
@@ -333,7 +335,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             meta.targetNode = nuevo;
             meta.parent = parentNode;
 
-            steps.push({ type: "return", from: nuevo.getId(), to: parentNode?.getId() ?? null, via: via ?? "root" });
+            steps.push({ type: "return", from: nuevo.getId(), to: parentNode?.getId() ?? null, via });
             return nuevo;
         }
 
@@ -359,7 +361,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             meta.parent = parentNode;
         }
 
-        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via ?? "root" });
+        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
         return root;
     }
 
@@ -368,7 +370,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * aplicando las reglas del árbol binario de búsqueda.
      * @param root Nodo raíz del subárbol actual
      * @param valor Elemento a eliminar.
-     * @param steps Arreglo para acumular los pasos de eliminación para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos de eliminación realizados durante la operación.
      * @param meta Objeto de metadatos para rastrear el resultado de la eliminación y la información del nodo objetivo.
      * @param parentNode Nodo padre del nodo actual.
      * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
@@ -388,7 +390,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             isNull: root === null
         });
         if (root === null) {
-            steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via: via });
+            steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via });
             return null;
         }
 
@@ -420,14 +422,14 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             if (!izq) {
                 meta.replacement = der;
                 meta.replacementSide = "right";
-                steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+                steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
                 return der;
             }
 
             if (!der) {
                 meta.replacement = izq;
                 meta.replacementSide = "left";
-                steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+                steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
                 return izq;
             }
 
@@ -453,7 +455,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             }
         }
 
-        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
         return root;
     }
 
@@ -462,7 +464,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * aplicando las reglas del árbol binario de búsqueda.
      * @param root Nodo raíz del subárbol actual
      * @param valor Elemento a buscar.
-     * @param steps Arreglo para acumular los pasos de búsqueda para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos de búsqueda realizados durante la operación.
      * @param meta Objeto de metadatos para rastrear el resultado de la búsqueda y la información del nodo objetivo.
      * @param parentNode Nodo padre del nodo actual.
      * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
@@ -482,7 +484,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             isNull: root === null
         });
         if (root === null) {
-            steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via: via });
+            steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via });
             return false;
         };
 
@@ -496,7 +498,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             });
 
             const res = this.buscarABBAux(root.getIzq(), valor, steps, meta, root, "left");
-            steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+            steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
             return res
         } else if (cmp > 0) {
             steps.push({
@@ -507,7 +509,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             });
 
             const res = this.buscarABBAux(root.getDer(), valor, steps, meta, root, "right");
-            steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+            steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
             return res;
         } else {
             steps.push({
@@ -516,7 +518,7 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
             });
             meta.targetNode = root;
 
-            steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+            steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
             return true;
         }
     }
@@ -526,12 +528,12 @@ export class ArbolBinarioBusqueda<T> extends ArbolBinario<T> {
      * @param root Nodo raíz del árbol BST a clonar.
      * @returns Nuevo subárbol clonado con raíz en el nodo dado.
      */
-    private clonarABBrec(root: NodoBin<T> | null): NodoBin<T> | null {
+    private clonarABBAux(root: NodoBin<T> | null): NodoBin<T> | null {
         if (root === null) return null;
 
         const nuevoNodo = new NodoBin(root.getInfo(), root.getId());
-        nuevoNodo.setIzq(this.clonarABBrec(root.getIzq()));
-        nuevoNodo.setDer(this.clonarABBrec(root.getDer()));
+        nuevoNodo.setIzq(this.clonarABBAux(root.getIzq()));
+        nuevoNodo.setDer(this.clonarABBAux(root.getDer()));
 
         return nuevoNodo;
     }

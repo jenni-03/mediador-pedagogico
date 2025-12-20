@@ -92,7 +92,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
  * @param valor Elemento a eliminar.
  * @return Nodo raíz del subárbol actualizado tras la eliminación.
  */`,
-      `private NodoBin<T> delete(NodoBin<T> r, T {0}){`,
+      `private NodoBin<T> delete(NodoBin<T> r, T {0}) {`,
       `    if (r == null) {`,
       `        return null;`,
       `    }`,
@@ -382,7 +382,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       `/**
  * Método que elimina todos los nodos del árbol binario de búsqueda.
  */`,
-      `public void clean(){`,
+      `public void clean() {`,
       `    this.raiz = null;`,
       `}`,
     ],

@@ -343,7 +343,8 @@ export type AVLDeleteStep =
   | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
   | { type: "goLeft"; from: string; to: string | null }
   | { type: "goRight"; from: string; to: string | null }
-  | { type: "match"; at: string }
+  | { type: "match"; at: string; role: "target" | "successor" }
+  | { type: "callDeleteSuccessor"; from: string; startAt: string | null }
   | { type: "updateHeight"; at: string }
   | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
   | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }

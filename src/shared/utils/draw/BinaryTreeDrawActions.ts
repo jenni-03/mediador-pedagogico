@@ -1320,15 +1320,17 @@ export async function animateGetInOrderSuccessor(
     stepId: string,
     bus: EventBus,
     labels: {
-        DECLARE_SUCC_PARENT: number,
+        DECLARE_SUCC_PARENT?: number,
+        SET_SUCC_PARENT?: number,
         DECLARE_SUCC_NODE: number,
         WHILE_TRAVERSAL: number,
-        SET_SUCC_PARENT: number,
         SET_SUCC_NODE: number,
     }
 ) {
-    bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_SUCC_PARENT });
-    await delay(600);
+    if (labels.DECLARE_SUCC_PARENT) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_SUCC_PARENT });
+        await delay(600);
+    }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_SUCC_NODE });
     await delay(600);
@@ -1346,8 +1348,10 @@ export async function animateGetInOrderSuccessor(
             .attr("stroke-width", 3)
             .end();
 
-        bus.emit("step:progress", { stepId, lineIndex: labels.SET_SUCC_PARENT });
-        await delay(600);
+        if (labels.SET_SUCC_PARENT) {
+            bus.emit("step:progress", { stepId, lineIndex: labels.SET_SUCC_PARENT });
+            await delay(600);
+        }
 
         // Restablecimiento del fondo original del nodo actual (antes de pasar al sig. nodo)
         bus.emit("step:progress", { stepId, lineIndex: labels.SET_SUCC_NODE });

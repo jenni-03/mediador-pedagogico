@@ -747,12 +747,7 @@ export async function animateDeleteAVLNode(
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_NO_LEFT_CHILD });
                     await delay(600);
 
-                    if (!replacementNodeId && !successorNodeId) {
-                        // Nodo hoja
-                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_RIGHT_CHILD });
-                        await delay(600);
-                    } else if (!successorNodeId) {
-                        // Nodo con 1 hijo
+                    if ((step.role === "target" && !successorNodeId) || step.role === "successor") {
                         if (deletionData.replacementSide === "right") {
                             bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_RIGHT_CHILD });
                             await delay(600);
@@ -804,30 +799,12 @@ export async function animateDeleteAVLNode(
                             .end();
 
                         // Salida y reemplazo del nodo a eliminar
-                        bus.emit("step:progress", {
-                            stepId: "delete",
-                            lineIndex: labels.IF_SUCC_IS_LEFT_CHILD
-                        });
-                        await delay(600);
-
-                        if (deletionData.pathToSuccessor.length > 1) {
-                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_LEFT_CHILD });
-                        } else {
-                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.ELSE_SET_RIGHT_CHILD });
-                            await delay(600);
-
-                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_RIGHT_CHILD });
-                        }
-
-                        await animateReplaceChildNode(
-                            treeG,
-                            removalNodeId!,
-                            parentRemovalNodeId,
-                            replacementNodeId
-                        );
-
-                        // Reposicionamiento de los nodos y enlaces del árbol luego de la salida del nodo
-                        await repositionAVLTree(treeG, deletionData.remainingNodesData, deletionData.remainingLinksData, deletionData.positions);
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_DELETE_SUCCESSOR });
+                        await treeG.select<SVGCircleElement>(`g#${targetNodeId} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                            .end();
                     }
                     break;
                 }
@@ -1131,11 +1108,18 @@ export async function animateDeleteAVLNode(
                     }
 
                     if (step.to !== null && step.via !== "root") {
-                        const lineToRemark = step.via === "left" ? labels.CALL_LEFT_SUBTREE : labels.CALL_RIGHT_SUBTREE;
-                        bus.emit("step:progress", {
-                            stepId: "delete",
-                            lineIndex: lineToRemark
-                        });
+                        if (step.to === targetNodeId && successorNodeId) {
+                            bus.emit("step:progress", {
+                                stepId: "delete",
+                                lineIndex: labels.CALL_DELETE_SUCCESSOR
+                            });
+                        } else {
+                            const returnSide = step.via === "left" ? labels.CALL_LEFT_SUBTREE : labels.CALL_RIGHT_SUBTREE;
+                            bus.emit("step:progress", {
+                                stepId: "delete",
+                                lineIndex: returnSide
+                            });
+                        }
                     }
 
                     if (step.from) {
@@ -1237,7 +1221,7 @@ export async function animateDeleteAVLNode(
 
 /**
  * Función encargada de construir el badge de métricas (factor de balance y altura) para cada nodo dentro del árbol AVL.
- * @param nodesLayer La selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
+ * @param nodesLayer Selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
  * @param nodes Array de nodos de jerarquía D3 que representan los nodos del árbol AVL.
  */
 function buildAvlMetricsBadge(
@@ -1357,6 +1341,13 @@ function buildAvlMetricsBadge(
         .text((d) => d.data.height ?? 0);
 }
 
+/**
+ * Función encargada de actualizar los valores del badge de métricas (factor de balance y altura) de un solo nodo dentro del árbol AVL.
+ * @param nodesLayer Selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
+ * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
+ * @param nodeId ID del nodo cuyo badge de métricas se va a actualizar.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
+ */
 async function updateSingleAvlMetricsBadge(
     nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
     nodes: HierarchyNode<HierarchyNodeData<number>>[],
@@ -1395,38 +1386,12 @@ async function updateSingleAvlMetricsBadge(
 }
 
 /**
- * Función encargada de actualizar los valores del badge de métricas (factor de balance y altura) para cada nodo dentro del árbol AVL.
- * @param nodesLayer La selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
- * @param nodes Array de nodos de jerarquía D3 que representan los nodos del árbol AVL.
- */
-export function updateAvlMetricsBadge(
-    nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
-    nodes: HierarchyNode<HierarchyNodeData<number>>[]
-) {
-    // Selección de los grupos de cada nodo ya dibujado
-    const nodeGroups = nodesLayer
-        .selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.node")
-        .data(nodes, d => d.data.id);
-
-    // JOIN anidado - 1 panel por nodo
-    const panels = nodeGroups.selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.avl-panel")
-        .data(d => [d], (d) => d.data.id);
-
-    panels.select<SVGTextElement>("text.val-bf")
-        .attr("fill", d => bfColor(d.data.bf!))
-        .text(d => d.data.bf!);
-
-    panels.select<SVGTextElement>("text.val-h")
-        .text(d => d.data.height ?? 0);
-}
-
-/**
  * Función encargada de reubicar los nodos y ajustar los enlaces de conexión de un árbol AVL.
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
  * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @returns Una promesa que se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
+ * @returns Promise<`void`>. Se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
  */
 async function repositionAVLTree(
     g: Selection<SVGGElement, unknown, null, undefined>,

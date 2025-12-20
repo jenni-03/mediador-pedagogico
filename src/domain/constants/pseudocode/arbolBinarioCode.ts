@@ -7,9 +7,9 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
  * Método que inserta un nuevo elemento en el árbol binario como hijo izquierdo del elemento padre dado.
  * @param padre Elemento al que se añadirá el hijo.
  * @param hijo Elemento a insertar.
- * @return true si el elemento fue insertado, false en caso contrario.
+ * @return true si el elemento fue insertado, false si ya existía.
  */`,
-      `public boolean insertLeft(T {0}, T {1}){`,
+      `public boolean insertLeft(T {0}, T {1}) {`,
       `    NodoBin<T> nuevoNodo = new NodoBin<>({1});`,
       `    if (this.raiz == null) {`,
       `        this.raiz = nuevoNodo;`,
@@ -88,9 +88,9 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
  * Método que inserta un nuevo elemento en el árbol binario como hijo derecho del elemento padre dado.
  * @param padre Elemento al que se añadirá el hijo. 
  * @param hijo Elemento a insertar.
- * @return true si el elemento fue insertado, false en caso contrario.
+ * @return true si el elemento fue insertado, false si ya existía.
  */`,
-      `public boolean insertRight(T {0}, T {1}){`,
+      `public boolean insertRight(T {0}, T {1}) {`,
       `    NodoBin<T> nuevoNodo = new NodoBin<>({1});`,
       `    if (this.raiz == null) {`,
       `        this.raiz = nuevoNodo;`,
@@ -168,10 +168,10 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que elimina el elemento especificado del árbol binario. 
  * @param info Elemento a eliminar.
- * @return true si el elemento fue eliminado, false en caso contrario.
+ * @return true si el elemento fue eliminado, false si no existe en el árbol.
  * @throws RuntimeException si el árbol está vacío.
  */`,
-      `public boolean delete(T {0}){`,
+      `public boolean delete(T {0}) {`,
       `    if (this.raiz == null) {`,
       `        throw new RuntimeException("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");`,
       `    }`,
@@ -561,7 +561,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que elimina todos los nodos del árbol binario.
  */`,
-      `public void clean(){`,
+      `public void clean() {`,
       `    this.raiz = null;`,
       `}`,
     ],

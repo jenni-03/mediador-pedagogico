@@ -80,7 +80,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
    * 
    * - `parent`: Nodo padre del nodo eliminado. Será `null` en 2 casos:
    *    1. Si el nodo eliminado era la raíz.
-   *    2. Si el elemento no se encontra en el árbol.
+   *    2. Si el elemento no se encuentra en el árbol.
    * 
    * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si el elemento no se encuentra en el árbol.
    * 
@@ -301,7 +301,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
    */
   public clonarAVL(): ArbolAVL<T> {
     const nuevoArbol = new ArbolAVL<T>(this.compare);
-    nuevoArbol.setRaiz(this.clonarAVLrec(this.getRaiz()));
+    nuevoArbol.setRaiz(this.clonarAVLAux(this.getRaiz()));
     nuevoArbol.setTamanio(this.getTamanio());
     return nuevoArbol;
   }
@@ -392,7 +392,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
    * aplicando las rotaciones necesarias para mantener el balance del árbol AVL.
    * @param root Nodo raíz del subárbol actual.
    * @param valor Elemento a eliminar.
-   * @param steps Arreglo para acumular los pasos de eliminación para la visualización del algoritmo.
+   * @param steps Arreglo para acumular los pasos de eliminación realizados durante la operación.
    * @param meta Objeto de metadatos para rastrear el resultado de la eliminación y la información del nodo objetivo.
    * @param parentNode Nodo padre del nodo actual.
    * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
@@ -404,7 +404,8 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     steps: AVLDeleteStep[],
     meta: AVLDeleteMeta<T>,
     parentNode: NodoAVL<T> | null = null,
-    via: "left" | "right" | "root" = "root"
+    via: "left" | "right" | "root" = "root",
+    mode: "target" | "successor" = "target"
   ) {
     steps.push({
       type: "checkNull",
@@ -412,7 +413,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       isNull: root === null
     });
     if (root === null) {
-      steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via: via });
+      steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via });
       return null;
     }
 
@@ -424,19 +425,24 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
         from: root.getId(),
         to: root.getIzq()?.getId() ?? null
       });
-      root.setIzq(this.eliminarAVLAux(root.getIzq(), valor, steps, meta, root, "left"));
+      root.setIzq(this.eliminarAVLAux(root.getIzq(), valor, steps, meta, root, "left", mode));
     } else if (cmp > 0) {
       steps.push({
         type: "goRight",
         from: root.getId(),
         to: root.getDer()?.getId() ?? null
       });
-      root.setDer(this.eliminarAVLAux(root.getDer(), valor, steps, meta, root, "right"));
+      root.setDer(this.eliminarAVLAux(root.getDer(), valor, steps, meta, root, "right", mode));
     } else {
-      steps.push({ type: "match", at: root.getId() });
-      meta.deleted = true;
-      meta.targetNode = root;
-      meta.parent = parentNode;
+      steps.push({ type: "match", at: root.getId(), role: mode });
+      if (mode === "target") {
+        meta.deleted = true;
+        meta.targetNode = root;
+        meta.parent = parentNode;
+      } else {
+        meta.successorParent = parentNode;
+        meta.successor = root;
+      }
 
       const izq = root.getIzq();
       const der = root.getDer();
@@ -444,37 +450,32 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       if (!izq) {
         meta.replacement = der;
         meta.replacementSide = "right";
-        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
         return der;
       }
 
       if (!der) {
         meta.replacement = izq;
         meta.replacementSide = "left";
-        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via: via });
+        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
         return izq;
       }
 
-      let sucPadre = root;
       let succ = der;
       while (succ.getIzq()) {
         meta.pathToSuccessorIds.push(succ.getId());
-        sucPadre = succ;
         succ = succ.getIzq()!;
       }
       meta.pathToSuccessorIds.push(succ.getId());
-      meta.successor = succ;
-      meta.successorParent = sucPadre;
 
-      const reemplazo = succ.getDer();
-      meta.replacement = reemplazo;
 
       root.setInfo(succ.getInfo());
-      if (sucPadre.getIzq() === succ) {
-        sucPadre.setIzq(reemplazo);
-      } else {
-        sucPadre.setDer(reemplazo);
-      }
+      steps.push({
+        type: "callDeleteSuccessor",
+        from: root.getId(),
+        startAt: der.getId()
+      });
+      root.setDer(this.eliminarAVLAux(root.getDer(), succ.getInfo(), steps, meta, root, "right", "successor"));
     }
 
     steps.push({ type: "updateHeight", at: root.getId() });
@@ -779,7 +780,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       id: root.getId(),
       value: root.getInfo(),
       bf: this.getBalance(root),
-      height: root.getAltura(),
+      height: this.getAlturaNodo(root),
       children
     };
   }
@@ -789,13 +790,13 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
    * @param root Nodo raíz del subárbol a clonar.
    * @returns Una nueva instancia `NodoAVL<T>` que es una clonación profunda del subárbol.
    */
-  private clonarAVLrec(root: NodoAVL<T> | null): NodoAVL<T> | null {
+  private clonarAVLAux(root: NodoAVL<T> | null): NodoAVL<T> | null {
     if (root === null) return null;
 
     const nuevoNodo = new NodoAVL<T>(root.getInfo(), root.getId());
     nuevoNodo.setAltura(root.getAltura());
-    nuevoNodo.setIzq(this.clonarAVLrec(root.getIzq()));
-    nuevoNodo.setDer(this.clonarAVLrec(root.getDer()));
+    nuevoNodo.setIzq(this.clonarAVLAux(root.getIzq()));
+    nuevoNodo.setDer(this.clonarAVLAux(root.getDer()));
 
     return nuevoNodo;
   }
