@@ -12,7 +12,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
       `    this.insertado = false;`,
       `    this.raiz = this.insert(this.raiz, {0});`,
       `    if (this.insertado) {`,
-      `        this.tamanio++;`,
+      `        {1}++;`,
       `    }`,
       `    return this.insertado;`,
       `}`,
@@ -79,7 +79,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
       `\n`,
       `/**
  * Método auxiliar que realiza una rotación simple a la derecha en el subárbol dado.
- * @param y Nodo raíz del subárbol desbalanceado.
+ * @param y Nodo raíz del subárbol a rotar.
  * @return Nuevo nodo raíz del subárbol tras la rotación.
  */`,
       `private NodoAVL<T> rotacionDerecha(NodoAVL<T> y) {`,
@@ -98,7 +98,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
       `\n`,
       `/**
  * Método auxiliar que realiza una rotación simple a la izquierda en el subárbol dado.
- * @param x Nodo raíz del subárbol desbalanceado.
+ * @param x Nodo raíz del subárbol a rotar.
  * @return Nuevo nodo raíz del subárbol tras la rotación.
  */`,
       `private NodoAVL<T> rotacionIzquierda(NodoAVL<T> x) {`,
@@ -229,7 +229,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
       `    this.eliminado = false;`,
       `    this.raiz = this.delete(this.raiz, {0});`,
       `    if (this.eliminado) {`,
-      `        this.tamanio--;`,
+      `        {1}--;`,
       `    }`,
       `    return this.eliminado;`,
       `}`,
@@ -306,7 +306,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
       `\n`,
       `/**
  * Método auxiliar que realiza una rotación simple a la derecha en el subárbol dado.
- * @param y Nodo raíz del subárbol desbalanceado.
+ * @param y Nodo raíz del subárbol a rotar.
  * @return Nuevo nodo raíz del subárbol tras la rotación.
  */`,
       `private NodoAVL<T> rotacionDerecha(NodoAVL<T> y) {`,
@@ -325,7 +325,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
       `\n`,
       `/**
  * Método auxiliar que realiza una rotación simple a la izquierda en el subárbol dado.
- * @param x Nodo raíz del subárbol desbalanceado.
+ * @param x Nodo raíz del subárbol a rotar.
  * @return Nuevo nodo raíz del subárbol tras la rotación.
  */`,
       `private NodoAVL<T> rotacionIzquierda(NodoAVL<T> x) {`,
@@ -627,7 +627,7 @@ export const getArbolAVLCode = (): Record<string, OperationCode> => ({
   getLevelOrder: {
     lines: [
       `/**
- * Método que realiza el recorrido por niveles del árbol binario de búsqueda.
+ * Método que realiza el recorrido por niveles del árbol AVL.
  * @return Lista con la información de los nodos del árbol por niveles.
  */`,
       `public ListaCD<T> getLevelOrder() {`,

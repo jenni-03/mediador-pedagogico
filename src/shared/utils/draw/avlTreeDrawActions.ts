@@ -71,9 +71,9 @@ export async function animateInsertAVLNode(
         drawTreeLinks(linksLayer, layoutLinks, insertionData.positions);
 
         // Renderizado de badges bf/h para los nodos del árbol
-        buildAvlMetricsBadge(nodesLayer, insertionData.nodesData);
+        buildAvlMetricsBadge(nodesLayer, layoutNodes);
 
-        // Estado visual inicial de los nuevos elementos producto de la inserción
+        // Grupos correspondientes a los nuevos elementos producto de la inserción
         let newNodeGroup: Selection<SVGGElement, unknown, null, undefined> | null = null;
         let parentNodeNewLinkGroup: Selection<SVGGElement, unknown, null, undefined> | null = null;
         if (inserted) {
@@ -84,7 +84,6 @@ export async function animateInsertAVLNode(
                 parentNodeNewLinkGroup = treeG.select<SVGGElement>(
                     `g#link-${parentNodeId}-${targetNodeId}`
                 );
-                parentNodeNewLinkGroup.style("opacity", 0);
             }
         }
 
@@ -130,7 +129,7 @@ export async function animateInsertAVLNode(
                         stepId: "insert",
                         lineIndex: labels.RETURN_LEAF
                     });
-                    await repositionAVLTree(treeG, insertionData.nodesData, insertionData.linksData, insertionData.positions);
+                    await repositionAVLTree(treeG, layoutNodes, layoutLinks, insertionData.positions);
                     if (newNodeGroup) await appearAVLTreeNode(newNodeGroup);
                     break;
                 }
@@ -182,7 +181,7 @@ export async function animateInsertAVLNode(
                     break;
                 }
                 case "goLeft": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_LEFT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -192,7 +191,7 @@ export async function animateInsertAVLNode(
                     break;
                 }
                 case "goRight": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_RIGHT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -203,7 +202,7 @@ export async function animateInsertAVLNode(
                 }
                 case "updateHeight": {
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.UPDATE_HEIGHT });
-                    await delay(700);
+                    await delay(600);
 
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_LEFT_HEIGHT });
                     await delay(600);
@@ -211,6 +210,7 @@ export async function animateInsertAVLNode(
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT });
                     await delay(600);
 
+                    // Actualización del badge de altura del nodo actual
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_HEIGHT });
                     await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.at);
                     break;
@@ -220,10 +220,10 @@ export async function animateInsertAVLNode(
                         stepId: "insert",
                         lineIndex: labels.CALL_REBALANCE
                     });
-                    await delay(700);
+                    await delay(600);
 
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.COMPUTE_BF });
-                    await delay(700);
+                    await delay(600);
 
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_NODE_NULL_BALANCE });
                     await delay(600);
@@ -311,7 +311,7 @@ export async function animateInsertAVLNode(
                         insertionData.positions,
                         treeOffset,
                         {
-                            size: { width: 65, height: 35 },
+                            size: { width: 80, height: 35 },
                             typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                             anchor: { side: "below", dx: 10, dy: -8 },
                             palette: { bg: "#1b2330", stroke: "#14b8a6" }
@@ -320,6 +320,7 @@ export async function animateInsertAVLNode(
                     break;
                 }
                 case "rotate": {
+                    // Frame correspondiente a la rotación actual
                     const frame = insertionData.frames[step.frameIndex + 1];
                     const rotation = insertionData.rotations[step.rotationIndex];
 
@@ -327,6 +328,7 @@ export async function animateInsertAVLNode(
                     layoutNodes = frame.nodes;
                     layoutLinks = frame.links;
 
+                    // Renderizado de los nuevos enlaces y actualización de la posición de los nodos según el nuevo layout
                     drawTreeLinks(linksLayer, layoutLinks, insertionData.positions);
                     drawTreeNodes(nodesLayer, layoutNodes, insertionData.positions);
 
@@ -339,73 +341,7 @@ export async function animateInsertAVLNode(
                     const rotationNode = isSimple ? rotation.BId ?? null
                         : rotation.type === "LR" || rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null;
 
-                    // Estado visual inicial del nuevo enlace entre p y y (si p)
-                    if (parentOfUnbalanced) {
-                        treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced}`)
-                            .style("opacity", 0);
-                    }
-
-                    // Estado visual inicial del nuevo enlace entre y y z
-                    treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode}`)
-                        .style("opacity", 0);
-
-                    // Estado visual inicial del nuevo enlace entre z y B (si B)
-                    if (rotationNode) {
-                        treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode}`)
-                            .style("opacity", 0);
-                    }
-
-                    if (rotation.type === "LL" || rotation.type === "RR") {
-                        // Animación para rotación simple (RR/LL)
-                        await animateEspecialBSTsRotation(
-                            treeG,
-                            parentOfUnbalanced,
-                            unbalancedNode,
-                            sonOfUnbalanced!,
-                            rotationNode,
-                            repositionAVLTree,
-                            {
-                                nodes: layoutNodes,
-                                links: layoutLinks,
-                                positions: insertionData.positions
-                            },
-                            {
-                                bus,
-                                stepId: "insert",
-                                labels: {
-                                    DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
-                                    DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
-                                    SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
-                                    SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
-                                }
-                            }
-                        );
-                    } else if (step.phase === 0) {
-                        // Animación para primer paso de rotación doble (LR/RL)
-                        await animateEspecialBSTsRotation(
-                            treeG,
-                            parentOfUnbalanced,
-                            unbalancedNode,
-                            sonOfUnbalanced!,
-                            rotationNode,
-                            repositionAVLTree,
-                            {
-                                nodes: layoutNodes,
-                                links: layoutLinks,
-                                positions: insertionData.positions
-                            },
-                            {
-                                bus,
-                                stepId: "insert",
-                                labels: {
-                                    DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
-                                    DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
-                                    SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
-                                    SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
-                                }
-                            }
-                        );
-                    } else {
+                    if (step?.phase === 1) {
                         const firstRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_LEFT_ROT : labels.APPLY_RL_RIGHT_ROT;
                         bus.emit("step:progress", { stepId: "insert", lineIndex: firstRotationLabel });
                         if (prevParentOfUnbalanced && prevSonOfUnbalanced) {
@@ -421,32 +357,32 @@ export async function animateInsertAVLNode(
                         const secondRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_RIGHT_ROT : labels.APPLY_RL_LEFT_ROT;
                         bus.emit("step:progress", { stepId: "insert", lineIndex: secondRotationLabel });
                         await delay(600);
-
-                        // Animación para segundo paso de rotación compuesta (LR/RL)
-                        await animateEspecialBSTsRotation(
-                            treeG,
-                            parentOfUnbalanced,
-                            unbalancedNode,
-                            sonOfUnbalanced!,
-                            rotationNode,
-                            repositionAVLTree,
-                            {
-                                nodes: layoutNodes,
-                                links: layoutLinks,
-                                positions: insertionData.positions
-                            },
-                            {
-                                bus,
-                                stepId: "insert",
-                                labels: {
-                                    DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
-                                    DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
-                                    SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
-                                    SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
-                                }
-                            }
-                        );
                     }
+
+                    // Animación para rotación simple del subárbol
+                    await animateEspecialBSTsRotation(
+                        treeG,
+                        parentOfUnbalanced,
+                        unbalancedNode,
+                        sonOfUnbalanced!,
+                        rotationNode,
+                        repositionAVLTree,
+                        {
+                            nodes: layoutNodes,
+                            links: layoutLinks,
+                            positions: insertionData.positions
+                        },
+                        {
+                            bus,
+                            stepId: "insert",
+                            labels: {
+                                DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
+                                DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
+                                SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
+                                SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
+                            }
+                        }
+                    );
 
                     // Actualizar la altura del primer nodo
                     const recalFirstNodeHeightLabel = step.dir === "right" ? labels.ROT_RIGHT_RECALC_Y : labels.ROT_LEFT_RECALC_X;
@@ -460,6 +396,7 @@ export async function animateInsertAVLNode(
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT });
                     await delay(600);
 
+                    // Actualización del badge de altura del primer nodo
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_HEIGHT });
                     await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.pivot);
 
@@ -476,6 +413,7 @@ export async function animateInsertAVLNode(
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT });
                     await delay(600);
 
+                    // Actualización del badge de altura del primer nodo
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_HEIGHT });
                     await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, secondRotateNodeId);
 
@@ -509,7 +447,7 @@ export async function animateInsertAVLNode(
                     }
 
                     if (step.from) {
-                        // Restablecimiento del fondo del nodo en la llamada actual (backtracking)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
                         await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                             .transition()
                             .duration(800)
@@ -525,7 +463,7 @@ export async function animateInsertAVLNode(
                             .end();
 
                         if (isLeafReturn) {
-                            // Establecimiento del nuevo enlace del nodo padre 
+                            // Establecimiento del nuevo enlace entre el nodo padre y el nuevo nodo 
                             if (parentNodeNewLinkGroup) {
                                 await parentNodeNewLinkGroup
                                     .transition()
@@ -652,15 +590,6 @@ export async function animateDeleteAVLNode(
         // Id del nodo padre del nodo a eliminar (depende de la existencia del sucesor)
         const parentRemovalNodeId = successorParentNodeId ?? parentNodeId;
 
-        // Estado visual inicial del nuevo enlace formado entre el nodo padre del nodo a eliminar y el nodo que lo reemplaza
-        if (deleted) {
-            if (parentRemovalNodeId && replacementNodeId) {
-                treeG.select<SVGGElement>(
-                    `g#link-${parentRemovalNodeId}-${replacementNodeId}`
-                ).style("opacity", 0);
-            }
-        }
-
         bus.emit("step:progress", { stepId: "delete", lineIndex: labels.VALIDATE_EMPTY });
         await delay(600);
 
@@ -721,7 +650,7 @@ export async function animateDeleteAVLNode(
                     break;
                 }
                 case "goLeft": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_LEFT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -731,7 +660,7 @@ export async function animateDeleteAVLNode(
                     break;
                 }
                 case "goRight": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_RIGHT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -771,11 +700,9 @@ export async function animateDeleteAVLNode(
                             "delete",
                             bus,
                             {
-                                DECLARE_SUCC_PARENT: labels.DECLARE_SUCC_PARENT,
                                 DECLARE_SUCC_NODE: labels.DECLARE_SUCC_NODE,
                                 WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
-                                SET_SUCC_PARENT: labels.SET_SUCC_PARENT,
-                                SET_SUCC_NODE: labels.SET_SUCC_NODE,
+                                SET_SUCC_NODE: labels.SET_SUCC_NODE
                             }
                         );
 
@@ -810,7 +737,7 @@ export async function animateDeleteAVLNode(
                 }
                 case "updateHeight": {
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.UPDATE_HEIGHT });
-                    await delay(700);
+                    await delay(600);
 
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_LEFT_HEIGHT });
                     await delay(600);
@@ -818,6 +745,7 @@ export async function animateDeleteAVLNode(
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT });
                     await delay(600);
 
+                    // Actualización del badge de altura del nodo actual
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_HEIGHT });
                     await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.at);
                     break;
@@ -827,10 +755,10 @@ export async function animateDeleteAVLNode(
                         stepId: "delete",
                         lineIndex: labels.CALL_REBALANCE
                     });
-                    await delay(700);
+                    await delay(600);
 
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.COMPUTE_BF });
-                    await delay(700);
+                    await delay(600);
 
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_NODE_NULL_BALANCE });
                     await delay(600);
@@ -918,7 +846,7 @@ export async function animateDeleteAVLNode(
                         deletionData.positions,
                         treeOffset,
                         {
-                            size: { width: 65, height: 35 },
+                            size: { width: 80, height: 35 },
                             typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                             anchor: { side: "below", dx: 10, dy: -8 },
                             palette: { bg: "#1b2330", stroke: "#14b8a6" }
@@ -927,6 +855,7 @@ export async function animateDeleteAVLNode(
                     break;
                 }
                 case "rotate": {
+                    // Frame correspondiente a la rotación actual
                     const frame = deletionData.frames[step.frameIndex + 1];
                     const rotation = deletionData.rotations[step.rotationIndex];
 
@@ -934,6 +863,7 @@ export async function animateDeleteAVLNode(
                     layoutNodes = frame.nodes;
                     layoutLinks = frame.links;
 
+                    // Renderizado de los nuevos enlaces y actualización de la posición de los nodos según el nuevo layout
                     drawTreeLinks(linksLayer, layoutLinks, deletionData.positions);
                     drawTreeNodes(nodesLayer, layoutNodes, deletionData.positions);
 
@@ -946,73 +876,7 @@ export async function animateDeleteAVLNode(
                     const rotationNode = isSimple ? rotation.BId ?? null
                         : rotation.type === "LR" || rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null;
 
-                    // Estado visual inicial del nuevo enlace entre p y y (si p)
-                    if (parentOfUnbalanced) {
-                        treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced}`)
-                            .style("opacity", 0);
-                    }
-
-                    // Estado visual inicial del nuevo enlace entre y y z
-                    treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode}`)
-                        .style("opacity", 0);
-
-                    // Estado visual inicial del nuevo enlace entre z y B (si B)
-                    if (rotationNode) {
-                        treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode}`)
-                            .style("opacity", 0);
-                    }
-
-                    if (rotation.type === "LL" || rotation.type === "RR") {
-                        // Animación para rotación simple (RR/LL)
-                        await animateEspecialBSTsRotation(
-                            treeG,
-                            parentOfUnbalanced,
-                            unbalancedNode,
-                            sonOfUnbalanced!,
-                            rotationNode,
-                            repositionAVLTree,
-                            {
-                                nodes: layoutNodes,
-                                links: layoutLinks,
-                                positions: deletionData.positions
-                            },
-                            {
-                                bus,
-                                stepId: "delete",
-                                labels: {
-                                    DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
-                                    DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
-                                    SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
-                                    SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
-                                }
-                            }
-                        );
-                    } else if (step.phase === 0) {
-                        // Animación para primer paso de rotación doble (LR/RL)
-                        await animateEspecialBSTsRotation(
-                            treeG,
-                            parentOfUnbalanced,
-                            unbalancedNode,
-                            sonOfUnbalanced!,
-                            rotationNode,
-                            repositionAVLTree,
-                            {
-                                nodes: layoutNodes,
-                                links: layoutLinks,
-                                positions: deletionData.positions
-                            },
-                            {
-                                bus,
-                                stepId: "delete",
-                                labels: {
-                                    DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
-                                    DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
-                                    SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
-                                    SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
-                                }
-                            }
-                        );
-                    } else {
+                    if (step?.phase === 1) {
                         const firstRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_LEFT_ROT : labels.APPLY_RL_RIGHT_ROT;
                         bus.emit("step:progress", { stepId: "delete", lineIndex: firstRotationLabel });
                         if (prevParentOfUnbalanced && prevSonOfUnbalanced) {
@@ -1028,32 +892,32 @@ export async function animateDeleteAVLNode(
                         const secondRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_RIGHT_ROT : labels.APPLY_RL_LEFT_ROT;
                         bus.emit("step:progress", { stepId: "delete", lineIndex: secondRotationLabel });
                         await delay(600);
-
-                        // Animación para segundo paso de rotación compuesta (LR/RL)
-                        await animateEspecialBSTsRotation(
-                            treeG,
-                            parentOfUnbalanced,
-                            unbalancedNode,
-                            sonOfUnbalanced!,
-                            rotationNode,
-                            repositionAVLTree,
-                            {
-                                nodes: layoutNodes,
-                                links: layoutLinks,
-                                positions: deletionData.positions
-                            },
-                            {
-                                bus,
-                                stepId: "delete",
-                                labels: {
-                                    DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
-                                    DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
-                                    SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
-                                    SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
-                                }
-                            }
-                        );
                     }
+
+                    // Animación para rotación simple del subárbol
+                    await animateEspecialBSTsRotation(
+                        treeG,
+                        parentOfUnbalanced,
+                        unbalancedNode,
+                        sonOfUnbalanced!,
+                        rotationNode,
+                        repositionAVLTree,
+                        {
+                            nodes: layoutNodes,
+                            links: layoutLinks,
+                            positions: deletionData.positions
+                        },
+                        {
+                            bus,
+                            stepId: "delete",
+                            labels: {
+                                DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
+                                DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
+                                SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
+                                SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
+                            }
+                        }
+                    );
 
                     // Actualizar la altura del primer nodo
                     const recalFirstNodeHeightLabel = step.dir === "right" ? labels.ROT_RIGHT_RECALC_Y : labels.ROT_LEFT_RECALC_X;
@@ -1067,6 +931,7 @@ export async function animateDeleteAVLNode(
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT });
                     await delay(600);
 
+                    // Actualización del badge de altura del primer nodo
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_HEIGHT });
                     await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.pivot);
 
@@ -1083,6 +948,7 @@ export async function animateDeleteAVLNode(
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT });
                     await delay(600);
 
+                    // Actualización del badge de altura del segundo nodo
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_HEIGHT });
                     await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, secondRotateNodeId);
 
@@ -1123,7 +989,7 @@ export async function animateDeleteAVLNode(
                     }
 
                     if (step.from) {
-                        // Restablecimiento del fondo del nodo en la llamada actual (backtracking)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
                         await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                             .transition()
                             .duration(800)
@@ -1150,7 +1016,7 @@ export async function animateDeleteAVLNode(
                             );
 
                             // Reposicionamiento de los nodos y enlaces del árbol luego de la salida del nodo
-                            await repositionAVLTree(treeG, deletionData.remainingNodesData, deletionData.remainingLinksData, deletionData.positions);
+                            await repositionAVLTree(treeG, layoutNodes, layoutLinks, deletionData.positions);
                         }
                     }
 

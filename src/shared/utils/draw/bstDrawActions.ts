@@ -56,7 +56,7 @@ export async function animateInsertBSTNode(
         const seqG = svg.select<SVGGElement>("g#seq-container");
         seqG.style("opacity", 0);
 
-        // Estado visual inicial de los nuevos elementos producto de la inserción
+        // Grupos correspondientes a los nuevos elementos producto de la inserción
         let newNodeGroup: Selection<SVGGElement, unknown, null, undefined> | null = null;
         let parentNodeNewLinkGroup: Selection<SVGGElement, unknown, null, undefined> | null = null;
         if (inserted) {
@@ -67,7 +67,6 @@ export async function animateInsertBSTNode(
                 parentNodeNewLinkGroup = treeG.select<SVGGElement>(
                     `g#link-${parentNodeId}-${targetNodeId}`
                 );
-                parentNodeNewLinkGroup.style("opacity", 0);
             }
         }
 
@@ -152,7 +151,7 @@ export async function animateInsertBSTNode(
                                 insertionData.positions,
                                 treeOffset,
                                 {
-                                    size: { width: 75, height: 35 },
+                                    size: { width: 80, height: 35 },
                                     typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                                     anchor: { side: "below", dx: 10, dy: -8 },
                                     palette: { bg: "#1b2330", stroke: "#14b8a6" }
@@ -163,7 +162,7 @@ export async function animateInsertBSTNode(
                     break;
                 }
                 case "goLeft": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_LEFT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -173,7 +172,7 @@ export async function animateInsertBSTNode(
                     break;
                 }
                 case "goRight": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_RIGHT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -198,7 +197,7 @@ export async function animateInsertBSTNode(
                     }
 
                     if (step.from) {
-                        // Restablecimiento del fondo del nodo en la llamada actual (backtracking)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
                         await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                             .transition()
                             .duration(800)
@@ -214,7 +213,7 @@ export async function animateInsertBSTNode(
                             .end();
 
                         if (isLeafReturn) {
-                            // Establecimiento del nuevo enlace del nodo padre
+                            // Establecimiento del nuevo enlace entre el nodo padre y el nuevo nodo
                             if (parentNodeNewLinkGroup) {
                                 await parentNodeNewLinkGroup
                                     .transition()
@@ -315,15 +314,6 @@ export async function animateDeleteBSTNode(
         // Id del nodo padre del nodo a eliminar (depende de la existencia del sucesor)
         const parentRemovalNodeId = successorParentNodeId ?? parentNodeId;
 
-        // Estado visual inicial del nuevo enlace formado entre el nodo padre del nodo a eliminar y el nodo que lo reemplaza
-        if (deleted) {
-            if (parentRemovalNodeId && replacementNodeId) {
-                treeG.select<SVGGElement>(
-                    `g#link-${parentRemovalNodeId}-${replacementNodeId}`
-                ).style("opacity", 0);
-            }
-        }
-
         bus.emit("step:progress", { stepId: "delete", lineIndex: labels.VALIDATE_EMPTY });
         await delay(600);
 
@@ -382,7 +372,7 @@ export async function animateDeleteBSTNode(
                     break;
                 }
                 case "goLeft": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_LEFT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -392,7 +382,7 @@ export async function animateDeleteBSTNode(
                     break;
                 }
                 case "goRight": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_RIGHT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -508,7 +498,7 @@ export async function animateDeleteBSTNode(
                     }
 
                     if (step.from) {
-                        // Restablecimiento del fondo del nodo en la llamada actual (backtracking)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
                         await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                             .transition()
                             .duration(800)
@@ -577,7 +567,7 @@ export async function animateDeleteBSTNode(
                 deletionData.positions,
                 treeOffset,
                 {
-                    size: { width: 75, height: 35 },
+                    size: { width: 80, height: 35 },
                     typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                     anchor: { side: "below", dx: 10, dy: -8 },
                     palette: { bg: "#1b2330", stroke: "#14b8a6" }
@@ -684,7 +674,7 @@ export async function animateSearchBSTNode(
                     break;
                 }
                 case "goLeft": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "search", lineIndex: labels.CALL_LEFT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -694,7 +684,7 @@ export async function animateSearchBSTNode(
                     break;
                 }
                 case "goRight": {
-                    // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
                     bus.emit("step:progress", { stepId: "search", lineIndex: labels.CALL_RIGHT_SUBTREE });
                     await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
@@ -726,7 +716,7 @@ export async function animateSearchBSTNode(
                         searchData.positions,
                         treeOffset,
                         {
-                            size: { width: 75, height: 35 },
+                            size: { width: 80, height: 35 },
                             typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                             anchor: { side: "below", dx: 10, dy: -8 },
                             palette: { bg: "#1b2330", stroke: "#14b8a6" }
@@ -745,7 +735,7 @@ export async function animateSearchBSTNode(
                     }
 
                     if (step.from) {
-                        // Restablecimiento del fondo del nodo en la llamada actual (backtracking)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
                         await treeG.select(`g#${step.from} circle.node-container`)
                             .transition()
                             .duration(800)
@@ -782,7 +772,7 @@ export async function animateSearchBSTNode(
                 searchData.positions,
                 treeOffset,
                 {
-                    size: { width: 75, height: 35 },
+                    size: { width: 80, height: 35 },
                     typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                     anchor: { side: "below", dx: 10, dy: -8 },
                     palette: { bg: "#1b2330", stroke: "#14b8a6" }

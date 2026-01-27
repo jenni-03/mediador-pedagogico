@@ -687,8 +687,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
   /**
    * Método auxiliar que realiza una rotación simple a la derecha en el subárbol dado.
-   * @param y Nodo raíz del subárbol desbalanceado.
-   * @param steps Arreglo para acumular los pasos de rotación realizados durante la operación.
+   * @param y Nodo raíz del subárbol a rotar.
    * @returns Nuevo nodo raíz del subárbol tras la rotación.
    */
   private rotacionDerecha(y: NodoAVL<T>): NodoAVL<T> {
@@ -706,8 +705,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
   /**
    * Método auxiliar que realiza una rotación simple a la izquierda en el subárbol dado.
-   * @param x Nodo raíz del subárbol desbalanceado.
-   * @param steps Arreglo para acumular los pasos de rotación realizados durante la operación.
+   * @param x Nodo raíz del subárbol a rotar.
    * @returns Nuevo nodo raíz del subárbol tras la rotación.
    */
   private rotacionIzquierda(x: NodoAVL<T>): NodoAVL<T> {
@@ -818,7 +816,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que auxiliar registra un estado intermedio del árbol durante el proceso de rebalanceo para propósitos de visualización y análisis.
+   * Método auxiliar que registra un estado intermedio del árbol durante el proceso de rebalanceo para propósitos de visualización y análisis.
    * Toma la estructura jerárquica actual del árbol y la agrega a la colección de jerarquías intermedias en la traza de operación avl.
    */
   private pushAvlRotationHierarchy(): void {

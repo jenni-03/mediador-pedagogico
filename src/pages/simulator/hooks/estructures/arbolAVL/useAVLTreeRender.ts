@@ -286,7 +286,8 @@ export function useAVLTreeRender(
         {
           traversalSteps: steps,
           seqPositions,
-          highlightColor: "#8aa0ff",
+          strokeColor: "#8aa0ff",
+          strokeWidth: 3,
           baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
           baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
         },
@@ -301,6 +302,7 @@ export function useAVLTreeRender(
           traversalSteps: steps,
           seqPositions,
           strokeColor: "#8aa0ff",
+          strokeWidth: 3,
           baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
           baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
         },
@@ -320,8 +322,8 @@ export function useAVLTreeRender(
     const svg = select(svgRef.current);
 
     // Código y labels de la operación
-    const arbolABBCode = getArbolAVLCode();
-    const labels = arbolABBCode.clean.labels;
+    const arbolAVLCode = getArbolAVLCode();
+    const labels = arbolAVLCode.clean.labels;
 
     // Animación de limpieza del árbol
     animateClearTree(

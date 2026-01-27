@@ -261,7 +261,8 @@ export function useBinarySearchTreeRender(
                 {
                     traversalSteps: steps,
                     seqPositions,
-                    highlightColor: "#8aa0ff",
+                    strokeColor: "#8aa0ff",
+                    strokeWidth: 3,
                     baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                     baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
                 },
@@ -276,6 +277,7 @@ export function useBinarySearchTreeRender(
                     traversalSteps: steps,
                     seqPositions,
                     strokeColor: "#8aa0ff",
+                    strokeWidth: 3,
                     baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                     baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
                 },
