@@ -5,7 +5,7 @@ import { NodoSplay } from "../nodes/NodoSplay";
 import { defaultComparator } from "../utils/treeUtils";
 import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
 
-/**
+/** 
  * Clase que representa el funcionamiento de un árbol Splay.
  */
 export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {

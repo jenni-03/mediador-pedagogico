@@ -3,7 +3,7 @@ import { HierarchyNodeData, RotationType, SplayFrame, SplayRotation, SplayRotati
 import type { Dispatch, SetStateAction } from "react";
 import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
-import { animateBSTInsertCore, animateEspecialBSTsRotation, highlightBinaryTreePath } from "./BinaryTreeDrawActions";
+import { animateEspecialBSTsRotation } from "./BinaryTreeDrawActions";
 import { straightPath } from "../../../domain/utils/treeUtils";
 
 /**

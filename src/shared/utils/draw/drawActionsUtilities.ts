@@ -133,7 +133,7 @@ export function drawTreeNodes(
             return `translate(${x}, ${y})`;
           });
 
-        // Contenedor del nodo
+        // Contenedor principal del nodo
         gEnter
           .append("circle")
           .attr("class", "node-container")
@@ -175,14 +175,17 @@ export function drawTreeNodes(
 
 /**
  * Función encargada de renderizar los enlaces entre nodos de un árbol dentro del lienzo.
+ * Los enlaces se inicializan con un estado visual oculto (opacidad 0). 
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los enlaces del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param buildPath Función que construye el path del enlace entre dos nodos.
  */
 export function drawTreeLinks(
   g: Selection<SVGGElement, unknown, null, undefined>,
   linksData: TreeLinkData[],
-  positions: Map<string, { x: number; y: number }>
+  positions: Map<string, { x: number; y: number }>,
+  buildPath: LinkPathFn = straightPath
 ) {
   // Data join para la creación de los enlaces entre nodos
   g.selectAll<SVGGElement, TreeLinkData>("g.link")
@@ -206,8 +209,9 @@ export function drawTreeLinks(
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
             const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-            return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
+            return buildPath(s, t, r);
           });
+        gLink.style("opacity", 0);
 
         return gLink;
       },
@@ -511,14 +515,14 @@ export async function animateHighlightNode(
   await delay(400);
 
   if (labels.RETURN_TOP) {
-      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
-      await delay(700);
+    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
+    await delay(700);
   } else if (labels.RETURN_HEAD) {
-      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_HEAD });
-      await delay(700);
+    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_HEAD });
+    await delay(700);
   } else if (labels.RETURN_INFO) {
-      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_INFO });
-      await delay(700);
+    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_INFO });
+    await delay(700);
   }
 
   // Animación de sobresalto del contenedor del nodo
@@ -815,7 +819,7 @@ export async function repositionList(
     }
   }
 
-  return Promise.all(promises).then(() => {});
+  return Promise.all(promises).then(() => { });
 }
 
 /**
@@ -869,7 +873,7 @@ export async function repositionTree(
     })
     .end();
 
-  return Promise.all([p1, p2]).then(() => {});
+  return Promise.all([p1, p2]).then(() => { });
 }
 
 /**

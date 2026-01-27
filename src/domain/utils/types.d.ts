@@ -4,6 +4,7 @@ import type { NodoS } from "../nodes/NodoS";
 import type { NodoD } from "../nodes/NodoD";
 import type { NodoBin } from "../nodes/NodoBin";
 import type { NodoAVL } from "../nodes/NodoAVL";
+import type { NodoRB } from "../nodes/NodoRB";
 import { TYPE_FILTER } from "../constants/consts";
 
 export type EqualityFn<T> = (a: T, b: T) => boolean;
@@ -329,7 +330,7 @@ export type AVLInsertStep =
   | { type: "updateHeight"; at: string }
   | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
   | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }
-  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1; }
+  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1 }
   | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
 
 type AVLInsertMeta<T> = {
@@ -348,7 +349,7 @@ export type AVLDeleteStep =
   | { type: "updateHeight"; at: string }
   | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
   | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }
-  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1; }
+  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1 }
   | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
 
 export type AVLDeleteMeta<T> = {
@@ -362,7 +363,43 @@ export type AVLDeleteMeta<T> = {
   deleted: boolean;
 };
 
-export type RotationType = "LL" | "RR" | "LR" | "RL"
+export type RBInsertStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "createNode"; id: string; color: "RED" }
+  | { type: "attachNode"; parentId: string | null; side: "root" | "left" | "right" }
+  | { type: "fixupWhileCheck"; zId: string; parentId: string | null; parentRed: boolean }
+  | { type: "parentSide"; pId: string; gId: string; side: "left" | "right" }
+  | { type: "fixupCase"; case: 1 | 2 | 3; side: "left" | "right" }
+  | { type: "recolor"; caseKind: "case1" | "case3" | "root"; actionIndex: number; count: 1 | 2 | 3; side?: "left" | "right" }
+  | { type: "rotate"; caseKind: "case2" | "case3"; dir: "left" | "right"; pivot: string; frameIndex: number; actionIndex: number; pivotSideOnParent: "left" | "right" | "root" }
+  | { type: "rootBlackCheck"; rootId: string | null; recolor: boolean }
+  | { type: "return" };
+
+export type RBDeleteStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "checkMatch"; found: boolean; zId: string | null }
+  | { type: "deleteCase"; kind: "noLeft" | "noRight" | "twoChildren"; zId: string }
+  | { type: "transplant"; uId: string; vId: string | null; uParentId: string | null; uSide: "root" | "left" | "right" }
+  | { type: "succParentCheck"; directChild: boolean; zId: string; succId: string }
+  | { type: "linkChild"; prevParentId: string, newParentId: string; childId: string | null; side: "left" | "right" }
+  | { type: "setParent"; nodeId: string | null; parentId: string | null, side: "left" | "right" }
+  | { type: "fixupCall"; needed: boolean; }
+  | { type: "fixupWhileCheck"; xId: string | null; xParentId: string | null; continue: boolean }
+  | { type: "resolveParent"; pId: string | null; from: "x.padre" | "xParent" }
+  | { type: "resolveSibling"; pId: string; wId: string | null; side: "left" | "right" }
+  | { type: "fixupCase"; case: "A" | "B" | "C" | "D"; side: "left" | "right"; nodeId: string }
+  | { type: "moveUp"; fromXId: string | null; toXId: string; newXParentId: string | null }
+  | { type: "xSide"; pId: string; xId: string | null; side: "left" | "right" }
+  | { type: "checkNode"; nodeType: "Hermano" | "HijoCer" | "HijoLej"; case: "B" | "C" | "D"; side: "left" | "right" }
+  | { type: "recolor"; kind: "copyZColor" | "fixup" | "final"; actionIndex: number; count?: 1 | 2 | 3 | 4; side?: "left" | "right"; case?: "A" | "B" | "C" | "D" }
+  | { type: "rotate"; caseKind: "fixupA" | "fixupC" | "fixupD"; dir: "left" | "right"; pivot: string; frameIndex: number; actionIndex: number; pivotSideOnParent: "left" | "right" | "root" }
+  | { type: "return" };
+
+export type RotationType = "LL" | "RR" | "LR" | "RL";
 
 export type RotationStep = {
   type: RotationType;
@@ -506,6 +543,24 @@ export type AVLDeleteOutput<T> = {
   successorParent: NodoAVL<T> | null;
   replacement: NodoAVL<T> | null;
   replacementSide: "left" | "right" | null;
+  deleted: boolean;
+};
+
+export type RBInsertOutput<T> = {
+  steps: RBInsertStep[];
+  parent: NodoRB<T> | null;
+  targetNode: NodoRB<T> | null;
+  inserted: boolean;
+};
+
+export type RBDeleteOutput<T> = {
+  steps: RBDeleteStep[];
+  parent: NodoRB<T> | null;
+  targetNode: NodoRB<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoRB<T> | null;
+  successorParent: NodoRB<T> | null;
+  replacement: NodoRB<T> | null;
   deleted: boolean;
 };
 
@@ -752,19 +807,15 @@ export type BaseQueryOperations<
   : // RB (ambos alias)
   T extends "arbol_rojinegro" | "arbol_rb"
   ? {
-    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
-    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
-    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toInsert: { steps: RBInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
+    toDelete: { steps: RBDeleteStep[], parentNodeId: string | null, targetNodeId: string | null, pathToSuccessorIds: string[], successorNodeId: string | null, successorParentNodeId: string | null, replacementNodeId: string | null, deleted: boolean } | null;
+    toSearch: { steps: BSTSearchStep[], targetNodeId: string | null, found: boolean } | null;
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
     rbTrace: RBTrace<number> | null;
-    rbFix?: {
-      rotations: RbRotation[];
-      recolors: RbRecolor[];
-    } | null;
   }
   : T extends "arbol_splay"
   ? {

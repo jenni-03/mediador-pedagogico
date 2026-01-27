@@ -9,7 +9,7 @@ export function RbTreeSimulator() {
     // Instanciación del árbol Rojo-Negro
     const structure = useRef(new ArbolRojoNegro<number>()).current;
 
-    // Hook de estado/acciones para RB
+    // Llamada al hook useRBTree para gestionar el estado del árbol Rojo-Negro
     const { tree, query, error, operations } = useRBTree(structure);
 
     // Desestructuración de operaciones soportadas por el Rojo-Negro
@@ -25,7 +25,7 @@ export function RbTreeSimulator() {
         resetQueryValues,
     } = operations;
 
-    // Conversión a jerarquía para renderizar
+    // Conversión del árbol a una estructura jerárquica para su renderizado
     const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
     // Acciones disponibles para el usuario
