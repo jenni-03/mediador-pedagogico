@@ -6,6 +6,7 @@ import type { NodoBin } from "../nodes/NodoBin";
 import type { NodoAVL } from "../nodes/NodoAVL";
 import type { NodoRB } from "../nodes/NodoRB";
 import { TYPE_FILTER } from "../constants/consts";
+import type { NodoSplay } from "../nodes/NodoSplay";
 
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 export type Comparator<T> = (a: T, b: T) => number;
@@ -399,6 +400,79 @@ export type RBDeleteStep =
   | { type: "rotate"; caseKind: "fixupA" | "fixupC" | "fixupD"; dir: "left" | "right"; pivot: string; frameIndex: number; actionIndex: number; pivotSideOnParent: "left" | "right" | "root" }
   | { type: "return" };
 
+export type SplayInsertStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "createNode"; id: string; }
+  | { type: "attachNode"; parentId: string | null; side: "root" | "left" | "right" }
+  | { type: "splayCall"; xId: string; reason: "insertion" | "search" }
+  | { type: "splayWhileCheck"; xId: string; parentId: string | null; continue: boolean }
+  | { type: "resolvePG"; xId: string; pId: string; gId: string | null }
+  | { type: "splayCase"; kind: "zig" | "zig-zig" | "zig-zag"; shape: "LL" | "LR" | "RR" | "RL" }
+  | {
+    type: "rotate";
+    kind: "splay";
+    subkind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2";
+    dir: "left" | "right";
+    pivot: string;
+    frameIndex: number;
+    rotationIndex: number;
+    pivotSideOnParent: "left" | "right" | "root";
+  }
+  | { type: "setRoot"; rootId: string }
+  | { type: "return" };
+
+export type SplaySearchStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "splayCall"; xId: string; reason: "search-found" | "search-notfound" }
+  | { type: "splayWhileCheck"; xId: string; parentId: string | null; continue: boolean }
+  | { type: "resolvePG"; xId: string; pId: string; gId: string | null }
+  | { type: "splayCase"; kind: "zig" | "zig-zig" | "zig-zag"; shape: "LL" | "LR" | "RR" | "RL" }
+  | {
+    type: "rotate";
+    kind: "splay";
+    subkind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2";
+    dir: "left" | "right";
+    pivot: string;
+    frameIndex: number;
+    rotationIndex: number;
+    pivotSideOnParent: "left" | "right" | "root";
+  }
+  | { type: "setRoot"; rootId: string }
+  | { type: "return" };
+
+export type SplayDeleteStep =
+  | { type: "checkFoundNode"; at: string | null }
+  | { type: "split"; root: string; leftId: string | null; rightId: string | null }
+  | { type: "detachParent"; nodeId: string | null; parentId: string | null; side: "left" | "right" }
+  | { type: "cutChild"; fromId: string; side: "left" | "right"; childId: string | null }
+  | { type: "setRoot"; rootId: string | null; side?: "left" | "right" | "null" }
+  | { type: "joinCase"; kind: "leftNull" | "leftNotNull" }
+  | { type: "traverseMaxLeftStart"; rootId: string }
+  | { type: "moveToRight"; fromId: string; toId: string }
+  | { type: "maxLeftFound"; nodeId: string }
+  | { type: "decSize"; }
+  | { type: "splayCall"; xId: string; reason: "deletion" }
+  | { type: "attachRight"; parentId: string; rightId: string | null }
+  | { type: "setParent"; nodeId: string; parentId: string | null }
+  | { type: "splayWhileCheck"; xId: string; parentId: string | null; continue: boolean }
+  | { type: "resolvePG"; xId: string; pId: string; gId: string | null }
+  | { type: "splayCase"; kind: "zig" | "zig-zig" | "zig-zag"; shape: "LL" | "LR" | "RR" | "RL" }
+  | {
+    type: "rotate";
+    kind: "splay";
+    subkind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2";
+    dir: "left" | "right";
+    pivot: string;
+    frameIndex: number;
+    rotationIndex: number;
+    pivotSideOnParent: "left" | "right" | "root";
+  }
+  | { type: "return" };
+
 export type RotationType = "LL" | "RR" | "LR" | "RL";
 
 export type RotationStep = {
@@ -449,16 +523,10 @@ export type SplayRotationTag = "Zig" | "Zig-Zig" | "Zig-Zag";
 
 export type SplayFrame = AvlFrame;
 
-export type SplayRotation = { tag: SplayRotationTag; rotation: RotationStep; rotationOrder: "first" | "second" };
-
-export type SplayTracePhase = "insertion" | "search" | "deletion";
+export type SplayRotation = { tag: SplayRotationTag; step: RotationStep; };
 
 export type SplayTrace<T> = {
-  phases: {
-    insertion: SplayRotation[];
-    search: SplayRotation[];
-    deletion: SplayRotation[];
-  }
+  rotations: SplayRotation[];
   hierarchies: {
     bst: HierarchyNodeData<T> | null;
     mids: HierarchyNodeData<T>[];
@@ -564,9 +632,26 @@ export type RBDeleteOutput<T> = {
   deleted: boolean;
 };
 
-export type SplayInsertOutput<T> = BSTInsertOutput<T>;
-export type SplayDeleteOutput<T> = BSTDeleteOutput<T>;
-export type SplaySearchOutput<T> = BSTSearchOutput<T>;
+export type SplayInsertOutput<T> = {
+  steps: SplayInsertStep[];
+  parent: NodoSplay<T> | null;
+  targetNode: NodoSplay<T> | null;
+  inserted: boolean;
+};
+
+export type SplayDeleteOutput<T> = {
+  searchSteps: SplaySearchStep[];
+  deleteSteps: SplayDeleteStep[];
+  targetNode: NodoSplay<T> | null;
+  maxLeft: NodoSplay<T> | null;
+  deleted: boolean;
+};
+
+export type SplaySearchOutput<T> = {
+  steps: SplaySearchStep[];
+  targetNode: NodoSplay<T> | null;
+  found: boolean;
+};
 
 /* ───────────── UI / Props varias ───────────── */
 

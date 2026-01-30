@@ -1,9 +1,10 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { BSTInsertOutput, Comparator, HierarchyNodeData, RotationStep, RotationType, SplayDeleteOutput, SplayInsertOutput, SplayRotationTag, SplayTrace, SplayTracePhase } from "../utils/types";
+import { BinaryTreeLevelOutput, BinaryTreeTraverseOutput, Comparator, HierarchyNodeData, RotationStep, RotationType, SplayDeleteOutput, SplayDeleteStep, SplayInsertOutput, SplayInsertStep, SplayRotationTag, SplaySearchOutput, SplaySearchStep, SplayTrace } from "../utils/types";
 import { NodoSplay } from "../nodes/NodoSplay";
 import { defaultComparator } from "../utils/treeUtils";
 import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
+import { DomainError } from "../error/DomainError";
 
 /** 
  * Clase que representa el funcionamiento de un árbol Splay.
@@ -27,16 +28,16 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
      * @param valor Elemento a insertar.
      * @returns Objeto con la siguiente información:
      * 
-     * - `pathIds`: Lista con los IDs de los nodos visitados durante el recorrido de búsqueda, en orden.
-     *    Incluye el nodo padre donde se intentó realizar la inserción o el nodo ya existente.
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la inserción 
+     *    (comprobaciones, visitas, movimientos y retornos).
      * 
      * - `parent`: Nodo padre bajo el cual se insertó el nuevo nodo. Será `null` en 2 casos:
      *    1. Si el elemento ya existía en el árbol.
      *    2. Si el nuevo nodo se insertó como raíz.
      * 
-     * - `targetNode`: Nodo asociado al elemento (nuevo o ya existente).
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado (nuevo o ya existente). Será `null` si ya existía en el árbol.
      * 
-     * - `exists`: Booleano que indica si el elemento ya existía (`true`) o si se creó e insertó un nuevo nodo (`false`).
+     * - `inserted`: Booleano que indica si el elemento fue insertado.
      */
     public insertarSplay(valor: T): SplayInsertOutput<T> {
         if (super.getTamanio() >= this.MAX_NODOS) {
@@ -45,49 +46,62 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
         // Inicializar la traza de seguimiento del estado del árbol durante la operación
         this.splayOperationTrace = {
-            phases: {
-                insertion: [],
-                search: [],
-                deletion: []
-            },
+            rotations: [],
             hierarchies: {
                 bst: null,
                 mids: []
             }
         }
 
+        const steps: SplayInsertStep[] = [];
+
         // Inserción BST estándar
-        const pathIds: string[] = [];
         let p: NodoSplay<T> | null = null;
         let curr: NodoSplay<T> | null = this.getRaiz();
 
         while (curr !== null) {
-            pathIds.push(curr.getId());
-            const cmp = this.compare(valor, curr.getInfo());
-            if (cmp === 0) {
-                this.splay(curr, "insertion");
-                return { pathIds, parent: null, targetNode: curr, exists: true };
-            }
-            p = curr;
-            curr = cmp < 0 ? curr.getIzq() : curr.getDer();
-        }
+            steps.push({ type: "visit", at: curr.getId() });
 
+            const cmp = this.compare(valor, curr.getInfo());
+            steps.push({ type: "compare", at: curr.getId(), cmp: cmp < 0 ? -1 : cmp > 0 ? 1 : 0 });
+            if (cmp === 0) {
+                steps.push({ type: "splayCall", xId: curr.getId(), reason: "search" });
+                this.splay(curr, steps);
+
+                steps.push({ type: "return" });
+                return { steps, parent: null, targetNode: curr, inserted: false };
+            }
+
+            p = curr;
+            const next = cmp < 0 ? curr.getIzq() : curr.getDer();
+            steps.push({ type: "advance", from: curr.getId(), to: next?.getId() ?? null, dir: cmp < 0 ? "L" : "R" });
+            curr = next;
+        }
+        steps.push({ type: "visit", at: null });
+
+        // Creación e inserción del nuevo nodo
         const nuevo = new NodoSplay<T>(valor);
+        steps.push({ type: "createNode", id: nuevo.getId() });
         nuevo.setPadre(p);
 
         if (!p) {
+            steps.push({ type: "attachNode", parentId: null, side: "root" });
             this.setRaiz(nuevo);
         } else if (this.compare(valor, p.getInfo()) < 0) {
+            steps.push({ type: "attachNode", parentId: null, side: "left" });
             p.setIzq(nuevo);
         } else {
+            steps.push({ type: "attachNode", parentId: null, side: "right" });
             p.setDer(nuevo);
         }
 
         // Splay del nuevo nodo
-        this.splay(nuevo, "insertion");
-        this.setTamanio(this.getTamanio() + 1);
+        steps.push({ type: "splayCall", xId: nuevo.getId(), reason: "insertion" });
+        this.splay(nuevo, steps);
 
-        return { pathIds, parent: p, targetNode: nuevo, exists: false };
+        this.setTamanio(this.getTamanio() + 1);
+        steps.push({ type: "return" });
+        return { steps, parent: p, targetNode: nuevo, inserted: true };
     }
 
     /**
@@ -100,41 +114,93 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
      * - `maxLeft`: Nodo máximo del subárbol izquierdo tras la operación de eliminación o null si no existía.
      */
     public eliminarSplay(valor: T): SplayDeleteOutput<T> {
-        if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
+        if (this.esVacio()) {
+            throw new DomainError("No fue posible eliminar el nodo: El árbol árbol se encuentra vacío (cantidad de nodos: 0).", "DELETE_EMPTY");
+        }
+
+        const deleteSteps: SplayDeleteStep[] = [];
 
         // Splay(valor)
-        const { node: foundNode, found } = this.buscarSplay(valor);
+        const { steps: searchSteps, targetNode: foundNode, found } = this.buscarSplay(valor);
+        deleteSteps.push({ type: "checkFoundNode", at: foundNode?.getId() ?? null })
         if (!found) {
-            return { node: foundNode!, removed: false, maxLeft: null };
+            deleteSteps.push({ type: "return" });
+            return { searchSteps, deleteSteps, targetNode: foundNode!, deleted: false, maxLeft: null };
         }
 
         // Split por la raíz
-        const L = this.getRaiz()!.getIzq();
-        const R = this.getRaiz()!.getDer();
+        const root = this.getRaiz()!;
+        const L = root.getIzq();
+        const R = root.getDer();
+        deleteSteps.push({
+            type: "split",
+            root: root.getId(),
+            leftId: L?.getId() ?? null,
+            rightId: R?.getId() ?? null
+        });
+
+        deleteSteps.push({ type: "detachParent", nodeId: L?.getId() ?? null, parentId: root.getId(), side: "left" });
         if (L) { L.setPadre(null); }
+
+        deleteSteps.push({ type: "detachParent", nodeId: R?.getId() ?? null, parentId: root.getId(), side: "right" });
         if (R) { R.setPadre(null); }
 
         // Descartar la raíz actual
-        this.getRaiz()!.setDer(null);
-        this.getRaiz()!.setIzq(null);
+        deleteSteps.push({ type: "cutChild", fromId: root.getId(), side: "right", childId: R?.getId() ?? null });
+        root.setDer(null);
+
+        deleteSteps.push({ type: "cutChild", fromId: root.getId(), side: "left", childId: L?.getId() ?? null });
+        root.setIzq(null);
+
+        deleteSteps.push({ type: "setRoot", rootId: null, side: "null" });
         this.setRaiz(null);
 
         // Join (L, R)
         if (!L) {
+            deleteSteps.push({ type: "joinCase", kind: "leftNull" });
+
+            deleteSteps.push({ type: "setRoot", rootId: R?.getId() ?? null, side: "right" });
             this.setRaiz(R);
-            return { node: foundNode!, removed: true, maxLeft: null };
+
+            deleteSteps.push({ type: "decSize" });
+            this.setTamanio(this.getTamanio() - 1);
+
+            deleteSteps.push({ type: "return" });
+            return { searchSteps, deleteSteps, targetNode: foundNode!, deleted: true, maxLeft: null };
         }
+
         // Splay del máximo de L dentro de L
+        deleteSteps.push({ type: "joinCase", kind: "leftNotNull" });
+
+        deleteSteps.push({ type: "setRoot", rootId: L.getId(), side: "left" });
         this.setRaiz(L);
-        const maxL = this.maximo(this.getRaiz()!);
-        this.splay(maxL, "deletion");
+
+        deleteSteps.push({ type: "traverseMaxLeftStart", rootId: L.getId() });
+        let maxL = this.getRaiz()!;
+        while (maxL.getDer()) {
+            const next = maxL.getDer()!;
+            deleteSteps.push({ type: "moveToRight", fromId: maxL.getId(), toId: next.getId() });
+            maxL = next;
+        }
+        deleteSteps.push({ type: "maxLeftFound", nodeId: maxL.getId() });
+
+        deleteSteps.push({ type: "splayCall", xId: maxL.getId(), reason: "deletion" });
+        this.splay(maxL, deleteSteps);
 
         // Colgamos R
+        deleteSteps.push({ type: "attachRight", parentId: this.getRaiz()!.getId(), rightId: R?.getId() ?? null });
         this.getRaiz()!.setDer(R)
-        if (R) R.setPadre(this.getRaiz());
+
+        if (R) {
+            deleteSteps.push({ type: "setParent", nodeId: R.getId(), parentId: this.getRaiz()!.getId() });
+            R.setPadre(this.getRaiz());
+        }
+
+        deleteSteps.push({ type: "decSize" });
         this.setTamanio(this.getTamanio() - 1);
 
-        return { node: foundNode!, removed: true, maxLeft: maxL };
+        deleteSteps.push({ type: "return" });
+        return { searchSteps, deleteSteps, targetNode: foundNode!, deleted: true, maxLeft: maxL };
     }
 
     /**
@@ -145,37 +211,54 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
      * - `node`: Nodo que contiene el elemento buscado o el último nodo visitado si no fue encontrado. 
      * - `found`: Indica si el elemento esta presente en el árbol.
      */
-    public buscarSplay(valor: T): { node: NodoSplay<T> | null, found: boolean } {
-        if (this.esVacio()) return { node: null, found: false };
-        let cur: NodoSplay<T> | null = this.getRaiz();
+    public buscarSplay(valor: T): SplaySearchOutput<T> {
+        if (this.esVacio()) return { steps: [], targetNode: null, found: false };
+
+        let curr: NodoSplay<T> | null = this.getRaiz();
         let last: NodoSplay<T> | null = null;
 
         // Inicializar la traza de seguimiento del estado del árbol durante la operación
         this.splayOperationTrace = {
-            phases: {
-                insertion: [],
-                search: [],
-                deletion: []
-            },
+            rotations: [],
             hierarchies: {
                 bst: null,
                 mids: []
             }
         }
 
-        while (cur !== null) {
-            last = cur;
-            const cmp = this.compare(valor, cur.getInfo());
+        const steps: SplaySearchStep[] = [];
+
+        while (curr !== null) {
+            steps.push({ type: "visit", at: curr.getId() });
+
+            last = curr;
+            const cmp = this.compare(valor, curr.getInfo());
+            steps.push({ type: "compare", at: curr.getId(), cmp: cmp < 0 ? -1 : cmp > 0 ? 1 : 0 });
+
             if (cmp === 0) {
-                this.splay(cur, "search");
-                return { node: cur, found: true };
+                steps.push({ type: "splayCall", xId: curr.getId(), reason: "search-found" });
+                this.splay(curr, steps);
+
+                steps.push({ type: "return" });
+                return { steps, targetNode: curr, found: true };
             }
-            cur = cmp < 0 ? cur.getIzq() : cur.getDer();
+
+            const next = cmp < 0 ? curr.getIzq() : curr.getDer();
+            steps.push({
+                type: "advance",
+                from: curr.getId(),
+                to: next?.getId() ?? null,
+                dir: cmp < 0 ? "L" : "R"
+            });
+            curr = next;
         }
 
         // Si el nodo no fue ubicado, splay del último visitado
-        this.splay(last!, "search");
-        return { node: last, found: false };
+        steps.push({ type: "splayCall", xId: last!.getId(), reason: "search-notfound" });
+        this.splay(last!, steps);
+
+        steps.push({ type: "return" });
+        return { steps, targetNode: last, found: false };
     }
 
     /**
@@ -197,15 +280,15 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
     /**
      * Método que obtiene todos los nodos hojas del árbol Splay.
-     * @returns Array de nodos que representan las hojas del árbol.
+     * @returns Arreglo que contiene todos los nodos hoja presentes en el árbol.
      */
     public override getHojas(): NodoSplay<T>[] {
         return super.getHojas() as NodoSplay<T>[];
     }
 
     /**
-     * Método que cuenta el número de nodos hoja del árbol Splay.
-     * @returns Número de nodos hoja del árbol.
+     * Método que cuenta el número de nodos hoja presentes en el árbol Splay.
+     * @returns Número de nodos hoja presentes en el árbol.
      */
     public override contarHojas(): number {
         return super.contarHojas();
@@ -243,35 +326,55 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que retorna un array de nodos resultante del recorrido in-orden del árbol Splay.
-     * @returns Array de nodos en secuencia in-orden.
+     * Método que realiza el recorrido inorden del árbol Splay.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia inorden.
      */
-    public override inOrden(): NodoSplay<T>[] {
-        return super.inOrden() as NodoSplay<T>[];
+    public override inOrden(): BinaryTreeTraverseOutput<T> {
+        return super.inOrden();
     }
 
     /**
-     * Método que retorna un array de nodos resultante del recorrido pre-orden del árbol Splay.
-     * @returns Array de nodos en secuencia pre-orden.
+     * Método que realiza el recorrido preorden del árbol Splay.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia preorden.
      */
-    public override preOrden(): NodoSplay<T>[] {
-        return super.preOrden() as NodoSplay<T>[];
+    public override preOrden(): BinaryTreeTraverseOutput<T> {
+        return super.preOrden();
     }
 
     /**
-     * Método que retorna un array de nodos resultante del recorrido post-orden del árbol Splay.
-     * @returns Array de nodos en secuencia post-orden.
+     * Método que realiza el recorrido postorden del árbol Splay.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia postorden.
      */
-    public override postOrden(): NodoSplay<T>[] {
-        return super.postOrden() as NodoSplay<T>[];
+    public override postOrden(): BinaryTreeTraverseOutput<T> {
+        return super.postOrden();
     }
 
     /**
-     * Método que retorna un array de nodos resultante del recorrido por niveles del árbol Splay.
-     * @returns Array de nodos por niveles.
+     * Método que realiza el recorrido por niveles del árbol Splay.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+     *    del árbol (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `visited`: Arreglo de nodos visitados durante el recorrido por niveles.
      */
-    public override getNodosPorNiveles(): NodoSplay<T>[] {
-        return super.getNodosPorNiveles() as NodoSplay<T>[];
+    public override getNodosPorNiveles(): BinaryTreeLevelOutput<T> {
+        return super.getNodosPorNiveles();
     }
 
     /**
@@ -295,31 +398,50 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que realiza la operación splay en el nodo dado, moviendolo a la raíz del árbol splay.
+     * Método que consume y limpia la última traza de operación splay registrada.
+     * @returns Última traza splay registrada o null si no existe.
+     */
+    public consumeLastSplayTrace(): SplayTrace<T> | null {
+        const t = this.splayOperationTrace;
+        this.splayOperationTrace = null;
+        return t;
+    }
+
+    /**
+     * Método auxiliar que realiza la operación splay en el nodo dado, moviendolo a la raíz del árbol splay.
      * Aplica una serie de rotaciones (Zig, Zig-Zig, Zig-Zag) dependiendo de la posición del nodo.
+     * 
      * Durante cada rotación, captura estados pre- y post-rotación para propositos de seguimiento y visualización.
      * @param x Nodo a splayear hasta la raíz.
-     * @param tracePhase Fase de la traza de operación splay usada para capturar información sobre las rotaciones aplicadas.
+     * @param steps Arreglo para acumular los pasos de fixup realizados durante la operación.
      */
-    private splay(x: NodoSplay<T>, tracePhase: SplayTracePhase) {
+    private splay(
+        x: NodoSplay<T>,
+        steps: SplayInsertStep[] | SplayDeleteStep[] | SplaySearchStep[]
+    ) {
+        const trace = this.splayOperationTrace;
+
         while (x.getPadre() !== null) {
+            steps.push({
+                type: "splayWhileCheck",
+                xId: x.getId(),
+                parentId: x.getPadre()?.getId() ?? null,
+                continue: true
+            });
+
             const p = x.getPadre()!;
             const g = p.getPadre();
+            steps.push({ type: "resolvePG", xId: x.getId(), pId: p.getId(), gId: g?.getId() ?? null });
 
             // Capturar el estado pre-rotación
             this.ensureSplayTraceInit();
 
             if (g === null) {
+                const shape = x === p.getIzq() ? "LL" : "RR";
+                steps.push({ type: "splayCase", kind: "zig", shape });
+
                 // Capturar info de la rotación a aplicar
-                this.pushSplayRotationStep(
-                    p,
-                    x,
-                    x === p.getIzq() ? x.getDer() : x.getIzq(),
-                    "Zig",
-                    x === p.getIzq() ? "LL" : "RR",
-                    "first",
-                    tracePhase
-                );
+                this.pushSplayRotationStep(p, x, x === p.getIzq() ? x.getDer() : x.getIzq(), "Zig", shape);
 
                 // Zig
                 if (x === p.getIzq()) {
@@ -330,141 +452,149 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
                 // Capturar el estado post-rotación
                 this.pushSplayRotationHierarchy();
+                this.captureSplayRotateStep(steps, trace, "zig", shape === "LL" ? "right" : "left", p);
             } else {
                 const xIsLeft = (x === p.getIzq());
                 const pIsLeft = (p === g.getIzq());
 
                 if (xIsLeft && pIsLeft) {
                     // Zig-Zig LL
+                    steps.push({ type: "splayCase", kind: "zig-zig", shape: "LL" });
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationStep(g, p, p.getDer(), "Zig-Zig", "LL", "first", tracePhase);
+                    this.pushSplayRotationStep(g, p, p.getDer(), "Zig-Zig", "LL");
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(g);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzig-1", "right", g);
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zig", "LL", "second", tracePhase);
+                    this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zig", "LL");
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(p);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzig-2", "right", p);
                 } else if (!xIsLeft && !pIsLeft) {
                     // Zig-Zig RR
+                    steps.push({ type: "splayCase", kind: "zig-zig", shape: "RR" });
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationStep(g, p, p.getIzq(), "Zig-Zig", "RR", "first", tracePhase);
+                    this.pushSplayRotationStep(g, p, p.getIzq(), "Zig-Zig", "RR");
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(g);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzig-1", "left", g);
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zig", "RR", "second", tracePhase);
+                    this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zig", "RR");
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(p);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzig-2", "left", p);
                 } else if (!xIsLeft && pIsLeft) {
                     // Zig-Zag LR
+                    steps.push({ type: "splayCase", kind: "zig-zag", shape: "LR" });
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zag", "LR", "first", tracePhase);
+                    this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zag", "LR");
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(p);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzag-1", "left", p);
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationStep(g, x, x.getDer(), "Zig-Zag", "LR", "second", tracePhase);
+                    this.pushSplayRotationStep(g, x, x.getDer(), "Zig-Zag", "LR");
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(g);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzag-2", "right", g);
                 } else {
                     // Zig–Zag RL
+                    steps.push({ type: "splayCase", kind: "zig-zag", shape: "RL" });
 
                     // Capturar info de la rotación a aplicar
-                    this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zag", "RL", "first", tracePhase);
+                    this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zag", "RL");
 
                     // Rotación y Captura del estado posterior
                     this.rotarDerecha(p);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzag-1", "right", p);
 
                     // Capturar info de la segunda rotación a aplicar
-                    this.pushSplayRotationStep(g, x, x.getIzq(), "Zig-Zag", "RL", "second", tracePhase);
+                    this.pushSplayRotationStep(g, x, x.getIzq(), "Zig-Zag", "RL");
 
                     // Rotación y Captura del estado posterior
                     this.rotarIzquierda(g);
                     this.pushSplayRotationHierarchy();
+                    this.captureSplayRotateStep(steps, trace, "zigzag-2", "left", g);
                 }
             }
         }
+        steps.push({
+            type: "splayWhileCheck",
+            xId: x.getId(),
+            parentId: null,
+            continue: false
+        });
+
+        steps.push({ type: "setRoot", rootId: x.getId() });
         this.setRaiz(x);
     }
 
     /**
-     * Método que realiza una rotación izquierda en el nodo Splay dado.
-     * @param p Nodo raíz del subárbol a rotar.
+     * Método auxiliar que realiza una rotación simple a la derecha en el subárbol dado.
+     * @param y Nodo raíz del subárbol a rotar.
      */
-    private rotarIzquierda(p: NodoSplay<T>): void {
-        const x = p.getDer();
-        if (!x) return;
+    private rotarDerecha(y: NodoSplay<T>) {
+        const x = y.getIzq()!;
+        const T2 = x.getDer();
 
-        // Recolocar B como hijo derecho de p
-        const B = x.getIzq();
-        p.setDer(B);
-        if (B) B.setPadre(p);
+        // Enlazar x con el padre y
+        x.setPadre(y.getPadre());
+        if (x.getPadre() === null) this.setRaiz(x);
+        else if (y === y.getPadre()!.getDer()) y.getPadre()!.setDer(x);
+        else y.getPadre()!.setIzq(x);
 
-        // Enlazar x con el padre p
-        x.setPadre(p.getPadre());
-        if (p.getPadre() === null) this.setRaiz(x);
-        else if (p.getPadre()?.getIzq() === p) p.getPadre()?.setIzq(x);
-        else p.getPadre()?.setDer(x);
+        // Colocar y bajo x
+        x.setDer(y);
+        y.setPadre(x);
 
-        // Colocar p bajo x
-        x.setIzq(p);
-        p.setPadre(x);
+        // Recolocar T2 como hijo izquierdo de y
+        y.setIzq(T2);
+        if (T2 !== null) T2.setPadre(y);
     }
 
     /**
-     * Método que realiza una rotación derecha en el nodo Splay dado.
-     * @param p Nodo raíz del subárbol a rotar.
+     * Método auxiliar que realiza una rotación simple a la izquierda en el subárbol dado.
+     * @param x Nodo raíz del subárbol a rotar.
      */
-    private rotarDerecha(p: NodoSplay<T>) {
-        const x = p.getIzq();
-        if (!x) return;
+    private rotarIzquierda(x: NodoSplay<T>): void {
+        const y = x.getDer()!;
+        const T2 = y.getIzq();
 
-        // Recolocar B como hijo izquierdo de p
-        const B = x.getDer();
-        p.setIzq(B);
-        if (B) B.setPadre(p);
+        // Enlazar y con el padre x
+        y.setPadre(x.getPadre());
+        if (x.getPadre() === null) this.setRaiz(y);
+        else if (x === x.getPadre()!.getIzq()) x.getPadre()!.setIzq(y);
+        else x.getPadre()!.setDer(y);
 
-        // Enlazar x con el padre p
-        x.setPadre(p.getPadre());
-        if (p.getPadre() === null) this.setRaiz(x);
-        else if (p.getPadre()?.getIzq() === p) p.getPadre()?.setIzq(x);
-        else p.getPadre()?.setDer(x);
+        // Colocar x bajo y
+        y.setIzq(x);
+        x.setPadre(y);
 
-        // Colocar p bajo x
-        x.setDer(p);
-        p.setPadre(x);
+        // Recolocar T2 como hijo derecho de x
+        x.setDer(T2);
+        if (T2 !== null) T2.setPadre(x);
     }
 
     /**
-     * Método que recorre los hijos derechos del subárbol dado hasta encontrar el nodo más a la derecha.
-     * @param n Nodo raíz del subárbol a buscar.
-     * @returns Nodo con el máximo valor en el subárbol.
-     */
-    private maximo(n: NodoSplay<T>): NodoSplay<T> {
-        let actual = n
-        while (actual.getDer()) actual = actual.getDer()!;
-        return actual;
-    }
-
-    /**
-     * Método recursivo que convierte un nodo del árbol Splay en una estructura de datos
+     * Método auxiliar que convierte un nodo del árbol Splay en una estructura de datos
      * jerárquica adecuada para visualización o procesamiento posterior.
      * @param root Nodo raíz del árbol Splay.
      * @returns Objeto que representa la estructura jerárquica del árbol Splay.
@@ -497,7 +627,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método recursivo que clona un árbol Splay iniciando desde el nodo raíz dado.
+     * Método auxiliar que clona un árbol Splay iniciando desde el nodo raíz dado.
      * @param root Nodo raíz del subárbol a clonar.
      * @returns Una nueva instancia `NodoSplay<T>` que es una clonación profunda del subárbol.
      */
@@ -519,33 +649,19 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que consume y limpia la última traza de operación splay registrada.
-     * @returns Última traza splay registrada o null si no existe.
-     */
-    public consumeLastSplayTrace(): SplayTrace<T> | null {
-        const t = this.splayOperationTrace;
-        this.splayOperationTrace = null;
-        return t;
-    }
-
-    /**
-     * Método que registra información sobre un paso de rotación realizado durante la operación splay.
+     * Método auxiliar que registra información sobre un paso de rotación realizado durante la operación splay.
      * @param zNode Nodo que rota (z).
      * @param yNode Nodo implicado en la rotación (y).
      * @param BNode Nodo del subárbol (B) afectado por la rotación.
      * @param rotationTag Etiqueta que identifica el tipo de rotación splay.
      * @param rotationType Tipo de rotación realizada.
-     * @param rotationOrder Indica si se trata se la "primera" o "segunda" rotación de la secuencia splay.
-     * @param phase Fase de la traza de operación splay a la que pertenece el paso de rotación.
      */
     private pushSplayRotationStep(
         zNode: NodoSplay<T>,
         yNode: NodoSplay<T>,
         BNode: NodoSplay<T> | null,
         rotationTag: SplayRotationTag,
-        rotationType: RotationType,
-        rotationOrder: "first" | "second",
-        phase: SplayTracePhase
+        rotationType: RotationType
     ): void {
         const step: RotationStep = {
             type: rotationType,
@@ -554,11 +670,11 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
             parentOfZId: zNode.getPadre()?.getId() ?? null,
             BId: BNode?.getId() ?? null
         }
-        this.splayOperationTrace?.phases[phase].push({ tag: rotationTag, rotation: step, rotationOrder: rotationOrder });
+        this.splayOperationTrace?.rotations.push({ tag: rotationTag, step });
     }
 
     /**
-     * Método que registra un estado intermedio del árbol durante una operación splay para propósitos de visualización y análisis.
+     * Método auxiliar que registra un estado intermedio del árbol durante una operación splay para propósitos de visualización y análisis.
      * Toma la estructura jerárquica actual del árbol y la agrega a la colección de jerarquías intermedias en la traza de operación splay.
      */
     private pushSplayRotationHierarchy(): void {
@@ -569,7 +685,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que garantiza la inicialización de la jerarquía BST en la traza de operación splay.
+     * Método auxiliar que garantiza la inicialización de la jerarquía BST en la traza de operación splay.
      * Convierte la estructura actual del árbol en una representación jerárquica y asegura la disposición 
      * de un estado base del árbol antes de registrar rotaciones intermedias
      */
@@ -579,4 +695,34 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         }
     }
 
+    /**
+     * Método auxiliar que determina el lado del nodo pivote con respecto a su padre.
+     * @param pivot Nodo pivote.
+     * @returns Lado del nodo pivote con respecto a su padre ("left", "right", o "root").
+     */
+    private getPivotSideOnParent(pivot: NodoSplay<T>): "left" | "right" | "root" {
+        const up = pivot.getPadre();
+        if (!up) return "root";
+        return up.getIzq() === pivot ? "left" : "right";
+    }
+
+    private captureSplayRotateStep(
+        steps: (SplayInsertStep | SplayDeleteStep | SplaySearchStep)[],
+        trace: SplayTrace<T> | null,
+        caseKind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2",
+        dir: "left" | "right",
+        pivot: NodoSplay<T>,
+    ) {
+        if (!trace) return;
+        steps.push({
+            type: "rotate",
+            kind: "splay",
+            subkind: caseKind,
+            dir,
+            pivot: pivot.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1,
+            pivotSideOnParent: this.getPivotSideOnParent(pivot)
+        });
+    }
 }
