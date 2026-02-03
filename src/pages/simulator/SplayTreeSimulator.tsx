@@ -9,7 +9,7 @@ export function SplayTreeSimulator() {
     // Instanciación del árbol Splay
     const structure = useRef(new ArbolSplay<number>()).current;
 
-    // Hook de estado/acciones para Splay
+    // Llamada al hook useSplayTree para gestionar el estado del árbol Splay
     const { tree, query, error, operations } = useSplayTree(structure);
 
     // Desestructuración de operaciones soportadas por el Splay
@@ -25,7 +25,7 @@ export function SplayTreeSimulator() {
         resetQueryValues,
     } = operations;
 
-    // Conversión a jerarquía para renderizar
+    // Conversión del árbol a una estructura jerárquica para su renderizado
     const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
     // Acciones disponibles para el usuario

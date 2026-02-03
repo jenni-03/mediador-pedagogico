@@ -23,9 +23,11 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que inserta un nuevo nodo en el árbol Splay. Si el nodo ya existe,
-     * no se crea un nuevo nodo, pero se aplica Splay sobre el nodo existente.
-     * @param valor Elemento a insertar.
+     * Método que inserta un nuevo elemento en el árbol Splay.
+     * - Si el elemento ya existe, se aplica splay del nodo encontrado para moverlo a la raíz.
+     * - Si no existe, se inserta como BST y luego se aplica splay del nuevo nodo para moverlo a la raíz.
+     * 
+     * @param valor Elemento a insertar o acceder.
      * @returns Objeto con la siguiente información:
      * 
      * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la inserción 
@@ -408,8 +410,12 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método auxiliar que realiza la operación splay en el nodo dado, moviendolo a la raíz del árbol splay.
-     * Aplica una serie de rotaciones (Zig, Zig-Zig, Zig-Zag) dependiendo de la posición del nodo.
+     * Método auxiliar que realiza la operación de splay sobre el nodo dado, moviéndolo hasta la raíz
+     * mediante rotaciones Zig, Zig-Zig, Zig-Zag según corresponda;
+     * 
+     * 1. Zig: Nodo es hijo directo de la raíz -> una rotación.
+     * 2. Zig-Zig: Nodo y padre son ambos hijos izquierdos o derechos -> dos rotaciones en la misma dirección.
+     * 3. Zig-Zag: Nodo y padre están en direcciones opuestas -> dos rotaciones en direcciones distintas.
      * 
      * Durante cada rotación, captura estados pre- y post-rotación para propositos de seguimiento y visualización.
      * @param x Nodo a splayear hasta la raíz.
@@ -444,6 +450,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                 this.pushSplayRotationStep(p, x, x === p.getIzq() ? x.getDer() : x.getIzq(), "Zig", shape);
 
                 // Zig
+                const pivotSide = this.getPivotSideOnParent(p);
                 if (x === p.getIzq()) {
                     this.rotarDerecha(p);
                 } else {
@@ -452,7 +459,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
                 // Capturar el estado post-rotación
                 this.pushSplayRotationHierarchy();
-                this.captureSplayRotateStep(steps, trace, "zig", shape === "LL" ? "right" : "left", p);
+                this.captureSplayRotateStep(steps, trace, "zig", shape === "LL" ? "right" : "left", p, pivotSide);
             } else {
                 const xIsLeft = (x === p.getIzq());
                 const pIsLeft = (p === g.getIzq());
@@ -465,17 +472,19 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     this.pushSplayRotationStep(g, p, p.getDer(), "Zig-Zig", "LL");
 
                     // Rotación y Captura del estado posterior
+                    const firstRotationPivotSide = this.getPivotSideOnParent(g);
                     this.rotarDerecha(g);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzig-1", "right", g);
+                    this.captureSplayRotateStep(steps, trace, "zigzig-1", "right", g, firstRotationPivotSide);
 
                     // Capturar info de la segunda rotación a aplicar
                     this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zig", "LL");
 
                     // Rotación y Captura del estado posterior
+                    const secondRotationPivotSide = this.getPivotSideOnParent(p);
                     this.rotarDerecha(p);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzig-2", "right", p);
+                    this.captureSplayRotateStep(steps, trace, "zigzig-2", "right", p, secondRotationPivotSide);
                 } else if (!xIsLeft && !pIsLeft) {
                     // Zig-Zig RR
                     steps.push({ type: "splayCase", kind: "zig-zig", shape: "RR" });
@@ -484,17 +493,19 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     this.pushSplayRotationStep(g, p, p.getIzq(), "Zig-Zig", "RR");
 
                     // Rotación y Captura del estado posterior
+                    const firstRotationPivotSide = this.getPivotSideOnParent(g);
                     this.rotarIzquierda(g);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzig-1", "left", g);
+                    this.captureSplayRotateStep(steps, trace, "zigzig-1", "left", g, firstRotationPivotSide);
 
                     // Capturar info de la segunda rotación a aplicar
                     this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zig", "RR");
 
                     // Rotación y Captura del estado posterior
+                    const secondRotationPivotSide = this.getPivotSideOnParent(p);
                     this.rotarIzquierda(p);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzig-2", "left", p);
+                    this.captureSplayRotateStep(steps, trace, "zigzig-2", "left", p, secondRotationPivotSide);
                 } else if (!xIsLeft && pIsLeft) {
                     // Zig-Zag LR
                     steps.push({ type: "splayCase", kind: "zig-zag", shape: "LR" });
@@ -503,17 +514,19 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     this.pushSplayRotationStep(p, x, x.getIzq(), "Zig-Zag", "LR");
 
                     // Rotación y Captura del estado posterior
+                    const firstRotationPivotSide = this.getPivotSideOnParent(p);
                     this.rotarIzquierda(p);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzag-1", "left", p);
+                    this.captureSplayRotateStep(steps, trace, "zigzag-1", "left", p, firstRotationPivotSide);
 
                     // Capturar info de la segunda rotación a aplicar
                     this.pushSplayRotationStep(g, x, x.getDer(), "Zig-Zag", "LR");
 
                     // Rotación y Captura del estado posterior
+                    const secondRotationPivotSide = this.getPivotSideOnParent(g);
                     this.rotarDerecha(g);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzag-2", "right", g);
+                    this.captureSplayRotateStep(steps, trace, "zigzag-2", "right", g, secondRotationPivotSide);
                 } else {
                     // Zig–Zag RL
                     steps.push({ type: "splayCase", kind: "zig-zag", shape: "RL" });
@@ -522,17 +535,19 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     this.pushSplayRotationStep(p, x, x.getDer(), "Zig-Zag", "RL");
 
                     // Rotación y Captura del estado posterior
+                    const firstRotationPivotSide = this.getPivotSideOnParent(p);
                     this.rotarDerecha(p);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzag-1", "right", p);
+                    this.captureSplayRotateStep(steps, trace, "zigzag-1", "right", p, firstRotationPivotSide);
 
                     // Capturar info de la segunda rotación a aplicar
                     this.pushSplayRotationStep(g, x, x.getIzq(), "Zig-Zag", "RL");
 
                     // Rotación y Captura del estado posterior
+                    const secondRotationPivotSide = this.getPivotSideOnParent(g);
                     this.rotarIzquierda(g);
                     this.pushSplayRotationHierarchy();
-                    this.captureSplayRotateStep(steps, trace, "zigzag-2", "left", g);
+                    this.captureSplayRotateStep(steps, trace, "zigzag-2", "left", g, secondRotationPivotSide);
                 }
             }
         }
@@ -712,6 +727,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         caseKind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2",
         dir: "left" | "right",
         pivot: NodoSplay<T>,
+        pivotSide: "root" | "left" | "right"
     ) {
         if (!trace) return;
         steps.push({
@@ -722,7 +738,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
             pivot: pivot.getId(),
             frameIndex: trace.hierarchies.mids.length - 1,
             rotationIndex: trace.rotations.length - 1,
-            pivotSideOnParent: this.getPivotSideOnParent(pivot)
+            pivotSideOnParent: pivotSide
         });
     }
 }

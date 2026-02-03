@@ -904,13 +904,13 @@ export type BaseQueryOperations<
   }
   : T extends "arbol_splay"
   ? {
-    toInsert: { targetNodeId: string, inserted: boolean } | null;
+    toInsert: { steps: SplayInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
     toDelete: { nodeId: string, removed: boolean, maxLeftId: string | null } | null;
     toSearch: { nodeId: string; found: boolean; } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
     splayTrace: SplayTrace<number> | null;
   }

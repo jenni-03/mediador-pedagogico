@@ -6,50 +6,38 @@ export function useSplayTree(structure: ArbolSplay<number>) {
     // Estado para manejar el árbol Splay
     const [tree, setTree] = useState(structure);
 
-    // Estado de error para la consola
-    const [error, setError] = useState<{ message: string; id: number } | null>(
-        null
-    );
+    // Estado para gestionar el error
+    const [error, setError] = useState<{ message: string, id: number, op: string, planId?: string | null } | null>(null);
 
     // Estado de la "query" que usan los renderers/animaciones
     const [query, setQuery] = useState<BaseQueryOperations<"arbol_splay">>({
         toInsert: null,
         toDelete: null,
         toSearch: null,
-        toGetPreOrder: [],
-        toGetInOrder: [],
-        toGetPostOrder: [],
-        toGetLevelOrder: [],
+        toGetPreOrder: null,
+        toGetInOrder: null,
+        toGetPostOrder: null,
+        toGetLevelOrder: null,
         toClear: false,
         splayTrace: null
     });
 
-    // Operación de inserción
+    // Operación para insertar un nodo
     const insertNode = useCallback((value: number) => {
         try {
-            // Clonar el árbol para garantizar la inmutabilidad del estado
             const cloned = tree.clonarSplay();
-
-            // Insertar el nuevo nodo
-            const { targetNode, inserted } = cloned.insertarSplay(value);
-
-            // Obtener la traza splay
+            const { steps, parent, targetNode, inserted } = cloned.insertarSplay(value);
             const trace = cloned.consumeLastSplayTrace();
 
-            // Actualizar el estado del árbol
             setTree(cloned);
-
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toInsert: { targetNodeId: targetNode.getId(), inserted },
+                toInsert: { steps, parentNodeId: parent?.getId() ?? null, targetNodeId: targetNode!.getId(), inserted },
                 splayTrace: trace
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (e: any) {
-            setError({ message: e.message, id: Date.now() });
+            setError({ message: e.message, id: Date.now(), op: "insert" });
         }
     }, [tree]);
 
@@ -116,106 +104,71 @@ export function useSplayTree(structure: ArbolSplay<number>) {
         }
     }, [tree]);
 
-    // Operación para obtener el recorrido en preorden
+    // Operación para realizar el recorrido en preorden
     const getPreOrder = useCallback(() => {
         try {
-            // Obtener el recorrido en preorden del árbol
-            const preorder = tree.preOrden();
-
-            // Verificar la existencia de nodos
-            if (preorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
-
-            // Actualizar la query a partir de la operación realizada
+            const { steps, visited } = tree.preOrden();
+            if (visited.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
             setQuery((prev) => ({
                 ...prev,
-                toGetPreOrder: preorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+                toGetPreOrder: { steps, nodes: visited.map(node => ({ id: node.getId(), value: node.getInfo() })) }
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "getPreOrder" });
         }
     }, [tree]);
 
-    // Operación para obtener el recorrido en inorden
+    // Operación para realizar el recorrido en inorden
     const getInOrder = useCallback(() => {
         try {
-            // Obtener el recorrido en inorden del árbol
-            const inorder = tree.inOrden();
-
-            // Verificar la existencia de nodos
-            if (inorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
-
-            // Actualizar la query a partir de la operación realizada
+            const { steps, visited } = tree.inOrden();
+            if (visited.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
             setQuery((prev) => ({
                 ...prev,
-                toGetInOrder: inorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+                toGetInOrder: { steps, nodes: visited.map(node => ({ id: node.getId(), value: node.getInfo() })) }
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "getInOrder" });
         }
     }, [tree]);
 
-    // Operación para obtener el recorrido en postorden
+    // Operación para realizar el recorrido en postorden
     const getPostOrder = useCallback(() => {
         try {
-            // Obtener el recorrido en postorden del árbol
-            const postorder = tree.postOrden();
-
-            // Verificar la existencia de nodos
-            if (postorder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
-
-            // Actualizar la query a partir de la operación realizada
+            const { steps, visited } = tree.postOrden();
+            if (visited.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
             setQuery((prev) => ({
                 ...prev,
-                toGetPostOrder: postorder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+                toGetPostOrder: { steps, nodes: visited.map(node => ({ id: node.getId(), value: node.getInfo() })) }
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "getPostOrder" });
         }
     }, [tree]);
 
-    // Operación para obtener el recorrido por niveles
+    // Operación para realizar el recorrido por niveles
     const getLevelOrder = useCallback(() => {
         try {
-            // Obtener el recorrido por niveles del árbol
-            const levelOrder = tree.getNodosPorNiveles();
-
-            // Verificar la existencia de nodos
-            if (levelOrder.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
-
-            // Actualizar la query a partir de la operación realizada
+            const { steps, visited } = tree.getNodosPorNiveles();
+            if (visited.length === 0) throw new Error("No fue posible recorrer el árbol (El árbol se encuentra vacío).");
             setQuery((prev) => ({
                 ...prev,
-                toGetLevelOrder: levelOrder.map(node => ({ id: node.getId(), value: node.getInfo() }))
+                toGetLevelOrder: { steps, nodes: visited.map(node => ({ id: node.getId(), value: node.getInfo() })) }
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "getLevelOrder" });
         }
     }, [tree]);
 
     // Operación para vaciar el árbol
     const clearTree = useCallback(() => {
-        // Clonar el árbol para asegurar la inmutabilidad del estado
         const cloned = tree.clonarSplay();
-
-        // Vaciar el árbol
         cloned.vaciar();
-
-        // Actualizar el estado del árbol
         setTree(cloned);
-
-        // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true
@@ -228,10 +181,10 @@ export function useSplayTree(structure: ArbolSplay<number>) {
             toInsert: null,
             toDelete: null,
             toSearch: null,
-            toGetPreOrder: [],
-            toGetInOrder: [],
-            toGetPostOrder: [],
-            toGetLevelOrder: [],
+            toGetPreOrder: null,
+            toGetInOrder: null,
+            toGetPostOrder: null,
+            toGetLevelOrder: null,
             toClear: false,
             splayTrace: null
         });
