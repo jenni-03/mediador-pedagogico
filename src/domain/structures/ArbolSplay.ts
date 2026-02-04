@@ -37,7 +37,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
      *    1. Si el elemento ya existía en el árbol.
      *    2. Si el nuevo nodo se insertó como raíz.
      * 
-     * - `targetNode`: Nodo correspondiente al elemento proporcionado (nuevo o ya existente). Será `null` si ya existía en el árbol.
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado (nuevo o ya existente).
      * 
      * - `inserted`: Booleano que indica si el elemento fue insertado.
      */
@@ -107,13 +107,27 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
     }
 
     /**
-     * Método que elimina un nodo especifico del árbol Splay. Si el nodo no existe,
-     * se aplica Splay sobre el nodo más cercano y no se elimina nada.
-     * @param valor Objeto con la siguiente información.
-     * @returns Objeto con:
-     * - `node`: Nodo asociado al elemento a eliminar o el último nodo vistado.
-     * - `deleted`: Indica si el elemento fue realmente eliminado.
-     * - `maxLeft`: Nodo máximo del subárbol izquierdo tras la operación de eliminación o null si no existía.
+     * Método que elimina el elemento especificado del árbol Splay.
+     * - Si el elemento existe, se aplica splay del nodo encontrado para moverlo a la raíz antes de ser eliminado.
+     * - Si no existe, se aplica splay del último nodo visitado durante la búsqueda para moverlo a la raíz y no se elimina nada.
+     * 
+     * @param valor Elemento a eliminar.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `searchSteps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+     *    del nodo a eliminar (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `deleteSteps`: Arreglo de objetos que describen cada acción llevada a cabo durante la eliminación 
+     *    (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será el último nodo visitado
+     *    durante la búsqueda si el elemento no se encuentra en el árbol.
+     * 
+     * - `deleted`: Booleano que indica si el elemento fue eliminado.
+     * 
+     * - `maxLeft`: Nodo máximo del subárbol izquierdo tras la operación de eliminación. Será `null` en 2 casos:
+     *    1. Si el elemento a eliminar no existe en el árbol.
+     *    2. Si el nodo correspondiente al elemento a eliminar no cuenta con un subárbol izquierdo.
      */
     public eliminarSplay(valor: T): SplayDeleteOutput<T> {
         if (this.esVacio()) {
@@ -132,37 +146,37 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
 
         // Split por la raíz
         const root = this.getRaiz()!;
-        const L = root.getIzq();
-        const R = root.getDer();
+        const subIzq = root.getIzq();
+        const subDer = root.getDer();
         deleteSteps.push({
             type: "split",
             root: root.getId(),
-            leftId: L?.getId() ?? null,
-            rightId: R?.getId() ?? null
+            leftId: subIzq?.getId() ?? null,
+            rightId: subDer?.getId() ?? null
         });
 
-        deleteSteps.push({ type: "detachParent", nodeId: L?.getId() ?? null, parentId: root.getId(), side: "left" });
-        if (L) { L.setPadre(null); }
+        deleteSteps.push({ type: "detachParent", nodeId: subIzq?.getId() ?? null, parentId: root.getId(), side: "left" });
+        if (subIzq) { subIzq.setPadre(null); }
 
-        deleteSteps.push({ type: "detachParent", nodeId: R?.getId() ?? null, parentId: root.getId(), side: "right" });
-        if (R) { R.setPadre(null); }
+        deleteSteps.push({ type: "detachParent", nodeId: subDer?.getId() ?? null, parentId: root.getId(), side: "right" });
+        if (subDer) { subDer.setPadre(null); }
 
         // Descartar la raíz actual
-        deleteSteps.push({ type: "cutChild", fromId: root.getId(), side: "right", childId: R?.getId() ?? null });
+        deleteSteps.push({ type: "cutChild", fromId: root.getId(), side: "right", childId: subDer?.getId() ?? null });
         root.setDer(null);
 
-        deleteSteps.push({ type: "cutChild", fromId: root.getId(), side: "left", childId: L?.getId() ?? null });
+        deleteSteps.push({ type: "cutChild", fromId: root.getId(), side: "left", childId: subIzq?.getId() ?? null });
         root.setIzq(null);
 
         deleteSteps.push({ type: "setRoot", rootId: null, side: "null" });
         this.setRaiz(null);
 
         // Join (L, R)
-        if (!L) {
+        if (!subIzq) {
             deleteSteps.push({ type: "joinCase", kind: "leftNull" });
 
-            deleteSteps.push({ type: "setRoot", rootId: R?.getId() ?? null, side: "right" });
-            this.setRaiz(R);
+            deleteSteps.push({ type: "setRoot", rootId: subDer?.getId() ?? null, side: "right" });
+            this.setRaiz(subDer);
 
             deleteSteps.push({ type: "decSize" });
             this.setTamanio(this.getTamanio() - 1);
@@ -174,50 +188,60 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         // Splay del máximo de L dentro de L
         deleteSteps.push({ type: "joinCase", kind: "leftNotNull" });
 
-        deleteSteps.push({ type: "setRoot", rootId: L.getId(), side: "left" });
-        this.setRaiz(L);
+        deleteSteps.push({ type: "setRoot", rootId: subIzq.getId(), side: "left" });
+        this.setRaiz(subIzq);
 
-        deleteSteps.push({ type: "traverseMaxLeftStart", rootId: L.getId() });
-        let maxL = this.getRaiz()!;
-        while (maxL.getDer()) {
-            const next = maxL.getDer()!;
-            deleteSteps.push({ type: "moveToRight", fromId: maxL.getId(), toId: next.getId() });
-            maxL = next;
+        deleteSteps.push({ type: "traverseMaxLeftStart", rootId: subIzq.getId() });
+        let maxIzq = this.getRaiz()!;
+        while (maxIzq.getDer()) {
+            const next = maxIzq.getDer()!;
+            deleteSteps.push({ type: "moveToRight", fromId: maxIzq.getId(), toId: next.getId() });
+            maxIzq = next;
         }
-        deleteSteps.push({ type: "maxLeftFound", nodeId: maxL.getId() });
+        deleteSteps.push({ type: "maxLeftFound", nodeId: maxIzq.getId() });
 
-        deleteSteps.push({ type: "splayCall", xId: maxL.getId(), reason: "deletion" });
-        this.splay(maxL, deleteSteps);
+        deleteSteps.push({ type: "splayCall", xId: maxIzq.getId(), reason: "deletion" });
+        this.splay(maxIzq, deleteSteps);
 
         // Colgamos R
-        deleteSteps.push({ type: "attachRight", parentId: this.getRaiz()!.getId(), rightId: R?.getId() ?? null });
-        this.getRaiz()!.setDer(R)
+        deleteSteps.push({ type: "attachRight", parentId: this.getRaiz()!.getId(), rightId: subDer?.getId() ?? null });
+        this.getRaiz()!.setDer(subDer)
 
-        if (R) {
-            deleteSteps.push({ type: "setParent", nodeId: R.getId(), parentId: this.getRaiz()!.getId() });
-            R.setPadre(this.getRaiz());
+        if (subDer) {
+            deleteSteps.push({ type: "setParent", nodeId: subDer.getId(), parentId: this.getRaiz()!.getId() });
+            subDer.setPadre(this.getRaiz());
         }
 
         deleteSteps.push({ type: "decSize" });
         this.setTamanio(this.getTamanio() - 1);
 
         deleteSteps.push({ type: "return" });
-        return { searchSteps, deleteSteps, targetNode: foundNode!, deleted: true, maxLeft: maxL };
+        return { searchSteps, deleteSteps, targetNode: foundNode!, deleted: true, maxLeft: maxIzq };
     }
 
     /**
-     * Método que busca un nodo especifico en el árbol Splay.
-     * Aplica splay sobre el nodo encontrado o sobre el último nodo visitado.
-     * @param valor Elemento a buscar en el árbol Splay.
-     * @returns Objeto con:
-     * - `node`: Nodo que contiene el elemento buscado o el último nodo visitado si no fue encontrado. 
-     * - `found`: Indica si el elemento esta presente en el árbol.
+     * Método que comprueba la existencia del elemento especificado en el árbol Splay.
+     * - Si el elemento existe, se aplica splay del nodo encontrado para moverlo a la raíz.
+     * - Si no existe, se aplica splay del último nodo visitado durante la búsqueda para moverlo a la raíz.
+     * 
+     * @param valor Elemento a buscar.
+     * @returns Objeto con la siguiente información:
+     * 
+     * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+     *    (comprobaciones, visitas, movimientos y retornos).
+     * 
+     * - `targetNode`: Nodo resultante del proceso de búsqueda. Puede ser:
+     *     1. Nodo correspondiente al elemento proporcionado si fue encontrado.
+     *     2. Nodo donde la búsqueda se detuvo sin éxito (padre de la rama nula).
+     *     3. `null` si el árbol está vacío.
+     *  
+     * - `found`: Booleano que indica si el nodo fue encontrado.
      */
     public buscarSplay(valor: T): SplaySearchOutput<T> {
         if (this.esVacio()) return { steps: [], targetNode: null, found: false };
 
         let curr: NodoSplay<T> | null = this.getRaiz();
-        let last: NodoSplay<T> | null = null;
+        let ultimo: NodoSplay<T> | null = null;
 
         // Inicializar la traza de seguimiento del estado del árbol durante la operación
         this.splayOperationTrace = {
@@ -233,7 +257,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         while (curr !== null) {
             steps.push({ type: "visit", at: curr.getId() });
 
-            last = curr;
+            ultimo = curr;
             const cmp = this.compare(valor, curr.getInfo());
             steps.push({ type: "compare", at: curr.getId(), cmp: cmp < 0 ? -1 : cmp > 0 ? 1 : 0 });
 
@@ -256,11 +280,11 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
         }
 
         // Si el nodo no fue ubicado, splay del último visitado
-        steps.push({ type: "splayCall", xId: last!.getId(), reason: "search-notfound" });
-        this.splay(last!, steps);
+        steps.push({ type: "splayCall", xId: ultimo!.getId(), reason: "search-notfound" });
+        this.splay(ultimo!, steps);
 
         steps.push({ type: "return" });
-        return { steps, targetNode: last, found: false };
+        return { steps, targetNode: ultimo, found: false };
     }
 
     /**
@@ -461,10 +485,10 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                 this.pushSplayRotationHierarchy();
                 this.captureSplayRotateStep(steps, trace, "zig", shape === "LL" ? "right" : "left", p, pivotSide);
             } else {
-                const xIsLeft = (x === p.getIzq());
-                const pIsLeft = (p === g.getIzq());
+                const xEsIzq = (x === p.getIzq());
+                const pEsIzq = (p === g.getIzq());
 
-                if (xIsLeft && pIsLeft) {
+                if (xEsIzq && pEsIzq) {
                     // Zig-Zig LL
                     steps.push({ type: "splayCase", kind: "zig-zig", shape: "LL" });
 
@@ -485,7 +509,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     this.rotarDerecha(p);
                     this.pushSplayRotationHierarchy();
                     this.captureSplayRotateStep(steps, trace, "zigzig-2", "right", p, secondRotationPivotSide);
-                } else if (!xIsLeft && !pIsLeft) {
+                } else if (!xEsIzq && !pEsIzq) {
                     // Zig-Zig RR
                     steps.push({ type: "splayCase", kind: "zig-zig", shape: "RR" });
 
@@ -506,7 +530,7 @@ export class ArbolSplay<T> extends ArbolBinarioBusqueda<T> {
                     this.rotarIzquierda(p);
                     this.pushSplayRotationHierarchy();
                     this.captureSplayRotateStep(steps, trace, "zigzig-2", "left", p, secondRotationPivotSide);
-                } else if (!xIsLeft && pIsLeft) {
+                } else if (!xEsIzq && pEsIzq) {
                     // Zig-Zag LR
                     steps.push({ type: "splayCase", kind: "zig-zag", shape: "LR" });
 

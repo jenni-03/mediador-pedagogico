@@ -1,5 +1,5 @@
 import { type HierarchyNode, type Selection } from "d3";
-import { HierarchyNodeData, RotationType, SplayFrame, SplayInsertStep, SplayRotation, SplayRotationTag, TreeLinkData } from "../../../domain/utils/types";
+import { HierarchyNodeData, RotationType, SplayFrame, SplayInsertStep, SplayRotation, SplayRotationTag, SplaySearchStep, TreeLinkData } from "../../../domain/utils/types";
 import type { Dispatch, SetStateAction } from "react";
 import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
 import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
@@ -33,8 +33,8 @@ export async function animateInsertSplayNode(
         nodesData: HierarchyNode<HierarchyNodeData<number>>[];
         linksData: TreeLinkData[];
         positions: Map<string, { x: number, y: number }>;
-        rotations: SplayRotation[],
-        frames: SplayFrame[]
+        rotations: SplayRotation[];
+        frames: SplayFrame[];
         highlightColor: string;
     },
     bus: EventBus,
@@ -417,7 +417,7 @@ export async function animateInsertSplayNode(
                     await showTreeHint(
                         svg,
                         { type: "node", id: insertionData.targetNodeId },
-                        { label: parentNodeId ? "Nueva Raíz" : "Splay", value: parentNodeId ? "Splay" : "ya en raíz" },
+                        { label: "Splay", value: "ya en raíz" },
                         insertionData.positions,
                         treeOffset,
                         {
@@ -794,169 +794,363 @@ export async function animateSplayDeleteNode(
 }
 
 /**
- * Función encargada de animar el proceso de búsqueda de un nodo dentro de un árbol Splay.
+ * Función encargada de animar el proceso de búsqueda de un nodo en un árbol Splay.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
- * @param treeOffset Desplazamiento del árbol dentro del SVG. 
+ * @param treeOffset Coordenadas de desplazamiento para el posicionamiento de los elementos del árbol dentro del SVG.
  * @param searchData Objeto con información del árbol necesaria para la animación.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateSplaySearch(
+export async function animateSearchSplayNode(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     treeOffset: { x: number; y: number },
     searchData: {
-        targetNode: HierarchyNode<HierarchyNodeData<number>>;
+        targetNodeId: string;
         found: boolean;
+        searchSteps: SplaySearchStep[];
         positions: Map<string, { x: number, y: number }>;
-        pathToTargetNode: HierarchyNode<HierarchyNodeData<number>>[];
-        rotations: SplayRotation[],
-        frames: SplayFrame[]
+        rotations: SplayRotation[];
+        frames: SplayFrame[];
+        highlightColor: string;
     },
+    bus: EventBus,
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-    // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
-    const { positions, targetNode } = searchData;
+    // Etiquetas para el registro de eventos
+    const labels = arbolSplayCode.search.labels;
 
-    // Grupo contenedor principal de los elementos del árbol (nodos y enlaces)
-    const treeG = svg.select<SVGGElement>("g.tree-container");
+    // Elementos implicados en la búsqueda 
+    const { targetNodeId, found, searchSteps } = searchData;
 
-    // Grupo contenedor de la secuencia de valores de recorrido
-    const seqG = svg.select<SVGGElement>("g.seq-container");
+    try {
+        // Inicio de la operación
+        bus.emit("op:start", { op: "search" });
 
-    // Capas especificas de nodos y enlaces
-    const linksLayer = treeG.select<SVGGElement>("g.links-layer");
-    const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+        // Grupo contenedor de nodos y enlaces del árbol
+        const treeG = svg.select<SVGGElement>("g#tree-container");
 
-    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-    seqG.style("opacity", 0);
+        // Grupo contenedor de la secuencia de valores de recorrido (inicialmente oculto)
+        const seqG = svg.select<SVGGElement>("g#seq-container");
+        seqG.style("opacity", 0);
 
-    // Grupo correspondiente al nodo objetivo
-    const targetNodeGroup = treeG.select<SVGCircleElement>(`g#${targetNode.data.id} circle.node-container`);
+        // Grupo correspondiente al nodo objetivo
+        const targetNodeGroup = treeG.select<SVGCircleElement>(`g#${targetNodeId} circle.node-container`);
 
-    // Animación de recorrido hasta el nodo objetivo
-    await highlightBinaryTreePath(treeG, searchData.pathToTargetNode, SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR);
+        // Capas internas para nodos y enlaces
+        const linksLayer = treeG.select<SVGGElement>("g#links-layer");
+        const nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
 
-    // Resaltado final del nodo objetivo (si esta presente en el árbol)
-    if (searchData.found) {
-        await targetNodeGroup
-            .transition()
-            .duration(250)
-            .attr("r", 30)
-            .transition()
-            .duration(250)
-            .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
-            .end();
-    } else {
-        // Mostrar indicador visual de que el nodo no fue encontrado
-        await showTreeHint(
-            svg,
-            { type: "node", id: targetNode.data.id },
-            { label: "Nodo", value: "no ubicado" },
-            positions,
-            treeOffset,
-            {
-                size: { width: 80, height: 35 },
-                typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
-                anchor: { side: "below", dx: 10, dy: -8 },
-                palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
-            }
-        );
-    }
+        bus.emit("step:progress", { stepId: "search", lineIndex: labels.DECLARE_CURRENT });
+        await delay(600);
 
-    // Restablecimiento del estilo visual original del nodo objetivo
-    await targetNodeGroup
-        .transition()
-        .duration(800)
-        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-        .end();
+        bus.emit("step:progress", { stepId: "search", lineIndex: labels.DECLARE_LAST });
+        await delay(600);
 
-    // Aplicación de rotaciones
-    let frameCount = 1;
-    for (const rotationStep of searchData.rotations) {
-        // Rotación a aplicar
-        const rotation = rotationStep.rotation;
-        const { nodes, links } = searchData.frames[frameCount];
+        for (const step of searchSteps) {
+            switch (step.type) {
+                case "visit": {
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.BST_WHILE });
 
-        // Mostrar indicador visual del caso splay (antes de aplicar cualquier rotación)
-        if (rotationStep.rotationOrder === "first") {
-            await showTreeHint(
-                svg,
-                { type: "node", id: targetNode.data.id },
-                { label: "Splay", value: `${rotationStep.tag} (${rotationStep.tag === "Zig" ? rotation.type.charAt(0) : rotation.type})` },
-                positions,
-                treeOffset,
-                {
-                    size: { width: 78, height: 35 },
-                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
-                    anchor: { side: "below", dx: 10, dy: -8 },
-                    palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
+                    if (step.at) {
+                        // Resaltado del nodo actual
+                        await treeG.select<SVGGElement>(`g#${step.at} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", searchData.highlightColor)
+                            .end();
+                    } else {
+                        await delay(600);
+                    }
+                    break;
                 }
-            );
+                case "compare": {
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.DECLARE_CMP });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.IF_FOUND });
+                    await delay(600);
+
+                    if (step.cmp === 0) {
+                        // Pulsasión del nodo identificado
+                        await targetNodeGroup
+                            .transition()
+                            .duration(300)
+                            .attr("r", 30)
+                            .transition()
+                            .duration(300)
+                            .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+                            .end();
+
+                        // Restablecimiento del estilo visual original del nodo identificado
+                        await targetNodeGroup
+                            .transition()
+                            .duration(800)
+                            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                            .end();
+                    }
+                    break;
+                }
+                case "advance": {
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.ADVANCE_CURRENT });
+                    await treeG.select<SVGGElement>(`g#${step.from} circle.node-container`)
+                        .transition()
+                        .duration(800)
+                        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                        .end();
+                    break;
+                }
+                case "splayCall": {
+                    const splayCallIndex = step.reason === "search-found"
+                        ? labels.SPLAY_FOUND : labels.SPLAY_LAST;
+                    bus.emit("step:progress", { stepId: "search", lineIndex: splayCallIndex });
+
+                    if (!found) {
+                        // Indicador visual de que el nodo indicado no existe en el árbol
+                        await showTreeHint(
+                            svg,
+                            { type: "node", id: targetNodeId },
+                            { label: "Elemento", value: "no ubicado" },
+                            searchData.positions,
+                            treeOffset,
+                            {
+                                size: { width: 80, height: 35 },
+                                typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                                anchor: { side: "below", dx: 10, dy: -8 },
+                                palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                            }
+                        );
+                    } else {
+                        await delay(600);
+                    }
+                    break;
+                }
+                case "splayWhileCheck": {
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.SPLAY_WHILE });
+                    await delay(600);
+                    break;
+                }
+                case "resolvePG": {
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.SPLAY_DECLARE_P });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.SPLAY_DECLARE_G });
+                    await delay(600);
+                    break;
+                }
+                case "splayCase": {
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.IF_G_NULL });
+                    await delay(600);
+
+                    if (step.kind !== "zig") {
+                        bus.emit("step:progress", { stepId: "search", lineIndex: labels.ELSE_G_NOT_NULL });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "search", lineIndex: labels.DECL_X_IS_LEFT });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "search", lineIndex: labels.DECL_P_IS_LEFT });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "search", lineIndex: labels.IF_ZIGZIG_LL });
+                        await delay(600);
+
+                        if (step.kind !== "zig-zig" || (step.kind === "zig-zig" && step.shape === "RR")) {
+                            bus.emit("step:progress", { stepId: "search", lineIndex: labels.ELSE_IF_ZIGZIG_RR });
+                            await delay(600);
+
+                            if (step.kind !== "zig-zig") {
+                                bus.emit("step:progress", { stepId: "search", lineIndex: labels.ELSE_IF_ZIGZAG_LR });
+                                await delay(600);
+
+                                if (step.shape === "RL") {
+                                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.ELSE_ZIGZAG_RL });
+                                    await delay(600);
+                                }
+                            }
+                        }
+                    }
+
+                    // Indicador visual del caso de splay a realizar
+                    await showTreeHint(
+                        svg,
+                        { type: "node", id: targetNodeId },
+                        { label: "Splay", value: `${step.kind} (${step.kind === "zig" ? step.shape.charAt(0) : step.shape})` },
+                        searchData.positions,
+                        treeOffset,
+                        {
+                            size: { width: 80, height: 35 },
+                            typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                            anchor: { side: "below", dx: 10, dy: -8 },
+                            palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                        }
+                    );
+                    break;
+                }
+                case "rotate": {
+                    // Frame correspondiente a la rotación actual
+                    const frame = searchData.frames[step.frameIndex + 1];
+                    const rotation = searchData.rotations[step.rotationIndex];
+                    const rotationInfo = rotation.step;
+
+                    if (step.subkind === "zig") {
+                        bus.emit("step:progress", { stepId: "search", lineIndex: labels.IF_X_LEFT_ZIG });
+                        await delay(600);
+
+                        if (step.dir === "right") {
+                            bus.emit("step:progress", { stepId: "search", lineIndex: labels.ZIG_ROTATE_RIGHT_P });
+                        } else {
+                            bus.emit("step:progress", { stepId: "search", lineIndex: labels.ELSE_X_RIGHT_ZIG });
+                            await delay(600);
+
+                            bus.emit("step:progress", { stepId: "search", lineIndex: labels.ZIG_ROTATE_LEFT_P });
+                        }
+                    } else if (step.subkind === "zigzig-1" || step.subkind === "zigzig-2") {
+                        if (step.subkind === "zigzig-1") {
+                            const firstRotationIndex = step.dir === "right" ? labels.ZIGZIG_LL_ROT1 : labels.ZIGZIG_RR_ROT1;
+                            bus.emit("step:progress", { stepId: "search", lineIndex: firstRotationIndex });
+                        } else {
+                            const secondRotationIndex = step.dir === "right" ? labels.ZIGZIG_LL_ROT2 : labels.ZIGZIG_RR_ROT2;
+                            bus.emit("step:progress", { stepId: "search", lineIndex: secondRotationIndex });
+                        }
+                    } else {
+                        if (step.subkind === "zigzag-1") {
+                            const firstRotationIndex = step.dir === "left" ? labels.ZIGZAG_LR_ROT1 : labels.ZIGZAG_RL_ROT1;
+                            bus.emit("step:progress", { stepId: "search", lineIndex: firstRotationIndex });
+                        } else {
+                            const secondRotationIndex = step.dir === "right" ? labels.ZIGZAG_LR_ROT2 : labels.ZIGZAG_RL_ROT2;
+                            bus.emit("step:progress", { stepId: "search", lineIndex: secondRotationIndex });
+                        }
+                    }
+                    await delay(600);
+
+                    // Actualizar el layout al frame de la rotación
+                    const layoutNodes = frame.nodes;
+                    const layoutLinks = frame.links;
+
+                    // Determinar el indicador del tipo de rotación a aplicar
+                    const rotationOrder = step.subkind === "zig" || step.subkind === "zigzag-1" || step.subkind === "zigzig-1" ? "first" : "second";
+                    const rotationIndicator = determineSplayRotationIndicatorTag(rotation.tag, rotationInfo.type, rotationOrder);
+
+                    // Indicador visual del tipo de rotación a aplicar
+                    await showTreeHint(
+                        svg,
+                        { type: "node", id: rotationInfo.zId },
+                        { label: "Rotación", value: `${rotationIndicator}` },
+                        searchData.positions,
+                        treeOffset,
+                        {
+                            size: { width: 80, height: 35 },
+                            typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                            anchor: { side: "below", dx: 10, dy: -8 },
+                            palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                        }
+                    );
+
+                    // Renderizado de los nuevos enlaces y actualización de la posición de los nodos según el nuevo layout
+                    drawTreeLinks(linksLayer, layoutLinks, searchData.positions);
+                    drawTreeNodes(nodesLayer, layoutNodes, searchData.positions);
+
+                    const parentOfUnbalanced = rotationInfo.parentOfZId ?? null;
+                    const unbalancedNode = rotationInfo.zId;
+                    const sonOfUnbalanced = rotationInfo.yId;
+                    const rotationNode = rotationInfo.BId ?? null;
+
+                    const isRightRotation = step.dir === "right";
+
+                    const baseLabels = {
+                        DECL_MAIN: isRightRotation ? labels.ROT_R_DECL_X : labels.ROT_L_DECL_Y,
+                        DECL_AUX: isRightRotation ? labels.ROT_R_DECL_T2 : labels.ROT_L_DECL_T2,
+                        SET_FIRST_LINK: isRightRotation ? labels.ROT_R_SET_X_RIGHT : labels.ROT_L_SET_Y_LEFT,
+                        SET_SECOND_LINK: isRightRotation ? labels.ROT_R_SET_Y_LEFT : labels.ROT_L_SET_X_RIGHT,
+                        SET_MAIN_PARENT: isRightRotation ? labels.ROT_R_SET_X_PARENT : labels.ROT_L_SET_Y_PARENT,
+                        SET_UNBALANCED_PARENT: isRightRotation ? labels.ROT_R_SET_Y_PARENT : labels.ROT_L_SET_X_PARENT,
+                        IF_AUX_NOT_NULL: isRightRotation ? labels.ROT_R_IF_T2_NOT_NULL : labels.ROT_L_IF_T2_NOT_NULL,
+                        SET_AUX_PARENT: rotationNode
+                            ? (isRightRotation ? labels.ROT_R_SET_T2_PARENT : labels.ROT_L_SET_T2_PARENT)
+                            : undefined,
+                    };
+
+                    const parentRelinkLabels =
+                        step.pivotSideOnParent === "root"
+                            ? {
+                                IF_UNBALANCED_PARENT_NULL: isRightRotation ? labels.ROT_R_IF_Y_PARENT_NULL : labels.ROT_L_IF_X_PARENT_NULL,
+                                SET_ROOT: isRightRotation ? labels.ROT_R_SET_ROOT : labels.ROT_L_SET_ROOT,
+                            }
+                            : step.pivotSideOnParent === "right"
+                                ? {
+                                    IF_UNBALANCED_PARENT_NULL: isRightRotation ? labels.ROT_R_IF_Y_PARENT_NULL : labels.ROT_L_IF_X_PARENT_NULL,
+                                    ELSE_IF_UNBALANCED_SIDE1: isRightRotation ? labels.ROT_R_ELSE_IF_Y_IS_RIGHT : labels.ROT_L_ELSE_IF_X_IS_LEFT,
+                                    SET_UNBALANCED_PARENT_SIDE1: isRightRotation ? labels.ROT_R_SET_PARENT_RIGHT : labels.ROT_L_SET_PARENT_LEFT,
+                                }
+                                : {
+                                    IF_UNBALANCED_PARENT_NULL: isRightRotation ? labels.ROT_R_IF_Y_PARENT_NULL : labels.ROT_L_IF_X_PARENT_NULL,
+                                    ELSE_IF_UNBALANCED_SIDE1: isRightRotation ? labels.ROT_R_ELSE_IF_Y_IS_RIGHT : labels.ROT_L_ELSE_IF_X_IS_LEFT,
+                                    ELSE_UNBALANCED_SIDE2: isRightRotation ? labels.ROT_R_ELSE_Y_IS_LEFT : labels.ROT_L_ELSE_X_IS_RIGHT,
+                                    SET_UNBALANCED_PARENT_SIDE2: isRightRotation ? labels.ROT_R_SET_PARENT_LEFT : labels.ROT_L_SET_PARENT_RIGHT,
+                                };
+
+                    // Animación para rotación simple del subárbol
+                    await animateEspecialBSTsRotation(
+                        treeG,
+                        parentOfUnbalanced,
+                        unbalancedNode,
+                        sonOfUnbalanced!,
+                        rotationNode,
+                        repositionSplayTree,
+                        {
+                            nodes: layoutNodes,
+                            links: layoutLinks,
+                            positions: searchData.positions
+                        },
+                        {
+                            bus,
+                            stepId: "insert",
+                            labels: {
+                                ...baseLabels,
+                                ...parentRelinkLabels
+                            }
+                        }
+                    );
+                    break;
+                }
+                case "setRoot": {
+                    bus.emit("step:progress", { stepId: "search", lineIndex: labels.SET_ROOT_END });
+                    await delay(600);
+                    break;
+                }
+                case "return": {
+                    const returnIndex = found ? labels.RETURN_TRUE : labels.RETURN_FALSE;
+                    bus.emit("step:progress", { stepId: "search", lineIndex: returnIndex });
+
+                    // Indicador visual de que el nodo objetivo ya corresponde con la raíz del árbol
+                    await showTreeHint(
+                        svg,
+                        { type: "node", id: targetNodeId },
+                        { label: "Splay", value: "ya en raíz" },
+                        searchData.positions,
+                        treeOffset,
+                        {
+                            size: { width: 80, height: 35 },
+                            typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                            anchor: { side: "below", dx: 10, dy: -8 },
+                            palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                        }
+                    );
+                }
+            }
         }
 
-        // Determinar el indicador del tipo de rotación a aplicar
-        const rotationIndicator = determineSplayRotationIndicatorTag(rotationStep.tag, rotation.type, rotationStep.rotationOrder);
-
-        // Mostrar indicador visual de la rotación a aplicar
-        await showTreeHint(
-            svg,
-            { type: "node", id: rotation.zId },
-            { label: "Rotación", value: `${rotationIndicator}` },
-            positions,
-            treeOffset,
-            {
-                size: { width: 78, height: 35 },
-                typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
-                anchor: { side: "below", dx: 10, dy: -8 },
-                palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
-            }
-        );
-
-        // Renderizar los nuevos enlaces (post-rotación)
-        drawTreeLinks(linksLayer, links, positions);
-
-        // Actualizar la posición de los nodos (post-rotación)
-        drawTreeNodes(nodesLayer, nodes, positions);
-
-        // Animación de rotación a aplicar
-        await animateEspecialBSTsRotation(
-            treeG,
-            rotation.parentOfZId ?? null,
-            rotation.zId,
-            rotation.yId,
-            rotation.BId ?? null,
-            repositionSplayTree,
-            {
-                nodes,
-                links,
-                positions
-            }
-        );
-
-        frameCount++;
+        // Fin de la operación
+        bus.emit("op:done", { op: "search" });
+    } finally {
+        resetQueryValues();
+        setIsAnimating(false);
     }
-
-    // Mostrar indicador visual de que el nodo objetivo ya corresponde con la raíz del árbol
-    await showTreeHint(
-        svg,
-        { type: "node", id: targetNode.data.id },
-        { label: targetNode.parent ? "Nueva Raíz" : "Splay", value: targetNode.parent ? "Splay" : "ya en raíz" },
-        positions,
-        treeOffset,
-        {
-            size: { width: 70, height: 35 },
-            typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
-            anchor: { side: "below", dx: 10, dy: -8 },
-            palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
-        }
-    );
-
-    // Restablecimiento de los valores de las queries del usuario
-    resetQueryValues();
-
-    // Finalización de la animación
-    setIsAnimating(false);
 }
 
 /**

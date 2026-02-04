@@ -110,12 +110,12 @@ export function useAVLTreeRender(
     seqOffset.y = metrics.seqOffset.y;
 
     // Contenedor para la secuencia de valores de recorrido
-    let seqG = svg.select<SVGGElement>("#seq-container");
+    let seqG = svg.select<SVGGElement>("g#seq-container");
     if (seqG.empty()) seqG = svg.append("g").attr("id", "seq-container");
     seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
     // Capas internas para nodos y enlaces
-    let nodesLayer = treeG.select<SVGGElement>("#nodes-layer");
+    let nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
     if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("id", "nodes-layer");
 
     let linksLayer = treeG.select<SVGGElement>("g#links-layer");

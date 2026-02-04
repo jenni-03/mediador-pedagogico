@@ -70,37 +70,23 @@ export function useSplayTree(structure: ArbolSplay<number>) {
         }
     }, [tree]);
 
-    // Operación para buscar un nodo en el árbol
+    // Operación para buscar un nodo
     const searchNode = useCallback((value: number) => {
         try {
-            // Clonar el árbol para asegurar la inmutabilidad del estado
+            if (tree.esVacio()) throw new Error("No fue posible buscar el nodo (El árbol se encuentra vacío)");
             const cloned = tree.clonarSplay();
-
-            // Buscar el nodo en el árbol
-            const { node, found } = cloned.buscarSplay(value);
-
-            // Verificamos su existencia
-            if (!node) {
-                throw new Error("No fue posible buscar el nodo (El árbol se encuentra vacío)");
-            }
-
-            // Obtener la traza splay
+            const { steps, targetNode, found } = cloned.buscarSplay(value);
             const trace = cloned.consumeLastSplayTrace();
 
-            // Actualizar el estado del árbol
             setTree(cloned);
-
-            // Actualizar la query para informar de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toSearch: { nodeId: node.getId(), found },
+                toSearch: { steps, targetNodeId: targetNode!.getId(), found },
                 splayTrace: trace
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "search" });
         }
     }, [tree]);
 

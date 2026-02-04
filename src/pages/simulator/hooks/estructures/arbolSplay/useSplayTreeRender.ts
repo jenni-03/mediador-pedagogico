@@ -5,7 +5,7 @@ import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
-import { animateSplayDeleteNode, animateInsertSplayNode, animateSplaySearch } from "../../../../../shared/utils/draw/SplayTreeDrawActions";
+import { animateSplayDeleteNode, animateInsertSplayNode, animateSearchSplayNode } from "../../../../../shared/utils/draw/SplayTreeDrawActions";
 import { animateClearTree, drawTraversalSequence } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { useBus } from "../../../../../shared/hooks/useBus";
 import { getArbolSplayCode } from "../../../../../domain/constants/pseudocode/arbolSplayCode";
@@ -92,7 +92,7 @@ export function useSplayTreeRender(
         treeOffset.y = metrics.treeOffset.y;
 
         // Contenedor para los nodos y enlaces del árbol
-        let treeG = svg.select<SVGGElement>("#tree-container");
+        let treeG = svg.select<SVGGElement>("g#tree-container");
         if (treeG.empty()) treeG = svg.append("g").attr("id", "tree-container");
         treeG.attr("transform", `translate(${treeOffset.x},${treeOffset.y})`);
 
@@ -101,15 +101,15 @@ export function useSplayTreeRender(
         seqOffset.y = metrics.seqOffset.y;
 
         // Contenedor de la secuencia de recorrido de nodos
-        let seqG = svg.select<SVGGElement>("#seq-container");
+        let seqG = svg.select<SVGGElement>("g#seq-container");
         if (seqG.empty()) seqG = svg.append("g").attr("id", "seq-container");
         seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
         // Capas internas para nodos y enlaces
-        let nodesLayer = treeG.select<SVGGElement>("#nodes-layer");
+        let nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
         if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("id", "nodes-layer");
 
-        let linksLayer = treeG.select<SVGGElement>("#links-layer");
+        let linksLayer = treeG.select<SVGGElement>("g#links-layer");
         if (linksLayer.empty()) linksLayer = treeG.append("g").attr("id", "links-layer");
 
         // Elevamos la capa de nodos
@@ -210,40 +210,32 @@ export function useSplayTreeRender(
 
     // Efecto para manejar la búsqueda de un nodo
     useEffect(() => {
-        if (!root || !svgRef.current || !query.toSearch || !query.splayTrace) return;
+        if (!root || !svgRef.current || !query.toSearch) return;
 
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Obtenemos el layout inicial previo a cualquier rotación (en caso de presentarse)
-        const preLayout = query.splayTrace.hierarchies.bst ? splayFramesLayouts[0] : null;
-
         // Extraemos los datos de búsqueda de la query
-        const { nodeId, found } = query.toSearch;
+        const { steps, targetNodeId, found } = query.toSearch;
 
-        // Ubicamos al nodo objetivo en el árbol
-        const targetNode = preLayout ? preLayout.root.find(d => d.data.id === nodeId) : root.find(d => d.data.id === nodeId);
-        if (!targetNode) return;
-
-        // Obtenemos el recorrido o ruta desde el nodo raíz hasta el nodo objetivo (dependiendo si ya se encontraba dentro del árbol o no)
-        const pathToTargetNode = preLayout ? preLayout.root.path(targetNode) : root.path(targetNode);
-
-        // Animación de búsqueda splay
-        animateSplaySearch(
+        // Animación de búsqueda del nodo
+        animateSearchSplayNode(
             svg,
             treeOffset,
             {
-                targetNode,
+                targetNodeId,
+                searchSteps: steps,
                 found,
                 positions: nodePositions,
-                pathToTargetNode,
-                rotations: query.splayTrace.phases.search,
-                frames: splayFramesLayouts
+                rotations: query.splayTrace?.rotations ?? [],
+                frames: splayFramesLayouts,
+                highlightColor: SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR
             },
+            bus,
             resetQueryValues,
             setIsAnimating
         );
-    }, [root, currentNodes, linksData, query.toSearch, query.splayTrace, splayFramesLayouts, treeOffset, resetQueryValues, setIsAnimating]);
+    }, [query.toSearch, query.splayTrace, root, splayFramesLayouts, bus, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar los recorridos del árbol
     useEffect(() => {
@@ -263,7 +255,7 @@ export function useSplayTreeRender(
         const svg = select(svgRef.current);
 
         // Grupo contenedor de los valores de la secuencia de recorrido
-        const seqG = svg.select<SVGGElement>("#seq-container");
+        const seqG = svg.select<SVGGElement>("g#seq-container");
 
         let steps: BinaryTreeTraversalStep[] = [];
         let nodes: TraversalNodeType[] = [];

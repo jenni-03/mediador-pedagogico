@@ -805,8 +805,8 @@ export const getArbolRNCode = (): Record<string, OperationCode> => ({
       `        return;`,
       `    }`,
       `    nodos.insertLast(r.info);`,
-      `    this.getPreOrder(root.izquierdo, nodos);`,
-      `    this.getPreOrder(root.derecho, nodos);`,
+      `    this.getPreOrder(r.izquierdo, nodos);`,
+      `    this.getPreOrder(r.derecho, nodos);`,
       `}`,
     ],
     labels: {
@@ -844,9 +844,9 @@ export const getArbolRNCode = (): Record<string, OperationCode> => ({
       `    if (r == null) {`,
       `        return;`,
       `    }`,
-      `    this.getPostOrder(root.izquierdo, nodos);`,
-      `    this.getPostOrder(root.derecho, nodos);`,
-      `    nodos.insertLast(root.info);`,
+      `    this.getPostOrder(r.izquierdo, nodos);`,
+      `    this.getPostOrder(r.derecho, nodos);`,
+      `    nodos.insertLast(r.info);`,
       `}`,
     ],
     labels: {
