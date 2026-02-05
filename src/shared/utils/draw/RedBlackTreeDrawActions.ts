@@ -1258,7 +1258,7 @@ export async function animateDeleteRBNode(
               bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CASE1_ROTATE_RIGHT_P });
             }
           } else if (step.caseKind === "fixupC") {
-            bus.emit("step:progress", { stepId: "delete", lineIndex: step.dir === "left" ? labels.CASE3_ROTATE_RIGHT_W : labels.MIRROR_CASE3_ROTATE_LEFT_W });
+            bus.emit("step:progress", { stepId: "delete", lineIndex: step.dir === "right" ? labels.CASE3_ROTATE_RIGHT_W : labels.MIRROR_CASE3_ROTATE_LEFT_W });
           } else {
             bus.emit("step:progress", { stepId: "delete", lineIndex: step.dir === "left" ? labels.CASE4_ROTATE_LEFT_P : labels.MIRROR_CASE4_ROTATE_RIGHT_P });
           }

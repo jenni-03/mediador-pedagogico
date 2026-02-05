@@ -23,8 +23,8 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que inserta un nuevo nodo en el árbol Rojo-Negro, garantizando que se mantengan las propiedades de
-   * balanceo propias de la estructura.
+   * Método que inserta un nuevo elemento en el árbol Rojo-Negro, garantizando que 
+   * se mantengan las propiedades de balanceo propias de la estructura.
    * @param valor Elemento a insertar.
    * @returns Objeto con la siguiente información:
    * 
@@ -103,32 +103,33 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que elimina un nodo especifico del árbol Rojo-Negro. Sigue el estándar CLRS para la eliminación 
-   * en árboles rojo-negro, y realiza los transplantes necesarios para reparar las infracciones de balance
-   * y color tras la eliminación. 
+   * Método que elimina el elemento especificado del árbol Rojo-Negro. Sigue el estándar CLRS para la eliminación 
+   * en árboles rojo-negro, y realiza los transplantes necesarios para reparar las infracciones de balance y color tras la eliminación. 
    * @param valor Elemento a eliminar.
    * @returns Objeto con la siguiente información:
    * 
-   *  - `pathToTargetIds`: Lista con los IDs de los nodos visitados durante la búsqueda, 
-   *     en orden desde la raíz hasta el nodo objetivo (incluye el nodo objetivo si fue encontrado).
+   *  - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la eliminación 
+   *    (comprobaciones, visitas, movimientos y retornos).
    * 
    *  - `parent`: Nodo padre del nodo eliminado. Será `null` en 2 casos:
    *     1. Si el nodo eliminado era la raíz.
-   *     2. Si el valor no se encontró en el árbol.
+   *     2. Si el elemento no se encuentra en el árbol.
    * 
-   *  - `targetNode`: Nodo objetivo que se intentó eliminar (nodo eliminado o último nodo visitado durante la búsqueda).
+   *  - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si el elemento no se encuentra en el árbol.
    * 
-   *  - `pathToSuccessorIds`: Lista con los IDs de los nodos visitados durante la búsqueda del sucesor in-order (solo se llena si el nodo eliminado tenía dos hijos).
+   *  - `pathToSuccessorIds`: Arreglo con los IDs de los nodos visitados durante la búsqueda del sucesor in-order (solo si el nodo eliminado tenía dos hijos).
    * 
    *  - `successor`: Nodo que reemplazó lógicamente al nodo eliminado en el caso de dos hijos (nodo cuyo valor fue copiado al nodo objetivo).  
    *     Será `null` en los demás casos.
+   * 
+   *  - `successorParent`: Nodo padre del nodo sucesor (solo si el nodo eliminado tenía dos hijos).
    * 
    *  - `replacement`: Nodo que ocupó físicamente el lugar del nodo eliminado en el árbol. Puede ser:
    *     1. El hijo izquierdo o derecho (si existía uno).  
    *     2. `null` si se eliminó una hoja.  
    *     3. El hijo derecho del sucesor in-order (en el caso de dos hijos).
    * 
-   *  - `exists`: Booleano que indica si el elemento fue encontrado y eliminado (`true`) o no (`false`).
+   *  - `deleted`: Booleano que indica si el elemento fue eliminado.
    */
   public eliminarRB(valor: T): RBDeleteOutput<T> {
     if (this.esVacio()) {
@@ -290,18 +291,16 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que busca un nodo específico en el árbol Rojo-Negro.
+   * Método que comprueba la existencia del elemento especificado en el árbol Rojo-Negro.
    * @param valor Elemento a buscar.
    * @returns Objeto con la siguiente información:
    * 
-   *  - `pathIds`: Lista con los IDs de los nodos visitados, en orden, desde la raíz hasta el nodo donde se detuvo la búsqueda.
+   *  - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+   *     (comprobaciones, visitas, movimientos y retornos).
    * 
-   *  - `lastVisited`: Último nodo visitado durante el recorrido. Puede ser:
-   *     1. El nodo que contiene el valor buscado si fue encontrado.
-   *     2. El nodo donde la búsqueda se detuvo sin éxito (padre de la rama nula).
-   *     3. `null` si el árbol está vacío.
+   *  - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si no fue encontrado.
    * 
-   *  - `found`: Booleano que indica si el elemento fue encontrado (`true`) o no (`false`).
+   *  - `found`: Booleano que indica si el nodo fue encontrado.
    */
   public buscarRB(valor: T): BSTSearchOutput<T> {
     return super.buscarABB(valor);
@@ -514,12 +513,12 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
             this.pushRbRotationStep(p, z, z.getIzq(), "Izq(padre)", "LR");
 
             // Rotación y Captura del estado posterior
-            const pivot = p;
+            const triangleRotationPivotSide = this.getPivotSideOnParent(p);
             z = p;
             this.rotacionIzquierda(z);
 
             this.pushRbRotationHierarchy();
-            this.captureFixupRotateStep(steps, trace, "case2", "left", pivot);
+            this.captureFixupRotateStep(steps, trace, "case2", "left", p, triangleRotationPivotSide);
           }
           // Caso 3: línea → rotación derecha en abuelo
           steps.push({ type: "fixupCase", case: 3, side: "left" });
@@ -534,11 +533,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
           this.pushRbRotationStep(g, g.getIzq()!, g.getIzq()?.getDer() ?? null, "Der(abuelo)", "LL");
 
           // Rotación y Captura del estado posterior
-          const pivot = g;
+          const lineRotationPivotSide = this.getPivotSideOnParent(g);
           this.rotacionDerecha(g);
 
           this.pushRbRotationHierarchy();
-          this.captureFixupRotateStep(steps, trace, "case3", "right", pivot);
+          this.captureFixupRotateStep(steps, trace, "case3", "right", g, lineRotationPivotSide);
         }
       } else {
         // simétrico (padre es hijo derecho del abuelo)
@@ -569,12 +568,12 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
             this.pushRbRotationStep(p, z, z.getDer(), "Der(padre)", "RL");
 
             // Rotación y Captura del estado posterior
-            const pivot = p;
+            const triangleRotationPivotSide = this.getPivotSideOnParent(p);
             z = p;
             this.rotacionDerecha(z);
 
             this.pushRbRotationHierarchy();
-            this.captureFixupRotateStep(steps, trace, "case2", "right", pivot);
+            this.captureFixupRotateStep(steps, trace, "case2", "right", p, triangleRotationPivotSide);
           }
           // Caso 3: línea → rotación izquierda en abuelo
           steps.push({ type: "fixupCase", case: 3, side: "right" });
@@ -589,11 +588,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
           this.pushRbRotationStep(g, g.getDer()!, g.getDer()!.getIzq(), "Izq(abuelo)", "RR");
 
           // Rotación y Captura del estado posterior
-          const pivot = p;
+          const lineRotationPivotSide = this.getPivotSideOnParent(g);
           this.rotacionIzquierda(g);
 
           this.pushRbRotationHierarchy();
-          this.captureFixupRotateStep(steps, trace, "case3", "left", pivot);
+          this.captureFixupRotateStep(steps, trace, "case3", "left", g, lineRotationPivotSide);
         }
       }
     }
@@ -663,6 +662,7 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
         if (trace) steps.push({ type: "recolor", kind: "fixup", case: "A", side, count: 2, actionIndex: trace.actions.length - 1 });
 
         // Capturar info de la rotación a aplicar
+        const pivotSide = this.getPivotSideOnParent(p);
         if (xEsIzq) {
           this.pushRbRotationStep(p, w!, w!.getIzq(), "Izq(padre)", "RR");
           this.rotacionIzquierda(p);
@@ -673,7 +673,7 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
 
         // Captura del estado posterior
         this.pushRbRotationHierarchy();
-        this.captureFixupRotateStep(steps, trace, "fixupA", xEsIzq ? "left" : "right", p);
+        this.captureFixupRotateStep(steps, trace, "fixupA", xEsIzq ? "left" : "right", p, pivotSide);
 
         const nuevoP = (x !== null) ? x.getPadre() : xParent!;
         xParent = nuevoP;
@@ -724,10 +724,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
             this.pushRbRotationStep(w, w.getIzq()!, w!.getIzq()!.getDer(), "Der(hermano)", "RL");
 
             // Rotación y Captura del estado posterior
+            const firstRotationPivotSide = this.getPivotSideOnParent(w);
             this.rotacionDerecha(w);
 
             this.pushRbRotationHierarchy();
-            this.captureFixupRotateStep(steps, trace, "fixupC", "right", w);
+            this.captureFixupRotateStep(steps, trace, "fixupC", "right", w, firstRotationPivotSide);
           }
 
           const nuevoP = x !== null ? x.getPadre() : xParent!;
@@ -757,10 +758,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
         this.pushRbRotationStep(p, w!, w!.getIzq(), "Izq(padre)", "RR");
 
         // Rotación y Captura del estado posterior
+        const secondRotationPivotSide = this.getPivotSideOnParent(p);
         this.rotacionIzquierda(p);
 
         this.pushRbRotationHierarchy();
-        this.captureFixupRotateStep(steps, trace, "fixupD", "left", p);
+        this.captureFixupRotateStep(steps, trace, "fixupD", "left", p, secondRotationPivotSide);
       } else {
         // Espejo: x es hijo derecho
         // cercano = w.right, lejano = w.left
@@ -782,10 +784,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
             this.pushRbRotationStep(w, w.getDer()!, w!.getDer()!.getIzq(), "Izq(hermano)", "LR");
 
             // Rotación y Captura del estado posterior
+            const firstRotationPivotSide = this.getPivotSideOnParent(w);
             this.rotacionIzquierda(w);
 
             this.pushRbRotationHierarchy();
-            this.captureFixupRotateStep(steps, trace, "fixupC", "left", w);
+            this.captureFixupRotateStep(steps, trace, "fixupC", "left", w, firstRotationPivotSide);
           }
 
           const nuevoP = (x !== null) ? x.getPadre() : xParent!;
@@ -814,10 +817,11 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
         this.pushRbRotationStep(p, w!, w!.getDer(), "Der(padre)", "LL");
 
         // Rotación y Captura del estado posterior
+        const secondRotationPivotSide = this.getPivotSideOnParent(p);
         this.rotacionDerecha(p);
 
         this.pushRbRotationHierarchy();
-        this.captureFixupRotateStep(steps, trace, "fixupD", "right", p);
+        this.captureFixupRotateStep(steps, trace, "fixupD", "right", p, secondRotationPivotSide);
       }
 
       x = this.getRaiz();
@@ -1091,6 +1095,7 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
     caseKind: "fixupA" | "fixupC" | "fixupD" | "case2" | "case3",
     dir: "left" | "right",
     pivot: NodoRB<T>,
+    pivotSide: "root" | "left" | "right"
   ) {
     if (!trace) return;
     steps.push({
@@ -1100,7 +1105,7 @@ export class ArbolRojoNegro<T> extends ArbolBinarioBusqueda<T> {
       pivot: pivot.getId(),
       frameIndex: trace.hierarchies.mids.length - 1,
       actionIndex: trace.actions.length - 1,
-      pivotSideOnParent: this.getPivotSideOnParent(pivot)
+      pivotSideOnParent: pivotSide
     });
   }
 }
