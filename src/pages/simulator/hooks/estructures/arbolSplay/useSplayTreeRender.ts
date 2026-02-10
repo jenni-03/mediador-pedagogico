@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BaseQueryOperations, BinaryTreeTraversalStep, HierarchyNodeData, TraversalNodeType } from "../../../../../domain/utils/types";
-import { HierarchyNode, select } from "d3";
+import { select } from "d3";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
 import { SVG_BINARY_TREE_VALUES, SVG_SPLAY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
-import { animateSplayDeleteNode, animateInsertSplayNode, animateSearchSplayNode } from "../../../../../shared/utils/draw/SplayTreeDrawActions";
+import { animateDeleteSplayNode, animateInsertSplayNode, animateSearchSplayNode } from "../../../../../shared/utils/draw/SplayTreeDrawActions";
 import { animateClearTree, drawTraversalSequence } from "../../../../../shared/utils/draw/drawActionsUtilities";
 import { useBus } from "../../../../../shared/hooks/useBus";
 import { getArbolSplayCode } from "../../../../../domain/constants/pseudocode/arbolSplayCode";
@@ -153,60 +153,36 @@ export function useSplayTreeRender(
 
     // Efecto para manejar la eliminación de un nodo
     useEffect(() => {
-        // Verificaciones necesarias para realizar la animación
-        if (!prevRoot || !svgRef.current || query.toDelete == null || !query.splayTrace) return;
+        if (!svgRef.current || !query.toDelete) return;
 
         // Selección del elemento SVG a partir de su referencia
         const svg = select(svgRef.current);
 
-        // Obtenemos el layout inicial previo a cualquier rotación (en caso de presentarse)
-        const preLayout = query.splayTrace.hierarchies.bst ? splayFramesLayouts[0] : null;
-
         // Extraemos los datos de eliminación de la query
-        const { nodeId, removed, maxLeftId } = query.toDelete;
+        const { searchSteps, deleteSteps, targetNodeId, maxLeftNodeId, deleted } = query.toDelete;
 
-        // Obtenemos los pasos de rotación pertenecientes al splay del nodo objetivo y del nodo maxL
-        const targetNodeRotations = query.splayTrace.phases.search;
-        const maxLeftRotations = query.splayTrace.phases.deletion;
-
-        // Ubicamos al nodo objetivo en el árbol (si el nodo objetivo no es la raíz usamos el layout pre-rotación)
-        const targetNode = targetNodeRotations.length > 0 ? preLayout!.root.find(d => d.data.id === nodeId) : prevRoot.find(d => d.data.id === nodeId);
-        if (!targetNode) return;
-
-        // Obtenemos el recorrido o ruta desde el nodo raíz hasta el nodo objetivo (Si el nodo objetivo no es la raíz usamos el layout pre-rotación)
-        const pathToTargetNode = targetNodeRotations.length > 0 ? preLayout!.root.path(targetNode) : prevRoot.path(targetNode);
-
-        // Obtenemos el nodo con mayor valor del subárbol izq y el recorrido o ruta desde el nuevo nodo raíz hasta este (si aplica)
-        let maxLeftNode: HierarchyNode<HierarchyNodeData<number>> | null = null;
-        let pathToMaxLeftNode: HierarchyNode<HierarchyNodeData<number>>[] = [];
-        if (maxLeftId) {
-            // Obtenemos el frame donde el nodo a eliminar es la nueva raíz del árbol
-            const targetFrame = targetNodeRotations.length > 0 ? splayFramesLayouts[targetNodeRotations.length].root : targetNode;
-            maxLeftNode = targetFrame.find(d => d.data.id === maxLeftId)!;
-            pathToMaxLeftNode = targetFrame.path(maxLeftNode);
-        }
-
-        // Animación de eliminación splay
-        animateSplayDeleteNode(
+        // Animación de eliminación de un nodo especifico
+        animateDeleteSplayNode(
             svg,
             treeOffset,
             {
-                targetNode,
-                maxLeftNode,
-                removed,
-                currentNodes,
-                currentLinks: linksData,
+                targetNodeId,
+                maxLeftNodeId,
+                deleted,
+                searchSteps,
+                deleteSteps,
+                remainingNodesData: currentNodes,
+                remainingLinksData: linksData,
                 positions: nodePositions,
-                pathToTargetNode,
-                pathToMaxLeftNode,
-                targetNodeRotations,
-                maxLeftRotations,
-                frames: splayFramesLayouts
+                rotations: query.splayTrace?.rotations ?? [],
+                frames: splayFramesLayouts,
+                highlightColor: SVG_SPLAY_TREE_VALUES.HIGHLIGHT_COLOR
             },
+            bus,
             resetQueryValues,
             setIsAnimating
         );
-    }, [prevRoot, currentNodes, linksData, query.toDelete, query.splayTrace, splayFramesLayouts, treeOffset, resetQueryValues, setIsAnimating]);
+    }, [query.toDelete, query.splayTrace, currentNodes, linksData, splayFramesLayouts, bus, resetQueryValues, setIsAnimating]);
 
     // Efecto para manejar la búsqueda de un nodo
     useEffect(() => {

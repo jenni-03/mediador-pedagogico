@@ -41,32 +41,22 @@ export function useSplayTree(structure: ArbolSplay<number>) {
         }
     }, [tree]);
 
-    // Operación de eliminar un nodo del árbol
+    // Operación para eliminar un nodo
     const deleteNode = useCallback((value: number) => {
         try {
-            // Clonar el árbol para asegurar la inmutabilidad del estado
-            const cloned = tree.clonarSplay();
+            const clonedTree = tree.clonarSplay();
+            const { searchSteps, deleteSteps, targetNode, maxLeft, deleted } = clonedTree.eliminarSplay(value);
+            const trace = clonedTree.consumeLastSplayTrace();
 
-            // Obtener el nodo a ser eliminado para acceder a su ID
-            const { node, removed, maxLeft } = cloned.eliminarSplay(value);
-
-            // Obtener la traza splay
-            const trace = cloned.consumeLastSplayTrace();
-
-            // Actualizar el estado del árbol
-            setTree(cloned);
-
-            // Actualizar la query a partir de la operación realizada
+            setTree(clonedTree);
             setQuery((prev) => ({
                 ...prev,
-                toDelete: { nodeId: node.getId(), removed, maxLeftId: maxLeft?.getId() ?? null },
+                toDelete: { searchSteps, deleteSteps, targetNodeId: targetNode!.getId(), maxLeftNodeId: maxLeft?.getId() ?? null, deleted },
                 splayTrace: trace
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
-            setError({ message: error.message, id: Date.now() });
+            setError({ message: error.message, id: Date.now(), op: "delete", planId: error?.code ?? null });
         }
     }, [tree]);
 

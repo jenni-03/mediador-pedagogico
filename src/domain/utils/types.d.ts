@@ -905,7 +905,7 @@ export type BaseQueryOperations<
   : T extends "arbol_splay"
   ? {
     toInsert: { steps: SplayInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
-    toDelete: { nodeId: string, removed: boolean, maxLeftId: string | null } | null;
+    toDelete: { searchSteps: SplaySearchStep[], deleteSteps: SplayDeleteStep[], targetNodeId: string, maxLeftNodeId: string | null, deleted: boolean } | null;
     toSearch: { steps: SplaySearchStep[], targetNodeId: string, found: boolean } | null;
     toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
     toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
