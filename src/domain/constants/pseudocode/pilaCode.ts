@@ -4,13 +4,12 @@ export const getPilaCode = (): Record<string, OperationCode> => ({
   push: {
     lines: [
       `/**
-      * Método que permite insertar un elemento en el tope de la pila.
-      * post: Se insertó el elemento en el tope de la pila.
-      * @param info es de tipo T y corresponde a la información a insertar en la pila.
-      */`,
-      `public void apilar(T {0}){`,
-      `    Nodo<T> nuevoNodo = new Nodo({0});`,
-      `    if(this.tope == null) {`,
+  * Método inserta un nuevo elemento en el tope de la pila.
+  * @param info Elemento a insertar.
+  */`,
+      `public void push(T {0}){`,
+      `    NodoS<T> nuevoNodo = new NodoS({0});`,
+      `    if (this.tope == null) {`,
       `       this.tope = nuevoNodo;`,
       `    } else {`,
       `       nuevoNodo.siguiente = this.tope;`,
@@ -26,24 +25,22 @@ export const getPilaCode = (): Record<string, OperationCode> => ({
       ELSE_EMPTY: 5,
       LINK_NEW_TO_PREV_TOP: 6,
       ASSIGN_NEW_TOP: 7,
-      INC_SIZE: 9,
+      INC_SIZE: 9
     },
   },
   pop: {
     lines: [
       `/**
-      * Método que permite retirar el elemento tope actual de la pila.
-      * post: Se retiró el elemento tope actual de la pila.
-      * @return un tipo T que corresponde al valor del elemento retirado.
-      */`,
-      `public T desapilar(){`,
-      `    if(this.tope == null)`,
-      `        return null;`,
-      `    Nodo<T> x = this.tope;`,
+  * Método que retira el elemento tope actual de la pila.
+  * @return Elemento asociado al nodo retirado.
+  * @throws RuntimeException si la pila está vacía.
+  */`,
+      `public T pop(){`,
+      `    if (this.tope == null)`,
+      `        throw new RuntimeException("No fue posible desapilar: No hay elementos en la pila.");`,
+      `    NodoS<T> x = this.tope;`,
       `    this.tope = this.tope.siguiente;`,
       `    {0}--;`,
-      `    if(this.tamanio == 0)`,
-      `       this.tope = null;`,
       `    return x.info;`,
       `}`,
     ],
@@ -53,9 +50,7 @@ export const getPilaCode = (): Record<string, OperationCode> => ({
       SAVE_TOP: 4,
       ADVANCE_TOP: 5,
       DEC_SIZE: 6,
-      STACK_EMPTY: 7,
-      TOP_NULL: 8,
-      RETURN_VALUE: 9,
+      RETURN_VALUE: 7
     },
     errorPlans: {
       STACK_EMPTY: [
@@ -67,11 +62,10 @@ export const getPilaCode = (): Record<string, OperationCode> => ({
   getTop: {
     lines: [
       `/**
-      * Método que permite obtener el elemento tope actual de la pila.
-      * post: Se retornó el elemento tope actual de la pila.
-      * @return Elemento tope de la pila.
-      */`,
-      `public Nodo<T> getTope(){`,
+  * Método que obtiene el elemento tope actual de la pila.
+  * @return Elemento tope de la pila.
+  */`,
+      `public NodoS<T> getTop(){`,
       `    if (this.tope == null) {`,
       `        throw new RuntimeException("No fue posible obtener el elemento tope: No hay elementos en la pila.");`,
       `    }`,
@@ -79,10 +73,9 @@ export const getPilaCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      START: 1,
       VALIDATE_EMPTY: 2,
       THROW_EMPTY: 3,
-      RETURN_TOP: 5,
+      RETURN_TOP: 5
     },
     errorPlans: {
       STACK_EMPTY: [
@@ -94,18 +87,16 @@ export const getPilaCode = (): Record<string, OperationCode> => ({
   clean: {
     lines: [
       `/**
-      * Método que permite eliminar todos los elementos de la pila.
-      * post: Se eliminó todos los elementos que se encontraban en la pila.
-      */`,
-      `public void vaciar(){`,
+  * Método que elimina todos los elementos de la pila.
+  */`,
+      `public void clean(){`,
       `    this.tope = null;`,
       `    this.tamanio = 0;`,
       `}`,
     ],
     labels: {
-      START: 1,
       CLEAR_TOP: 2,
-      RESET_SIZE: 3,
+      RESET_SIZE: 3
     },
   },
 });

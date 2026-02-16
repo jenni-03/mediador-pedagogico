@@ -1,13 +1,14 @@
 import { StackNodeData } from "../../../domain/utils/types";
-import * as d3 from "d3";
+import { easeBackInOut, easeBounce, easeCubicInOut, type Selection } from "d3";
 import {
   SVG_QUEUE_VALUES,
   SVG_STACK_VALUES,
   SVG_STYLE_VALUES,
 } from "../../../domain/constants/consts";
-import { EventBus } from "../../events/eventBus";
+import type { EventBus } from "../../events/eventBus";
 import { getPilaCode } from "../../../domain/constants/pseudocode/pilaCode";
 import { delay } from "../../../domain/utils/simulatorUtils";
+import { Dispatch, SetStateAction } from "react";
 
 const stackCode = getPilaCode();
 
@@ -19,7 +20,7 @@ const stackCode = getPilaCode();
  * @param dims Dimensiones de los elementos dentro del lienzo
  */
 export function drawStackNodes(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   pushNodes: StackNodeData[],
   positions: Map<string, { x: number; y: number }>,
   dims: {
@@ -144,323 +145,289 @@ export function drawStackNodes(
 }
 
 /**
- * Función encargada de animar la entrada de un nuevo nodo en la pila.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * Función encargada de animar el proceso de entrada de un nuevo nodo en la Pila.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param nodeStacked ID del nodo apilado.
  * @param remainingNodesData Array con información de los nodos previo a la apilación.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animatePushNode(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodeStacked: string,
   remainingNodesData: StackNodeData[],
   positions: Map<string, { x: number; y: number }>,
   bus: EventBus,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Etiquetas para el registro de eventos
   const labels = stackCode.push.labels!;
 
-  // Grupo del lienzo correspondiente al nuevo elemento
-  const newNodeGroup = svg.select<SVGGElement>(`g#${nodeStacked}`);
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "push" });
 
-  // Posición final del nuevo nodo
-  const finalPos = positions.get(nodeStacked)!;
-
-  // Cálculo de la posición de animación inicial del nuevo nodo
-  const topMargin = 20;
-  const initialPos = {
-    x: finalPos.x,
-    y: topMargin,
-  };
-
-  // Inicio de la operación
-  bus.emit("op:start", { op: "push" });
-
-  // Estado visual inicial para el nuevo nodo
-  newNodeGroup
-    .style("opacity", 0)
-    .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
-
-  bus.emit("step:progress", { stepId: "push", lineIndex: labels.CREATE_NODE });
-
-  // Aparición del nuevo nodo
-  await newNodeGroup
-    .transition()
-    .duration(1000)
-    .style("opacity", 1)
-    .ease(d3.easeCubicInOut)
-    .end();
-
-  // En caso de haber mas nodos dentro de la pila
-  if (remainingNodesData.length > 0) {
-    bus.emit("step:progress", { stepId: "push", lineIndex: labels.ELSE_EMPTY });
-    await delay(600);
+    // Grupo del lienzo correspondiente al nuevo elemento
+    const newNodeGroup = svg.select<SVGGElement>(`g#${nodeStacked}`);
 
     // Grupo del lienzo correspondiente al indicador del elemento tope
     const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-    bus.emit("step:progress", {
-      stepId: "push",
-      lineIndex: labels.LINK_NEW_TO_PREV_TOP,
-    });
+    // Posición final del nuevo nodo
+    const finalPos = positions.get(nodeStacked)!;
 
-    // Salida del indicador de tope
-    await topeIndicatorGroup
+    // Cálculo de la posición de animación inicial del nuevo nodo
+    const topMargin = 20;
+    const initialPos = {
+      x: finalPos.x,
+      y: topMargin,
+    };
+
+    // Estado visual inicial para el nuevo nodo
+    newNodeGroup
+      .style("opacity", 0)
+      .attr("transform", `translate(${initialPos.x}, ${initialPos.y})`);
+
+    // Aparición del nuevo nodo
+    bus.emit("step:progress", { stepId: "push", lineIndex: labels.CREATE_NODE });
+    await newNodeGroup
       .transition()
       .duration(1000)
-      .style("opacity", 0)
+      .style("opacity", 1)
+      .ease(easeCubicInOut)
       .end();
 
-    // Selección de nodos existentes (re-vinculación de datos)
-    const remainingNodes = svg
-      .selectAll<SVGGElement, StackNodeData>("g.node")
-      .data(remainingNodesData, (d) => d.id);
+    bus.emit("step:progress", { stepId: "push", lineIndex: labels.VALIDATE_EMPTY });
+    await delay(600);
 
-    // Desplazamiento de nodos existentes a su posición final
-    await remainingNodes
+    // En caso de haber mas nodos dentro de la pila
+    if (remainingNodesData.length > 0) {
+      bus.emit("step:progress", { stepId: "push", lineIndex: labels.ELSE_EMPTY });
+      await delay(600);
+
+      // Salida del indicador de tope
+      bus.emit("step:progress", { stepId: "push", lineIndex: labels.LINK_NEW_TO_PREV_TOP });
+      await topeIndicatorGroup
+        .transition()
+        .duration(1000)
+        .style("opacity", 0)
+        .end();
+
+      // Selección de nodos existentes (re-vinculación de datos)
+      const remainingNodes = svg
+        .selectAll<SVGGElement, StackNodeData>("g.node")
+        .data(remainingNodesData, (d) => d.id);
+
+      // Desplazamiento de nodos existentes a su posición final
+      await remainingNodes
+        .transition()
+        .duration(1500)
+        .ease(easeCubicInOut)
+        .attr("transform", (d) => {
+          const finalPos = positions.get(d.id)!;
+          return `translate(${finalPos.x}, ${finalPos.y})`;
+        })
+        .end();
+
+      bus.emit("step:progress", { stepId: "push", lineIndex: labels.ASSIGN_NEW_TOP });
+    } else {
+      bus.emit("step:progress", { stepId: "push", lineIndex: labels.ASSIGN_TOP_EMPTY });
+    }
+
+    // Movimiento del nuevo nodo a su posición final
+    await newNodeGroup
       .transition()
       .duration(1500)
-      .ease(d3.easeCubicInOut)
-      .attr("transform", (d) => {
-        const finalPos = positions.get(d.id)!;
-        return `translate(${finalPos.x}, ${finalPos.y})`;
-      })
+      .ease(easeCubicInOut)
+      .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
       .end();
 
     // Entrada del indicador tope
     await topeIndicatorGroup
       .transition()
       .duration(1000)
-      .ease(d3.easeBounce)
+      .ease(easeBounce)
       .style("opacity", 1)
       .end();
 
-    bus.emit("step:progress", {
-      stepId: "push",
-      lineIndex: labels.ASSIGN_NEW_TOP,
-    });
-    await delay(800);
-  } else {
-    bus.emit("step:progress", {
-      stepId: "push",
-      lineIndex: labels.VALIDATE_EMPTY,
-    });
-    await delay(1000);
-
-    bus.emit("step:progress", {
-      stepId: "push",
-      lineIndex: labels.ASSIGN_TOP_EMPTY,
-    });
+    bus.emit("step:progress", { stepId: "push", lineIndex: labels.INC_SIZE });
     await delay(600);
+
+    // Fin de la operación
+    bus.emit("op:done", { op: "push" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
-
-  // Movimiento del nuevo nodo a su posición final
-  await newNodeGroup
-    .transition()
-    .duration(1500)
-    .ease(d3.easeCubicInOut)
-    .attr("transform", `translate(${finalPos.x}, ${finalPos.y})`)
-    .end();
-
-  bus.emit("step:progress", { stepId: "push", lineIndex: labels.INC_SIZE });
-  await delay(600);
-
-  // Fin de la operación
-  bus.emit("op:done", { op: "push" });
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
 }
 
 /**
- * Función encargada de animar la salida de un nodo de la pila.
- * @param svg Selección D3 del elemento SVG donde se va a dibujar.
+ * Función encargada de animar el proceso de salida de un nodo de la pila.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param nodeIdPop Id del nodo desapilado.
  * @param remainingNodesData Array con información de los nodos restantes de la pila.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animatePopNode(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodeIdPop: string,
   remainingNodesData: StackNodeData[],
   positions: Map<string, { x: number; y: number }>,
   bus: EventBus,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Etiquetas para el registro de eventos
   const labels = stackCode.pop.labels!;
 
-  // Grupo del lienzo correspondiente al elemento a desapilar
-  const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdPop}`);
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "pop" });
 
-  // Movimiento del nodo a desapilar
-  const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
+    // Grupo del lienzo correspondiente al elemento a desapilar
+    const nodeToRemoveGroup = svg.select<SVGGElement>(`g#${nodeIdPop}`);
 
-  // Inicio de la operación
-  bus.emit("op:start", { op: "pop" });
-
-  bus.emit("step:progress", { stepId: "pop", lineIndex: labels.SAVE_TOP }); 
-  // Salida del nodo a eliminar
-  await nodeToRemoveGroup
-    .transition()
-    .ease(d3.easeBackInOut)
-    .duration(1500)
-    .attr("transform", () => {
-      const currentPos = positions.get(nodeIdPop);
-      const x = currentPos?.x ?? 0;
-      const y = (currentPos?.y ?? 0) + nodeMoveOffsetY;
-      return `translate(${x}, ${y})`;
-    })
-    .style("opacity", 0)
-    .end();
-
-  // Eliminación de los elementos del DOM correspondientes al nodo decolado
-  nodeToRemoveGroup.remove();
-
-  // Eliminación de la posición del nodo decolado
-  positions.delete(nodeIdPop);
-
-  // Si hay nodos por mover
-  if (remainingNodesData.length > 0) {
     // Grupo del lienzo correspondiente al indicador del elemento tope
     const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-    // Salida del indicador de tope
-    await topeIndicatorGroup
-      .transition()
-      .duration(1000)
-      .style("opacity", 0)
-      .end();
+    // Movimiento del nodo a desapilar
+    const nodeMoveOffsetY = -SVG_QUEUE_VALUES.ELEMENT_WIDTH * 0.8;
 
-    // Selección de nodos restantes (re-vinculación de datos)
-    const remainingNodes = svg
-      .selectAll<SVGGElement, StackNodeData>("g.node")
-      .data(remainingNodesData, (d) => d.id);
+    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.VALIDATE_EMPTY });
+    await delay(600);
 
+    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.SAVE_TOP });
+    await delay(600);
+
+    // Salida del nodo a eliminar
     bus.emit("step:progress", { stepId: "pop", lineIndex: labels.ADVANCE_TOP });
-    // Desplazamiento de nodos restantes a su posición final
-    await remainingNodes
+    await nodeToRemoveGroup
       .transition()
+      .ease(easeBackInOut)
       .duration(1500)
-      .ease(d3.easeCubicInOut)
-      .attr("transform", (d) => {
-        const finalPos = positions.get(d.id)!;
-        return `translate(${finalPos.x}, ${finalPos.y})`;
+      .attr("transform", () => {
+        const currentPos = positions.get(nodeIdPop);
+        const x = currentPos?.x ?? 0;
+        const y = (currentPos?.y ?? 0) + nodeMoveOffsetY;
+        return `translate(${x}, ${y})`;
       })
+      .style("opacity", 0)
+      .remove()
       .end();
 
-    // Entrada del indicador de tope
-    await topeIndicatorGroup
-      .transition()
-      .duration(1000)
-      .style("opacity", 1)
-      .end();
-  }
-
-  bus.emit("step:progress", { stepId: "pop", lineIndex: labels.DEC_SIZE });
-  await delay(700);
-
-  if (remainingNodesData.length === 0) {
-    // Grupo del lienzo correspondiente al indicador del elemento tope
-    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
-
-    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.STACK_EMPTY });
-    await delay(700);
-
-    bus.emit("step:progress", {
-      stepId: "pop",
-      lineIndex: labels.TOP_NULL,
-    });
     // Salida del indicador de tope
     await topeIndicatorGroup
       .transition()
       .duration(1000)
       .style("opacity", 0)
       .end();
+
+    // Si hay nodos por mover
+    if (remainingNodesData.length > 0) {
+      // Selección de nodos restantes (re-vinculación de datos)
+      const remainingNodes = svg
+        .selectAll<SVGGElement, StackNodeData>("g.node")
+        .data(remainingNodesData, (d) => d.id);
+
+      // Desplazamiento de nodos restantes a su posición final
+      await remainingNodes
+        .transition()
+        .duration(1500)
+        .ease(easeCubicInOut)
+        .attr("transform", (d) => {
+          const finalPos = positions.get(d.id)!;
+          return `translate(${finalPos.x}, ${finalPos.y})`;
+        })
+        .end();
+
+      // Entrada del indicador de tope
+      await topeIndicatorGroup
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
+    }
+
+    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.DEC_SIZE });
+    await delay(600);
+
+    bus.emit("step:progress", { stepId: "pop", lineIndex: labels.RETURN_VALUE });
+    await delay(600);
+
+    // Eliminación de la posición del nodo decolado
+    positions.delete(nodeIdPop);
+
+    // Fin de la operación
+    bus.emit("op:done", { op: "pop" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
-
-  bus.emit("step:progress", {
-    stepId: "pop",
-    lineIndex: labels.RETURN_VALUE,
-  });
-  await delay(700);
-
-  // Fin de la operación
-  bus.emit("op:done", { op: "pop" });
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
 }
 
 /**
- * Función encargada de eliminar todos los elementos dentro del lienzo.
- * @param svg Selección D3 del elemento SVG a limpiar.
+ * Función encargada de eliminar todos los nodos dentro del lienzo.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la limpieza.
  * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animateClearStack(
-  svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
+  svg: Selection<SVGSVGElement, unknown, null, undefined>,
   nodePositions: Map<string, { x: number; y: number }>,
   bus: EventBus,
   resetQueryValues: () => void,
-  setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>
+  setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
   // Etiquetas para el registro de eventos
   const labels = stackCode.clean.labels!;
 
-  // Inicio de la operación
-  bus.emit("op:start", { op: "clean" });
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "clean" });
 
-  bus.emit("step:progress", { stepId: "clean", lineIndex: labels.START });
-  await delay(500);
+    // Grupo del lienzo correspondiente al indicador del elemento tope
+    const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
 
-  // Grupo del lienzo correspondiente al indicador del elemento tope
-  const topeIndicatorGroup = svg.select<SVGGElement>("g#tope-indicator");
+    // Salida del indicador de tope
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAR_TOP });
+    await topeIndicatorGroup
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .remove()
+      .end();
 
-  // Salida del indicador de tope
-  bus.emit("step:progress", { stepId: "clean", lineIndex: labels.CLEAR_TOP });
-  await topeIndicatorGroup
-    .transition()
-    .duration(1000)
-    .style("opacity", 0)
-    .remove()
-    .end();
+    // Animacición de salida de los nodos
+    bus.emit("step:progress", { stepId: "clean", lineIndex: labels.RESET_SIZE });
+    await svg
+      .selectAll("g.node")
+      .transition()
+      .duration(1000)
+      .style("opacity", 0)
+      .remove()
+      .end();
 
-  bus.emit("step:progress", { stepId: "clean", lineIndex: labels.RESET_SIZE });
-  // Animacición de salida de los nodos
-  await svg
-    .selectAll("g.node")
-    .transition()
-    .duration(1000)
-    .style("opacity", 0)
-    .end();
+    // Limpieza del mapa de posiciones
+    nodePositions.clear();
 
-  // Eliminación de los nodos del DOM
-  svg.selectAll("g.node").remove();
-
-  // Liempiza del mapa de posiciones
-  nodePositions.clear();
-
-  // Fin de la operación
-  bus.emit("op:done", { op: "clean" });
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animación
-  setIsAnimating(false);
+    // Fin de la operación
+    bus.emit("op:done", { op: "clean" });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
+  }
 }

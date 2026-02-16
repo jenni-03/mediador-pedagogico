@@ -9,7 +9,7 @@ export function SequenceSimulator() {
     // Instanciación de la estructura Secuencia
     const structure = useRef(new Secuencia<number>(0)).current;
 
-    // Llamada al hook useSequence para manejar la lógica de la secuencia
+    // Llamada al hook useSequence para gestionar el estado de la secuencia
     const { sequence, query, error, operations } = useSequence(structure);
 
     // Desestructuración de las operaciones soportadas por la secuencia

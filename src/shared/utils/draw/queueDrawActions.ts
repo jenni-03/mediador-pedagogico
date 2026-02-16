@@ -123,8 +123,10 @@ export function drawQueueNodes(
 
 /**
  * Función encargada de animar el proceso la inserción de un nuevo nodo en una cola.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param insertionData Objeto con información de la cola necesaria para la animación.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
@@ -140,12 +142,16 @@ export async function animateEnqueueNode(
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+  // Etiquetas para el registro de eventos
   const labels = queueCode.enqueue.labels!;
 
   // Nodos implicados en la inserción
   const { newLastNodeId, currLastNodeId } = insertionData;
 
   try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "enqueue" });
+
     // Grupos contenedores de nodos y enlaces de la lista
     const nodesG = svg.select<SVGGElement>("g#nodes-layer");
     const linksG = svg.select<SVGGElement>("g#links-layer");
@@ -154,80 +160,57 @@ export async function animateEnqueueNode(
     const newNodeGroup = nodesG.select<SVGGElement>(`g#${newLastNodeId}`);
     newNodeGroup.style("opacity", 0);
 
+    // Grupo correspondiente al enlace siguiente del nodo final que apunta al nuevo nodo
+    const currLastNodeNextLinkGroup = linksG.select<SVGGElement>(
+      `g#link-${currLastNodeId}-${newLastNodeId}-next`
+    );
+    if (currLastNodeId) currLastNodeNextLinkGroup.style("opacity", 0);
+
     // Grupos correspondientes a los indicadores de inicio y fin
     const initialIndicatorGroup = svg.select<SVGGElement>(
       "g#initial-indicator"
     );
     const finalIndicatorGroup = svg.select<SVGGElement>("g#final-indicator");
 
-    // Inicio de la operación
-    bus.emit("op:start", { op: "enqueue" });
+    bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.CREATE_NODE });
+    await delay(600);
 
-    bus.emit("step:progress", {
-      stepId: "enqueue",
-      lineIndex: labels.CREATE_NODE,
-    });
-    await delay(700);
-
-    bus.emit("step:progress", {
-      stepId: "enqueue",
-      lineIndex: labels.VALIDATE_EMPTY,
-    });
+    bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.VALIDATE_EMPTY });
     await delay(600);
 
     if (!currLastNodeId) {
       // Aparición del nuevo nodo junto a los indicadores de inicio y fin
-      await newNodeGroup.transition().duration(1000).style("opacity", 1).end();
+      bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.ASSIGN_START_EMPTY });
+      await newNodeGroup
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .end();
 
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.ASSIGN_START_EMPTY,
-      });
       await initialIndicatorGroup
         .transition()
         .duration(800)
         .style("opacity", 1)
         .end();
 
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.ASSIGN_END_EMPTY,
-      });
+      bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.ASSIGN_END_EMPTY });
       await finalIndicatorGroup
         .transition()
         .duration(800)
         .style("opacity", 1)
         .end();
-
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.INC_SIZE,
-      });
-      await delay(500);
     } else {
       const { positions } = insertionData;
 
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.ELSE_EMPTY,
-      });
-      await delay(500);
-
-      // Grupo correspondiente al enlace siguiente del nodo final que apunta al nuevo nodo
-      const currLastNodeNextLinkGroup = linksG.select<SVGGElement>(
-        `g#link-${currLastNodeId}-${newLastNodeId}-next`
-      );
-      currLastNodeNextLinkGroup.style("opacity", 0);
+      bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.ELSE_EMPTY });
+      await delay(600);
 
       // Aparición y posicionamiento del nuevo nodo
+      bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.LINK_NEW_TO_END });
       const newNodePos = positions.get(newLastNodeId)!;
       const initialNewNodePos = { x: newNodePos.x, y: newNodePos.y - 70 };
       await animateAppearListNode(newNodeGroup, initialNewNodePos, newNodePos);
 
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.LINK_NEW_TO_END,
-      });
       // Establecimiento del enlace siguiente del nodo final
       await currLastNodeNextLinkGroup
         .transition()
@@ -235,11 +218,8 @@ export async function animateEnqueueNode(
         .style("opacity", 1)
         .end();
 
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.ASSIGN_NEW_END,
-      });
       // Posicionamiento del indicador final al nuevo nodo final de la cola
+      bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.ASSIGN_NEW_END });
       await finalIndicatorGroup
         .transition()
         .duration(1500)
@@ -249,16 +229,14 @@ export async function animateEnqueueNode(
           return `translate(${finalX}, ${finalY})`;
         })
         .end();
-
-      bus.emit("step:progress", {
-        stepId: "enqueue",
-        lineIndex: labels.INC_SIZE,
-      });
-      await delay(500);
     }
-  } finally {
+
+    bus.emit("step:progress", { stepId: "enqueue", lineIndex: labels.INC_SIZE });
+    await delay(600);
+
     // Fin de la operación
     bus.emit("op:done", { op: "enqueue" });
+  } finally {
     resetQueryValues();
     setIsAnimating(false);
   }
@@ -266,8 +244,10 @@ export async function animateEnqueueNode(
 
 /**
  * Función encargada de animar el proceso de eliminación de un nodo de una cola.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
  * @param deletionData Objeto con información de la cola necesaria para la animación.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
@@ -285,11 +265,16 @@ export async function animateDequeueNode(
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+  // Etiquetas para el registro de eventos
   const labels = queueCode.dequeue.labels!;
+
   // Nodos implicados en la eliminación
   const { currInitialNodeId, newInitialNodeId } = deletionData;
 
   try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: "dequeue" });
+
     // Grupos contenedores de nodos y enlaces de la lista
     const nodesG = svg.select<SVGGElement>("g#nodes-layer");
     const linksG = svg.select<SVGGElement>("g#links-layer");
@@ -305,27 +290,18 @@ export async function animateDequeueNode(
     );
     const finalIndicatorGroup = svg.select<SVGGElement>("g#final-indicator");
 
-    // Inicio de la operación
-    bus.emit("op:start", { op: "dequeue" });
+    bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.VALIDATE_EMPTY });
+    await delay(600);
 
-    bus.emit("step:progress", {
-      stepId: "dequeue",
-      lineIndex: labels.SAVE_FIRST_NODE,
-    });
-    await delay(500);
+    bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.SAVE_FIRST_NODE });
+    await delay(600);
+
+    bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.VALIDATE_ONE_ELEMENT });
+    await delay(600);
 
     if (!newInitialNodeId) {
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.VALIDATE_ONE_ELEMENT,
-      });
-      await delay(500);
-
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.CLEAR_START_SINGLE,
-      });
       // Salida del nodo a eliminar junto a los indicadores de inicio y fin
+      bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.CLEAR_START_SINGLE });
       await initialIndicatorGroup
         .transition()
         .duration(800)
@@ -333,54 +309,34 @@ export async function animateDequeueNode(
         .remove()
         .end();
 
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.CLEAR_END_SINGLE,
-      });
+      bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.CLEAR_END_SINGLE });
       await finalIndicatorGroup
         .transition()
         .duration(800)
         .style("opacity", 0)
         .remove()
         .end();
+
       await removalNodeGroup
         .transition()
         .duration(1000)
         .style("opacity", 0)
         .remove()
         .end();
-
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.DEC_SIZE,
-      });
-      await delay(500);
-
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.RETURN_VALUE,
-      });
-      await delay(500);
     } else {
       const { positions, remainingNodesData, remainingLinksData } =
         deletionData;
-
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.VALIDATE_ONE_ELEMENT,
-      });
-      await delay(500);
 
       // Grupo correspondiente al enlace siguiente del nodo a eliminar que apunta al nuevo nodo inicial
       const removalNodeNextLinkGroup = linksG.select<SVGGElement>(
         `g#link-${currInitialNodeId}-${newInitialNodeId}-next`
       );
 
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.ELSE_MULTIPLE,
-      });
+      bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.ELSE_MULTIPLE });
+      await delay(600);
+
       // Salida del indicador de inicio
+      bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.ADVANCE_START });
       await initialIndicatorGroup
         .transition()
         .duration(800)
@@ -417,36 +373,26 @@ export async function animateDequeueNode(
         }
       );
 
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.ADVANCE_START,
-      });
       // Entrada del indicador de inicio (ahora apuntando al nuevo nodo inicial de la cola)
       await initialIndicatorGroup
         .transition()
         .duration(800)
         .style("opacity", 1)
         .end();
-
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.DEC_SIZE,
-      });
-      await delay(500);
-
-      // RETURN_VALUE
-      bus.emit("step:progress", {
-        stepId: "dequeue",
-        lineIndex: labels.RETURN_VALUE,
-      });
-      await delay(500);
     }
+
+    bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.DEC_SIZE });
+    await delay(600);
+
+    bus.emit("step:progress", { stepId: "dequeue", lineIndex: labels.RETURN_VALUE });
+    await delay(600);
 
     // Limpiamos el registro del nodo eliminado
     deletionData.positions.delete(currInitialNodeId);
-  } finally {
+
     // Fin de la operación
     bus.emit("op:done", { op: "dequeue" });
+  } finally {
     resetQueryValues();
     setIsAnimating(false);
   }
@@ -454,9 +400,12 @@ export async function animateDequeueNode(
 
 /**
  * Función encargada de eliminar todos los nodos y enlaces de una cola dentro del lienzo.
- * @param nodesG Selección D3 del grupo <g> que contiene los nodos de la cola.
- * @param linksG Selección D3 del grupo <g> que contiene los enlaces entre nodos.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
+ * @param svg Selección D3 del elemento SVG donde se aplicará la limpieza.
  * @param nodePositions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
+ * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
+ * @param stepId Identificador del paso actual; reenviado en los eventos de progreso emitidos.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
  * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.

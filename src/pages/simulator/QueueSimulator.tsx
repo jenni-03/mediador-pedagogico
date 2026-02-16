@@ -15,7 +15,7 @@ export function QueueSimulator() {
         dynamicAddressGenerator.reset();
     }, []);
 
-    // Llamada al hook useQueue para manejar el estado de la cola
+    // Llamada al hook useQueue para gestionar el estado de la cola
     const { queue, query, error, operations } = useQueue(structure);
 
     // Desestructuración de las operaciones soportadas por la cola

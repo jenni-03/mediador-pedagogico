@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BaseQueryOperations } from "../../../../../domain/utils/types";
 import { Pila } from "../../../../../domain/structures/Pila";
 import { DomainError } from "../../../../../../src/domain/error/DomainError";
 
 export function useStack(structure: Pila<number>) {
-    // Estado para manejar la pila
+    // Estado para gestionar la pila
     const [stack, setStack] = useState(structure);
 
-    // Estado para manejar el error
+    // Estado para gestionar el error
     const [error, setError] = useState<{ message: string, id: number, op: string, planId?: string | null } | null>(null);
 
     // Estado para manejar la operación solicitada por el usuario
@@ -18,122 +18,94 @@ export function useStack(structure: Pila<number>) {
         toClear: false
     });
 
-    // Operación de insersión (apilar)
-    const pushElement = (value: number) => {
+    // Operación para apilar un nodo
+    const pushElement = useCallback((value: number) => {
         try {
-            // Clonar la pila para garantizar la inmutabilidad del estado
             const clonedStack = stack.clonar();
-
-            // Apilar el nuevo elemento
             clonedStack.apilar(value);
+            const newNode = clonedStack.getTope();
 
-            // Obtener el nodo insertado para acceder a su ID
-            const finalNode = clonedStack.getTope();
-
-            // Actualizar el estado de la pila
             setStack(clonedStack);
-
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toPushNode: finalNode ? finalNode.getId() : null
+                toPushNode: newNode ? newNode.getId() : null
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now(), op: "push" });
         }
-    }
+    }, [stack])
 
-    // Operación de eliminación (desapilar)
-    const popElement = () => {
+    // Operación para desapilar un nodo
+    const popElement = useCallback(() => {
         try {
-            // Obtener el nodo a ser eliminado para acceder a su ID
-            const nodeToDelete = stack.getTope();
-
-            // Clonar la pila para asegurar la inmutabilidad del estado
+            const deletedNode = stack.getTope();
             const clonedStack = stack.clonar();
-
-            // Desapilamos el nodo
             clonedStack.desapilar();
 
-            // Actualizar el estado de la pila
             setStack(clonedStack);
-
-            // Actualizar la query a partir de la operación realizada
             setQuery((prev) => ({
                 ...prev,
-                toPopNode: nodeToDelete ? nodeToDelete.getId() : null
+                toPopNode: deletedNode ? deletedNode.getId() : null
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now(), op: "pop", planId: error?.code ?? null });
         }
-    }
+    }, [stack]);
 
-    // Operación de obtener el tope de la pila 
-    const getTop = () => {
+    // Operación para obtener el tope 
+    const getTop = useCallback(() => {
         try {
-            // Obtener el nodo tope
             const topNode = stack.getTope();
-
-            // Verificar su existencia
             if (!topNode) throw new DomainError("No fue posible obtener el elemento tope: No hay elementos en la pila.", "STACK_EMPTY");
-
-            // Actualizar la query para informar de la operación realizada
             setQuery((prev) => ({
                 ...prev,
                 toGetTop: topNode.getId()
             }));
-
-            // Limpieza del error existente
             setError(null);
         } catch (error: any) {
             setError({ message: error.message, id: Date.now(), op: "getTop", planId: error?.code ?? null });
         }
-    };
+    }, [stack]);
 
     // Operación para vaciar la pila
-    const clearStack = () => {
-        // Clonar la pila para asegurar la inmutabilidad del estado
+    const clearStack = useCallback(() => {
         const clonedStack = stack.clonar();
-
-        // Vaciar la pila
         clonedStack.vaciar();
-
-        // Actualizar el estado de la pila
         setStack(clonedStack);
-
-        // Actualizar la query a partir de la operación realizada
         setQuery((prev) => ({
             ...prev,
             toClear: true
         }));
-    }
+    }, [stack]);
 
     // Función de restablecimiento de las queries del usuario
-    const resetQueryValues = () => {
+    const resetQueryValues = useCallback(() => {
         setQuery({
             toPushNode: null,
             toPopNode: null,
             toGetTop: null,
             toClear: false
         })
-    }
+    }, []);
+
+    // Objeto de operaciones estable
+    const operations = useMemo(() => ({
+        pushElement,
+        popElement,
+        getTop,
+        clearStack,
+        resetQueryValues
+    }), [
+        pushElement, popElement, getTop,
+        clearStack, resetQueryValues
+    ]);
 
     return {
         stack,
         query,
         error,
-        operations: {
-            pushElement,
-            popElement,
-            getTop,
-            clearStack,
-            resetQueryValues
-        }
+        operations
     }
 }

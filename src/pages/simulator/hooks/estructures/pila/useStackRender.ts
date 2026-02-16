@@ -4,7 +4,7 @@ import {
   SVG_STACK_VALUES,
   SVG_STYLE_VALUES,
 } from "../../../../../domain/constants/consts";
-import * as d3 from "d3";
+import { select } from "d3";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
 import {
@@ -28,7 +28,7 @@ export function useStackRender(
   // Referencia que apunta al elemento SVG del DOM
   const svgRef = useRef<SVGSVGElement>(null);
 
-  // Mapa para guardar posiciones {x, y} de nodos, persistente entre renders
+  // Mapa de posiciones actuales de los nodos dentro del SVG
   const nodePositions = useRef(
     new Map<string, { x: number; y: number }>()
   ).current;
@@ -44,14 +44,7 @@ export function useStackRender(
 
   // Renderizado base de la pila
   useEffect(() => {
-    // Verificamos que el array de nodos no sea nulo y que la referencia al SVG se haya establecido
     if (!stackNodes || !svgRef.current) return;
-
-    // Margenes para el svg
-    const margin = {
-      left: SVG_STACK_VALUES.MARGIN_LEFT,
-      right: SVG_STACK_VALUES.MARGIN_RIGHT,
-    };
 
     // Dimensiones para cada nodo
     const elementWidth = SVG_STACK_VALUES.ELEMENT_WIDTH;
@@ -62,7 +55,7 @@ export function useStackRender(
     const verticalSpacing = elementHeight + spacing;
 
     // Ancho del SVG
-    const width = margin.left + SVG_STACK_VALUES.WIDTH + margin.right;
+    const width = SVG_STACK_VALUES.MARGIN_LEFT + SVG_STACK_VALUES.WIDTH + SVG_STACK_VALUES.MARGIN_RIGHT;
 
     // Cálculo de la altura de la SVG considerando un espacio adicional en la parte superior para la animación
     const animationTopSpace = elementHeight * 2;
@@ -74,14 +67,13 @@ export function useStackRender(
     const height = animationTopSpace + nodesHeight;
 
     // Configuración del contenedor SVG
-    const svg = d3
-      .select(svgRef.current)
+    const svg = select(svgRef.current)
       .attr("height", height)
       .attr("width", width);
 
     // Renderizado de los nodos pertenecientes a la pila
     drawStackNodes(svg, stackNodes, nodePositions, {
-      margin,
+      margin: { left: SVG_STACK_VALUES.MARGIN_LEFT, right: SVG_STACK_VALUES.MARGIN_RIGHT },
       elementWidth,
       elementHeight,
       verticalSpacing,
@@ -123,15 +115,13 @@ export function useStackRender(
 
   // Efecto para manejar la operación push (apilar)
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
-    if (!stackNodes || !svgRef.current || !query.toPushNode || !prevNodes)
-      return;
+    if (!stackNodes || !svgRef.current || !query.toPushNode || !prevNodes) return;
 
     // Id del nodo apilado
     const nodeIdEnqueued = query.toPushNode;
 
-    // Seleccionamos el elemento SVG de acuerdo a su referencia
-    const svg = d3.select(svgRef.current);
+    // Selección del elemento SVG a partir de su referencia
+    const svg = select(svgRef.current);
 
     // Animación para apilar un nuevo nodo
     animatePushNode(
@@ -154,7 +144,6 @@ export function useStackRender(
 
   // Efecto para manejar la operación pop (desapilar)
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
     if (
       !stackNodes ||
       !query.toPopNode ||
@@ -168,7 +157,7 @@ export function useStackRender(
     const nodeToRemove = query.toPopNode;
 
     // Selección del elemento SVG a partir de su referencia
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
 
     // Animación para desapilar el nodo tope
     animatePopNode(
@@ -200,7 +189,7 @@ export function useStackRender(
       return;
 
     // Selección del elemento SVG a partir de su referencia
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
 
     // Identificador del nodo tope de la pila
     const topNodeId = query.toGetTop;
@@ -224,7 +213,7 @@ export function useStackRender(
       },
       bus,
       {
-        START: labels.START,
+        START: labels.VALIDATE_EMPTY,
         RETURN_TOP: labels.RETURN_TOP,
       },
       "getTop",
@@ -235,11 +224,10 @@ export function useStackRender(
 
   // Operación de limpieza
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
     if (!stackNodes || !svgRef.current || !query.toClear) return;
 
     // Selección del elemento SVG a partir de su referencia
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
 
     // Animación de limpieza del lienzo
     animateClearStack(

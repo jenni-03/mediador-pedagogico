@@ -15,7 +15,7 @@ export function PriorityQueueSimulator() {
         priorityQueueAddressGenerator.reset();
     }, []);
 
-    // Llamada al hook usePriorityQueue para manejar la lógica de la cola de prioridad
+    // Llamada al hook usePriorityQueue para gestionar el estado de la cola de prioridad
     const { queue, query, error, operations } = usePriorityQueue(structure);
 
     // Desestructuración de las operaciones soportadas por la cola de prioridad

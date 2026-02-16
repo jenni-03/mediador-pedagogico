@@ -66,11 +66,11 @@ export function useSequenceRender(sequence: (number | null)[], memory: string[],
                 memory,
                 { margin, elementWidth, elementHeight, spacing, height }
             );
-
             await delay(600);
+
             bus.emit("step:progress", { stepId: "create", lineIndex: labels.CANT0 });
-
             await delay(600);
+
             bus.emit("step:progress", { stepId: "create", lineIndex: labels.ASSIGN });
             await delay(600);
 
