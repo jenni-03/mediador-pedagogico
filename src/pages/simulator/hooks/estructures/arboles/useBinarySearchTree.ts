@@ -21,7 +21,7 @@ export function useBinarySearchTree(structure: ArbolBinarioBusqueda<number>) {
         toClear: false
     });
 
-    // Operación para insertar un elemento
+    // Operación para insertar un nodo
     const insertNode = useCallback((value: number) => {
         try {
             const clonedTree = tree.clonarABB();

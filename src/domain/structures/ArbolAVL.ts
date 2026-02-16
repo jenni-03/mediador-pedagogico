@@ -1,9 +1,10 @@
 // Inspirado de Proyecto SEED - https://project-seed-ufps.vercel.app/
 
-import { BSTDeleteOutput, BSTInsertOutput, BSTSearchOutput, Comparator, HierarchyNodeData, OperationTrace } from "../utils/types";
+import { AVLDeleteMeta, AVLDeleteOutput, AVLDeleteStep, AVLInsertMeta, AVLInsertOutput, AVLInsertStep, BinaryTreeLevelOutput, BinaryTreeTraverseOutput, BSTSearchOutput, Comparator, HierarchyNodeData, OperationTrace } from "../utils/types";
 import { NodoAVL } from "../nodes/NodoAVL";
 import { ArbolBinarioBusqueda } from "./ArbolBinarioBusqueda";
 import { defaultComparator } from "../utils/treeUtils";
+import { DomainError } from "../error/DomainError";
 
 /**
  * Clase que representa el funcionamiento de un árbol AVL.
@@ -22,23 +23,22 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que inserta un nuevo nodo en el árbol AVL manteniendo su propiedad de balance.
-   * Si el nodo no existe, los pesos de los nodos se actualizan y el árbol es rebalanceado si es necesario.
+   * Método que inserta un nuevo elemento en el árbol AVL.
    * @param valor Elemento a insertar.
    * @returns Objeto con la siguiente información:
    * 
-   * - `pathIds`: Lista con los IDs de los nodos visitados durante el recorrido de búsqueda, en orden.
-   *    Incluye el nodo padre donde se intentó realizar la inserción o el nodo ya existente.
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la inserción 
+   *    (comprobaciones, visitas, movimientos y retornos).
    * 
    * - `parent`: Nodo padre bajo el cual se insertó el nuevo nodo. Será `null` en 2 casos:
    *    1. Si el elemento ya existía en el árbol.
    *    2. Si el nuevo nodo se insertó como raíz.
    * 
-   * - `targetNode`: Nodo asociado al elemento (nuevo o ya existente).
+   * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si ya existía en el árbol.
    * 
-   * - `exists`: Booleano que indica si el elemento ya existía (`true`) o si se creó e insertó un nuevo nodo (`false`).
+   * - `inserted`: Booleano que indica si el elemento fue insertado.
    */
-  public insertarAVL(valor: T): BSTInsertOutput<T> {
+  public insertarAVL(valor: T): AVLInsertOutput<T> {
     if (super.getTamanio() >= this.MAX_NODOS) {
       throw new Error(`No fue posible insertar el nodo: Límite máximo de nodos alcanzado (${this.MAX_NODOS}).`);
     }
@@ -49,75 +49,62 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       hierarchies: { pre: null, mids: [] }
     };
 
-    const stack: NodoAVL<T>[] = [];
-    let p: NodoAVL<T> | null = null;
-    let cur = this.getRaiz();
+    const steps: AVLInsertStep[] = [];
+    const meta: AVLInsertMeta<T> = {
+      parent: null,
+      targetNode: null,
+      inserted: false
+    };
+    const nuevaRaiz = this.insertarAVLAux(this.getRaiz(), valor, steps, meta);
 
-    // Buscar posición de inserción
-    while (cur) {
-      stack.push(cur);
-      const cmp = this.compare(valor, cur.getInfo());
-      if (cmp === 0) {
-        return { pathIds: stack.map(n => n.getId()), parent: null, targetNode: cur, exists: true };
-      }
-      p = cur;
-      cur = cmp < 0 ? cur.getIzq() : cur.getDer();
+    if (meta.inserted) {
+      this.setRaiz(nuevaRaiz);
+      this.setTamanio(this.getTamanio() + 1);
     }
 
-    // Insertar nuevo nodo
-    const nuevo = new NodoAVL<T>(valor);
-    if (!p) {
-      this.setRaiz(nuevo);
-    } else if (this.compare(valor, p.getInfo()) < 0) {
-      p.setIzq(nuevo);
-    } else {
-      p.setDer(nuevo);
-    }
-
-    // Recalcular alturas y rebalancear desde el nodo padre hacia arriba
-    const pathIds = stack.map(n => n.getId());
-    while (stack.length > 0) {
-      const root = stack.pop()!;
-      root.recomputarAltura();
-
-      const padre = stack.length > 0 ? stack[stack.length - 1] : null;
-      const rebalanced = this.rebalancear(root, padre);
-
-      if (!padre) this.setRaiz(rebalanced);
-    }
-
-    this.setTamanio(this.getTamanio() + 1);
-    return { pathIds, parent: p, targetNode: nuevo, exists: false };
+    return {
+      steps,
+      parent: meta.parent,
+      targetNode: meta.targetNode,
+      inserted: meta.inserted
+    };
   }
 
   /**
-   * Método que elimina un nodo especifico del árbol AVL, rebalanceando el árbol si es necesario.
+   * Método que elimina el elemento especificado del árbol AVL.
    * @param valor Elemento a eliminar.
    * @returns Objeto con la siguiente información:
    * 
-   * - `pathToTargetIds`: Lista con los IDs de los nodos visitados durante la búsqueda, 
-   *    en orden desde la raíz hasta el nodo objetivo (incluye el nodo objetivo si fue encontrado).
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la eliminación 
+   *    (comprobaciones, visitas, movimientos y retornos).
    * 
    * - `parent`: Nodo padre del nodo eliminado. Será `null` en 2 casos:
    *    1. Si el nodo eliminado era la raíz.
-   *    2. Si el valor no se encontró en el árbol.
+   *    2. Si el elemento no se encuentra en el árbol.
    * 
-   * - `targetNode`: Nodo objetivo que se intentó eliminar (nodo eliminado o último nodo visitado durante la búsqueda).
+   * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si el elemento no se encuentra en el árbol.
    * 
-   * - `pathToSuccessorIds`: Lista con los IDs de los nodos visitados durante la búsqueda del sucesor in-order (solo se llena si el nodo eliminado tenía dos hijos).
+   * - `pathToSuccessorIds`: Arreglo con los IDs de los nodos visitados durante la búsqueda del sucesor inorden (solo si el nodo eliminado tenía dos hijos).
    * 
    * - `successor`: Nodo que reemplazó lógicamente al nodo eliminado en el caso de dos hijos (nodo cuyo valor fue copiado al nodo objetivo).  
    *    Será `null` en los demás casos.
+   * 
+   * - `successorParent`: Nodo padre del nodo sucesor (solo si el nodo eliminado tenía dos hijos).
    * 
    * - `replacement`: Nodo que ocupó físicamente el lugar del nodo eliminado en el árbol. Puede ser:
    *    1. El hijo izquierdo o derecho (si existía uno).  
    *    2. `null` si se eliminó una hoja.  
    *    3. El hijo derecho del sucesor in-order (en el caso de dos hijos).
    * 
-   * - `exists`: Booleano que indica si el elemento fue encontrado y eliminado (`true`) o no (`false`).
+   * - `replacementSide`: Dirección del nodo que ocupa físicamente el lugar del nodo eliminado ("left", "right"). 
+   *    Sera `null` si el nodo si el nodo eliminado era un nodo hoja.
+   * 
+   * - `deleted`: Booleano que indica si el elemento fue eliminado.
    */
-  public eliminarAVL(valor: T): BSTDeleteOutput<T> {
-    if (this.esVacio()) throw new Error("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");
+  public eliminarAVL(valor: T): AVLDeleteOutput<T> {
+    if (this.esVacio()) {
+      throw new DomainError("No fue posible eliminar el nodo: El árbol árbol se encuentra vacío (cantidad de nodos: 0).", "DELETE_EMPTY");
+    }
 
     // Inicializar la traza de seguimiento del estado del árbol durante la operación
     this.avlOperationTrace = {
@@ -125,104 +112,60 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       hierarchies: { pre: null, mids: [] }
     };
 
-    const stack: NodoAVL<T>[] = [];
-    let p: NodoAVL<T> | null = null;
-    let cur = this.getRaiz();
+    const steps: AVLDeleteStep[] = [];
+    const meta: AVLDeleteMeta<T> = {
+      parent: null,
+      targetNode: null,
+      pathToSuccessorIds: [],
+      successor: null,
+      successorParent: null,
+      replacement: null,
+      replacementSide: null,
+      deleted: false
+    };
+    const nuevaRaiz = this.eliminarAVLAux(this.getRaiz(), valor, steps, meta);
 
-    // Buscar nodo a eliminar
-    while (cur && this.compare(valor, cur.getInfo()) !== 0) {
-      stack.push(cur);
-      p = cur;
-      cur = this.compare(valor, cur.getInfo()) < 0 ? cur.getIzq() : cur.getDer();
-    }
-
-    // No encontrado
-    if (!cur) {
-      return { pathToTargetIds: stack.map(n => n.getId()), parent: null, targetNode: p!, pathToSuccessorIds: [], successor: null, replacement: null, exists: false };
-    }
-
-    const removed = cur;
-    const pathToTargetIds = stack.map(n => n.getId());
-    const pathToSuccessorIds: string[] = [];
-    let successor: NodoAVL<T> | null = null;
-
-    // Nodo con 0 o 1 hijo
-    let replacement: NodoAVL<T> | null = null;
-    if (!cur.getIzq() || !cur.getDer()) {
-      replacement = cur.getIzq() ? cur.getIzq() : cur.getDer();
-
-      if (!p) {
-        this.setRaiz(replacement);
-      } else if (p.getIzq() === cur) {
-        p.setIzq(replacement);
-      } else {
-        p.setDer(replacement);
-      }
-    } else {
-      // Nodo con 2 hijos
-      stack.push(cur);
-      pathToTargetIds.push(cur.getId());
-      pathToSuccessorIds.push(cur.getId());
-
-      let succParent = cur;
-      let succ = cur.getDer();
-      while (succ && succ.getIzq()) {
-        stack.push(succ);
-        pathToSuccessorIds.push(succ.getId());
-        succParent = succ;
-        succ = succ.getIzq();
-      }
-      pathToSuccessorIds.push(succ!.getId());
-
-      // Copiar valor del sucesor al nodo actual
-      cur.setInfo(succ!.getInfo());
-      successor = succ;
-
-      // Eliminar el sucesor (que tiene a lo sumo un hijo derecho)
-      replacement = succ!.getDer();
-      if (succParent.getIzq() === succ) {
-        succParent.setIzq(replacement);
-      } else {
-        succParent.setDer(replacement);
-      }
-      p = succParent;
-    }
-
-    // Recalcular alturas y rebalancear desde el nodo padre hacia arriba
-    while (stack.length > 0) {
-      const root = stack.pop()!;
-      root.recomputarAltura();
-
-      const padre = stack.length > 0 ? stack[stack.length - 1] : null;
-      const rebalanced = this.rebalancear(root, padre);
-
-      if (padre) {
-        if (padre.getIzq() === root) {
-          padre.setIzq(rebalanced);
-        } else {
-          padre.setDer(rebalanced);
-        }
-      } else {
-        this.setRaiz(rebalanced);
+    if (!meta.deleted) {
+      return {
+        steps,
+        parent: null,
+        targetNode: null,
+        pathToSuccessorIds: [],
+        successor: null,
+        successorParent: null,
+        replacement: null,
+        replacementSide: null,
+        deleted: false
       }
     }
 
-    return { pathToTargetIds, parent: p, targetNode: removed, pathToSuccessorIds, successor, replacement, exists: true };
+    this.setRaiz(nuevaRaiz);
+    this.setTamanio(this.getTamanio() - 1);
+
+    return {
+      steps,
+      parent: meta.parent,
+      targetNode: meta.targetNode,
+      pathToSuccessorIds: meta.pathToSuccessorIds,
+      successor: meta.successor,
+      successorParent: meta.successorParent,
+      replacement: meta.replacement,
+      replacementSide: meta.replacementSide,
+      deleted: meta.deleted
+    }
   }
 
   /**
-   * Método que busca un nodo específico en el árbol AVL.
+   * Método que comprueba la existencia del elemento especificado en el árbol AVL.
    * @param valor Elemento a buscar.
    * @returns Objeto con la siguiente información:
    * 
-   *  - `pathIds`: Lista con los IDs de los nodos visitados, en orden, desde la raíz hasta el nodo donde se detuvo la búsqueda.
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante la búsqueda 
+   *    (comprobaciones, visitas, movimientos y retornos).
    * 
-   *  - `lastVisited`: Último nodo visitado durante el recorrido. Puede ser:
-   *     1. El nodo que contiene el valor buscado si fue encontrado.
-   *     2. El nodo donde la búsqueda se detuvo sin éxito (padre de la rama nula).
-   *     3. `null` si el árbol está vacío.
+   * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si no fue encontrado.  
    * 
-   *  - `found`: Booleano que indica si el elemento fue encontrado (`true`) o no (`false`).
+   * - `found`: Booleano que indica si el nodo fue encontrado.
    */
   public buscarAVL(valor: T): BSTSearchOutput<T> {
     return super.buscarABB(valor);
@@ -246,15 +189,15 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
 
   /**
    * Método que obtiene todos los nodos hojas del árbol AVL.
-   * @returns Array de nodos que representan las hojas del árbol.
+   * @returns Arreglo que contiene todos los nodos hoja presentes en el árbol.
    */
   public override getHojas(): NodoAVL<T>[] {
     return super.getHojas() as NodoAVL<T>[];
   }
 
   /**
-   * Método que cuenta el número de nodos hoja del árbol AVL.
-   * @returns Número de nodos hoja del árbol.
+   * Método que cuenta el número de nodos hoja presentes en el árbol AVL.
+   * @returns Número de nodos hoja presentes en el árbol.
    */
   public override contarHojas(): number {
     return super.contarHojas();
@@ -292,35 +235,55 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que retorna un array de nodos resultante del recorrido in-orden del árbol AVL.
-   * @returns Array de nodos en secuencia in-orden.
+   * Método que realiza el recorrido inorden del árbol AVL.
+   * @returns Objeto con la siguiente información:
+   * 
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+   *    del árbol (comprobaciones, visitas, movimientos y retornos).
+   * 
+   * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia inorden.
    */
-  public override inOrden(): NodoAVL<T>[] {
-    return super.inOrden() as NodoAVL<T>[];
+  public override inOrden(): BinaryTreeTraverseOutput<T> {
+    return super.inOrden();
   }
 
   /**
-   * Método que retorna un array de nodos resultante del recorrido pre-orden del árbol AVL.
-   * @returns Array de nodos en secuencia pre-orden.
+   * Método que realiza el recorrido preorden del árbol AVL.
+   * @returns Objeto con la siguiente información:
+   * 
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+   *    del árbol (comprobaciones, visitas, movimientos y retornos).
+   * 
+   * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia preorden.
    */
-  public override preOrden(): NodoAVL<T>[] {
-    return super.preOrden() as NodoAVL<T>[];
+  public override preOrden(): BinaryTreeTraverseOutput<T> {
+    return super.preOrden();
   }
 
   /**
-   * Método que retorna un array de nodos resultante del recorrido post-orden del árbol AVL.
-   * @returns Array de nodos en secuencia post-orden.
+   * Método que realiza el recorrido postorden del árbol AVL.
+   * @returns Objeto con la siguiente información:
+   * 
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+   *    del árbol (comprobaciones, visitas, movimientos y retornos).
+   * 
+   * - `visited`: Arreglo de nodos visitados durante el recorrido en secuencia postorden.
    */
-  public override postOrden(): NodoAVL<T>[] {
-    return super.postOrden() as NodoAVL<T>[];
+  public override postOrden(): BinaryTreeTraverseOutput<T> {
+    return super.postOrden();
   }
 
   /**
-   * Método que retorna un array de nodos resultante del recorrido por niveles del árbol AVL.
-   * @returns Array de nodos por niveles.
+   * Método que realiza el recorrido por niveles del árbol AVL.
+   * @returns Objeto con la siguiente información:
+   * 
+   * - `steps`: Arreglo de objetos que describen cada acción llevada a cabo durante el recorrido 
+   *    del árbol (comprobaciones, visitas, movimientos y retornos).
+   * 
+   * - `visited`: Arreglo de nodos visitados durante el recorrido por niveles.
    */
-  public override getNodosPorNiveles(): NodoAVL<T>[] {
-    return super.getNodosPorNiveles() as NodoAVL<T>[];
+  public override getNodosPorNiveles(): BinaryTreeLevelOutput<T> {
+    return super.getNodosPorNiveles();
   }
 
   /**
@@ -338,7 +301,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
    */
   public clonarAVL(): ArbolAVL<T> {
     const nuevoArbol = new ArbolAVL<T>(this.compare);
-    nuevoArbol.setRaiz(this.clonarAVLrec(this.getRaiz()));
+    nuevoArbol.setRaiz(this.clonarAVLAux(this.getRaiz()));
     nuevoArbol.setTamanio(this.getTamanio());
     return nuevoArbol;
   }
@@ -354,8 +317,179 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que rebalancea un árbol AVL si se detecta un desbalance, aplicando
-   * las rotaciones AVL apropiadas para restaurar el balance. Maneja 4 casos:
+   * Método auxiliar que inserta un nuevo nodo en el subárbol dado, a partir del elemento proporcionado
+   * y aplicando las rotaciones necesarias para mantener el balance del árbol AVL.
+   * @param root Nodo raíz del subárbol actual.
+   * @param valor Elemento a insertar.
+   * @param steps Arreglo para acumular los pasos de inserción realizados durante la operación.
+   * @param meta Objeto de metadatos para rastrear el resultado de la inserción y la información del nodo objetivo.
+   * @param parentNode Nodo padre del nodo actual.
+   * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
+   * @returns Nodo raíz del subárbol actualizado tras la inserción.
+   */
+  private insertarAVLAux(
+    root: NodoAVL<T> | null,
+    valor: T,
+    steps: AVLInsertStep[],
+    meta: AVLInsertMeta<T>,
+    parentNode: NodoAVL<T> | null = null,
+    via: "left" | "right" | "root" = "root"
+  ): NodoAVL<T> {
+    steps.push({
+      type: "checkNull",
+      at: root?.getId() ?? null,
+      isNull: root === null
+    });
+    if (root === null) {
+      const nuevo = new NodoAVL(valor);
+
+      steps.push({
+        type: "createLeaf",
+        parent: parentNode?.getId() ?? null,
+        side: parentNode === null ? "root" : via === "left" ? "left" : "right"
+      });
+      meta.inserted = true;
+      meta.targetNode = nuevo;
+      meta.parent = parentNode;
+
+      steps.push({ type: "return", from: nuevo.getId(), to: parentNode?.getId() ?? null, via });
+      return nuevo;
+    }
+
+    const cmp = this.compare(valor, root.getInfo());
+    steps.push({ type: "compare", at: root.getId(), cmp: cmp < 0 ? -1 : cmp > 0 ? 1 : 0 });
+    if (cmp < 0) {
+      steps.push({
+        type: "goLeft",
+        from: root.getId(),
+        to: root.getIzq()?.getId() ?? null
+      });
+      root.setIzq(this.insertarAVLAux(root.getIzq(), valor, steps, meta, root, "left"));
+    } else if (cmp > 0) {
+      steps.push({
+        type: "goRight",
+        from: root.getId(),
+        to: root.getDer()?.getId() ?? null
+      });
+      root.setDer(this.insertarAVLAux(root.getDer(), valor, steps, meta, root, "right"));
+    } else {
+      meta.inserted = false;
+      meta.targetNode = root;
+      meta.parent = parentNode;
+    }
+
+    steps.push({ type: "updateHeight", at: root.getId() });
+    this.recalcularAlturaNodo(root);
+
+    const newRoot = this.rebalancear(root, parentNode, steps);
+
+    steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
+    return newRoot;
+  }
+
+  /**
+   * Método auxiliar que elimina el nodo correspondiente al elemento proporcionado en el subárbol dado,
+   * aplicando las rotaciones necesarias para mantener el balance del árbol AVL.
+   * @param root Nodo raíz del subárbol actual.
+   * @param valor Elemento a eliminar.
+   * @param steps Arreglo para acumular los pasos de eliminación realizados durante la operación.
+   * @param meta Objeto de metadatos para rastrear el resultado de la eliminación y la información del nodo objetivo.
+   * @param parentNode Nodo padre del nodo actual.
+   * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
+   * @returns Nodo raíz del subárbol actualizado tras la eliminación.
+   */
+  private eliminarAVLAux(
+    root: NodoAVL<T> | null,
+    valor: T,
+    steps: AVLDeleteStep[],
+    meta: AVLDeleteMeta<T>,
+    parentNode: NodoAVL<T> | null = null,
+    via: "left" | "right" | "root" = "root",
+    mode: "target" | "successor" = "target"
+  ) {
+    steps.push({
+      type: "checkNull",
+      at: root?.getId() ?? null,
+      isNull: root === null
+    });
+    if (root === null) {
+      steps.push({ type: "return", from: null, to: parentNode?.getId() ?? null, via });
+      return null;
+    }
+
+    const cmp = this.compare(valor, root.getInfo());
+    steps.push({ type: "compare", at: root.getId(), cmp: cmp < 0 ? -1 : cmp > 0 ? 1 : 0 });
+    if (cmp < 0) {
+      steps.push({
+        type: "goLeft",
+        from: root.getId(),
+        to: root.getIzq()?.getId() ?? null
+      });
+      root.setIzq(this.eliminarAVLAux(root.getIzq(), valor, steps, meta, root, "left", mode));
+    } else if (cmp > 0) {
+      steps.push({
+        type: "goRight",
+        from: root.getId(),
+        to: root.getDer()?.getId() ?? null
+      });
+      root.setDer(this.eliminarAVLAux(root.getDer(), valor, steps, meta, root, "right", mode));
+    } else {
+      steps.push({ type: "match", at: root.getId(), role: mode });
+      if (mode === "target") {
+        meta.deleted = true;
+        meta.targetNode = root;
+        meta.parent = parentNode;
+      } else {
+        meta.successorParent = parentNode;
+        meta.successor = root;
+      }
+
+      const izq = root.getIzq();
+      const der = root.getDer();
+
+      if (!izq) {
+        meta.replacement = der;
+        meta.replacementSide = "right";
+        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
+        return der;
+      }
+
+      if (!der) {
+        meta.replacement = izq;
+        meta.replacementSide = "left";
+        steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
+        return izq;
+      }
+
+      let succ = der;
+      while (succ.getIzq()) {
+        meta.pathToSuccessorIds.push(succ.getId());
+        succ = succ.getIzq()!;
+      }
+      meta.pathToSuccessorIds.push(succ.getId());
+
+
+      root.setInfo(succ.getInfo());
+      steps.push({
+        type: "callDeleteSuccessor",
+        from: root.getId(),
+        startAt: der.getId()
+      });
+      root.setDer(this.eliminarAVLAux(root.getDer(), succ.getInfo(), steps, meta, root, "right", "successor"));
+    }
+
+    steps.push({ type: "updateHeight", at: root.getId() });
+    this.recalcularAlturaNodo(root);
+
+    const newRoot = this.rebalancear(root, parentNode, steps);
+
+    steps.push({ type: "return", from: root.getId(), to: parentNode?.getId() ?? null, via });
+    return newRoot;
+  }
+
+  /**
+   * Método auxiliar que rebalancea el subárbol dado si se detecta un desbalance, aplicando
+   * las rotaciones necesarias según el caso. Maneja 4 casos:
    * 
    * - Rotación Left-Left (LL)
    * - Rotación Left-Right (LR)
@@ -363,33 +497,42 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
    * - Rotación Right-Left (RL)
    *
    * Durante cada caso, captura estados pre- y post-rotación para propositos de seguimiento y visualización.
-   * @param nodo Nodo AVL a rebalancear.
-   * @param parent Padre del nodo o null si el nodo es la raíz.
-   * @returns Nueva raíz del subárbol después del rebalanceo.
+   * @param nodo Nodo raíz del subárbol a rebalancear.
+   * @param parent Nodo padre del nodo actual, o null si es la raíz.
+   * @param steps Arreglo para acumular los pasos de rebalanceo realizados durante la operación.
+   * @returns Nuevo nodo raíz del subárbol tras aplicar las rotaciones correspondientes.
    */
-  private rebalancear(nodo: NodoAVL<T>, parent: NodoAVL<T> | null): NodoAVL<T> {
-    const bf = nodo.getBalance();
+  private rebalancear(
+    nodo: NodoAVL<T>,
+    parentNode: NodoAVL<T> | null,
+    steps: AVLInsertStep[] | AVLDeleteStep[]
+  ): NodoAVL<T> {
+    const bf = this.getBalance(nodo);
+    steps.push({ type: "computeBalance", at: nodo.getId(), bf: bf as -2 | -1 | 0 | 1 | 2 });
+
+    const trace = this.avlOperationTrace;
 
     // Izquierda pesada
     if (bf === 2) {
       const y = nodo.getIzq()!;
 
       // Capturar el estado pre-rotación
-      if (this.avlOperationTrace && !this.avlOperationTrace.hierarchies.pre) {
-        this.avlOperationTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
+      if (trace && !trace.hierarchies.pre) {
+        trace.hierarchies.pre = this.convertirEstructuraJerarquica();
       }
 
-      if (y.getBalance() < 0) {
+      if (this.getBalance(y) < 0) {
         // -------- LR: rotarIzq(y) -> rotarDer(nodo)
         const x = y.getDer()!;
 
         // Capturar info de la rotación a aplicar
-        this.avlOperationTrace?.rotations.push({
+        steps.push({ type: "rotationCase", at: nodo.getId(), kind: "LR" });
+        trace?.rotations.push({
           type: "LR",
           zId: nodo.getId(),
           yId: y.getId(),
           xId: x.getId(),
-          parentOfZId: parent?.getId() ?? null,
+          parentOfZId: parentNode?.getId() ?? null,
           xLeftId: x.getIzq()?.getId() ?? null,
           xRightId: x.getDer()?.getId() ?? null
         });
@@ -397,30 +540,58 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
         // Rotación y Captura del estado posterior
         nodo.setIzq(this.rotacionIzquierda(y));
         this.pushAvlRotationHierarchy();
+        if (trace) {
+          steps.push({
+            type: "rotate",
+            dir: "left",
+            pivot: y.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1,
+            phase: 0
+          });
+        }
 
         const newRoot = this.rotacionDerecha(nodo);
-
-        this.reattachAfterRotation(parent, nodo, newRoot);
+        this.reattachAfterRotation(parentNode, nodo, newRoot);
         this.pushAvlRotationHierarchy();
+        if (trace) {
+          steps.push({
+            type: "rotate",
+            dir: "right",
+            pivot: nodo.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1,
+            phase: 1
+          });
+        }
 
         return newRoot;
       } else {
         // -------- Ll: rotarDer(nodo)
 
         // Capturar info de la rotación a aplicar
-        this.avlOperationTrace?.rotations.push({
+        steps.push({ type: "rotationCase", at: nodo.getId(), kind: "LL" });
+        trace?.rotations.push({
           type: "LL",
           zId: nodo.getId(),
           yId: y.getId(),
-          parentOfZId: parent?.getId() ?? null,
+          parentOfZId: parentNode?.getId() ?? null,
           BId: y.getDer()?.getId() ?? null
         });
 
-        const newRoot = this.rotacionDerecha(nodo);
-
         // Rotación y Captura del estado posterior
-        this.reattachAfterRotation(parent, nodo, newRoot);
+        const newRoot = this.rotacionDerecha(nodo);
+        this.reattachAfterRotation(parentNode, nodo, newRoot);
         this.pushAvlRotationHierarchy();
+        if (trace) {
+          steps.push({
+            type: "rotate",
+            dir: "right",
+            pivot: nodo.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1
+          });
+        }
 
         return newRoot;
       }
@@ -431,21 +602,22 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       const y = nodo.getDer()!;
 
       // Capturar el estado pre-rotación
-      if (this.avlOperationTrace && !this.avlOperationTrace.hierarchies.pre) {
-        this.avlOperationTrace.hierarchies.pre = this.convertirEstructuraJerarquica();
+      if (trace && !trace.hierarchies.pre) {
+        trace.hierarchies.pre = this.convertirEstructuraJerarquica();
       }
 
-      if (y.getBalance() > 0) {
+      if (this.getBalance(y) > 0) {
         // -------- RL: rotarDer(y) -> rotarIzq(nodo)
         const x = y.getIzq()!;
 
         // Capturar info de la rotación a aplicar
-        this.avlOperationTrace?.rotations.push({
+        steps.push({ type: "rotationCase", at: nodo.getId(), kind: "RL" });
+        trace?.rotations.push({
           type: "RL",
           zId: nodo.getId(),
           yId: y.getId(),
           xId: x.getId(),
-          parentOfZId: parent?.getId() ?? null,
+          parentOfZId: parentNode?.getId() ?? null,
           xLeftId: x.getIzq()?.getId() ?? null,
           xRightId: x.getDer()?.getId() ?? null
         });
@@ -453,30 +625,58 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
         // Rotación y Captura del estado posterior
         nodo.setDer(this.rotacionDerecha(y));
         this.pushAvlRotationHierarchy();
+        if (trace) {
+          steps.push({
+            type: "rotate",
+            dir: "right",
+            pivot: y.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1,
+            phase: 0
+          });
+        }
 
         const newRoot = this.rotacionIzquierda(nodo);
-
-        this.reattachAfterRotation(parent, nodo, newRoot);
+        this.reattachAfterRotation(parentNode, nodo, newRoot);
         this.pushAvlRotationHierarchy();
+        if (trace) {
+          steps.push({
+            type: "rotate",
+            dir: "left",
+            pivot: nodo.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1,
+            phase: 1
+          });
+        }
 
         return newRoot;
       } else {
         // -------- RR: rotarDer(nodo)
 
         // Capturar info de la rotación a aplicar
-        this.avlOperationTrace?.rotations.push({
+        steps.push({ type: "rotationCase", at: nodo.getId(), kind: "RR" });
+        trace?.rotations.push({
           type: "RR",
           zId: nodo.getId(),
           yId: y.getId(),
-          parentOfZId: parent?.getId() ?? null,
+          parentOfZId: parentNode?.getId() ?? null,
           BId: y.getIzq()?.getId() ?? null
         });
 
-        const newRoot = this.rotacionIzquierda(nodo);
-
         // Rotación y Captura del estado posterior
-        this.reattachAfterRotation(parent, nodo, newRoot);
+        const newRoot = this.rotacionIzquierda(nodo);
+        this.reattachAfterRotation(parentNode, nodo, newRoot);
         this.pushAvlRotationHierarchy();
+        if (trace) {
+          steps.push({
+            type: "rotate",
+            dir: "left",
+            pivot: nodo.getId(),
+            frameIndex: trace.hierarchies.mids.length - 1,
+            rotationIndex: trace.rotations.length - 1
+          });
+        }
 
         return newRoot;
       }
@@ -486,9 +686,9 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que realiza una rotación derecha en el nodo AVL dado.
-   * @param x Nodo raíz del subárbol a rotar.
-   * @returns Nuevo nodo raíz del subárbol rotado.
+   * Método auxiliar que realiza una rotación simple a la derecha en el subárbol dado.
+   * @param y Nodo raíz del subárbol a rotar.
+   * @returns Nuevo nodo raíz del subárbol tras la rotación.
    */
   private rotacionDerecha(y: NodoAVL<T>): NodoAVL<T> {
     const x = y.getIzq()!;
@@ -497,16 +697,16 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     x.setDer(y);
     y.setIzq(T2);
 
-    y.recomputarAltura();
-    x.recomputarAltura();
+    this.recalcularAlturaNodo(y);
+    this.recalcularAlturaNodo(x);
 
     return x;
   }
 
   /**
-   * Método que realiza una rotación izquierda en el nodo AVL dado.
+   * Método auxiliar que realiza una rotación simple a la izquierda en el subárbol dado.
    * @param x Nodo raíz del subárbol a rotar.
-   * @returns Nuevo nodo raíz del subárbol rotado.
+   * @returns Nuevo nodo raíz del subárbol tras la rotación.
    */
   private rotacionIzquierda(x: NodoAVL<T>): NodoAVL<T> {
     const y = x.getDer()!;
@@ -515,14 +715,45 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     y.setIzq(x);
     x.setDer(T2);
 
-    x.recomputarAltura();
-    y.recomputarAltura();
+    this.recalcularAlturaNodo(x);
+    this.recalcularAlturaNodo(y);
 
     return y;
   }
 
   /**
-   * Método recursivo que convierte un nodo del árbol AVL en una estructura de datos jerárquica
+   * Método auxiliar que recalcula la altura del nodo dado en función
+   * de las alturas de sus subárboles izquierdo y derecho.
+   * @param nodo Nodo cuya altura ha de recalcularse.
+   */
+  private recalcularAlturaNodo(nodo: NodoAVL<T>) {
+    nodo.setAltura(1 + Math.max(
+      this.getAlturaNodo(nodo.getIzq()),
+      this.getAlturaNodo(nodo.getDer())
+    ));
+  }
+
+  /**
+   * Método auxiliar que obtiene el factor de balance del nodo dado, definido
+   * como la diferencia entre la altura del subárbol izquierdo y la altura del subárbol derecho.
+   * @param nodo Nodo del cual se obtiene el factor de balance.
+   * @returns Factor de balance del nodo.
+   */
+  private getBalance(nodo: NodoAVL<T>): number {
+    return this.getAlturaNodo(nodo.getIzq()) - this.getAlturaNodo(nodo.getDer());
+  }
+
+  /**
+   * Método auxiliar que obtiene la altura del nodo dado.
+   * @param nodo Nodo del que se desea obtener la altura.
+   * @returns Altura del nodo si existe, 0 en caso contrario.
+   */
+  private getAlturaNodo(nodo: NodoAVL<T> | null): number {
+    return nodo ? nodo.getAltura() : 0;
+  }
+
+  /**
+   * Método auxiliar que convierte un nodo del árbol AVL en una estructura de datos jerárquica
    * adecuada para visualización o procesamiento posterior.
    * @param root Nodo raíz del árbol AVL.
    * @returns Objeto que representa la estructura jerárquica del árbol AVL.
@@ -546,30 +777,30 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
     return {
       id: root.getId(),
       value: root.getInfo(),
-      bf: root.getBalance(),
-      height: root.getAltura(),
+      bf: this.getBalance(root),
+      height: this.getAlturaNodo(root),
       children
     };
   }
 
   /**
-   * Método recursivo que clona un árbol AVL iniciando desde el nodo raíz dado.
+   * Método auxiliar que clona un árbol AVL iniciando desde el nodo raíz dado.
    * @param root Nodo raíz del subárbol a clonar.
    * @returns Una nueva instancia `NodoAVL<T>` que es una clonación profunda del subárbol.
    */
-  private clonarAVLrec(root: NodoAVL<T> | null): NodoAVL<T> | null {
+  private clonarAVLAux(root: NodoAVL<T> | null): NodoAVL<T> | null {
     if (root === null) return null;
 
     const nuevoNodo = new NodoAVL<T>(root.getInfo(), root.getId());
     nuevoNodo.setAltura(root.getAltura());
-    nuevoNodo.setIzq(this.clonarAVLrec(root.getIzq()));
-    nuevoNodo.setDer(this.clonarAVLrec(root.getDer()));
+    nuevoNodo.setIzq(this.clonarAVLAux(root.getIzq()));
+    nuevoNodo.setDer(this.clonarAVLAux(root.getDer()));
 
     return nuevoNodo;
   }
 
   /**
-   * Método que reatacha un nodo después de una rotación en el árbol AVL.
+   * Método auxiliar que reatacha un nodo después de una rotación en el árbol AVL.
    * @param parent Nodo padre del subárbol.
    * @param before Nodo que estaba antes de la rotación.
    * @param after Nodo que está después de la rotación.
@@ -585,7 +816,7 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
   }
 
   /**
-   * Método que registra un estado intermedio del árbol durante el proceso de rebalanceo para propósitos de visualización y análisis.
+   * Método auxiliar que registra un estado intermedio del árbol durante el proceso de rebalanceo para propósitos de visualización y análisis.
    * Toma la estructura jerárquica actual del árbol y la agrega a la colección de jerarquías intermedias en la traza de operación avl.
    */
   private pushAvlRotationHierarchy(): void {
@@ -594,5 +825,4 @@ export class ArbolAVL<T> extends ArbolBinarioBusqueda<T> {
       this.convertirEstructuraJerarquica() as HierarchyNodeData<T>
     );
   }
-
 }

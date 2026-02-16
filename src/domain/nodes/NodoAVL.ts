@@ -89,34 +89,4 @@ export class NodoAVL<T> extends NodoBin<T> {
   public setAltura(h: number): void {
     this.altura = h;
   }
-
-  /**
-   * Método estático que obtiene la altura de un nodo AVL.
-   * @param nodo Nodo AVL del cual se desea obtener la altura.
-   * @returns Altura del nodo AVL o 0 si es nulo.
-   */
-  public static altura<N>(nodo: NodoAVL<N> | null): number {
-    return nodo ? nodo.getAltura() : 0;
-  }
-
-  /**
-   * Método que recomputa la altura del nodo AVL.
-   * @returns Nueva altura del nodo AVL.
-   */
-  public recomputarAltura(): number {
-    this.altura = 1 + Math.max(
-      NodoAVL.altura(this.getIzq()),
-      NodoAVL.altura(this.getDer())
-    );
-    return this.altura;
-  }
-
-  /**
-   * Método que obtiene el factor de balance del nodo AVL.
-   * @returns Factor de balance del nodo AVL.
-   */
-  public getBalance(): number {
-    return NodoAVL.altura(this.getIzq()) - NodoAVL.altura(this.getDer());
-  }
-
 }

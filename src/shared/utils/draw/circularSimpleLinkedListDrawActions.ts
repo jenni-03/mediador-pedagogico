@@ -96,8 +96,9 @@ export async function animateSimpleCircularInsertFirst(
                 )
             );
         }
+
         bus.emit("step:progress", { stepId: "insertFirst", lineIndex: labels.INC_SIZE });
-        await delay(500);
+        await delay(600);
 
         // Fin de la operación
         bus.emit("op:done", { op: "insertFirst" });
@@ -175,8 +176,9 @@ export async function animateSimpleCircularInsertLast(
                 },
             );
         }
+
         bus.emit("step:progress", { stepId: "insertLast", lineIndex: labels.INC_SIZE });
-        await delay(500);
+        await delay(600);
 
         // Fin de la operación
         bus.emit("op:done", { op: "insertLast" });
@@ -326,25 +328,25 @@ export async function animateSimpleCircularInsertAt(
             newNodeNextLinkGroup.style("opacity", 0);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.VALIDATE_POSITION });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.CREATE_NODE });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.VALIDATE_EMPTY });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_IF_HEAD });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_IF_TAIL });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.ELSE_INSERT });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.GET_PREV_NODE });
-            await delay(500);
+            await delay(600);
 
             // Recorrido de los nodos hasta la posición de inserción
             const nodesToTraverse = nodesData.slice(0, insertionPosition);
@@ -359,9 +361,6 @@ export async function animateSimpleCircularInsertAt(
                     DEC_POS: labels.DEC_POS,
                     RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
                 }, "insertAt");
-
-            bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.GET_PREV_NODE });
-            await delay(400);
 
             // Nodos a desplazar y enlaces a ajustar para la inclusión del nuevo nodo
             // (incluyendo el actual enlace siguiente entre el nodo previo y siguiente del nuevo nodo)
@@ -492,8 +491,9 @@ export async function animateSimpleCircularInsertAt(
 
             await Promise.all(shiftPromises);
         }
+
         bus.emit("step:progress", { stepId: "insertAt", lineIndex: labels.INC_SIZE });
-        await delay(500);
+        await delay(600);
 
         // Fin de la operación
         bus.emit("op:done", { op: "insertAt" });
@@ -585,11 +585,12 @@ export async function animateSimpleCircularDeleteFirst(
                 )
             );
         }
+
         bus.emit("step:progress", { stepId: "removeFirst", lineIndex: labels.DEC_SIZE });
-        await delay(500);
+        await delay(600);
 
         bus.emit("step:progress", { stepId: "removeFirst", lineIndex: labels.RETURN_ELEMENT });
-        await delay(500);
+        await delay(600);
 
         // Limpiamos el registro del nodo eliminado
         deletionData.positions.delete(currHeadNodeId);
@@ -679,11 +680,12 @@ export async function animateSimpleCircularDeleteLast(
                 }
             );
         }
+
         bus.emit("step:progress", { stepId: "removeLast", lineIndex: labels.DEC_SIZE });
-        await delay(500);
+        await delay(600);
 
         bus.emit("step:progress", { stepId: "removeLast", lineIndex: labels.RETURN_ELEMENT });
-        await delay(500);
+        await delay(600);
 
         // Limpiamos el registro del nodo eliminado
         deletionData.positions.delete(currTailNodeId);
@@ -852,29 +854,29 @@ export async function animateSimpleCircularDeleteAt(
             );
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.VALIDATE_EMPTY });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.VALIDATE_POSITION });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.DECLARE_REMOVED_NODE });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.VALIDATE_SINGLE_NODE });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.ELSE_IF_HEAD });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.ELSE_IF_TAIL });
-            await delay(500);
+            await delay(600);
 
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.ELSE_REMOVE });
-            await delay(500);
+            await delay(600);
 
             // Recorrido de los nodos hasta el nodo anterior al nodo a eliminar
             bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.GET_NODE_AT_POS });
-            await delay(500);
+            await delay(600);
 
             const nodesToTraverse = remainingNodesData.slice(0, deletePosition);
             await animateGetListNodePos(nodesG, nodesToTraverse, bus, {
@@ -884,9 +886,6 @@ export async function animateSimpleCircularDeleteAt(
                 DEC_POS: labels.DEC_POS,
                 RETURN_NODE_GETPOS: labels.RETURN_NODE_GETPOS
             }, "removeAt");
-
-            bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.GET_NODE_AT_POS });
-            await delay(400);
 
             // Posición de animación final del nodo a eliminar
             const removalNodePos = deletionData.positions.get(removalNodeId)!;
@@ -1006,10 +1005,10 @@ export async function animateSimpleCircularDeleteAt(
         }
 
         bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.DEC_SIZE });
-        await delay(500);
+        await delay(600);
 
         bus.emit("step:progress", { stepId: "removeAt", lineIndex: labels.RETURN_ELEMENT });
-        await delay(500);
+        await delay(600);
 
         // Limpiamos el registro del nodo eliminado
         deletionData.positions.delete(removalNodeId);
@@ -1058,14 +1057,14 @@ export async function animateCircularSearchElement(
         bus.emit("op:start", { op: "search" });
 
         bus.emit("step:progress", { stepId: "search", lineIndex: labels.VALIDATE_EMPTY });
-        await delay(500);
+        await delay(600);
 
         if (nodesData.length === 0) {
             bus.emit("step:progress", { stepId: "search", lineIndex: labels.RETURN_FALSE_EMPTY });
-            await delay(500);
+            await delay(600);
         } else {
             bus.emit("step:progress", { stepId: "search", lineIndex: labels.INIT_TRAVERSAL });
-            await delay(500);
+            await delay(600);
 
             let found = false;
             for (const node of nodesData) {
@@ -1131,12 +1130,12 @@ export async function animateCircularSearchElement(
                     .end();
 
                 bus.emit("step:progress", { stepId: "search", lineIndex: labels.WHILE_NOT_HEAD });
-                await delay(500);
+                await delay(600);
             }
 
             if (!found) {
                 bus.emit("step:progress", { stepId: "search", lineIndex: labels.RETURN_FALSE_NOT_FOUND });
-                await delay(500);
+                await delay(600);
             }
         }
 
@@ -1184,14 +1183,14 @@ async function animateInsertInEmptyList(
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.CREATE_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     // Aparición del nuevo nodo (lista vacía) y del indicador de cabeza
     bus.emit("step:progress", { stepId, lineIndex: labels.SET_HEAD_EMPTY });
@@ -1267,17 +1266,17 @@ async function animateInsertAtHeadNonEmpty(
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.CREATE_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     // Reposicionamiento de los elementos actuales de la lista a su posición final
     bus.emit("step:progress", { stepId, lineIndex: labels.LINK_NEW_TO_HEAD });
@@ -1385,24 +1384,24 @@ async function animateInsertAtTailNonEmpty(
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.CREATE_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     if (labels.ELSE_IF_HEAD) {
         bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_IF_HEAD });
-        await delay(500);
+        await delay(600);
     }
 
     const elseTailLabel = labels.ELSE_EMPTY ?? labels.ELSE_IF_TAIL ?? null;
     if (elseTailLabel) {
         bus.emit("step:progress", { stepId, lineIndex: elseTailLabel });
-        await delay(500);
+        await delay(600);
     }
 
     // Desconexión del actual enlace circular siguiente del nodo cola 
@@ -1483,22 +1482,22 @@ async function animateDeleteOneElementList(
     const tailIndicatorGroup = svg.select<SVGGElement>("g#tail-indicator");
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_SINGLE_NODE });
-    await delay(500);
+    await delay(600);
 
     if (labels.SAVE_SINGLE_NODE) {
         bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_SINGLE_NODE });
-        await delay(500);
+        await delay(600);
     }
 
     // Salida del indicador de cabeza y el enlace circular siguiente del nodo a eliminar 
@@ -1572,25 +1571,25 @@ async function animateDeleteAtHeadNonEmpty(
     tailNodeNewNextLinkGroup.style("opacity", 0);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_SINGLE_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_SINGLE_NODE });
-    await delay(500);
+    await delay(600);
 
     if (labels.SAVE_HEAD_NODE) {
         bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_HEAD_NODE });
-        await delay(500);
+        await delay(600);
     }
 
     // Posicionamiento del indicador de cabeza a la nueva cabeza de la lista
@@ -1726,43 +1725,40 @@ async function animateDeleteAtTailNonEmpty(
     newTailNodeNewNextLinkGroup.style("opacity", 0);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_EMPTY });
-    await delay(500);
+    await delay(600);
 
     if (labels.VALIDATE_POSITION) {
         bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_POSITION });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_REMOVED_NODE });
-    await delay(500);
+    await delay(600);
 
     bus.emit("step:progress", { stepId, lineIndex: labels.VALIDATE_SINGLE_NODE });
-    await delay(500);
+    await delay(600);
 
     if (labels.ELSE_IF_HEAD) {
         bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_IF_HEAD });
-        await delay(500);
+        await delay(600);
     }
 
     const elseLabel = labels.ELSE_SINGLE_NODE ?? labels.ELSE_IF_TAIL ?? null;
     if (elseLabel) {
         bus.emit("step:progress", { stepId, lineIndex: elseLabel });
-        await delay(500);
+        await delay(600);
     }
 
     if (labels.SAVE_TAIL_NODE) {
         bus.emit("step:progress", { stepId, lineIndex: labels.SAVE_TAIL_NODE });
-        await delay(500);
+        await delay(600);
     }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.GET_PREV_NODE });
-    await delay(500);
+    await delay(600);
 
     // Recorrido de los nodos hasta el nuevo último nodo
     await animateGetListNodePos(nodesG, deletionData.pathNodes, bus, getPosLabels, stepId);
-
-    bus.emit("step:progress", { stepId, lineIndex: labels.GET_PREV_NODE });
-    await delay(400);
 
     // Desconexión del actual enlace siguiente del nuevo nodo cola
     bus.emit("step:progress", { stepId, lineIndex: labels.LINK_PREV_TO_HEAD });

@@ -26,27 +26,18 @@ export const getColaPrioridadCode = (): Record<string, OperationCode> => ({
     ],
     labels: {
       CREATE_NODE: 2,
-
-      // Caso prioridad más alta o cola vacía
       CHECK_EMPTY_OR_HIGHER_PRIORITY: 3,
       INSERT_AT_START_SET_NEXT: 4,
       INSERT_AT_START_SET_HEAD: 5,
-
-      // Caso recorrido
       ELSE_BLOCK: 6,
       SET_CURRENT: 7,
       WHILE_CHECK: 8,
       WHILE_ADVANCE: 9,
-      END_WHILE: 10,
-
-      // Inserción en medio/final
       LINK_NEWNODE_NEXT: 11,
       LINK_PREVIOUS_TO_NEWNODE: 12,
-
       INC_SIZE: 14,
     },
   },
-
   dequeue: {
     lines: [
       `/**
@@ -106,7 +97,6 @@ export const getColaPrioridadCode = (): Record<string, OperationCode> => ({
       ],
     },
   },
-
   clean: {
     lines: [
       `/**

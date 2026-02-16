@@ -1,214 +1,512 @@
 import type { HierarchyNode, Selection } from "d3";
-import { AvlFrame, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../domain/utils/types";
-import { defaultAppearTreeNode, defaultDeleteTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
+import { AVLDeleteStep, AvlFrame, AVLInsertStep, HierarchyNodeData, RotationStep, TreeLinkData } from "../../../domain/utils/types";
+import { defaultAppearTreeNode, drawTreeLinks, drawTreeNodes, repositionTree, showTreeHint } from "./drawActionsUtilities";
 import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
-import { animateBSTInsertCore, animateEspecialBSTsRotation, animateLeafOrSingleChild, animateTwoChildren, highlightBinaryTreePath } from "./BinaryTreeDrawActions";
+import { animateEspecialBSTsRotation, animateGetInOrderSuccessor, animateReplaceChildNode } from "./BinaryTreeDrawActions";
 import type { Dispatch, SetStateAction } from "react";
 import { straightPath } from "../../../domain/utils/treeUtils";
+import { type EventBus } from "../../events/eventBus";
+import { getArbolAVLCode } from "../../../domain/constants/pseudocode/arbolAVLCode";
+import { delay } from "../../../domain/utils/simulatorUtils";
+
+const arbolAVLCode = getArbolAVLCode();
 
 /**
- * Función encargada de animar el proceso de inserción de un nuevo nodo en el árbol AVL.
+ * Función encargada de animar el proceso de inserción de un nodo en un árbol AVL.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
- * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param treeOffset Coordenadas de desplazamiento para el posicionamiento de los elementos del árbol dentro del SVG.
  * @param insertionData Objeto con información del árbol necesaria para la animación.
- * @param animationOpts Objeto con opciones de animación para el proceso de inserción.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateAVLTreeInsert(
+export async function animateInsertAVLNode(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     treeOffset: { x: number; y: number },
     insertionData: {
         targetNodeId: string;
-        parentId: string | null;
-        exists: boolean;
-        currentNodes: HierarchyNode<HierarchyNodeData<number>>[];
-        currentLinks: TreeLinkData[];
-        positions: Map<string, { x: number, y: number }>;
-        pathToTarget: string[];
+        parentNodeId: string | null;
+        inserted: boolean;
+        insertSteps: AVLInsertStep[];
+        nodesData: HierarchyNode<HierarchyNodeData<number>>[];
+        linksData: TreeLinkData[];
+        positions: Map<string, { x: number; y: number }>;
         rotations: RotationStep[];
         frames: AvlFrame[];
+        highlightColor: string;
     },
-    animationOpts: { highlightColor: string; },
+    bus: EventBus,
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+    // Etiquetas para el registro de eventos
+    const labels = arbolAVLCode.insert.labels;
+
+    // Elementos implicados en la inserción 
+    const { targetNodeId, parentNodeId, inserted, insertSteps } = insertionData;
+
     try {
-        // Desestructuración de elementos requeridos para la animación (con uso más frecuente) 
-        const { positions, targetNodeId, parentId, rotations, frames, currentNodes, currentLinks } = insertionData;
+        // Inicio de la operación
+        bus.emit("op:start", { op: "insert" });
 
         // Grupo contenedor de nodos y enlaces del árbol
-        const treeG = svg.select<SVGGElement>("g.tree-container");
+        const treeG = svg.select<SVGGElement>("g#tree-container");
 
-        // Grupo contenedor de los valores de la secuencia de recorrido
-        const seqG = svg.select<SVGGElement>("g.seq-container");
+        // Grupo contenedor de la secuencia de valores de recorrido (inicialmente oculto)
+        const seqG = svg.select<SVGGElement>("g#seq-container");
+        seqG.style("opacity", 0);
 
-        // Si el nodo a insertar ya se encuentra dentro del árbol
-        if (insertionData.exists) {
-            // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-            seqG.style("opacity", 0);
+        // Layout base
+        let layoutNodes = insertionData.nodesData;
+        let layoutLinks = insertionData.linksData;
 
-            // Animación de recorrido hasta el nodo objetivo
-            await highlightBinaryTreePath(treeG, insertionData.pathToTarget, animationOpts.highlightColor);
+        // Capas internas para nodos y enlaces
+        const linksLayer = treeG.select<SVGGElement>("g#links-layer");
+        const nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
 
-            // Restablecimiento del estilo visual original del nodo objetivo
-            await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
-                .transition()
-                .duration(800)
-                .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-                .end();
+        // Renderizado inicial de los nodos y enlaces del árbol
+        drawTreeNodes(nodesLayer, layoutNodes, insertionData.positions);
+        drawTreeLinks(linksLayer, layoutLinks, insertionData.positions);
 
-            // Mostrar indicador visual de que el nodo ya estaba presente dentro del árbol
-            await showTreeHint(
-                svg,
-                { type: "node", id: targetNodeId },
-                { label: "Nodo", value: "ya insertado" },
-                positions,
-                treeOffset,
-                {
-                    size: { width: 75, height: 35 },
-                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
-                    anchor: { side: "below", dx: 10, dy: -8 },
-                    palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
-                }
-            );
-        } else {
-            // Selección de capas de nodos y enlaces
-            const linksLayer = treeG.select<SVGGElement>("g.links-layer");
-            const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
+        // Renderizado de badges bf/h para los nodos del árbol
+        buildAvlMetricsBadge(nodesLayer, layoutNodes);
 
-            // Renderizado de los elementos correspondientes al nuevo nodo
-            drawTreeNodes(nodesLayer, currentNodes, positions);
-            drawTreeLinks(linksLayer, currentLinks, positions);
+        // Grupos correspondientes a los nuevos elementos producto de la inserción
+        let newNodeGroup: Selection<SVGGElement, unknown, null, undefined> | null = null;
+        let parentNodeNewLinkGroup: Selection<SVGGElement, unknown, null, undefined> | null = null;
+        if (inserted) {
+            newNodeGroup = treeG.select<SVGGElement>(`g#${targetNodeId}`);
+            newNodeGroup.style("opacity", 0);
 
-            // Renderizado de métricas para los nodos del árbol
-            buildAvlMetricsBadge(nodesLayer, currentNodes);
-
-            // Animación de inserción del elemento como BST
-            await animateBSTInsertCore(
-                treeG,
-                seqG,
-                {
-                    newNodeId: targetNodeId,
-                    parentId,
-                    nodesData: currentNodes,
-                    linksData: currentLinks,
-                    pathToParent: insertionData.pathToTarget,
-                    positions: positions
-                },
-                {
-                    reposition: repositionAVLTree,
-                    appearNode: appearAVLTreeNode,
-                    highlight: highlightBinaryTreePath,
-                    highlightColor: animationOpts.highlightColor
-                }
-            );
-
-            // Restablecimiento del color original del padre del nuevo nodo (si aplica)
-            if (parentId) {
-                await treeG.select<SVGGElement>(`g#${insertionData.parentId} circle.node-container`)
-                    .transition()
-                    .duration(800)
-                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-                    .end();
-            }
-
-            // Actualización de las métricas para los nodos del árbol
-            updateAvlMetricsBadge(nodesLayer, currentNodes);
-
-            // Aplicación de rotaciones
-            let rotationIndex = 0;
-            let framesPerDoubleRotation = 0;
-            for (let i = 1; i < frames.length; i++) {
-                // Iniciamos desde el segundo frame debido a que el primero corresponde al frame pre-rotación
-                const { nodes, links } = frames[i];
-                const rotation = rotations[rotationIndex];
-
-                // Mostrar badge de rotación segun la rotación a aplicar
-                if (framesPerDoubleRotation < 1) {
-                    await showTreeHint(
-                        svg,
-                        { type: "node", id: rotation.zId },
-                        { label: "Rotación", value: rotation.type },
-                        positions,
-                        treeOffset,
-                        {
-                            size: { width: 60, height: 35, radius: 10 },
-                            typography: { labelFz: "10px", valueFz: "12px", labelFw: 900, valueFw: 900 },
-                            anchor: { side: "right", dx: 0.5, dy: -10 },
-                            palette: { stroke: "#ff6b6b" }
-                        }
-                    );
-                }
-
-                // Renderizar los nuevos enlaces
-                drawTreeLinks(linksLayer, links, positions);
-
-                // Actualizar la posición de los nodos según el estado actual
-                drawTreeNodes(nodesLayer, nodes, positions);
-
-                if (rotation.type === "LL" || rotation.type === "RR") {
-                    // Animación para rotación simple (RR/LL)
-                    await animateEspecialBSTsRotation(
-                        treeG,
-                        rotation.parentOfZId ?? null,
-                        rotation.zId,
-                        rotation.yId,
-                        rotation.BId ?? null,
-                        repositionAVLTree,
-                        {
-                            nodes,
-                            links,
-                            positions
-                        }
-                    );
-                } else if (framesPerDoubleRotation < 1) {
-                    // Animación para primer paso de rotación doble (LR/RL)
-                    await animateEspecialBSTsRotation(
-                        treeG,
-                        rotation.zId,
-                        rotation.yId,
-                        rotation.xId!,
-                        rotation.type === "LR" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
-                        repositionAVLTree,
-                        {
-                            nodes,
-                            links,
-                            positions
-                        }
-                    );
-                } else {
-                    // Animación para segundo paso de rotación compuesta (LR/RL)
-                    await animateEspecialBSTsRotation(
-                        treeG,
-                        rotation.parentOfZId ?? null,
-                        rotation.zId,
-                        rotation.xId!,
-                        rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
-                        repositionAVLTree,
-                        {
-                            nodes,
-                            links,
-                            positions
-                        }
-                    );
-                }
-
-                // Actualización de las métricas para los nodos del árbol
-                updateAvlMetricsBadge(nodesLayer, nodes);
-
-                // Cálculo del indice para la siguiente rotación
-                if (rotation.type === "RL" || rotation.type === "LR") {
-                    framesPerDoubleRotation += 1;
-                    if (framesPerDoubleRotation === 2) {
-                        framesPerDoubleRotation = 0;
-                        rotationIndex += 1;
-                    }
-                } else {
-                    rotationIndex += 1;
-                }
+            if (parentNodeId) {
+                parentNodeNewLinkGroup = treeG.select<SVGGElement>(
+                    `g#link-${parentNodeId}-${targetNodeId}`
+                );
             }
         }
+
+        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.RESET_INSERTED_FLAG });
+        await delay(600);
+
+        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_RECURSIVE_INSERT });
+        await delay(600);
+
+        let prevStep: AVLInsertStep | null = null;
+        let prevParentOfUnbalanced: string | null = null;
+        let prevSonOfUnbalanced: string | null = null;
+        for (const step of insertSteps) {
+            const lastStep = prevStep;
+
+            switch (step.type) {
+                case "checkNull": {
+                    bus.emit("step:progress", {
+                        stepId: "insert",
+                        lineIndex: labels.IF_NULL_NODE
+                    });
+                    if (step.isNull) {
+                        await delay(600);
+                    } else {
+                        // Resaltado del nodo actual
+                        await treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", insertionData.highlightColor)
+                            .end();
+                    }
+                    break;
+                }
+                case "createLeaf": {
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CREATE_LEAF_NODE });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_INSERTED_TRUE });
+                    await delay(600);
+
+                    // Aparición del nuevo nodo
+                    bus.emit("step:progress", {
+                        stepId: "insert",
+                        lineIndex: labels.RETURN_LEAF
+                    });
+                    await repositionAVLTree(treeG, layoutNodes, layoutLinks, insertionData.positions);
+                    if (newNodeGroup) await appearAVLTreeNode(newNodeGroup);
+                    break;
+                }
+                case "compare": {
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.DECLARE_CMP });
+                    await delay(600);
+
+                    if (step.cmp === -1) {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_CMP_LT_ZERO });
+                        await delay(600);
+                    } else {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_CMP_LT_ZERO });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.ELSE_IF_CMP_GT_ZERO });
+                        await delay(600);
+
+                        if (step.cmp === 0) {
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.ELSE_DUPLICATE });
+                            await delay(600);
+
+                            // Pulsación del nodo identificado
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.MARK_NOT_INSERTED });
+                            await treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`)
+                                .transition()
+                                .duration(300)
+                                .attr("r", 30)
+                                .transition()
+                                .duration(300)
+                                .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
+                                .end();
+
+                            // Indicador visual de que el nodo a insertar ya existe en el árbol
+                            await showTreeHint(
+                                svg,
+                                { type: "node", id: step.at },
+                                { label: "Elemento", value: `ya existente` },
+                                insertionData.positions,
+                                treeOffset,
+                                {
+                                    size: { width: 75, height: 35 },
+                                    typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                                    anchor: { side: "below", dx: 10, dy: -8 },
+                                    palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                                }
+                            );
+                        }
+                    }
+                    break;
+                }
+                case "goLeft": {
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_LEFT_SUBTREE });
+                    await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                        .transition()
+                        .duration(800)
+                        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                        .end();
+                    break;
+                }
+                case "goRight": {
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_RIGHT_SUBTREE });
+                    await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                        .transition()
+                        .duration(800)
+                        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                        .end();
+                    break;
+                }
+                case "updateHeight": {
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.UPDATE_HEIGHT });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_LEFT_HEIGHT });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT });
+                    await delay(600);
+
+                    // Actualización del badge de altura del nodo actual
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_HEIGHT });
+                    await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.at);
+                    break;
+                }
+                case "computeBalance": {
+                    bus.emit("step:progress", {
+                        stepId: "insert",
+                        lineIndex: labels.CALL_REBALANCE
+                    });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.COMPUTE_BF });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_NODE_NULL_BALANCE });
+                    await delay(600);
+
+                    if (!step.at) {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.RETURN_ZERO_BALANCE });
+                        await delay(600);
+                    } else {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_LEFT_HEIGHT2 });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT2 });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.RETURN_BF });
+                        await delay(600);
+                    }
+
+                    // Caso de inserción sin rotación
+                    if (step.bf >= -1 && step.bf <= 1) {
+                        bus.emit("step:progress", {
+                            stepId: "insert",
+                            lineIndex: labels.IF_BF_POS_TWO
+                        });
+                        await delay(600);
+
+                        bus.emit("step:progress", {
+                            stepId: "insert",
+                            lineIndex: labels.ELSE_IF_BF_NEG_TWO
+                        });
+                        await delay(600);
+
+                        bus.emit("step:progress", {
+                            stepId: "insert",
+                            lineIndex: labels.RETURN_REBALANCED
+                        });
+                        await delay(600);
+                    }
+                    break;
+                }
+                case "rotationCase": {
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_BF_POS_TWO });
+                    await delay(600);
+
+                    if (step.kind === "LL" || step.kind === "LR") {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_Y_LEFT });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_INNER_LR });
+                        await delay(600);
+
+                        if (step.kind === "LR") {
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.APPLY_LR_LEFT_ROT });
+                        } else {
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.ELSE_LL });
+                            await delay(600);
+
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.APPLY_LL_ROT });
+                        }
+                    } else {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.ELSE_IF_BF_NEG_TWO });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_Y_RIGHT });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_INNER_RL });
+                        await delay(600);
+
+                        if (step.kind === "RL") {
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.APPLY_RL_RIGHT_ROT });
+                        } else {
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.ELSE_RR });
+                            await delay(600);
+
+                            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.APPLY_RR_ROT });
+                        }
+                    }
+
+                    // Indicador visual del tipo de rotación a aplicar
+                    await showTreeHint(
+                        svg,
+                        { type: "node", id: step.at },
+                        { label: "Rotación", value: step.kind },
+                        insertionData.positions,
+                        treeOffset,
+                        {
+                            size: { width: 80, height: 35 },
+                            typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                            anchor: { side: "below", dx: 10, dy: -8 },
+                            palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                        }
+                    );
+                    break;
+                }
+                case "rotate": {
+                    // Frame correspondiente a la rotación actual
+                    const frame = insertionData.frames[step.frameIndex + 1];
+                    const rotation = insertionData.rotations[step.rotationIndex];
+
+                    // Actualizar el layout al frame de la rotación
+                    layoutNodes = frame.nodes;
+                    layoutLinks = frame.links;
+
+                    // Renderizado de los nuevos enlaces y actualización de la posición de los nodos según el nuevo layout
+                    drawTreeLinks(linksLayer, layoutLinks, insertionData.positions);
+                    drawTreeNodes(nodesLayer, layoutNodes, insertionData.positions);
+
+                    const isDouble = rotation.type === "LR" || rotation.type === "RL";
+                    const isSimple = rotation.type === "LL" || rotation.type === "RR";
+
+                    const parentOfUnbalanced = isDouble && step.phase === 0 ? rotation.zId : rotation.parentOfZId ?? null;
+                    const unbalancedNode = isDouble && step.phase === 0 ? rotation.yId : rotation.zId;
+                    const sonOfUnbalanced = isDouble ? rotation.xId ?? null : rotation.yId;
+                    const rotationNode = isSimple ? rotation.BId ?? null
+                        : rotation.type === "LR" || rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null;
+
+                    if (step?.phase === 1) {
+                        const firstRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_LEFT_ROT : labels.APPLY_RL_RIGHT_ROT;
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: firstRotationLabel });
+                        if (prevParentOfUnbalanced && prevSonOfUnbalanced) {
+                            await treeG.select<SVGGElement>(`g#link-${prevParentOfUnbalanced}-${prevSonOfUnbalanced}`)
+                                .transition()
+                                .duration(800)
+                                .style("opacity", 1)
+                                .end();
+                        } else {
+                            await delay(600);
+                        }
+
+                        const secondRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_RIGHT_ROT : labels.APPLY_RL_LEFT_ROT;
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: secondRotationLabel });
+                        await delay(600);
+                    }
+
+                    // Animación para rotación simple del subárbol
+                    await animateEspecialBSTsRotation(
+                        treeG,
+                        parentOfUnbalanced,
+                        unbalancedNode,
+                        sonOfUnbalanced!,
+                        rotationNode,
+                        repositionAVLTree,
+                        {
+                            nodes: layoutNodes,
+                            links: layoutLinks,
+                            positions: insertionData.positions
+                        },
+                        {
+                            bus,
+                            stepId: "insert",
+                            labels: {
+                                DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
+                                DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
+                                SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
+                                SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
+                            }
+                        }
+                    );
+
+                    // Actualizar la altura del primer nodo
+                    const recalFirstNodeHeightLabel = step.dir === "right" ? labels.ROT_RIGHT_RECALC_Y : labels.ROT_LEFT_RECALC_X;
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: recalFirstNodeHeightLabel });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_LEFT_HEIGHT });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT });
+                    await delay(600);
+
+                    // Actualización del badge de altura del primer nodo
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_HEIGHT });
+                    await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.pivot);
+
+                    // Actualizar la altura del segundo nodo
+                    const recalSecondNodeHeightLabel = step.dir === "right" ? labels.ROT_RIGHT_RECALC_X : labels.ROT_LEFT_RECALC_Y;
+                    const secondRotateNodeId = rotation.type === "LL" || rotation.type === "RR" ? rotation.yId : rotation.xId!;
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: recalSecondNodeHeightLabel });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_LEFT_HEIGHT });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.GET_RIGHT_HEIGHT });
+                    await delay(600);
+
+                    // Actualización del badge de altura del primer nodo
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: labels.SET_HEIGHT });
+                    await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, secondRotateNodeId);
+
+                    const returnRotationLabel = step.dir === "right" ? labels.ROT_RIGHT_RETURN : labels.ROT_LEFT_RETURN;
+                    bus.emit("step:progress", { stepId: "insert", lineIndex: returnRotationLabel });
+                    await delay(600);
+
+                    if ((isDouble && step.phase === 1) || isSimple) {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.RETURN_REBALANCED });
+                        await delay(600);
+                    }
+
+                    prevParentOfUnbalanced = parentOfUnbalanced;
+                    prevSonOfUnbalanced = sonOfUnbalanced;
+                    break;
+                }
+                case "return": {
+                    const isLeafReturn = lastStep?.type === "createLeaf";
+                    const isRotationReturn = lastStep?.type === "rotate";
+                    if (!isLeafReturn) {
+                        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.RETURN_NODE });
+                        await delay(600);
+                    }
+
+                    if (step.to !== null && step.via !== "root") {
+                        const lineToRemark = step.via === "left" ? labels.CALL_LEFT_SUBTREE : labels.CALL_RIGHT_SUBTREE;
+                        bus.emit("step:progress", {
+                            stepId: "insert",
+                            lineIndex: lineToRemark
+                        });
+                    }
+
+                    if (step.from) {
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
+                        await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                            .end();
+                    }
+                    if (step.to) {
+                        // Resaltado del nodo en la nueva llamada (backtracking)
+                        await treeG.select<SVGCircleElement>(`g#${step.to} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", insertionData.highlightColor)
+                            .end();
+
+                        if (isLeafReturn) {
+                            // Establecimiento del nuevo enlace entre el nodo padre y el nuevo nodo 
+                            if (parentNodeNewLinkGroup) {
+                                await parentNodeNewLinkGroup
+                                    .transition()
+                                    .duration(800)
+                                    .style("opacity", 1)
+                                    .end();
+                            }
+                        }
+
+                        if (isRotationReturn) {
+                            // Establecimiento del nuevo enlace del nodo padre del nodo rotado
+                            if (prevParentOfUnbalanced && prevSonOfUnbalanced) {
+                                await treeG.select<SVGGElement>(`g#link-${prevParentOfUnbalanced}-${prevSonOfUnbalanced}`)
+                                    .transition()
+                                    .duration(800)
+                                    .style("opacity", 1)
+                                    .end();
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+
+            prevStep = step;
+        }
+
+        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.CALL_RECURSIVE_INSERT });
+        await delay(600);
+
+        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.IF_INSERTED });
+        await delay(600);
+
+        if (inserted) {
+            bus.emit("step:progress", { stepId: "insert", lineIndex: labels.INC_SIZE });
+            await delay(600);
+        }
+
+        bus.emit("step:progress", { stepId: "insert", lineIndex: labels.RETURN_RESULT });
+        await delay(600);
+
+        // Fin de la operación
+        bus.emit("op:done", { op: "insert" });
     } finally {
         resetQueryValues();
         setIsAnimating(false);
@@ -216,240 +514,571 @@ export async function animateAVLTreeInsert(
 }
 
 /**
- * Función encargada de animar la eliminación de un nodo especifico en el árbol AVL.
+ * Función encargada de animar el proceso de eliminación de un nodo en un árbol AVL.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se aplicará la animación.
- * @param treeOffset Desplazamiento del árbol dentro del SVG.
+ * @param treeOffset Coordenadas de desplazamiento para el posicionamiento de los elementos del árbol dentro del SVG.
  * @param deletionData Objeto con información del árbol necesaria para la animación.
- * @param animationOpts Objeto con opciones de animación para el proceso de eliminación.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export async function animateAVLTreeDelete(
+export async function animateDeleteAVLNode(
     svg: Selection<SVGSVGElement, unknown, null, undefined>,
     treeOffset: { x: number; y: number },
     deletionData: {
-        targetNodeId: string;
-        parentId: string | null;
+        targetNodeId: string | null;
+        parentNodeId: string | null;
         successorNodeId: string | null;
+        successorParentNodeId: string | null;
         replacementNodeId: string | null;
-        exists: boolean;
-        currentNodes: HierarchyNode<HierarchyNodeData<number>>[];
-        currentLinks: TreeLinkData[];
-        positions: Map<string, { x: number, y: number }>;
-        pathToTarget: string[];
+        replacementSide: "left" | "right" | null;
         pathToSuccessor: string[];
+        deleted: boolean;
+        deleteSteps: AVLDeleteStep[];
+        remainingNodesData: HierarchyNode<HierarchyNodeData<number>>[];
+        remainingLinksData: TreeLinkData[];
+        positions: Map<string, { x: number, y: number }>;
         rotations: RotationStep[];
         frames: AvlFrame[];
-    },
-    animationOpts: {
         highlightTargetColor: string;
         highlightSuccessorColor: string;
     },
+    bus: EventBus,
     resetQueryValues: () => void,
     setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
+    // Etiquetas para el registro de eventos
+    const labels = arbolAVLCode.delete.labels;
+
+    // Elementos implicados en la eliminación 
+    const { targetNodeId,
+        parentNodeId,
+        successorNodeId,
+        successorParentNodeId,
+        replacementNodeId,
+        deleted,
+        deleteSteps } = deletionData;
+
     try {
-        // Desestructuración de elementos requeridos para la animación (con uso más frecuente)
-        const { targetNodeId, parentId, successorNodeId, positions, currentNodes, currentLinks, rotations, frames } = deletionData;
+        // Inicio de la operación
+        bus.emit("op:start", { op: "delete" });
 
         // Grupo contenedor de nodos y enlaces del árbol
-        const treeG = svg.select<SVGGElement>("g.tree-container");
+        const treeG = svg.select<SVGGElement>("g#tree-container");
 
-        // Grupo contenedor de los valores de la secuencia de recorrido
-        const seqG = svg.select<SVGGElement>("g.seq-container");
-
-        // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
+        // Grupo contenedor de la secuencia de valores de recorrido (inicialmente oculto)
+        const seqG = svg.select<SVGGElement>("g#seq-container");
         seqG.style("opacity", 0);
 
-        // En caso de que el nodo objetivo no se encuentre dentro del árbol (no se elimina nada)
-        if (!deletionData.exists) {
-            // Animación de recorrido hasta el último nodo visitado
-            await highlightBinaryTreePath(treeG, deletionData.pathToTarget, animationOpts.highlightTargetColor);
+        // Layout base
+        let layoutNodes = deletionData.remainingNodesData;
+        let layoutLinks = deletionData.remainingLinksData;
 
-            // Mostrar indicador visual de que el nodo no fue encontrado
-            await showTreeHint(
-                svg,
-                { type: "node", id: targetNodeId },
-                { label: "Nodo", value: "no ubicado" },
-                positions,
-                treeOffset,
-                {
-                    size: { width: 80, height: 35 },
-                    typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
-                    anchor: { side: "below", dx: 10, dy: -8 },
-                    palette: { bg: "#0c2b2e", stroke: "#14b8a6" }
-                }
-            );
+        // Capas internas para nodos y enlaces
+        const linksLayer = treeG.select<SVGGElement>("g#links-layer");
+        const nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
 
-            // Restablecimiento del fondo original del último nodo visitado.
-            await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
-                .transition()
-                .duration(800)
-                .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-                .end();
-        } else {
-            // Selección de capa de nodos y enlaces
-            const nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
-            const linksLayer = treeG.select<SVGGElement>("g.links-layer");
+        // Renderizado inicial de los nodos y enlaces del árbol
+        drawTreeNodes(nodesLayer, layoutNodes, deletionData.positions);
+        drawTreeLinks(linksLayer, layoutLinks, deletionData.positions);
 
-            // Renderizado de elementos posteriores a la eliminación
-            drawTreeNodes(nodesLayer, currentNodes, positions);
-            drawTreeLinks(linksLayer, currentLinks, positions);
+        // Id del nodo a eliminar (depende de la existencia del sucesor)
+        const removalNodeId = successorNodeId ?? targetNodeId
 
-            // Determinamos el nodo a eliminar
-            const nodeToDeleteId = successorNodeId ? successorNodeId : targetNodeId;
+        // Id del nodo padre del nodo a eliminar (depende de la existencia del sucesor)
+        const parentRemovalNodeId = successorParentNodeId ?? parentNodeId;
 
-            if (!successorNodeId) {
-                // Animación especifica de eliminación para nodo hoja o nodo con único hijo
-                await animateLeafOrSingleChild(
-                    treeG,
-                    nodeToDeleteId,
-                    parentId,
-                    deletionData.replacementNodeId,
-                    deletionData.pathToTarget,
-                    {
-                        deleteNode: defaultDeleteTreeNode,
-                        highlightNodePath: highlightBinaryTreePath,
-                        highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR,
-                        buildPath: straightPath
+        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.VALIDATE_EMPTY });
+        await delay(600);
+
+        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RESET_DELETED_FLAG });
+        await delay(600);
+
+        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_RECURSIVE_DELETE });
+        await delay(600);
+
+        let prevStep: AVLDeleteStep | null = null;
+        let prevParentOfUnbalanced: string | null = null;
+        let prevSonOfUnbalanced: string | null = null;
+        for (const step of deleteSteps) {
+            const lastStep = prevStep;
+
+            switch (step.type) {
+                case "checkNull": {
+                    bus.emit("step:progress", {
+                        stepId: "delete",
+                        lineIndex: labels.IF_NULL_NODE
+                    });
+                    if (step.isNull) {
+                        await delay(600);
+                        bus.emit("step:progress", {
+                            stepId: "delete",
+                            lineIndex: labels.RETURN_NULL
+                        });
+                        await delay(600);
+                    } else {
+                        // Resaltado del nodo actual
+                        await treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", deletionData.highlightTargetColor)
+                            .end();
                     }
-                );
+                    break;
+                }
+                case "compare": {
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.DECLARE_CMP });
+                    await delay(600);
 
-                // Restablecimiento del color original del padre del nodo a eliminar (si aplica)
-                if (parentId) {
-                    await treeG.select<SVGGElement>(`g#${parentId} circle.node-container`)
+                    if (step.cmp === -1) {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_CMP_LT_ZERO });
+                        await delay(600);
+                    } else {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_CMP_LT_ZERO });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.ELSE_IF_CMP_GT_ZERO });
+                        await delay(600);
+
+                        if (step.cmp === 0) {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.ELSE_FOUND });
+                            await delay(600);
+                        }
+                    }
+                    break;
+                }
+                case "goLeft": {
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_LEFT_SUBTREE });
+                    await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                         .transition()
                         .duration(800)
                         .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
                         .end();
+                    break;
                 }
-            } else {
-                // Animación específica de eliminación para nodo con 2 hijos
-                await animateTwoChildren(
-                    treeG,
-                    nodeToDeleteId,
-                    targetNodeId,
-                    parentId!,
-                    deletionData.replacementNodeId,
-                    deletionData.pathToTarget,
-                    deletionData.pathToSuccessor,
-                    {
-                        highlightNodePath: highlightBinaryTreePath,
-                        highlightTargetColor: animationOpts.highlightTargetColor,
-                        highlightSuccessorColor: animationOpts.highlightSuccessorColor
+                case "goRight": {
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_RIGHT_SUBTREE });
+                    await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                        .transition()
+                        .duration(800)
+                        .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                        .end();
+                    break;
+                }
+                case "match": {
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_DELETED_TRUE });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_NO_LEFT_CHILD });
+                    await delay(600);
+
+                    if ((step.role === "target" && !successorNodeId) || step.role === "successor") {
+                        if (deletionData.replacementSide === "right") {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_RIGHT_CHILD });
+                            await delay(600);
+                        } else {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_NO_RIGHT_CHILD });
+                            await delay(600);
+
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_LEFT_CHILD });
+                            await delay(600);
+                        }
+                    } else {
+                        // Nodo con 2 hijos
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_NO_RIGHT_CHILD });
+                        await delay(600);
+
+                        // Recorrido de los nodos desde el nodo objetivo hasta el sucesor (nodo a eliminar)
+                        await animateGetInOrderSuccessor(
+                            treeG,
+                            deletionData.pathToSuccessor,
+                            deletionData.highlightSuccessorColor,
+                            "delete",
+                            bus,
+                            {
+                                DECLARE_SUCC_NODE: labels.DECLARE_SUCC_NODE,
+                                WHILE_TRAVERSAL: labels.WHILE_TRAVERSAL,
+                                SET_SUCC_NODE: labels.SET_SUCC_NODE
+                            }
+                        );
+
+                        // Desvanecimiento del valor actual del nodo objetivo
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.UPDATE_NODE_INFO });
+                        const targetNodeValueGroup = treeG.select<SVGTextElement>(`g#${targetNodeId} text.node-value`);
+                        await targetNodeValueGroup
+                            .transition()
+                            .duration(1000)
+                            .style("opacity", 0)
+                            .end();
+
+                        // Establecimiento del nuevo valor del nodo objetivo copiado del nodo a eliminar
+                        targetNodeValueGroup.text(treeG.select<SVGGElement>(`g#${removalNodeId}`).select("text").text());
+
+                        // Aparición del nuevo valor del nodo objetivo
+                        await targetNodeValueGroup
+                            .transition()
+                            .duration(1000)
+                            .style("opacity", 1)
+                            .end();
+
+                        // Salida y reemplazo del nodo a eliminar
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_DELETE_SUCCESSOR });
+                        await treeG.select<SVGCircleElement>(`g#${targetNodeId} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                            .end();
                     }
-                );
+                    break;
+                }
+                case "updateHeight": {
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.UPDATE_HEIGHT });
+                    await delay(600);
 
-                // Restablecimiento del color original del nodo actualizado
-                await treeG.select<SVGGElement>(`g#${targetNodeId} circle.node-container`)
-                    .transition()
-                    .duration(800)
-                    .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-                    .end();
-            }
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_LEFT_HEIGHT });
+                    await delay(600);
 
-            // Limpiamos el registro del nodo eliminado
-            positions.delete(nodeToDeleteId);
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT });
+                    await delay(600);
 
-            // Actualización de las métricas para los nodos del árbol
-            updateAvlMetricsBadge(nodesLayer, currentNodes);
+                    // Actualización del badge de altura del nodo actual
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_HEIGHT });
+                    await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.at);
+                    break;
+                }
+                case "computeBalance": {
+                    bus.emit("step:progress", {
+                        stepId: "delete",
+                        lineIndex: labels.CALL_REBALANCE
+                    });
+                    await delay(600);
 
-            // Reposicionamiento de los nodos y enlaces del árbol
-            await repositionAVLTree(treeG, currentNodes, currentLinks, positions);
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.COMPUTE_BF });
+                    await delay(600);
 
-            // Aplicación de rotaciones
-            let rotationIndex = 0;
-            let framesPerDoubleRotation = 0;
-            for (let i = 1; i < frames.length; i++) {
-                // Iniciamos desde el segundo frame debido a que el primero corresponde al frame pre-rotación
-                const { nodes, links } = frames[i];
-                const rotation = rotations[rotationIndex];
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_NODE_NULL_BALANCE });
+                    await delay(600);
 
-                // Mostrar badge de rotación segun la rotación a aplicar
-                if (framesPerDoubleRotation < 1) {
+                    if (!step.at) {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_ZERO_BALANCE });
+                        await delay(600);
+                    } else {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_LEFT_HEIGHT2 });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT2 });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_BF });
+                        await delay(600);
+                    }
+
+                    // Caso de inserción sin rotación
+                    if (step.bf >= -1 && step.bf <= 1) {
+                        bus.emit("step:progress", {
+                            stepId: "delete",
+                            lineIndex: labels.IF_BF_POS_TWO
+                        });
+                        await delay(600);
+
+                        bus.emit("step:progress", {
+                            stepId: "delete",
+                            lineIndex: labels.ELSE_IF_BF_NEG_TWO
+                        });
+                        await delay(600);
+
+                        bus.emit("step:progress", {
+                            stepId: "delete",
+                            lineIndex: labels.RETURN_REBALANCED
+                        });
+                        await delay(600);
+                    }
+                    break;
+                }
+                case "rotationCase": {
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_BF_POS_TWO });
+                    await delay(600);
+
+                    if (step.kind === "LL" || step.kind === "LR") {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_Y_LEFT });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_INNER_LR });
+                        await delay(600);
+
+                        if (step.kind === "LR") {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.APPLY_LR_LEFT_ROT });
+                        } else {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.ELSE_LL });
+                            await delay(600);
+
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.APPLY_LL_ROT });
+                        }
+                    } else {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.ELSE_IF_BF_NEG_TWO });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_Y_RIGHT });
+                        await delay(600);
+
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_INNER_RL });
+                        await delay(600);
+
+                        if (step.kind === "RL") {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.APPLY_RL_RIGHT_ROT });
+                        } else {
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.ELSE_RR });
+                            await delay(600);
+
+                            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.APPLY_RR_ROT });
+                        }
+                    }
+
+                    // Indicador visual del tipo de rotación a aplicar
                     await showTreeHint(
                         svg,
-                        { type: "node", id: rotation.zId },
-                        { label: "Rotación", value: rotation.type },
-                        positions,
+                        { type: "node", id: step.at },
+                        { label: "Rotación", value: step.kind },
+                        deletionData.positions,
                         treeOffset,
                         {
-                            size: { width: 50, height: 35, radius: 10 },
-                            typography: { labelFz: "10px", valueFz: "12px", labelFw: 900, valueFw: 900 },
-                            anchor: { side: "right", dx: 0.5, dy: -10 },
-                            palette: { stroke: "#ff6b6b" }
+                            size: { width: 80, height: 35 },
+                            typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                            anchor: { side: "below", dx: 10, dy: -8 },
+                            palette: { bg: "#1b2330", stroke: "#14b8a6" }
                         }
                     );
+                    break;
                 }
+                case "rotate": {
+                    // Frame correspondiente a la rotación actual
+                    const frame = deletionData.frames[step.frameIndex + 1];
+                    const rotation = deletionData.rotations[step.rotationIndex];
 
-                // Renderizar los nuevos enlaces
-                drawTreeLinks(linksLayer, links, positions);
+                    // Actualizar el layout al frame de la rotación
+                    layoutNodes = frame.nodes;
+                    layoutLinks = frame.links;
 
-                // Actualizar la posición de los nodos según el estado actual
-                drawTreeNodes(nodesLayer, nodes, positions);
+                    // Renderizado de los nuevos enlaces y actualización de la posición de los nodos según el nuevo layout
+                    drawTreeLinks(linksLayer, layoutLinks, deletionData.positions);
+                    drawTreeNodes(nodesLayer, layoutNodes, deletionData.positions);
 
-                if (rotation.type === "LL" || rotation.type === "RR") {
-                    // Animación para rotación simple (RR/LL)
-                    await animateEspecialBSTsRotation(
-                        treeG,
-                        rotation.parentOfZId ?? null,
-                        rotation.zId,
-                        rotation.yId,
-                        rotation.BId ?? null,
-                        repositionAVLTree,
-                        {
-                            nodes,
-                            links,
-                            positions
+                    const isDouble = rotation.type === "LR" || rotation.type === "RL";
+                    const isSimple = rotation.type === "LL" || rotation.type === "RR";
+
+                    const parentOfUnbalanced = isDouble && step.phase === 0 ? rotation.zId : rotation.parentOfZId ?? null;
+                    const unbalancedNode = isDouble && step.phase === 0 ? rotation.yId : rotation.zId;
+                    const sonOfUnbalanced = isDouble ? rotation.xId ?? null : rotation.yId;
+                    const rotationNode = isSimple ? rotation.BId ?? null
+                        : rotation.type === "LR" || rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null;
+
+                    if (step?.phase === 1) {
+                        const firstRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_LEFT_ROT : labels.APPLY_RL_RIGHT_ROT;
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: firstRotationLabel });
+                        if (prevParentOfUnbalanced && prevSonOfUnbalanced) {
+                            await treeG.select<SVGGElement>(`g#link-${prevParentOfUnbalanced}-${prevSonOfUnbalanced}`)
+                                .transition()
+                                .duration(800)
+                                .style("opacity", 1)
+                                .end();
+                        } else {
+                            await delay(600);
                         }
-                    );
-                } else if (framesPerDoubleRotation < 1) {
-                    // Animación para primer paso de rotación doble (LR/RL)
-                    await animateEspecialBSTsRotation(
-                        treeG,
-                        rotation.zId,
-                        rotation.yId,
-                        rotation.xId!,
-                        rotation.type === "LR" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
-                        repositionAVLTree,
-                        {
-                            nodes,
-                            links,
-                            positions
-                        }
-                    );
-                } else {
-                    // Animación para segundo paso de rotación compuesta (LR/RL)
-                    await animateEspecialBSTsRotation(
-                        treeG,
-                        rotation.parentOfZId ?? null,
-                        rotation.zId,
-                        rotation.xId!,
-                        rotation.type === "RL" ? rotation.xLeftId ?? null : rotation.xRightId ?? null,
-                        repositionAVLTree,
-                        {
-                            nodes,
-                            links,
-                            positions
-                        }
-                    );
-                }
 
-                // Actualización de las métricas para los nodos del árbol
-                updateAvlMetricsBadge(nodesLayer, nodes);
-
-                // Cálculo del indice para la siguiente rotación
-                if (rotation.type === "RL" || rotation.type === "LR") {
-                    framesPerDoubleRotation += 1;
-                    if (framesPerDoubleRotation === 2) {
-                        framesPerDoubleRotation = 0;
-                        rotationIndex += 1;
+                        const secondRotationLabel = rotation.type === "LR" ? labels.APPLY_LR_RIGHT_ROT : labels.APPLY_RL_LEFT_ROT;
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: secondRotationLabel });
+                        await delay(600);
                     }
-                } else {
-                    rotationIndex += 1;
+
+                    // Animación para rotación simple del subárbol
+                    await animateEspecialBSTsRotation(
+                        treeG,
+                        parentOfUnbalanced,
+                        unbalancedNode,
+                        sonOfUnbalanced!,
+                        rotationNode,
+                        repositionAVLTree,
+                        {
+                            nodes: layoutNodes,
+                            links: layoutLinks,
+                            positions: deletionData.positions
+                        },
+                        {
+                            bus,
+                            stepId: "delete",
+                            labels: {
+                                DECL_MAIN: step.dir === "right" ? labels.ROT_RIGHT_DECL_X : labels.ROT_LEFT_DECL_Y,
+                                DECL_AUX: step.dir === "right" ? labels.ROT_RIGHT_DECL_T2 : labels.ROT_LEFT_DECL_T2,
+                                SET_FIRST_LINK: step.dir === "right" ? labels.SET_X_RIGHT_LINK : labels.SET_Y_LEFT_LINK2,
+                                SET_SECOND_LINK: step.dir === "right" ? labels.SET_Y_LEFT_LINK : labels.SET_X_RIGHT_LINK2
+                            }
+                        }
+                    );
+
+                    // Actualizar la altura del primer nodo
+                    const recalFirstNodeHeightLabel = step.dir === "right" ? labels.ROT_RIGHT_RECALC_Y : labels.ROT_LEFT_RECALC_X;
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: recalFirstNodeHeightLabel });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_LEFT_HEIGHT });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT });
+                    await delay(600);
+
+                    // Actualización del badge de altura del primer nodo
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_HEIGHT });
+                    await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, step.pivot);
+
+                    // Actualizar la altura del segundo nodo
+                    const recalSecondNodeHeightLabel = step.dir === "right" ? labels.ROT_RIGHT_RECALC_X : labels.ROT_LEFT_RECALC_Y;
+                    const secondRotateNodeId = rotation.type === "LL" || rotation.type === "RR" ? rotation.yId : rotation.xId!;
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: recalSecondNodeHeightLabel });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_LEFT_HEIGHT });
+                    await delay(600);
+
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.GET_RIGHT_HEIGHT });
+                    await delay(600);
+
+                    // Actualización del badge de altura del segundo nodo
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: labels.SET_HEIGHT });
+                    await updateSingleAvlMetricsBadge(nodesLayer, layoutNodes, secondRotateNodeId);
+
+                    const returnRotationLabel = step.dir === "right" ? labels.ROT_RIGHT_RETURN : labels.ROT_LEFT_RETURN;
+                    bus.emit("step:progress", { stepId: "delete", lineIndex: returnRotationLabel });
+                    await delay(600);
+
+                    if ((isDouble && step.phase === 1) || isSimple) {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_REBALANCED });
+                        await delay(600);
+                    }
+
+                    prevParentOfUnbalanced = parentOfUnbalanced;
+                    prevSonOfUnbalanced = sonOfUnbalanced;
+                    break;
+                }
+                case "return": {
+                    const isMatchReturn = lastStep?.type === "match";
+                    const isRotationReturn = lastStep?.type === "rotate";
+                    if (!isMatchReturn) {
+                        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_NODE });
+                        await delay(600);
+                    }
+
+                    if (step.to !== null && step.via !== "root") {
+                        if (step.to === targetNodeId && successorNodeId) {
+                            bus.emit("step:progress", {
+                                stepId: "delete",
+                                lineIndex: labels.CALL_DELETE_SUCCESSOR
+                            });
+                        } else {
+                            const returnSide = step.via === "left" ? labels.CALL_LEFT_SUBTREE : labels.CALL_RIGHT_SUBTREE;
+                            bus.emit("step:progress", {
+                                stepId: "delete",
+                                lineIndex: returnSide
+                            });
+                        }
+                    }
+
+                    if (step.from) {
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
+                        await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
+                            .end();
+                    }
+                    if (step.to) {
+                        // Resaltado del nodo en la nueva llamada (backtracking)
+                        await treeG.select<SVGCircleElement>(`g#${step.to} circle.node-container`)
+                            .transition()
+                            .duration(800)
+                            .attr("fill", deletionData.highlightTargetColor)
+                            .end();
+                    }
+
+                    if (isMatchReturn) {
+                        // Salida y reemplazo del nodo a eliminar
+                        if (removalNodeId) {
+                            await animateReplaceChildNode(
+                                treeG,
+                                removalNodeId,
+                                parentRemovalNodeId,
+                                replacementNodeId
+                            );
+
+                            // Reposicionamiento de los nodos y enlaces del árbol luego de la salida del nodo
+                            await repositionAVLTree(treeG, layoutNodes, layoutLinks, deletionData.positions);
+                        }
+                    }
+
+                    if (isRotationReturn) {
+                        // Establecimiento del nuevo enlace del nodo padre del nodo rotado
+                        if (prevParentOfUnbalanced && prevSonOfUnbalanced) {
+                            await treeG.select<SVGGElement>(`g#link-${prevParentOfUnbalanced}-${prevSonOfUnbalanced}`)
+                                .transition()
+                                .duration(800)
+                                .style("opacity", 1)
+                                .end();
+                        }
+                    }
+                    break;
                 }
             }
+
+            prevStep = step;
         }
+
+        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.CALL_RECURSIVE_DELETE });
+        await delay(600);
+
+        bus.emit("step:progress", { stepId: "delete", lineIndex: labels.IF_DELETED });
+        await delay(600);
+
+        if (deleted) {
+            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.DEC_SIZE });
+            await delay(600);
+
+            bus.emit("step:progress", {
+                stepId: "delete",
+                lineIndex: labels.RETURN_RESULT
+            });
+            await delay(600);
+
+            // Limpiamos el registro del nodo eliminado
+            deletionData.positions.delete(removalNodeId!);
+        } else {
+            // Indicador visual de que el nodo a eliminar no existe en el árbol
+            const firstVisited = deletionData.deleteSteps
+                .filter(s => s.type === "checkNull")
+                .at(0);
+
+            bus.emit("step:progress", { stepId: "delete", lineIndex: labels.RETURN_RESULT });
+            await showTreeHint(
+                svg,
+                { type: "node", id: firstVisited!.at! },
+                { label: "Elemento", value: `no ubicado` },
+                deletionData.positions,
+                treeOffset,
+                {
+                    size: { width: 75, height: 35 },
+                    typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
+                    anchor: { side: "below", dx: 10, dy: -8 },
+                    palette: { bg: "#1b2330", stroke: "#14b8a6" }
+                }
+            );
+        }
+
+        // Fin de la operación
+        bus.emit("op:done", { op: "delete" });
     } finally {
         resetQueryValues();
         setIsAnimating(false);
@@ -458,10 +1087,10 @@ export async function animateAVLTreeDelete(
 
 /**
  * Función encargada de construir el badge de métricas (factor de balance y altura) para cada nodo dentro del árbol AVL.
- * @param nodesLayer La selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
+ * @param nodesLayer Selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
  * @param nodes Array de nodos de jerarquía D3 que representan los nodos del árbol AVL.
  */
-export function buildAvlMetricsBadge(
+function buildAvlMetricsBadge(
     nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
     nodes: HierarchyNode<HierarchyNodeData<number>>[]
 ) {
@@ -579,29 +1208,47 @@ export function buildAvlMetricsBadge(
 }
 
 /**
- * Función encargada de actualizar los valores del badge de métricas (factor de balance y altura) para cada nodo dentro del árbol AVL.
- * @param nodesLayer La selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
- * @param nodes Array de nodos de jerarquía D3 que representan los nodos del árbol AVL.
+ * Función encargada de actualizar los valores del badge de métricas (factor de balance y altura) de un solo nodo dentro del árbol AVL.
+ * @param nodesLayer Selección D3 del grupo SVG (`<g>`) que contiene los nodos del árbol.
+ * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
+ * @param nodeId ID del nodo cuyo badge de métricas se va a actualizar.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
-export function updateAvlMetricsBadge(
+async function updateSingleAvlMetricsBadge(
     nodesLayer: Selection<SVGGElement, unknown, null, undefined>,
-    nodes: HierarchyNode<HierarchyNodeData<number>>[]
+    nodes: HierarchyNode<HierarchyNodeData<number>>[],
+    nodeId: string
 ) {
-    // Selección de los grupos de cada nodo ya dibujado
-    const nodeGroups = nodesLayer
-        .selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.node")
-        .data(nodes, d => d.data.id);
+    const nodeData = nodes.find((n) => n.data.id === nodeId);
+    if (!nodeData) return;
 
-    // JOIN anidado - 1 panel por nodo
-    const panels = nodeGroups.selectAll<SVGGElement, HierarchyNode<HierarchyNodeData<number>>>("g.avl-panel")
-        .data(d => [d], (d) => d.data.id);
+    // Grupo correspondiente al panel de ese nodo
+    const panel = nodesLayer
+        .select<SVGGElement>(`g.node#${nodeId}`)
+        .select<SVGGElement>("g.avl-panel");
 
-    panels.select<SVGTextElement>("text.val-bf")
-        .attr("fill", d => bfColor(d.data.bf!))
-        .text(d => d.data.bf!);
+    // Actualizar altura
+    await panel.select<SVGTextElement>("text.val-h")
+        .transition()
+        .duration(450)
+        .style("opacity", 0)
+        .transition()
+        .duration(450)
+        .text(nodeData.data.height ?? 0)
+        .style("opacity", 1)
+        .end();
 
-    panels.select<SVGTextElement>("text.val-h")
-        .text(d => d.data.height ?? 0);
+    // Actualizar bf
+    await panel.select<SVGTextElement>("text.val-bf")
+        .transition()
+        .duration(400)
+        .style("opacity", 0)
+        .transition()
+        .duration(400)
+        .attr("fill", bfColor(nodeData.data.bf!))
+        .text(nodeData.data.bf!)
+        .style("opacity", 1)
+        .end();
 }
 
 /**
@@ -610,7 +1257,7 @@ export function updateAvlMetricsBadge(
  * @param nodes Array de nodos de jerarquía que representan la estructura del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
- * @returns Una promesa que se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
+ * @returns Promise<`void`>. Se resuelve cuando se han completado todas las transiciones de nodos y enlaces.
  */
 async function repositionAVLTree(
     g: Selection<SVGGElement, unknown, null, undefined>,

@@ -117,7 +117,7 @@ export const getSecuenciaCode = (): Record<string, OperationCode> => ({
       `    if ({0} < 0 || {0} >= {1}) {`,
       `        throw new RuntimeException("Posición de acceso no válida.");`,
       `    }`,
-      `    for (int i=0; i < {1} - 1; i++) {`,
+      `    for (int i={0}; i < {1} - 1; i++) {`,
       `         this.vector[i] = this.vector[i + 1];`,
       `    }`,
       `    this.vector[{1} - 1] = null`,

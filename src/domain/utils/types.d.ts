@@ -1,9 +1,12 @@
 import type { HierarchyNode } from "d3";
 import type { ReactNode, Dispatch, SetStateAction } from "react";
-import { TYPE_FILTER } from "../../shared/constants/consts";
 import type { NodoS } from "../nodes/NodoS";
 import type { NodoD } from "../nodes/NodoD";
 import type { NodoBin } from "../nodes/NodoBin";
+import type { NodoAVL } from "../nodes/NodoAVL";
+import type { NodoRB } from "../nodes/NodoRB";
+import { TYPE_FILTER } from "../constants/consts";
+import type { NodoSplay } from "../nodes/NodoSplay";
 
 export type EqualityFn<T> = (a: T, b: T) => boolean;
 export type Comparator<T> = (a: T, b: T) => number;
@@ -109,7 +112,7 @@ export type IndicatorPositioningConfig = {
 };
 
 export type TwoThreeHierarchy = {
-  id: string; 
+  id: string;
   idNum: number;
   value: number[];
   children?: TwoThreeHierarchy[];
@@ -120,7 +123,7 @@ export type TwoThreeHierarchy = {
 };
 
 export type BHierarchy = {
-  id: string; 
+  id: string;
   idNum: number;
   keys: number[];
   children?: BHierarchy[];
@@ -276,7 +279,7 @@ export type BinaryTreeGetStep =
 
 export type BSTInsertStep =
   | { type: "checkNull"; at: string | null; isNull: boolean }
-  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right"; newId: string }
+  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right" }
   | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
   | { type: "goLeft"; from: string; to: string | null }
   | { type: "goRight"; from: string; to: string | null }
@@ -319,7 +322,158 @@ type BSTSearchMeta<T> = {
   targetNode: NodoBin<T> | null;
 };
 
-export type RotationType = "LL" | "RR" | "LR" | "RL"
+export type AVLInsertStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "createLeaf"; parent: string | null; side: "root" | "left" | "right" }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "updateHeight"; at: string }
+  | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
+  | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }
+  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1 }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+type AVLInsertMeta<T> = {
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  inserted: boolean;
+};
+
+export type AVLDeleteStep =
+  | { type: "checkNull"; at: string | null; isNull: boolean }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "goLeft"; from: string; to: string | null }
+  | { type: "goRight"; from: string; to: string | null }
+  | { type: "match"; at: string; role: "target" | "successor" }
+  | { type: "callDeleteSuccessor"; from: string; startAt: string | null }
+  | { type: "updateHeight"; at: string }
+  | { type: "computeBalance"; at: string; bf: -2 | -1 | 0 | 1 | 2 }
+  | { type: "rotationCase"; at: string; kind: "LL" | "LR" | "RL" | "RR" }
+  | { type: "rotate"; dir: "left" | "right"; pivot: string; frameIndex: number; rotationIndex: number; phase?: 0 | 1 }
+  | { type: "return"; from: string | null; to: string | null; via: "root" | "left" | "right" };
+
+export type AVLDeleteMeta<T> = {
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoAVL<T> | null;
+  successorParent: NodoAVL<T> | null;
+  replacement: NodoAVL<T> | null;
+  replacementSide: "left" | "right" | null;
+  deleted: boolean;
+};
+
+export type RBInsertStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "createNode"; id: string; color: "RED" }
+  | { type: "attachNode"; parentId: string | null; side: "root" | "left" | "right" }
+  | { type: "fixupWhileCheck"; zId: string; parentId: string | null; parentRed: boolean }
+  | { type: "parentSide"; pId: string; gId: string; side: "left" | "right" }
+  | { type: "fixupCase"; case: 1 | 2 | 3; side: "left" | "right" }
+  | { type: "recolor"; caseKind: "case1" | "case3" | "root"; actionIndex: number; count: 1 | 2 | 3; side?: "left" | "right" }
+  | { type: "rotate"; caseKind: "case2" | "case3"; dir: "left" | "right"; pivot: string; frameIndex: number; actionIndex: number; pivotSideOnParent: "left" | "right" | "root" }
+  | { type: "rootBlackCheck"; rootId: string | null; recolor: boolean }
+  | { type: "return" };
+
+export type RBDeleteStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "checkMatch"; found: boolean; zId: string | null }
+  | { type: "deleteCase"; kind: "noLeft" | "noRight" | "twoChildren"; zId: string }
+  | { type: "transplant"; uId: string; vId: string | null; uParentId: string | null; uSide: "root" | "left" | "right" }
+  | { type: "succParentCheck"; directChild: boolean; zId: string; succId: string }
+  | { type: "linkChild"; prevParentId: string, newParentId: string; childId: string | null; side: "left" | "right" }
+  | { type: "setParent"; nodeId: string | null; parentId: string | null, side: "left" | "right" }
+  | { type: "fixupCall"; needed: boolean; }
+  | { type: "fixupWhileCheck"; xId: string | null; xParentId: string | null; continue: boolean }
+  | { type: "resolveParent"; pId: string | null; from: "x.padre" | "xParent" }
+  | { type: "resolveSibling"; pId: string; wId: string | null; side: "left" | "right" }
+  | { type: "fixupCase"; case: "A" | "B" | "C" | "D"; side: "left" | "right"; nodeId: string }
+  | { type: "moveUp"; fromXId: string | null; toXId: string; newXParentId: string | null }
+  | { type: "xSide"; pId: string; xId: string | null; side: "left" | "right" }
+  | { type: "checkNode"; nodeType: "Hermano" | "HijoCer" | "HijoLej"; case: "B" | "C" | "D"; side: "left" | "right" }
+  | { type: "recolor"; kind: "copyZColor" | "fixup" | "final"; actionIndex: number; count?: 1 | 2 | 3 | 4; side?: "left" | "right"; case?: "A" | "B" | "C" | "D" }
+  | { type: "rotate"; caseKind: "fixupA" | "fixupC" | "fixupD"; dir: "left" | "right"; pivot: string; frameIndex: number; actionIndex: number; pivotSideOnParent: "left" | "right" | "root" }
+  | { type: "return" };
+
+export type SplayInsertStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "createNode"; id: string; }
+  | { type: "attachNode"; parentId: string | null; side: "root" | "left" | "right" }
+  | { type: "splayCall"; xId: string; reason: "insertion" | "search" }
+  | { type: "splayWhileCheck"; xId: string; parentId: string | null; continue: boolean }
+  | { type: "resolvePG"; xId: string; pId: string; gId: string | null }
+  | { type: "splayCase"; kind: "zig" | "zig-zig" | "zig-zag"; shape: "LL" | "LR" | "RR" | "RL" }
+  | {
+    type: "rotate";
+    kind: "splay";
+    subkind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2";
+    dir: "left" | "right";
+    pivot: string;
+    frameIndex: number;
+    rotationIndex: number;
+    pivotSideOnParent: "left" | "right" | "root";
+  }
+  | { type: "setRoot"; rootId: string }
+  | { type: "return" };
+
+export type SplaySearchStep =
+  | { type: "visit"; at: string | null }
+  | { type: "compare"; at: string; cmp: -1 | 0 | 1 }
+  | { type: "advance"; from: string; to: string | null; dir: "L" | "R" }
+  | { type: "splayCall"; xId: string; reason: "search-found" | "search-notfound" }
+  | { type: "splayWhileCheck"; xId: string; parentId: string | null; continue: boolean }
+  | { type: "resolvePG"; xId: string; pId: string; gId: string | null }
+  | { type: "splayCase"; kind: "zig" | "zig-zig" | "zig-zag"; shape: "LL" | "LR" | "RR" | "RL" }
+  | {
+    type: "rotate";
+    kind: "splay";
+    subkind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2";
+    dir: "left" | "right";
+    pivot: string;
+    frameIndex: number;
+    rotationIndex: number;
+    pivotSideOnParent: "left" | "right" | "root";
+  }
+  | { type: "setRoot"; rootId: string }
+  | { type: "return" };
+
+export type SplayDeleteStep =
+  | { type: "checkFoundNode"; at: string | null }
+  | { type: "split"; root: string; leftId: string | null; rightId: string | null }
+  | { type: "detachParent"; nodeId: string | null; parentId: string | null; side: "left" | "right" }
+  | { type: "cutChild"; fromId: string; side: "left" | "right"; childId: string | null }
+  | { type: "setRoot"; rootId: string | null; side?: "left" | "right" | "null" }
+  | { type: "joinCase"; kind: "leftNull" | "leftNotNull" }
+  | { type: "traverseMaxLeftStart"; rootId: string }
+  | { type: "moveToRight"; fromId: string; toId: string }
+  | { type: "maxLeftFound"; nodeId: string }
+  | { type: "decSize"; }
+  | { type: "splayCall"; xId: string; reason: "deletion" }
+  | { type: "attachRight"; parentId: string; rightId: string | null }
+  | { type: "setParent"; nodeId: string; parentId: string | null }
+  | { type: "splayWhileCheck"; xId: string; parentId: string | null; continue: boolean }
+  | { type: "resolvePG"; xId: string; pId: string; gId: string | null }
+  | { type: "splayCase"; kind: "zig" | "zig-zig" | "zig-zag"; shape: "LL" | "LR" | "RR" | "RL" }
+  | {
+    type: "rotate";
+    kind: "splay";
+    subkind: "zig" | "zigzig-1" | "zigzig-2" | "zigzag-1" | "zigzag-2";
+    dir: "left" | "right";
+    pivot: string;
+    frameIndex: number;
+    rotationIndex: number;
+    pivotSideOnParent: "left" | "right" | "root";
+  }
+  | { type: "return" };
+
+export type RotationType = "LL" | "RR" | "LR" | "RL";
 
 export type RotationStep = {
   type: RotationType;
@@ -369,16 +523,10 @@ export type SplayRotationTag = "Zig" | "Zig-Zig" | "Zig-Zag";
 
 export type SplayFrame = AvlFrame;
 
-export type SplayRotation = { tag: SplayRotationTag; rotation: RotationStep; rotationOrder: "first" | "second" };
-
-export type SplayTracePhase = "insertion" | "search" | "deletion";
+export type SplayRotation = { tag: SplayRotationTag; step: RotationStep; };
 
 export type SplayTrace<T> = {
-  phases: {
-    insertion: SplayRotation[];
-    search: SplayRotation[];
-    deletion: SplayRotation[];
-  }
+  rotations: SplayRotation[];
   hierarchies: {
     bst: HierarchyNodeData<T> | null;
     mids: HierarchyNodeData<T>[];
@@ -447,9 +595,63 @@ export type BSTDeleteOutput<T> = {
   deleted: boolean;
 };
 
-export type SplayInsertOutput<T> = BSTInsertOutput<T>;
-export type SplayDeleteOutput<T> = BSTDeleteOutput<T>;
-export type SplaySearchOutput<T> = BSTSearchOutput<T>;
+export type AVLInsertOutput<T> = {
+  steps: AVLInsertStep[];
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  inserted: boolean;
+};
+
+export type AVLDeleteOutput<T> = {
+  steps: AVLDeleteStep[];
+  parent: NodoAVL<T> | null;
+  targetNode: NodoAVL<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoAVL<T> | null;
+  successorParent: NodoAVL<T> | null;
+  replacement: NodoAVL<T> | null;
+  replacementSide: "left" | "right" | null;
+  deleted: boolean;
+};
+
+export type RBInsertOutput<T> = {
+  steps: RBInsertStep[];
+  parent: NodoRB<T> | null;
+  targetNode: NodoRB<T> | null;
+  inserted: boolean;
+};
+
+export type RBDeleteOutput<T> = {
+  steps: RBDeleteStep[];
+  parent: NodoRB<T> | null;
+  targetNode: NodoRB<T> | null;
+  pathToSuccessorIds: string[];
+  successor: NodoRB<T> | null;
+  successorParent: NodoRB<T> | null;
+  replacement: NodoRB<T> | null;
+  deleted: boolean;
+};
+
+export type SplayInsertOutput<T> = {
+  steps: SplayInsertStep[];
+  parent: NodoSplay<T> | null;
+  targetNode: NodoSplay<T> | null;
+  inserted: boolean;
+};
+
+export type SplayDeleteOutput<T> = {
+  searchSteps: SplaySearchStep[];
+  deleteSteps: SplayDeleteStep[];
+  targetNode: NodoSplay<T> | null;
+  maxLeft: NodoSplay<T> | null;
+  deleted: boolean;
+};
+
+export type SplaySearchOutput<T> = {
+  steps: SplaySearchStep[];
+  targetNode: NodoSplay<T> | null;
+  found: boolean;
+};
 
 /* ───────────── UI / Props varias ───────────── */
 
@@ -677,42 +879,38 @@ export type BaseQueryOperations<
   : // AVL
   T extends "arbol_avl"
   ? {
-    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
-    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
-    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toInsert: { steps: AVLInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
+    toDelete: { steps: AVLDeleteStep[], parentNodeId: string | null, targetNodeId: string | null, pathToSuccessorIds: string[], successorNodeId: string | null, successorParentNodeId: string | null, replacementNodeId: string | null, replacementSide: "left" | "right" | null, deleted: boolean } | null;
+    toSearch: { steps: BSTSearchStep[], targetNodeId: string | null, found: boolean } | null;
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
     avlTrace: OperationTrace<number> | null;
   }
   : // RB (ambos alias)
   T extends "arbol_rojinegro" | "arbol_rb"
   ? {
-    toInsert: { pathIds: string[], parentId: string | null, targetNodeId: string, exists: boolean } | null;
-    toDelete: { pathToTargetIds: string[], parentId: string | null, targetNodeId: string, pathToSuccessorIds: string[], successorId: string | null, replacementId: string | null, exists: boolean } | null;
-    toSearch: { pathIds: string[]; found: boolean; lastVisitedId: string } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toInsert: { steps: RBInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
+    toDelete: { steps: RBDeleteStep[], parentNodeId: string | null, targetNodeId: string | null, pathToSuccessorIds: string[], successorNodeId: string | null, successorParentNodeId: string | null, replacementNodeId: string | null, deleted: boolean } | null;
+    toSearch: { steps: BSTSearchStep[], targetNodeId: string | null, found: boolean } | null;
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
     rbTrace: RBTrace<number> | null;
-    rbFix?: {
-      rotations: RbRotation[];
-      recolors: RbRecolor[];
-    } | null;
   }
   : T extends "arbol_splay"
   ? {
-    toInsert: { targetNodeId: string, inserted: boolean } | null;
-    toDelete: { nodeId: string, removed: boolean, maxLeftId: string | null } | null;
-    toSearch: { nodeId: string; found: boolean; } | null;
-    toGetPreOrder: TraversalNodeType[] | [];
-    toGetInOrder: TraversalNodeType[] | [];
-    toGetPostOrder: TraversalNodeType[] | [];
-    toGetLevelOrder: TraversalNodeType[] | [];
+    toInsert: { steps: SplayInsertStep[], parentNodeId: string | null, targetNodeId: string, inserted: boolean } | null;
+    toDelete: { searchSteps: SplaySearchStep[], deleteSteps: SplayDeleteStep[], targetNodeId: string, maxLeftNodeId: string | null, deleted: boolean } | null;
+    toSearch: { steps: SplaySearchStep[], targetNodeId: string, found: boolean } | null;
+    toGetPreOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetInOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetPostOrder: { steps: BinaryTreeTraversalStep[], nodes: TraversalNodeType[] } | null;
+    toGetLevelOrder: { steps: BinaryTreeLevelStep[], nodes: TraversalNodeType[] } | null;
     toClear: boolean;
     splayTrace: SplayTrace<number> | null;
   }

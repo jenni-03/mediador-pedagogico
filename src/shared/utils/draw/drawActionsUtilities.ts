@@ -133,7 +133,7 @@ export function drawTreeNodes(
             return `translate(${x}, ${y})`;
           });
 
-        // Contenedor del nodo
+        // Contenedor principal del nodo
         gEnter
           .append("circle")
           .attr("class", "node-container")
@@ -175,14 +175,17 @@ export function drawTreeNodes(
 
 /**
  * Función encargada de renderizar los enlaces entre nodos de un árbol dentro del lienzo.
+ * Los enlaces se inicializan con un estado visual oculto (opacidad 0). 
  * @param g Selección D3 del elemento SVG del grupo (`<g>`) donde se van a renderizar los enlaces del árbol.
  * @param linksData Array de objetos de datos de enlace que representan las conexiones entre nodos.
  * @param positions Mapa de posiciones (x, y) de cada nodo dentro del SVG.
+ * @param buildPath Función que construye el path del enlace entre dos nodos.
  */
 export function drawTreeLinks(
   g: Selection<SVGGElement, unknown, null, undefined>,
   linksData: TreeLinkData[],
-  positions: Map<string, { x: number; y: number }>
+  positions: Map<string, { x: number; y: number }>,
+  buildPath: LinkPathFn = straightPath
 ) {
   // Data join para la creación de los enlaces entre nodos
   g.selectAll<SVGGElement, TreeLinkData>("g.link")
@@ -206,8 +209,9 @@ export function drawTreeLinks(
             const s = positions.get(d.sourceId)!;
             const t = positions.get(d.targetId)!;
             const r = SVG_BINARY_TREE_VALUES.NODE_RADIUS;
-            return `M${s.x},${s.y + r} L${t.x},${t.y - r}`;
+            return buildPath(s, t, r);
           });
+        gLink.style("opacity", 0);
 
         return gLink;
       },
@@ -459,13 +463,18 @@ export function drawTraversalSequence(
 }
 
 /**
- * Función encargada de resaltar un nodo especifico.
+ * Función encargada de animar el resaltado de un nodo especifico.
+ * Se emiten eventos en cada paso para sincronizar la visualización con la lógica de la operación.
  * @param svg Selección D3 del elemento SVG donde se encuentra el nodo a resaltar.
  * @param nodeId Id del nodo a resaltar.
  * @param rectValues Valores de estilo para el contenedor del nodo.
  * @param textValues Valores de estilo para el texto del nodo.
+ * @param bus Instancia de `EventBus` usada para la emisión de eventos de progreso durante la animación.
+ * @param labels Objeto de mapeo que asocia etiquetas semánticas con índices de línea numéricos usados en los eventos emitidos.
+ * @param stepId Identificador del paso actual; reenviado en los eventos de progreso emitidos.
  * @param resetQueryValues Función para restablecer los valores de la query del usuario.
  * @param setIsAnimating Función para establecer el estado de animación.
+ * @returns Promise<`void`>. Se resuelve cuando todas las animaciones han finalizado.
  */
 export async function animateHighlightNode(
   svg: Selection<SVGSVGElement, unknown, null, undefined>,
@@ -483,78 +492,68 @@ export async function animateHighlightNode(
   bus: EventBus,
   labels: {
     START: number;
-    RETURN_TOP?: number;
-    RETURN_HEAD?: number;
-    RETURN_INFO?: number;
+    RETURN_TOP: number;
   },
   stepId: string,
   resetQueryValues: () => void,
   setIsAnimating: Dispatch<SetStateAction<boolean>>
 ) {
-  // Etiquetas para el registro de eventos
-
   // Estilos para contenedor y texto del nodo
   const { highlightColor, rectStrokeColor, rectStrokeWidth } = rectValues;
   const { textFillColor, textFontSize, textFontWeight } = textValues;
 
-  // Grupo del lienzo correspondiente al nodo a resaltar
-  const nodeGroup = svg.select<SVGGElement>(`#${nodeId}`);
+  try {
+    // Inicio de la operación
+    bus.emit("op:start", { op: stepId });
 
-  // Inicio de la operación
-  bus.emit("op:start", { op: stepId });
+    // Grupo del lienzo correspondiente al nodo a resaltar
+    const nodeGroup = svg.select<SVGGElement>(`#${nodeId}`);
 
-  // Grupo correspondiente al contenedor principal del nodo y al valor de este
-  const rect = nodeGroup.select("rect");
-  const text = nodeGroup.select("text");
+    // Grupo correspondiente al contenedor principal del nodo y al valor de este
+    const rect = nodeGroup.select("rect");
+    const text = nodeGroup.select("text");
 
-  bus.emit("step:progress", { stepId, lineIndex: labels.START });
-  await delay(400);
+    bus.emit("step:progress", { stepId, lineIndex: labels.START });
+    await delay(600);
 
-  if (labels.RETURN_TOP) {
-      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
-      await delay(700);
-  } else if (labels.RETURN_HEAD) {
-      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_HEAD });
-      await delay(700);
-  } else if (labels.RETURN_INFO) {
-      bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_INFO });
-      await delay(700);
+    bus.emit("step:progress", { stepId, lineIndex: labels.RETURN_TOP });
+
+    // Sobresalto del contenedor del nodo
+    const p1 = rect
+      .transition()
+      .duration(300)
+      .attr("stroke", highlightColor)
+      .attr("stroke-width", 3)
+      .transition()
+      .delay(800)
+      .duration(300)
+      .attr("stroke", rectStrokeColor)
+      .attr("stroke-width", rectStrokeWidth)
+      .end();
+
+    // Sobresalto del valor del nodo
+    const p2 = text
+      .transition()
+      .duration(300)
+      .attr("fill", highlightColor)
+      .style("font-size", "18px")
+      .style("font-weight", "bold")
+      .transition()
+      .delay(800)
+      .duration(300)
+      .attr("fill", textFillColor)
+      .style("font-size", textFontSize)
+      .style("font-weight", textFontWeight)
+      .end();
+
+    await Promise.all([p1, p2]);
+
+    // Fin de la operación
+    bus.emit("op:done", { op: stepId });
+  } finally {
+    resetQueryValues();
+    setIsAnimating(false);
   }
-
-  // Animación de sobresalto del contenedor del nodo
-  rect
-    .transition()
-    .duration(300)
-    .attr("stroke", highlightColor)
-    .attr("stroke-width", 3)
-    .transition()
-    .delay(800)
-    .duration(300)
-    .attr("stroke", rectStrokeColor)
-    .attr("stroke-width", rectStrokeWidth);
-
-  // Animación de sobresalto del valor del nodo
-  text
-    .transition()
-    .duration(300)
-    .attr("fill", highlightColor)
-    .style("font-size", "18px")
-    .style("font-weight", "bold")
-    .transition()
-    .delay(800)
-    .duration(300)
-    .attr("fill", textFillColor)
-    .style("font-size", textFontSize)
-    .style("font-weight", textFontWeight);
-
-  // Fin de la operación
-  bus.emit("op:done", { op: stepId });
-
-  // Restablecimiento de los valores de las queries del usuario
-  resetQueryValues();
-
-  // Finalización de la animacion
-  setIsAnimating(false);
 }
 
 /**
@@ -815,7 +814,7 @@ export async function repositionList(
     }
   }
 
-  return Promise.all(promises).then(() => {});
+  return Promise.all(promises).then(() => { });
 }
 
 /**
@@ -869,7 +868,7 @@ export async function repositionTree(
     })
     .end();
 
-  return Promise.all([p1, p2]).then(() => {});
+  return Promise.all([p1, p2]).then(() => { });
 }
 
 /**

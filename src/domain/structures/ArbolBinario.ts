@@ -43,7 +43,7 @@ export class ArbolBinario<T> {
      * 
      * - `targetNode`: Nodo correspondiente al elemento proporcionado.
      * 
-     * - `inserted`: Booleano que indica si el elemento fue insertado o no.
+     * - `inserted`: Booleano que indica si el elemento fue insertado.
      */
     public insertarHijoIzq(padre: T, info: T): BinaryTreeInsertOutput<T> {
         if (this.tamanio >= this.MAX_NODOS) {
@@ -89,7 +89,7 @@ export class ArbolBinario<T> {
      * 
      * - `targetNode`: Nodo correspondiente al elemento proporcionado.
      * 
-     * - `inserted`: Booleano que indica si el elemento fue insertado o no.
+     * - `inserted`: Booleano que indica si el elemento fue insertado.
      */
     public insertarHijoDer(padre: T, info: T): BinaryTreeInsertOutput<T> {
         if (this.tamanio >= this.MAX_NODOS) {
@@ -137,7 +137,7 @@ export class ArbolBinario<T> {
      * - `targetSide`: Dirección del nodo correspondiente al elemento proporcionado ("left", "right"). 
      *    Será `null` si el elemento no se encuentra en el árbol o si el nodo cuenta con 2 hijos.
      * 
-     * - `pathToSuccessorIds`: Arreglo con los IDs de los nodos visitados durante la búsqueda del sucesor in-order (solo si el nodo eliminado tenía dos hijos).
+     * - `pathToSuccessorIds`: Arreglo con los IDs de los nodos visitados durante la búsqueda del sucesor inorden (solo si el nodo eliminado tenía dos hijos).
      * 
      * - `successor`: Nodo que reemplaza lógicamente al nodo eliminado en el caso de dos hijos (nodo cuyo valor fue copiado al nodo objetivo).  
      *    Será `null` en los demás casos.
@@ -149,7 +149,7 @@ export class ArbolBinario<T> {
      *    2. `null` si se eliminó una hoja.
      *    3. El hijo derecho del sucesor in-order (en el caso de dos hijos).
      * 
-     * - `deleted`: Booleano que indica si el elemento fue eliminado o no.
+     * - `deleted`: Booleano que indica si el elemento fue eliminado.
      */
     public eliminar(info: T): BinaryTreeDeleteOutput<T> {
         if (this.esVacio()) {
@@ -222,7 +222,7 @@ export class ArbolBinario<T> {
      * 
      * - `targetNode`: Nodo correspondiente al elemento proporcionado. Será `null` si no fue encontrado.  
      * 
-     * - `found`: Booleano que indica si el nodo fue encontrado o no.
+     * - `found`: Booleano que indica si el nodo fue encontrado.
      */
     public buscar(info: T): BinaryTreeSearchOutput<T> {
         const { node, steps } = this.get(info);
@@ -509,7 +509,7 @@ export class ArbolBinario<T> {
      * Método auxiliar que realiza el recorrido inorden en el subárbol dado.
      * @param root Nodo raíz del subárbol actual.
      * @param visited Arreglo donde se almacenan los nodos visitados en secuencia inorden.
-     * @param steps Arreglo para acumular los pasos del recorrido para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos del recorrido realizados durante la operación.
      * @param parentId Id del nodo padre del nodo actual.
      * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      */
@@ -556,7 +556,7 @@ export class ArbolBinario<T> {
      * Método auxiliar que realiza el recorrido preorden en el subárbol dado.
      * @param root Nodo raíz del subárbol actual.
      * @param visited Arreglo donde se almacenan los nodos visitados en secuencia preorden.
-     * @param steps Arreglo para acumular los pasos del recorrido para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos del recorrido realizados durante la operación.
      * @param parentId Id del nodo padre del nodo actual.
      * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      */
@@ -603,7 +603,7 @@ export class ArbolBinario<T> {
      * Método auxiliar que realiza el recorrido postorden en el subárbol dado.
      * @param root Nodo raíz del subárbol actual.
      * @param visited Arreglo donde se almacenan los nodos visitados en secuencia postorden.
-     * @param steps Arreglo para acumular los pasos del recorrido para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos del recorrido realizados durante la operación.
      * @param parentId Id del nodo padre del nodo actual.
      * @param via Dirección desde el nodo padre al nodo actual ("left", "right", o "root" para la raíz).
      */
@@ -675,9 +675,9 @@ export class ArbolBinario<T> {
      * obtener el nodo padre nodo cuyo hijo izquierdo o derecho corresponde al elemento proporcionado.
      * @param root Nodo raíz del subárbol actual donde se va a buscar.
      * @param info Elemento a buscar.
-     * @param steps Arreglo para acumular los pasos de búsqueda para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos de búsqueda realizados durante la operación.
      * @param parentId Id del nodo padre del nodo actual.
-     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or null para la raíz).
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or "root" para la raíz).
      * @returns Nodo padre encontrado o null si no existe.
      */
     private getPadreAux(
@@ -824,9 +824,9 @@ export class ArbolBinario<T> {
      * obtener el primer nodo correspondiente al elemento proporcionado.
      * @param root Nodo raíz del subárbol actual donde se va a buscar.
      * @param info Elemento a buscar.
-     * @param steps Arreglo para acumular los pasos de búsqueda para la visualización del algoritmo.
+     * @param steps Arreglo para acumular los pasos de búsqueda realizados durante la operación.
      * @param parentId Id del nodo padre del nodo actual.
-     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or null para la raíz).
+     * @param via Dirección desde el nodo padre al nodo actual ("left", "right", or "root" para la raíz).
      * @returns Nodo encontrado o null si no existe.
      */
     private getNodo(

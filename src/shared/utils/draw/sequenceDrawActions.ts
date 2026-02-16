@@ -863,10 +863,8 @@ export async function animateClearSequence(
       .transition()
       .duration(1000)
       .style("opacity", 0)
+      .remove()
       .end();
-
-    // Eliminación de los nodos del DOM
-    svg.selectAll("g.element").remove();
 
     // Fin de la operación
     bus.emit("op:done", { op: "clean" });

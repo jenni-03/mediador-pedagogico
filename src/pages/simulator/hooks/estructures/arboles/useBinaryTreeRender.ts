@@ -79,7 +79,7 @@ export function useBinaryTreeRender(
         treeOffset.y = metrics.treeOffset.y;
 
         // Contenedor interno para nodos y enlaces del árbol
-        let treeG = svg.select<SVGGElement>("#tree-container");
+        let treeG = svg.select<SVGGElement>("g#tree-container");
         if (treeG.empty()) treeG = svg.append("g").attr("id", "tree-container");
         treeG.attr("transform", `translate(${treeOffset.x},${treeOffset.y})`);
 
@@ -88,15 +88,15 @@ export function useBinaryTreeRender(
         seqOffset.y = metrics.seqOffset.y;
 
         // Contenedor interno para la secuencia de recorrido de los nodos
-        let seqG = svg.select<SVGGElement>("#seq-container");
+        let seqG = svg.select<SVGGElement>("g#seq-container");
         if (seqG.empty()) seqG = svg.append("g").attr("id", "seq-container");
         seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
         // Capas internas para nodos y enlaces
-        let nodesLayer = treeG.select<SVGGElement>("#nodes-layer");
+        let nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
         if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("id", "nodes-layer");
 
-        let linksLayer = treeG.select<SVGGElement>("#links-layer");
+        let linksLayer = treeG.select<SVGGElement>("g#links-layer");
         if (linksLayer.empty()) linksLayer = treeG.append("g").attr("id", "links-layer");
 
         // Renderizado de los nodos del árbol
@@ -261,7 +261,8 @@ export function useBinaryTreeRender(
                 {
                     traversalSteps: steps,
                     seqPositions,
-                    highlightColor: "#8aa0ff",
+                    strokeColor: "#8aa0ff",
+                    strokeWidth: 3,
                     baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                     baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
                 },
@@ -276,6 +277,7 @@ export function useBinaryTreeRender(
                     traversalSteps: steps,
                     seqPositions,
                     strokeColor: "#8aa0ff",
+                    strokeWidth: 3,
                     baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                     baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
                 },

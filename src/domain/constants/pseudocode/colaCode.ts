@@ -86,7 +86,6 @@ export const getColaCode = (): Record<string, OperationCode> => ({
       `}`,
     ],
     labels: {
-      START: 1,
       VALIDATE_EMPTY: 2,
       THROW_EMPTY: 3,
       RETURN_HEAD: 5,

@@ -12,7 +12,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       `    this.insertado = false;`,
       `    this.raiz = this.insert(this.raiz, {0});`,
       `    if (this.insertado) {`,
-      `        this.tamanio++;`,
+      `        {1}++;`,
       `    }`,
       `    return this.insertado;`,
       `}`,
@@ -79,7 +79,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       `    this.eliminado = false;`,
       `    this.raiz = this.delete(this.raiz, {0});`,
       `    if (this.eliminado) {`,
-      `        this.tamanio--;`,
+      `        {1}--;`,
       `    }`,
       `    return this.eliminado;`,
       `}`,
@@ -92,7 +92,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
  * @param valor Elemento a eliminar.
  * @return Nodo raíz del subárbol actualizado tras la eliminación.
  */`,
-      `private NodoBin<T> delete(NodoBin<T> r, T {0}){`,
+      `private NodoBin<T> delete(NodoBin<T> r, T {0}) {`,
       `    if (r == null) {`,
       `        return null;`,
       `    }`,
@@ -135,7 +135,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       DEC_SIZE: 8,
       RETURN_RESULT: 10,
 
-      // Método eliminar(NodoBin<T> r, T info)
+      // Método delete(NodoBin<T> r, T info)
       IF_NULL_NODE: 16,
       RETURN_NULL: 17,
       DECLARE_CMP: 19,
@@ -279,8 +279,8 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       `        return;`,
       `    }`,
       `    nodos.insertLast(r.info);`,
-      `    this.getPreOrder(root.izquierdo, nodos);`,
-      `    this.getPreOrder(root.derecho, nodos);`,
+      `    this.getPreOrder(r.izquierdo, nodos);`,
+      `    this.getPreOrder(r.derecho, nodos);`,
       `}`,
     ],
     labels: {
@@ -318,9 +318,9 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       `    if (r == null) {`,
       `        return;`,
       `    }`,
-      `    this.getPostOrder(root.izquierdo, nodos);`,
-      `    this.getPostOrder(root.derecho, nodos);`,
-      `    nodos.insertLast(root.info);`,
+      `    this.getPostOrder(r.izquierdo, nodos);`,
+      `    this.getPostOrder(r.derecho, nodos);`,
+      `    nodos.insertLast(r.info);`,
       `}`,
     ],
     labels: {
@@ -382,7 +382,7 @@ export const getArbolBinarioBusquedaCode = (): Record<string, OperationCode> => 
       `/**
  * Método que elimina todos los nodos del árbol binario de búsqueda.
  */`,
-      `public void clean(){`,
+      `public void clean() {`,
       `    this.raiz = null;`,
       `}`,
     ],

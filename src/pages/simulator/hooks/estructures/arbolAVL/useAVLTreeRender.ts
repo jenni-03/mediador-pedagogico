@@ -1,21 +1,24 @@
 import { useEffect, useMemo, useRef } from "react";
 import {
   BaseQueryOperations,
+  BinaryTreeTraversalStep,
   HierarchyNodeData,
   TraversalNodeType,
 } from "../../../../../domain/utils/types";
 import { useAnimation } from "../../../../../shared/hooks/useAnimation";
-import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES } from "../../../../../domain/constants/consts";
+import { SVG_AVL_TREE_VALUES, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../../../domain/constants/consts";
 import {
   animateClearTree,
-  animateTreeTraversal,
   drawTraversalSequence,
 } from "../../../../../shared/utils/draw/drawActionsUtilities";
-// import { animateSearchNode } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
 import { usePrevious } from "../../../../../shared/hooks/usePrevious";
-import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
-import { animateAVLTreeDelete, animateAVLTreeInsert } from "../../../../../shared/utils/draw/avlTreeDrawActions";
+import { animateDeleteAVLNode, animateInsertAVLNode } from "../../../../../shared/utils/draw/avlTreeDrawActions";
 import { select } from "d3";
+import { useBus } from "../../../../../shared/hooks/useBus";
+import { computeSvgTreeMetrics, hierarchyFrom } from "../../../../../domain/utils/treeUtils";
+import { animateSearchBSTNode } from "../../../../../shared/utils/draw/bstDrawActions";
+import { animateLevelOrderTraversal, animateRecursiveTraversal } from "../../../../../shared/utils/draw/BinaryTreeDrawActions";
+import { getArbolAVLCode } from "../../../../../domain/constants/pseudocode/arbolAVLCode";
 
 export function useAVLTreeRender(
   treeData: HierarchyNodeData<number> | null,
@@ -43,11 +46,14 @@ export function useAVLTreeRender(
     );
   }, [treeData]);
 
-  // Estado previo (para delete)
+  // Estado previo de la raíz
   const prevRoot = usePrevious(root);
 
-  // Control de animación global
+  // Control de bloqueo de animación
   const { setIsAnimating } = useAnimation();
+
+  // Bus para la emisión de eventos de código
+  const bus = useBus();
 
   // Layouts para las rotaciones del árbol
   const avlFramesLayouts = useMemo(() => {
@@ -59,7 +65,6 @@ export function useAVLTreeRender(
 
   // Renderizado base del árbol
   useEffect(() => {
-    // Verificamos que la raiz no sea nula y que la referencia al SVG se haya establecido
     if (!root || !svgRef.current) return;
 
     // Margenes para el svg
@@ -82,7 +87,8 @@ export function useAVLTreeRender(
       currentNodes.length,
       SVG_BINARY_TREE_VALUES.SEQUENCE_PADDING + 25,
       SVG_BINARY_TREE_VALUES.SEQUENCE_HEIGHT,
-      SVG_AVL_TREE_VALUES.EXTRA_WIDTH
+      SVG_AVL_TREE_VALUES.EXTRA_WIDTH,
+      SVG_AVL_TREE_VALUES.EXTRA_HEIGHT
     );
 
     // Configuración del contenedor SVG
@@ -94,143 +100,144 @@ export function useAVLTreeRender(
     treeOffset.x = metrics.treeOffset.x;
     treeOffset.y = metrics.treeOffset.y;
 
-    // Contenedor interno para los nodos y enlaces del árbol
-    let treeG = svg.select<SVGGElement>("g.tree-container");
-    if (treeG.empty()) treeG = svg.append("g").classed("tree-container", true);
+    // Contenedor para los nodos y enlaces del árbol
+    let treeG = svg.select<SVGGElement>("g#tree-container");
+    if (treeG.empty()) treeG = svg.append("g").attr("id", "tree-container");
     treeG.attr("transform", `translate(${treeOffset.x},${treeOffset.y})`);
 
     // Desplazamiento para el contenedor de la secuencia de valores de recorrido
     seqOffset.x = metrics.seqOffset.x;
     seqOffset.y = metrics.seqOffset.y;
 
-    // Contenedor interno para la secuencia de valores de recorrido
-    let seqG = svg.select<SVGGElement>("g.seq-container");
-    if (seqG.empty()) seqG = svg.append("g").classed("seq-container", true);
+    // Contenedor para la secuencia de valores de recorrido
+    let seqG = svg.select<SVGGElement>("g#seq-container");
+    if (seqG.empty()) seqG = svg.append("g").attr("id", "seq-container");
     seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
     // Capas internas para nodos y enlaces
-    let linksLayer = treeG.select<SVGGElement>("g.links-layer");
-    if (linksLayer.empty()) linksLayer = treeG.append("g").attr("class", "links-layer");
+    let nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
+    if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("id", "nodes-layer");
 
-    let nodesLayer = treeG.select<SVGGElement>("g.nodes-layer");
-    if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("class", "nodes-layer");
+    let linksLayer = treeG.select<SVGGElement>("g#links-layer");
+    if (linksLayer.empty()) linksLayer = treeG.append("g").attr("id", "links-layer");
 
     // Elevamos la capa de nodos
     nodesLayer.raise();
-  }, [root, currentNodes, treeOffset, seqOffset, prevRoot, linksData, avlFramesLayouts, query.avlTrace?.hierarchies.pre]);
+  }, [root, currentNodes, prevRoot, linksData, avlFramesLayouts]);
 
-  // Efecto para manejar la inserción de nuevos nodos
+  // Efecto para manejar la inserción de un nuevo nodo
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
     if (!root || !svgRef.current || !query.toInsert) return;
 
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current);
 
     // Extraemos los datos de inserción de la query
-    const { pathIds, parentId, targetNodeId, exists } = query.toInsert;
+    const { parentNodeId, targetNodeId, inserted, steps } = query.toInsert;
 
-    // Obtenemos el layout inicial en caso de presentarse rotación
+    // Layout inicial en caso de presentarse rotación
     const preLayout = query.avlTrace && query.avlTrace.hierarchies.pre ? avlFramesLayouts[0] : null;
 
     // Animación de inserción del nuevo nodo con rotaciones
-    animateAVLTreeInsert(
+    animateInsertAVLNode(
       svg,
       treeOffset,
       {
         targetNodeId,
-        parentId,
-        exists,
-        currentNodes: preLayout ? preLayout.nodes : currentNodes,
-        currentLinks: preLayout ? preLayout.links : linksData,
+        parentNodeId,
+        inserted,
+        insertSteps: steps,
+        nodesData: preLayout ? preLayout.nodes : currentNodes,
+        linksData: preLayout ? preLayout.links : linksData,
         positions: nodePositions,
-        pathToTarget: pathIds,
         rotations: query.avlTrace?.rotations ?? [],
-        frames: avlFramesLayouts
+        frames: avlFramesLayouts,
+        highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR
       },
-      { highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR },
+      bus,
       resetQueryValues,
       setIsAnimating
     );
-  }, [root, currentNodes, linksData, query.toInsert, query.avlTrace, avlFramesLayouts, treeOffset, resetQueryValues, setIsAnimating]);
+  }, [query.toInsert, query.avlTrace, root, currentNodes, linksData, avlFramesLayouts, bus, resetQueryValues, setIsAnimating]);
 
   // Efecto para manejar la eliminación de un nodo
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
-    if (!prevRoot || !svgRef.current || !query.toDelete) return;
+    if (!svgRef.current || !query.toDelete) return;
 
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current);
 
     // Extraemos los datos de eliminación de la query
-    const operationData = query.toDelete;
+    const deletionData = query.toDelete;
 
     // Obtenemos el layout inicial en caso de presentarse rotación
     const preLayout = query.avlTrace && query.avlTrace.hierarchies.pre ? avlFramesLayouts[0] : null;
 
-    // Animación de eliminación del nodo con rotaciones
-    animateAVLTreeDelete(
+    // Animación de eliminación de un nodo especifico
+    animateDeleteAVLNode(
       svg,
       treeOffset,
       {
-        targetNodeId: operationData.targetNodeId,
-        parentId: operationData.parentId,
-        successorNodeId: operationData.successorId,
-        replacementNodeId: operationData.replacementId,
-        exists: operationData.exists,
-        currentNodes: preLayout ? preLayout.nodes : currentNodes,
-        currentLinks: preLayout ? preLayout.links : linksData,
+        targetNodeId: deletionData.targetNodeId,
+        parentNodeId: deletionData.parentNodeId,
+        successorNodeId: deletionData.successorNodeId,
+        successorParentNodeId: deletionData.successorParentNodeId,
+        replacementNodeId: deletionData.replacementNodeId,
+        replacementSide: deletionData.replacementSide,
+        deleted: deletionData.deleted,
+        deleteSteps: deletionData.steps,
+        pathToSuccessor: deletionData.pathToSuccessorIds,
+        remainingNodesData: preLayout ? preLayout.nodes : currentNodes,
+        remainingLinksData: preLayout ? preLayout.links : linksData,
         positions: nodePositions,
-        pathToTarget: operationData.pathToTargetIds,
-        pathToSuccessor: operationData.pathToSuccessorIds,
-        rotations: query.avlTrace!.rotations,
-        frames: avlFramesLayouts
-      },
-      {
+        rotations: query.avlTrace?.rotations ?? [],
+        frames: avlFramesLayouts,
         highlightTargetColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR,
         highlightSuccessorColor: SVG_BINARY_TREE_VALUES.UPDATE_STROKE_COLOR
       },
+      bus,
       resetQueryValues,
       setIsAnimating
     );
-  }, [prevRoot, currentNodes, linksData, query.toDelete, query.avlTrace, avlFramesLayouts, treeOffset, resetQueryValues, setIsAnimating]);
+  }, [query.toDelete, query.avlTrace, currentNodes, linksData, avlFramesLayouts, bus, resetQueryValues, setIsAnimating]);
 
   // Efecto para manejar la búsqueda de un nodo
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
     if (!root || !svgRef.current || !query.toSearch) return;
 
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current);
 
     // Extraemos los datos de búsqueda de la query
-    const { pathIds, found, lastVisitedId } = query.toSearch;
+    const { steps, targetNodeId, found } = query.toSearch;
 
     // Animación de búsqueda del nodo
-    animateSearchNode(
+    animateSearchBSTNode(
       svg,
       treeOffset,
       {
-        lastVisitedNodeId: lastVisitedId,
+        targetNodeId,
+        searchSteps: steps,
         found,
         positions: nodePositions,
-        path: pathIds
+        highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR
       },
-      { highlightColor: SVG_BINARY_TREE_VALUES.HIGHLIGHT_COLOR },
-      resetQueryValues, setIsAnimating);
-  }, [root, currentNodes, query.toSearch, treeOffset, resetQueryValues, setIsAnimating]);
+      bus,
+      resetQueryValues,
+      setIsAnimating
+    );
+  }, [query.toSearch, root, currentNodes, bus, resetQueryValues, setIsAnimating]);
 
   // Efecto para manejar los recorridos del árbol
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
     if (!svgRef.current) return;
 
     // Determinar el tipo de recorrido a animar
     const traversalType =
-      query.toGetPreOrder.length > 0 ? "pre" :
-        query.toGetInOrder.length > 0 ? "in" :
-          query.toGetPostOrder.length > 0 ? "post" :
-            query.toGetLevelOrder.length > 0 ? "level" :
+      query.toGetPreOrder ? "getPreOrder" :
+        query.toGetInOrder ? "getInOrder" :
+          query.toGetPostOrder ? "getPostOrder" :
+            query.toGetLevelOrder ? "getLevelOrder" :
               null;
 
     if (!traversalType) return;
@@ -238,17 +245,25 @@ export function useAVLTreeRender(
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current);
 
-    // Grupo contenedor de nodos y enlaces del árbol
-    const treeG = svg.select<SVGGElement>("g.tree-container");
-
     // Grupo contenedor de los valores de la secuencia de recorrido
-    const seqG = svg.select<SVGGElement>("g.seq-container");
+    const seqG = svg.select<SVGGElement>("g#seq-container");
 
+    let steps: BinaryTreeTraversalStep[] = [];
     let nodes: TraversalNodeType[] = [];
-    if (traversalType === "pre") nodes = query.toGetPreOrder;
-    else if (traversalType === "in") nodes = query.toGetInOrder;
-    else if (traversalType === "post") nodes = query.toGetPostOrder;
-    else if (traversalType === "level") nodes = query.toGetLevelOrder;
+    if (traversalType === "getPreOrder") {
+      nodes = query.toGetPreOrder!.nodes;
+      steps = query.toGetPreOrder!.steps;
+    }
+    else if (traversalType === "getInOrder") {
+      nodes = query.toGetInOrder!.nodes;
+      steps = query.toGetInOrder!.steps;
+    }
+    else if (traversalType === "getPostOrder") {
+      nodes = query.toGetPostOrder!.nodes;
+      steps = query.toGetPostOrder!.steps;
+    } else {
+      nodes = query.toGetLevelOrder!.nodes;
+    }
 
     // Renderizado de los valores para la secuencia del recorrido
     drawTraversalSequence(
@@ -263,32 +278,63 @@ export function useAVLTreeRender(
     );
 
     // Animación de recorrido de los nodos del árbol
-    animateTreeTraversal(treeG, seqG, nodes, seqPositions, resetQueryValues, setIsAnimating);
-  }, [query.toGetInOrder, query.toGetPreOrder, query.toGetPostOrder, query.toGetLevelOrder, seqOffset, treeOffset, resetQueryValues, setIsAnimating]);
+    if (traversalType === "getLevelOrder") {
+      const { steps } = query.toGetLevelOrder!;
+
+      animateLevelOrderTraversal(
+        svg,
+        {
+          traversalSteps: steps,
+          seqPositions,
+          strokeColor: "#8aa0ff",
+          strokeWidth: 3,
+          baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
+          baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
+        },
+        bus,
+        resetQueryValues,
+        setIsAnimating
+      );
+    } else {
+      animateRecursiveTraversal(
+        svg,
+        {
+          traversalSteps: steps,
+          seqPositions,
+          strokeColor: "#8aa0ff",
+          strokeWidth: 3,
+          baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
+          baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
+        },
+        traversalType,
+        bus,
+        resetQueryValues,
+        setIsAnimating
+      );
+    }
+  }, [query.toGetInOrder, query.toGetPreOrder, query.toGetPostOrder, query.toGetLevelOrder, bus, resetQueryValues, setIsAnimating]);
 
   // Efecto para manejar la limpieza de lienzo
   useEffect(() => {
-    // Verificaciones necesarias para realizar la animación
     if (!svgRef.current || !query.toClear) return;
 
     // Selección del elemento SVG a partir de su referencia
     const svg = select(svgRef.current);
 
-    // Grupo contenedor de nodos y enlaces del árbol
-    const treeG = svg.select<SVGGElement>("g.tree-container");
-
-    // Grupo contenedor de los valores de la secuencia de recorrido
-    const seqG = svg.select<SVGGElement>("g.seq-container");
+    // Código y labels de la operación
+    const arbolAVLCode = getArbolAVLCode();
+    const labels = arbolAVLCode.clean.labels;
 
     // Animación de limpieza del árbol
     animateClearTree(
-      treeG,
-      seqG,
+      svg,
       { nodePositions, seqPositions },
+      bus,
+      { CLEAR_ROOT: labels.CLEAR_ROOT },
       resetQueryValues,
       setIsAnimating
     );
-  }, [query.toClear, resetQueryValues, setIsAnimating]);
+  }, [query.toClear, bus, resetQueryValues, setIsAnimating]);
 
   return { svgRef };
 }

@@ -7,9 +7,9 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
  * Método que inserta un nuevo elemento en el árbol binario como hijo izquierdo del elemento padre dado.
  * @param padre Elemento al que se añadirá el hijo.
  * @param hijo Elemento a insertar.
- * @return true si el elemento fue insertado, false en caso contrario.
+ * @return true si el elemento fue insertado, false si ya existía.
  */`,
-      `public boolean insertLeft(T {0}, T {1}){`,
+      `public boolean insertLeft(T {0}, T {1}) {`,
       `    NodoBin<T> nuevoNodo = new NodoBin<>({1});`,
       `    if (this.raiz == null) {`,
       `        this.raiz = nuevoNodo;`,
@@ -88,9 +88,9 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
  * Método que inserta un nuevo elemento en el árbol binario como hijo derecho del elemento padre dado.
  * @param padre Elemento al que se añadirá el hijo. 
  * @param hijo Elemento a insertar.
- * @return true si el elemento fue insertado, false en caso contrario.
+ * @return true si el elemento fue insertado, false si ya existía.
  */`,
-      `public boolean insertRight(T {0}, T {1}){`,
+      `public boolean insertRight(T {0}, T {1}) {`,
       `    NodoBin<T> nuevoNodo = new NodoBin<>({1});`,
       `    if (this.raiz == null) {`,
       `        this.raiz = nuevoNodo;`,
@@ -168,10 +168,10 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que elimina el elemento especificado del árbol binario. 
  * @param info Elemento a eliminar.
- * @return true si el elemento fue eliminado, false en caso contrario.
+ * @return true si el elemento fue eliminado, false si no existe en el árbol.
  * @throws RuntimeException si el árbol está vacío.
  */`,
-      `public boolean delete(T {0}){`,
+      `public boolean delete(T {0}) {`,
       `    if (this.raiz == null) {`,
       `        throw new RuntimeException("No fue posible eliminar el nodo: El árbol se encuentra vacío (cantidad de nodos: 0).");`,
       `    }`,
@@ -195,13 +195,13 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `\n`,
       `    if (izq == null && der == null) {`,
       `        this.reemplazarHijo(nodoPadre, nodo, null);`,
-      `        this.tamanio--;`,
+      `        {1}--;`,
       `        return true;`,
       `    }`,
       `    if (izq == null || der == null) {`,
       `        NodoBin<T> unico = izq != null ? izq : der;`,
       `        this.reemplazarHijo(nodoPadre, nodo, unico);`,
-      `        this.tamanio--;`,
+      `        {1}--;`,
       `        return true;`,
       `    }`,
       `    NodoBin<T> succPadre = nodo;`,
@@ -212,7 +212,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `    }`,
       `    nodo.info = succ.info;`,
       `    this.reemplazarHijo(succPadre, succ, succ.derecho);`,
-      `    this.tamanio--;`,
+      `    {1}--;`,
       `    return true;`,
       `}`,
       `\n`,
@@ -340,7 +340,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que comprueba la existencia del elemento especificado en el árbol binario.
  * @param info Elemento a buscar.
- * @return true si el elemento existe en el árbol; false en caso contrario.
+ * @return true si el elemento existe en el árbol, false en caso contrario.
  */`,
       `public boolean search(T {0}) {`,
       `    return this.get({0}) != null;`,
@@ -458,8 +458,8 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `        return;`,
       `    }`,
       `    nodos.insertLast(r.info);`,
-      `    this.getPreOrder(root.izquierdo, nodos);`,
-      `    this.getPreOrder(root.derecho, nodos);`,
+      `    this.getPreOrder(r.izquierdo, nodos);`,
+      `    this.getPreOrder(r.derecho, nodos);`,
       `}`,
     ],
     labels: {
@@ -497,9 +497,9 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `    if (r == null) {`,
       `        return;`,
       `    }`,
-      `    this.getPostOrder(root.izquierdo, nodos);`,
-      `    this.getPostOrder(root.derecho, nodos);`,
-      `    nodos.insertLast(root.info);`,
+      `    this.getPostOrder(r.izquierdo, nodos);`,
+      `    this.getPostOrder(r.derecho, nodos);`,
+      `    nodos.insertLast(r.info);`,
       `}`,
     ],
     labels: {
@@ -561,7 +561,7 @@ export const getArbolBinarioCode = (): Record<string, OperationCode> => ({
       `/**
  * Método que elimina todos los nodos del árbol binario.
  */`,
-      `public void clean(){`,
+      `public void clean() {`,
       `    this.raiz = null;`,
       `}`,
     ],

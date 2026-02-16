@@ -15,7 +15,7 @@ export function useQueue(structure: Cola<number>) {
     planId?: string | null;
   } | null>(null);
 
-  // Estado para manejar la operación solicitada por el usuario
+  // Estado para gestionar la operación solicitada por el usuario
   const [query, setQuery] = useState<BaseQueryOperations<"cola">>({
     toEnqueuedNode: null,
     toDequeuedNode: null,
@@ -28,12 +28,12 @@ export function useQueue(structure: Cola<number>) {
     (value: number) => {
       try {
         const clonedQueue = queue.clonar();
-        const insertedNode = clonedQueue.encolar(value);
+        const newNode = clonedQueue.encolar(value);
         setQueue(clonedQueue);
 
         setQuery((prev) => ({
           ...prev,
-          toEnqueuedNode: insertedNode.getId(),
+          toEnqueuedNode: newNode.getId(),
         }));
         setError(null);
       } catch (error: any) {
@@ -47,12 +47,12 @@ export function useQueue(structure: Cola<number>) {
   const dequeueElement = useCallback(() => {
     try {
       const clonedQueue = queue.clonar();
-      const nodeToDelete = clonedQueue.decolar();
+      const deletedNode = clonedQueue.decolar();
       setQueue(clonedQueue);
 
       setQuery((prev) => ({
         ...prev,
-        toDequeuedNode: nodeToDelete.getId(),
+        toDequeuedNode: deletedNode.getId(),
       }));
       setError(null);
     } catch (error: any) {

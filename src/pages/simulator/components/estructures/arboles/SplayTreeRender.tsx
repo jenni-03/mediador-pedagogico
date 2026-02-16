@@ -1,4 +1,7 @@
-import { BaseQueryOperations, HierarchyNodeData } from "../../../../../domain/utils/types";
+import {
+    BaseQueryOperations,
+    HierarchyNodeData,
+} from "../../../../../domain/utils/types";
 import { useSplayTreeRender } from "../../../hooks/estructures/arbolSplay/useSplayTreeRender";
 
 export function SplayTreeRender({

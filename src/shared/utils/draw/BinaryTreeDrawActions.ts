@@ -1,7 +1,7 @@
 import type { HierarchyNode, Selection } from "d3";
 import { BinaryTreeGetStep, BinaryTreeLevelStep, BinaryTreeTraversalStep, HierarchyNodeData, LinkPathFn, TreeLinkData } from "../../../domain/utils/types";
 import { defaultAppearTreeNode, defaultDeleteTreeNode, repositionTree, showTreeHint } from "./drawActionsUtilities";
-import { SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
+import { RB_COLORS, SVG_BINARY_TREE_VALUES, SVG_STYLE_VALUES } from "../../../domain/constants/consts";
 import type { Dispatch, SetStateAction } from "react";
 import { straightPath } from "../../../domain/utils/treeUtils";
 import { type EventBus } from "../../events/eventBus";
@@ -72,7 +72,6 @@ export async function animateInsertBinaryNode(
                 parentNodeNewLinkGroup = treeG.select<SVGGElement>(
                     `g#link-${parentNodeId}-${newNodeId}`
                 );
-                parentNodeNewLinkGroup.style("opacity", 0);
             }
 
             bus.emit("step:progress", { stepId: op, lineIndex: labels.CREATE_NODE });
@@ -130,14 +129,14 @@ export async function animateInsertBinaryNode(
                 bus.emit("step:progress", { stepId: op, lineIndex: linkNodeLabel });
                 await defaultAppearTreeNode(newNodeGroup);
 
-                // Establecimiento del nuevo enlace del nodo padre
+                // Establecimiento del nuevo enlace entre el nodo padre y el nuevo nodo
                 await parentNodeNewLinkGroup
                     ?.transition()
                     .duration(800)
                     .style("opacity", 1)
                     .end();
 
-                // Restablecimiento del fondo del nodo padre del nuevo nodo
+                // Restablecimiento del estilo visual original del nodo padre del nuevo nodo
                 await parentNewNodeGroup?.select<SVGCircleElement>("circle.node-container")
                     .transition()
                     .duration(800)
@@ -297,13 +296,6 @@ export async function animateDeleteBinaryNode(
 
         // Id del nodo padre del nodo a eliminar (depende de la existencia del sucesor)
         const parentRemovalNodeId = successorParentNodeId ?? parentNodeId;
-
-        // Estado visual inicial del nuevo enlace formado entre el nodo padre del nodo a eliminar y el nodo que lo reemplaza
-        if (parentRemovalNodeId && replacementNodeId) {
-            treeG.select<SVGGElement>(
-                `g#link-${parentRemovalNodeId}-${replacementNodeId}`
-            ).style("opacity", 0);
-        }
 
         bus.emit("step:progress", { stepId: "delete", lineIndex: labels.VALIDATE_EMPTY });
         await delay(600);
@@ -485,7 +477,7 @@ export async function animateDeleteBinaryNode(
                 replacementNodeId
             );
 
-            // Restablecimiento del fondo del nodo objetivo o el nodo padre de este
+            // Restablecimiento del estilo visual original del nodo objetivo o el nodo padre de este
             await treeG.select<SVGCircleElement>(`g#${parentNodeId ?? targetNodeId} circle.node-container`)
                 .transition()
                 .duration(800)
@@ -513,7 +505,7 @@ export async function animateDeleteBinaryNode(
                 deletionData.positions,
                 treeOffset,
                 {
-                    size: { width: 70, height: 35 },
+                    size: { width: 80, height: 35 },
                     typography: { labelFz: "10.5px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                     anchor: { side: "below", dx: 10, dy: -8 },
                     palette: { bg: "#1b2330", stroke: "#14b8a6" }
@@ -636,14 +628,14 @@ export async function animateSearchBinaryNode(
                     searchData.positions,
                     treeOffset,
                     {
-                        size: { width: 75, height: 35 },
+                        size: { width: 80, height: 35 },
                         typography: { labelFz: "10px", valueFz: "10px", labelFw: 800, valueFw: 800 },
                         anchor: { side: "below", dx: 10, dy: -8 },
                         palette: { bg: "#1b2330", stroke: "#14b8a6" }
                     }
                 );
 
-                // Restablecimiento del fondo del nodo identificado
+                // Restablecimiento del estilo visual original del nodo identificado
                 await treeG.select<SVGCircleElement>(`g#${targetNodeId} circle.node-container`)
                     .transition()
                     .duration(800)
@@ -677,6 +669,7 @@ export async function animateRecursiveTraversal(
         traversalSteps: BinaryTreeTraversalStep[];
         seqPositions: Map<string, { x: number, y: number }>;
         strokeColor: string;
+        strokeWidth: number;
         baseStroke: string;
         baseStrokeWidth: number;
     },
@@ -689,7 +682,7 @@ export async function animateRecursiveTraversal(
     const labels = arbolBinarioCode[stepId].labels;
 
     // Elementos implicados en el recorrido
-    const { traversalSteps, seqPositions, strokeColor } = traversalData;
+    const { traversalSteps, seqPositions, strokeColor, strokeWidth } = traversalData;
 
     try {
         // Inicio de la operación
@@ -698,7 +691,7 @@ export async function animateRecursiveTraversal(
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g#tree-container");
 
-        // Grupo contenedor de la secuencia de valores de recorrido
+        // Grupo contenedor de la secuencia de valores de recorrido (visible)
         const seqG = svg.select<SVGGElement>("g#seq-container");
         seqG.style("opacity", 1);
 
@@ -724,33 +717,41 @@ export async function animateRecursiveTraversal(
                         await delay(600);
                     } else {
                         // Resaltado del nodo actual
-                        await treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`)
+                        const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`);
+                        const nodeRing = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-ring`);
+
+                        if (!nodeRing.empty()) nodeRing.style("opacity", 0);
+                        await nodeCircle
                             .transition()
                             .duration(800)
                             .attr("stroke", strokeColor)
-                            .attr("stroke-width", 2)
+                            .attr("stroke-width", strokeWidth)
                             .end();
                     }
                     break;
                 }
                 case "goLeft": {
-                    // Restablecimiento de los bordes del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`);
+                    const nodeRing = treeG.select<SVGCircleElement>(`g#${step.from} circle.node-ring`);
+
                     bus.emit("step:progress", { stepId, lineIndex: labels.CALL_LEFT });
-                    await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                    await nodeCircle
                         .transition()
                         .duration(800)
                         .attr("stroke", traversalData.baseStroke)
                         .attr("stroke-width", traversalData.baseStrokeWidth)
                         .end();
+                    if (!nodeRing.empty()) nodeRing.style("opacity", 0.9);
                     break;
                 }
                 case "visit": {
-                    const nodeCircleElement = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`);
+                    const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`);
                     const seqText = seqG.select<SVGTextElement>(`text#${step.at}`);
 
                     // Creación del anillo de pulso
                     bus.emit("step:progress", { stepId, lineIndex: labels.VISIT_NODE });
-                    const pulseRing = nodeCircleElement
+                    const pulseRing = nodeCircle
                         .select(function () {
                             // Selección del grupo g padre del círculo
                             return (this!.parentNode as SVGGElement) || this!;
@@ -760,7 +761,7 @@ export async function animateRecursiveTraversal(
                         .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2)
                         .attr("fill", "none")
                         .attr("stroke", strokeColor)
-                        .attr("stroke-width", 2)
+                        .attr("stroke-width", strokeWidth)
                         .style("opacity", 0.9);
 
                     // Pulsación del nodo
@@ -773,7 +774,7 @@ export async function animateRecursiveTraversal(
                         .end();
 
                     // Bounce del nodo
-                    await nodeCircleElement
+                    await nodeCircle
                         .transition()
                         .duration(300)
                         .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.12)
@@ -794,14 +795,18 @@ export async function animateRecursiveTraversal(
                     break;
                 }
                 case "goRight": {
-                    // Restablecimiento de los bordes del nodo actual antes de pasar al siguiente
+                    // Restablecimiento del estilo visual original del nodo visitado
+                    const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`);
+                    const nodeRing = treeG.select<SVGCircleElement>(`g#${step.from} circle.node-ring`);
+
                     bus.emit("step:progress", { stepId, lineIndex: labels.CALL_RIGHT });
-                    await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                    await nodeCircle
                         .transition()
                         .duration(800)
                         .attr("stroke", traversalData.baseStroke)
                         .attr("stroke-width", traversalData.baseStrokeWidth)
                         .end();
+                    if (!nodeRing.empty()) nodeRing.style("opacity", 0.9);
                     break;
                 }
                 case "return": {
@@ -814,22 +819,30 @@ export async function animateRecursiveTraversal(
                     }
 
                     if (step.from) {
-                        // Restablecimiento de los bordes del nodo en la llamada actual (backtracking)
-                        await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
+                        const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`);
+                        const nodeRing = treeG.select<SVGCircleElement>(`g#${step.from} circle.node-ring`);
+
+                        await nodeCircle
                             .transition()
                             .duration(800)
                             .attr("stroke", traversalData.baseStroke)
                             .attr("stroke-width", traversalData.baseStrokeWidth)
                             .end();
+                        if (!nodeRing.empty()) nodeRing.style("opacity", 0.9);
                     }
 
                     if (step.to) {
                         // Resaltado del nodo en la nueva llamada (backtracking)
-                        await treeG.select<SVGCircleElement>(`g#${step.to} circle.node-container`)
+                        const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.to} circle.node-container`);
+                        const nodeRing = treeG.select<SVGCircleElement>(`g#${step.to} circle.node-ring`);
+
+                        if (!nodeRing.empty()) nodeRing.style("opacity", 0);
+                        await nodeCircle
                             .transition()
                             .duration(800)
                             .attr("stroke", strokeColor)
-                            .attr("stroke-width", 2)
+                            .attr("stroke-width", strokeWidth)
                             .end();
                     }
                     break;
@@ -868,7 +881,8 @@ export async function animateLevelOrderTraversal(
     traversalData: {
         traversalSteps: BinaryTreeLevelStep[];
         seqPositions: Map<string, { x: number, y: number }>;
-        highlightColor: string;
+        strokeColor: string;
+        strokeWidth: number;
         baseStroke: string;
         baseStrokeWidth: number;
     },
@@ -880,7 +894,7 @@ export async function animateLevelOrderTraversal(
     const labels = arbolBinarioCode.getLevelOrder.labels;
 
     // Elementos implicados en el recorrido
-    const { traversalSteps, seqPositions, highlightColor } = traversalData;
+    const { traversalSteps, seqPositions, strokeColor, strokeWidth } = traversalData;
 
     try {
         // Inicio de la operación
@@ -889,7 +903,7 @@ export async function animateLevelOrderTraversal(
         // Grupo contenedor de nodos y enlaces del árbol
         const treeG = svg.select<SVGGElement>("g#tree-container");
 
-        // Grupo contenedor de la secuencia de valores de recorrido
+        // Grupo contenedor de la secuencia de valores de recorrido (visible)
         const seqG = svg.select<SVGGElement>("g#seq-container");
         seqG.style("opacity", 1);
 
@@ -957,17 +971,20 @@ export async function animateLevelOrderTraversal(
                             : labels.ENQUEUE_RIGHT;
                     bus.emit("step:progress", { stepId: "getLevelOrder", lineIndex: enqueueLabel });
 
-                    // Resaltado del nodo actual procesado
-                    const nodeCircleElement = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`);
-                    await nodeCircleElement
+                    // Resaltado del nodo actual
+                    const nodeCircle = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-container`);
+                    const nodeRing = treeG.select<SVGCircleElement>(`g#${step.at} circle.node-ring`);
+
+                    if (!nodeRing.empty()) nodeRing.style("opacity", 0);
+                    await nodeCircle
                         .transition()
                         .duration(800)
-                        .attr("stroke", highlightColor)
-                        .attr("stroke-width", 2)
+                        .attr("stroke", strokeColor)
+                        .attr("stroke-width", strokeWidth)
                         .end();
 
                     // Creación del anillo de pulso
-                    const pulseRing = nodeCircleElement
+                    const pulseRing = nodeCircle
                         .select(function () {
                             // Selección del grupo g padre del círculo
                             return (this!.parentNode as SVGGElement) || this!;
@@ -976,8 +993,8 @@ export async function animateLevelOrderTraversal(
                         .attr("class", "pulse-ring")
                         .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS + 2)
                         .attr("fill", "none")
-                        .attr("stroke", highlightColor)
-                        .attr("stroke-width", 2)
+                        .attr("stroke", strokeColor)
+                        .attr("stroke-width", strokeWidth)
                         .style("opacity", 0.9);
 
                     // Pulsación del nodo
@@ -990,7 +1007,7 @@ export async function animateLevelOrderTraversal(
                         .end();
 
                     // Bounce del nodo
-                    await nodeCircleElement
+                    await nodeCircle
                         .transition()
                         .duration(250)
                         .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS * 1.12)
@@ -999,13 +1016,14 @@ export async function animateLevelOrderTraversal(
                         .attr("r", SVG_BINARY_TREE_VALUES.NODE_RADIUS)
                         .end();
 
-                    // Restaurar borde
-                    await nodeCircleElement
+                    // Restablecimiento del estilo visual original del nodo
+                    await nodeCircle
                         .transition()
                         .duration(800)
                         .attr("stroke", traversalData.baseStroke)
                         .attr("stroke-width", traversalData.baseStrokeWidth)
                         .end();
+                    if (!nodeRing.empty()) nodeRing.style("opacity", 0.9);
 
                     // Añadir elemento al estado lógico
                     queue.push(step.at);
@@ -1171,7 +1189,7 @@ async function animateGetNodeSteps(
                 break;
             }
             case "goLeft": {
-                // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                // Restablecimiento del estilo visual original del nodo visitado
                 bus.emit("step:progress", { stepId, lineIndex: labels.SEARCH_LEFT });
                 await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                     .transition()
@@ -1191,7 +1209,7 @@ async function animateGetNodeSteps(
                 break;
             }
             case "goRight": {
-                // Restablecimiento del fondo del nodo actual antes de pasar al siguiente
+                // Restablecimiento del estilo visual original del nodo visitado
                 bus.emit("step:progress", { stepId, lineIndex: labels.SEARCH_RIGHT });
                 await treeG.select<SVGCircleElement>(`g#${step.from} circle.node-container`)
                     .transition()
@@ -1212,7 +1230,7 @@ async function animateGetNodeSteps(
 
                 if (!step.found) {
                     if (step.from) {
-                        // Restablecimiento del fondo del nodo en la llamada actual (backtracking)
+                        // Restablecimiento del estilo visual original del nodo en la llamada actual (backtracking)
                         await treeG.select(`g#${step.from} circle.node-container`)
                             .transition()
                             .duration(800)
@@ -1320,393 +1338,64 @@ export async function animateGetInOrderSuccessor(
     stepId: string,
     bus: EventBus,
     labels: {
-        DECLARE_SUCC_PARENT: number,
+        DECLARE_SUCC_PARENT?: number,
+        SET_SUCC_PARENT?: number,
         DECLARE_SUCC_NODE: number,
         WHILE_TRAVERSAL: number,
-        SET_SUCC_PARENT: number,
         SET_SUCC_NODE: number,
     }
 ) {
-    bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_SUCC_PARENT });
-    await delay(600);
+    if (labels.DECLARE_SUCC_PARENT) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_SUCC_PARENT });
+        await delay(600);
+    }
 
     bus.emit("step:progress", { stepId, lineIndex: labels.DECLARE_SUCC_NODE });
     await delay(600);
 
     for (let i = 0; i < pathIds.length - 1; i++) {
         // Selección del grupo correspondiente al nodo actual
-        const currCircleElement = treeG.select<SVGCircleElement>(`g#${pathIds[i]} circle.node-container`);
+        const nodeCircle = treeG.select<SVGCircleElement>(`g#${pathIds[i]} circle.node-container`);
+        const nodeRing = treeG.select<SVGCircleElement>(`g#${pathIds[i]} circle.node-ring`);
 
         // Resaltado del nodo actual
         bus.emit("step:progress", { stepId, lineIndex: labels.WHILE_TRAVERSAL });
-        await currCircleElement
+        if (!nodeRing.empty()) nodeRing.style("opacity", 0);
+        await nodeCircle
             .transition()
             .duration(800)
             .attr("stroke", highlightColor)
             .attr("stroke-width", 3)
             .end();
 
-        bus.emit("step:progress", { stepId, lineIndex: labels.SET_SUCC_PARENT });
-        await delay(600);
+        if (labels.SET_SUCC_PARENT) {
+            bus.emit("step:progress", { stepId, lineIndex: labels.SET_SUCC_PARENT });
+            await delay(600);
+        }
 
-        // Restablecimiento del fondo original del nodo actual (antes de pasar al sig. nodo)
+        // Restablecimiento del estilo visual original del nodo visitado
         bus.emit("step:progress", { stepId, lineIndex: labels.SET_SUCC_NODE });
-        await currCircleElement
+        await nodeCircle
             .transition()
             .duration(800)
-            .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
+            .attr("stroke", nodeRing.empty() ? SVG_STYLE_VALUES.RECT_STROKE_COLOR : RB_COLORS.STROKE)
             .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
             .end();
+        if (!nodeRing.empty()) nodeRing.style("opacity", 0.9);
     }
 
     // Resaltado final del elemento objetivo
     bus.emit("step:progress", { stepId, lineIndex: labels.WHILE_TRAVERSAL });
-    const targetElement = treeG.select<SVGCircleElement>(`g#${pathIds[pathIds.length - 1]} circle.node-container`);
-    await targetElement
+    const targetNodeCircle = treeG.select<SVGCircleElement>(`g#${pathIds[pathIds.length - 1]} circle.node-container`);
+    const targetNodeRing = treeG.select<SVGCircleElement>(`g#${pathIds[pathIds.length - 1]} circle.node-ring`);
+
+    if (!targetNodeRing.empty()) targetNodeRing.style("opacity", 0);
+    await targetNodeCircle
         .transition()
         .duration(800)
         .attr("stroke", highlightColor)
         .attr("stroke-width", 3)
         .end();
-}
-
-/**
- * Función encargada de animar la inserción de un nuevo nodo siguiendo la lógica de un árbol binario de búsqueda.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param seqG Selección D3 del elemento SVG del grupo (`<g>`) que contiene la secuencia de valores de recorrido.
- * @param data Objeto con información del árbol necesaria para la animación (nodos, enlaces, posiciones, rutas).
- * @param opts Objeto con opciones de animación para la aparición, resaltado y reposicionamiento de nodos.
- */
-export async function animateBSTInsertCore(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    seqG: Selection<SVGGElement, unknown, null, undefined>,
-    data: {
-        newNodeId: string;
-        parentId: string | null;
-        nodesData: HierarchyNode<HierarchyNodeData<number>>[];
-        linksData: TreeLinkData[];
-        pathToParent: string[];
-        positions: Map<string, { x: number, y: number }>;
-    },
-    opts: {
-        reposition: (
-            g: Selection<SVGGElement, unknown, null, undefined>,
-            nodes: HierarchyNode<HierarchyNodeData<number>>[],
-            linksData: TreeLinkData[],
-            positions: Map<string, { x: number; y: number }>
-        ) => Promise<void>;
-        appearNode: (
-            nodeGroup: Selection<SVGGElement, unknown, null, undefined>
-        ) => Promise<void>;
-        highlight: (
-            g: Selection<SVGGElement, unknown, null, undefined>,
-            path: string[],
-            highlightColor: string
-        ) => Promise<void>;
-        highlightColor: string;
-    }
-) {
-    // Elementos del árbol requeridos para la animación
-    const { newNodeId, parentId, nodesData, linksData, pathToParent, positions } = data;
-
-    // Ocultamos la secuencia de valores de recorrido (en caso de estar presente)
-    seqG.style("opacity", 0);
-
-    // Grupo del lienzo correspondiente al nuevo nodo
-    const newNodeGroup = treeG.select<SVGGElement>(`g#${newNodeId}`);
-
-    // Estado inicial del nuevo nodo
-    newNodeGroup.style("opacity", 0);
-
-    if (parentId) {
-        // Grupo del lienzo correspondiente al nuevo enlace del nodo padre que apunta al nuevo nodo
-        const newParentLinkGroup = treeG.select<SVGGElement>(
-            `g#link-${parentId}-${newNodeId}`
-        );
-
-        // Estado visual inicial del nuevo enlace
-        newParentLinkGroup.style("opacity", 0);
-
-        // Reposicionamiento de los nodos y enlaces del árbol antes de insertar
-        await opts.reposition(treeG, nodesData, linksData, positions);
-
-        // Animación de recorrido desde el nodo raíz hasta el nodo padre del nuevo nodo
-        await opts.highlight(treeG, pathToParent, opts.highlightColor);
-
-        // Animación de aparición del nuevo nodo
-        await opts.appearNode(newNodeGroup);
-
-        // Establecimiento del enlace entre el nodo padre al nuevo nodo
-        await newParentLinkGroup
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
-    } else {
-        // Animación de aparición simple del nuevo nodo
-        await newNodeGroup
-            .transition()
-            .duration(1000)
-            .style("opacity", 1)
-            .end();
-    }
-}
-
-/**
- * Función encargada de animar el proceso de eliminación de un nodo hoja o un nodo con un único hijo en un árbol ABB.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param nodeToDeleteId ID del nodo a eliminar.
- * @param parentNodeId ID del nodo padre del nodo a eliminar o null si el nodo a eliminar es la raíz.
- * @param childNodeId ID del nodo hijo del nodo a eliminar o null si el nodo a eliminar no tiene hijos.
- * @param pathToParent Lista de IDs de los nodos que representan el camino desde la raíz hasta el padre del nodo a eliminar.
- * @param opts Objeto con opciones de animación para el desvanecimiento, resaltado de nodos y dibujado de enlaces.
- */
-export async function animateLeafOrSingleChild(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    nodeToDeleteId: string | null,
-    parentNodeId: string | null,
-    childNodeId: string | null,
-    pathToParent: string[],
-    opts: {
-        deleteNode: (
-            nodeGroup: Selection<SVGGElement, unknown, null, undefined>
-        ) => Promise<void>;
-        highlightNodePath: (
-            g: Selection<SVGGElement, unknown, null, undefined>,
-            path: string[],
-            highlightColor: string
-        ) => Promise<void>;
-        highlightColor: string;
-        buildPath: LinkPathFn;
-    }
-) {
-    // Grupo del lienzo correspondiente al nodo a eliminar
-    const removedG = treeG.select<SVGGElement>(`g#${nodeToDeleteId}`);
-
-    // Grupo del lienzo correspondiente al nuevo enlace formado entre el nodo padre y el nodo hijo del nodo a elimimar (solo si ambos están presentes)
-    const newParentLinkGroup = parentNodeId && childNodeId
-        ? treeG.select<SVGGElement>(`g#link-${parentNodeId}-${childNodeId}`)
-        : null;
-
-    // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo padre y el nodo a eliminar (solo si el padre esta presente)
-    const parentRemovalLinkGroup = parentNodeId
-        ? treeG.select<SVGGElement>(`g#link-${parentNodeId}-${nodeToDeleteId}`)
-        : null;
-
-    // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo a eliminar y su nodo hijo (solo si el hijo esta presente)
-    const removalNodeLinkGroup = childNodeId
-        ? treeG.select<SVGGElement>(`g#link-${nodeToDeleteId}-${childNodeId}`)
-        : null;
-
-    // Estado visual inicial del nuevo enlace entre el nodo padre y nodo hijo del nodo a eliminar (si aplica)
-    if (newParentLinkGroup) {
-        newParentLinkGroup.style("opacity", 0);
-    }
-
-    // Si el nodo a eliminar cuenta con nodo padre
-    if (parentRemovalLinkGroup) {
-        // Animación de recorrido desde el nodo raíz hasta el nodo padre del nodo a eliminar
-        await opts.highlightNodePath(treeG, pathToParent, opts.highlightColor);
-
-        // Desconexión del enlace entre el nodo padre y el nodo a eliminar
-        await parentRemovalLinkGroup
-            .transition()
-            .duration(800)
-            .style("opacity", 0)
-            .remove()
-            .end();
-    }
-
-    // Desconexión del enlace entre el nodo a eliminar y su hijo (si el nodo a eliminar cuenta con uno)
-    if (removalNodeLinkGroup) {
-        await removalNodeLinkGroup
-            .transition()
-            .duration(800)
-            .style("opacity", 0)
-            .remove()
-            .end();
-    }
-
-    // Animación de salida del nodo a eliminar
-    await opts.deleteNode(removedG);
-
-    // Si el nodo a eliminar cuenta tanto con un nodo padre y un nodo hijo
-    if (newParentLinkGroup) {
-        // Establecemos la forma inicial del nuevo enlace entre el nodo padre e hijo del nodo eliminado
-        updateTreeLinkPath(treeG, parentNodeId!, childNodeId!, SVG_BINARY_TREE_VALUES.NODE_RADIUS, opts.buildPath);
-
-        // Aparición del nuevo enlace entre el nodo padre e hijo del nodo eliminado
-        await newParentLinkGroup
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
-    }
-}
-
-/**
- * Función encargada de animar el proceso de eliminación de un nodo con 2 hijos en un árbol ABB.
- * @param treeG Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param nodeToDeleteId ID del nodo a eliminar.
- * @param nodeToUpdateId ID del nodo que actualizará su valor.
- * @param parentNodeId ID del nodo padre del nodo a eliminar.
- * @param childNodeId ID del nodo hijo del nodo a eliminar o null si el nodo a eliminar no tiene hijos.
- * @param pathToUpdateNode Lista de IDs de los nodos que representan el camino desde la raíz hasta el nodo a actualizar.
- * @param pathToRemovalNode Lista de IDs de los nodos que representan el camino desde el nodo a actualizar hasta el nodo a eliminar.
- * @param opts Objeto con opciones de animación para el resaltado de nodos.
- */
-export async function animateTwoChildren(
-    treeG: Selection<SVGGElement, unknown, null, undefined>,
-    nodeToDeleteId: string,
-    nodeToUpdateId: string,
-    parentNodeId: string,
-    childNodeId: string | null,
-    pathToUpdateNode: string[],
-    pathToRemovalNode: string[],
-    opts: {
-        highlightNodePath: (
-            treeG: Selection<SVGGElement, unknown, null, undefined>,
-            path: string[],
-            highlightColor: string
-        ) => Promise<void>,
-        highlightTargetColor: string,
-        highlightSuccessorColor: string
-    }
-) {
-    // Grupo del lienzo correspondiente al nodo a eliminar
-    const removedG = treeG.select<SVGGElement>(`g#${nodeToDeleteId}`);
-
-    // Grupo del lienzo correspondiente al nodo a actualizar
-    const updatedG = treeG.select<SVGGElement>(`g#${nodeToUpdateId}`);
-
-    // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo padre y el nodo a eliminar
-    const removalParentLinkGroup = treeG.select<SVGGElement>(`g#link-${parentNodeId}-${nodeToDeleteId}`);
-
-    // Grupo del lienzo correspondiente al nuevo enlace entre el nodo padre y el nodo hijo del nodo a eliminar (solo si el nodo a eliminar cuenta con un nodo hijo)
-    const newParentLinkGroup = childNodeId
-        ? treeG.select<SVGGElement>(`g#link-${parentNodeId}-${childNodeId}`)
-        : null;
-
-    // Grupo del lienzo correspondiente al enlace a eliminar entre el nodo a eliminar y su nodo hijo (solo si el nodo a eliminar cuenta con un nodo hijo)
-    const removalNodeLinkGroup = childNodeId
-        ? treeG.select<SVGGElement>(`g#link-${nodeToDeleteId}-${childNodeId}`)
-        : null;
-
-    // Estado visual inicial del nuevo enlace entre el nodo padre y el nodo hijo del nodo a eliminar (si aplica)
-    if (newParentLinkGroup) {
-        newParentLinkGroup.select("path.tree-link").style("opacity", 0);
-    }
-
-    // Animación de recorrido desde el nodo raíz hasta el nodo que actualizará su valor
-    await opts.highlightNodePath(treeG, pathToUpdateNode, opts.highlightTargetColor);
-
-    // Animación de recorrido desde el nodo a actualizar hasta el nodo a eliminar
-    for (const nodeId of pathToRemovalNode) {
-        // Selección del círculo contenedor del nodo actual
-        const nodeCircleGroup = treeG.select<SVGGElement>(`g#${nodeId} circle.node-container`);
-
-        // Resaltado de bordes del contenedor del nodo actual
-        await nodeCircleGroup
-            .transition()
-            .duration(800)
-            .attr("stroke", opts.highlightSuccessorColor)
-            .attr("stroke-width", 3)
-            .end();
-
-        if (nodeId !== nodeToDeleteId) {
-            // Restablecimiento del borde original
-            await nodeCircleGroup
-                .transition()
-                .duration(800)
-                .attr("stroke", SVG_STYLE_VALUES.RECT_STROKE_COLOR)
-                .attr("stroke-width", SVG_STYLE_VALUES.RECT_STROKE_WIDTH)
-                .end();
-        }
-    }
-
-    // Desvanecimiento del valor actual del nodo a actualizar
-    await updatedG.select("text")
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .end();
-
-    // Actualizar el valor del nodo copiando el valor del nodo a eliminar
-    updatedG.select("text").text(removedG.select<SVGTextElement>("text").text());
-
-    // Aparición del nuevo valor del nodo a actualizar
-    await updatedG.select("text")
-        .transition()
-        .duration(800)
-        .style("opacity", 1)
-        .end();
-
-    // Desconexión del enlace entre el nodo padre y el nodo a eliminar
-    await removalParentLinkGroup
-        .transition()
-        .duration(800)
-        .style("opacity", 0)
-        .remove()
-        .end();
-
-    // Desconexión del enlace entre el nodo a eliminar y su hijo (solo si el nodo a eliminar cuenta con un hijo)
-    if (removalNodeLinkGroup) {
-        await removalNodeLinkGroup
-            .transition()
-            .duration(800)
-            .style("opacity", 0)
-            .remove()
-            .end();
-    }
-
-    // Animación de salida del nodo a eliminar
-    await defaultDeleteTreeNode(removedG);
-
-    // Si el nodo a eliminar cuenta con un nodo hijo
-    if (newParentLinkGroup) {
-        // Establecemos la forma inicial del nuevo enlace entre el nodo padre e hijo del nodo eliminado
-        updateTreeLinkPath(treeG, parentNodeId, childNodeId!, SVG_BINARY_TREE_VALUES.NODE_RADIUS, straightPath);
-
-        // Aparición del nuevo enlace entre el nodo padre e hijo del nodo eliminado
-        await newParentLinkGroup.select("path.tree-link")
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
-    }
-}
-
-/**
- * Función encargada de resaltar secuencialmente cada nodo del árbol binario a lo largo de un camino dado.
- * @param g Selección D3 del elemento SVG del grupo (`<g>`) que contiene los nodos y enlaces del árbol.
- * @param pathIds Array con los identificadores de los nodos que representan el camino a resaltar. El orden determina la secuencia de resaltado.
- * @param highlightColor Color a usar para resaltar el contenedor de cada nodo a lo largo del camino.
- */
-export async function highlightBinaryTreePath(
-    g: Selection<SVGGElement, unknown, null, undefined>,
-    pathIds: string[],
-    highlightColor: string
-) {
-    for (const nodeId of pathIds) {
-        // Selección del grupo contenedor del nodo actual
-        const nodeCircle = g.select<SVGGElement>(`g#${nodeId} circle.node-container`);
-
-        // Resaltado del nodo actual
-        await nodeCircle
-            .transition()
-            .duration(800)
-            .attr("fill", highlightColor)
-            .end();
-
-        // Restablecimiento del fondo original del último nodo visitado
-        if (nodeId !== pathIds[pathIds.length - 1]) {
-            await nodeCircle
-                .transition()
-                .duration(800)
-                .attr("fill", SVG_STYLE_VALUES.RECT_FILL_SECOND_COLOR)
-                .end();
-        }
-    }
 }
 
 /**
@@ -1735,25 +1424,42 @@ export async function animateEspecialBSTsRotation(
         nodes: HierarchyNode<HierarchyNodeData<number>>[];
         links: TreeLinkData[];
         positions: Map<string, { x: number, y: number }>;
+    },
+    highlightCtx: {
+        bus: EventBus;
+        stepId: string;
+        labels: {
+            DECL_MAIN: number;
+            DECL_AUX: number;
+            SET_FIRST_LINK: number;
+            SET_SECOND_LINK: number;
+            SET_MAIN_PARENT?: number;
+            IF_UNBALANCED_PARENT_NULL?: number;
+            SET_ROOT?: number;
+            ELSE_IF_UNBALANCED_SIDE1?: number;
+            SET_UNBALANCED_PARENT_SIDE1?: number;
+            ELSE_UNBALANCED_SIDE2?: number;
+            SET_UNBALANCED_PARENT_SIDE2?: number;
+            SET_UNBALANCED_PARENT?: number;
+            IF_AUX_NOT_NULL?: number;
+            SET_AUX_PARENT?: number;
+        }
     }
 ) {
-    // Obtenemos los datos de reposicionamiento
+    // Elementos implicados en el reposicionamiento
     const { nodes, links, positions } = repositionData;
 
-    // Fade out del nuevo enlace entre p y y (si p)
-    if (parentOfUnbalanced) {
-        treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced} path.tree-link`)
-            .style("opacity", 0);
-    }
+    // Elementos implicados en el resaltado del código
+    const { bus, stepId, labels } = highlightCtx;
 
-    // Fade out del nuevo enlace entre y y z
-    treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode} path.tree-link`)
-        .style("opacity", 0);
+    bus.emit("step:progress", { stepId, lineIndex: labels.DECL_MAIN });
+    await delay(600);
 
-    // Fade out del nuevo enlace entre z y B (si B)
-    if (rotationNode) {
-        treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode} path.tree-link`)
-            .style("opacity", 0);
+    bus.emit("step:progress", { stepId, lineIndex: labels.DECL_AUX });
+    await delay(600);
+
+    if (labels.SET_MAIN_PARENT) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.SET_MAIN_PARENT });
     }
 
     // Eliminar enlace previo entre p y z (si p)
@@ -1787,29 +1493,72 @@ export async function animateEspecialBSTsRotation(
     // Reposicionamiento de los nodos y enlaces del árbol
     await repositionStrategy(treeG, nodes, links, positions);
 
-    // Fade in del nuevo enlace entre p y y (si p)
-    if (parentOfUnbalanced) {
-        await treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced} path.tree-link`)
-            .transition()
-            .duration(800)
-            .style("opacity", 1)
-            .end();
+    if (labels.IF_UNBALANCED_PARENT_NULL) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.IF_UNBALANCED_PARENT_NULL });
+        await delay(600);
+    }
+
+    if (labels.ELSE_IF_UNBALANCED_SIDE1) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_IF_UNBALANCED_SIDE1 });
+        await delay(600);
+    }
+
+    if (labels.ELSE_UNBALANCED_SIDE2) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.ELSE_UNBALANCED_SIDE2 });
+        await delay(600);
+    }
+
+    if (!parentOfUnbalanced) {
+        if (labels.SET_ROOT) {
+            bus.emit("step:progress", { stepId, lineIndex: labels.SET_ROOT });
+            await delay(600);
+        }
+    } else {
+        // Fade in del nuevo enlace entre p y y
+        const setUnbalancedSideLabel = labels.SET_UNBALANCED_PARENT_SIDE1 ?? labels.SET_UNBALANCED_PARENT_SIDE2 ?? null;
+        if (setUnbalancedSideLabel) {
+            bus.emit("step:progress", { stepId, lineIndex: setUnbalancedSideLabel });
+            await treeG.select<SVGGElement>(`g#link-${parentOfUnbalanced}-${sonOfUnbalanced}`)
+                .transition()
+                .duration(800)
+                .style("opacity", 1)
+                .end();
+        }
     }
 
     // Fade in del nuevo enlace entre y y z
-    await treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode} path.tree-link`)
+    bus.emit("step:progress", { stepId, lineIndex: labels.SET_FIRST_LINK });
+    await treeG.select<SVGGElement>(`g#link-${sonOfUnbalanced}-${unbalancedNode}`)
         .transition()
         .duration(800)
         .style("opacity", 1)
         .end();
 
+    if (labels.SET_UNBALANCED_PARENT) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.SET_UNBALANCED_PARENT });
+        await delay(600);
+    }
+
     // Fade in del nuevo enlace entre z y B (si B)
+    bus.emit("step:progress", { stepId, lineIndex: labels.SET_SECOND_LINK });
     if (rotationNode) {
-        await treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode} path.tree-link`)
+        await treeG.select<SVGGElement>(`g#link-${unbalancedNode}-${rotationNode}`)
             .transition()
             .duration(800)
             .style("opacity", 1)
             .end();
+    } else {
+        await delay(600);
+    }
+
+    if (labels.IF_AUX_NOT_NULL) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.IF_AUX_NOT_NULL });
+        await delay(600);
+    }
+
+    if (labels.SET_AUX_PARENT) {
+        bus.emit("step:progress", { stepId, lineIndex: labels.SET_AUX_PARENT });
+        await delay(600);
     }
 }
 

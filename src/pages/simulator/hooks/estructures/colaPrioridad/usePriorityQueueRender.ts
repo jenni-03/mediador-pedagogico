@@ -64,10 +64,10 @@ export function usePriorityQueueRender(
             .attr("width", width);
 
         // Capas internas para nodos y enlaces
-        let nodesLayer = svg.select<SVGGElement>("#nodes-layer");
+        let nodesLayer = svg.select<SVGGElement>("g#nodes-layer");
         if (nodesLayer.empty()) nodesLayer = svg.append("g").attr("id", "nodes-layer");
 
-        let linksLayer = svg.select<SVGGElement>("#links-layer");
+        let linksLayer = svg.select<SVGGElement>("g#links-layer");
         if (linksLayer.empty()) linksLayer = svg.append("g").attr("id", "links-layer");
 
         // Renderizado de los nodos pertenecientes a la cola de prioridad
@@ -219,11 +219,11 @@ export function usePriorityQueueRender(
             { highlightColor: "#0066CC", rectStrokeColor: getPriorityColor(initialNodePriority).stroke, rectStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH },
             { textFillColor: "black", textFontSize: SVG_PRIORITY_QUEUE_VALUES.ELEMENT_TEXT_SIZE, textFontWeight: SVG_PRIORITY_QUEUE_VALUES.ELEMENT_TEXT_WEIGHT },
             bus,
-        {
-            START: labels.START,
-            RETURN_INFO: labels.RETURN_INFO,
-        },
-        "getFront",
+            {
+                START: labels.START,
+                RETURN_TOP: labels.RETURN_INFO,
+            },
+            "getFront",
             resetQueryValues,
             setIsAnimating
         );

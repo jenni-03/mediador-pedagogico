@@ -89,12 +89,12 @@ export function useBinarySearchTreeRender(
         seqOffset.y = metrics.seqOffset.y;
 
         // Contenedor para la secuencia de valores de recorrido
-        let seqG = svg.select<SVGGElement>("#seq-container");
+        let seqG = svg.select<SVGGElement>("g#seq-container");
         if (seqG.empty()) seqG = svg.append("g").attr("id", "seq-container");
         seqG.attr("transform", `translate(${seqOffset.x}, ${seqOffset.y})`);
 
         // Capas internas para nodos y enlaces
-        let nodesLayer = treeG.select<SVGGElement>("#nodes-layer");
+        let nodesLayer = treeG.select<SVGGElement>("g#nodes-layer");
         if (nodesLayer.empty()) nodesLayer = treeG.append("g").attr("id", "nodes-layer");
 
         let linksLayer = treeG.select<SVGGElement>("g#links-layer");
@@ -261,7 +261,8 @@ export function useBinarySearchTreeRender(
                 {
                     traversalSteps: steps,
                     seqPositions,
-                    highlightColor: "#8aa0ff",
+                    strokeColor: "#8aa0ff",
+                    strokeWidth: 3,
                     baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                     baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
                 },
@@ -276,6 +277,7 @@ export function useBinarySearchTreeRender(
                     traversalSteps: steps,
                     seqPositions,
                     strokeColor: "#8aa0ff",
+                    strokeWidth: 3,
                     baseStroke: SVG_STYLE_VALUES.RECT_STROKE_COLOR,
                     baseStrokeWidth: SVG_STYLE_VALUES.RECT_STROKE_WIDTH
                 },

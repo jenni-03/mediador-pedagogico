@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { STRUCTURE_NAME } from "../../domain/constants/consts";
 import { Pila } from "../../domain/structures/Pila";
 import { StackRender } from "./components/estructures/pila/StackRender";
@@ -15,23 +15,29 @@ export function StackSimulator() {
         dynamicAddressGenerator.reset();
     }, []);
 
-    // Llamada al hook useStack para manejar la lógica de la pila
+    // Llamada al hook useStack para gestionar el estado de la pila
     const { stack, query, error, operations } = useStack(structure);
 
     // Desestructuración de las operaciones soportadas por la pila
     const { pushElement, popElement, getTop, clearStack, resetQueryValues } =
         operations;
 
+    // Conjunto de acciones disponibles para la interacción con la estructura
+    const actions = useMemo(
+        () => ({
+            push: pushElement,
+            pop: popElement,
+            getTop: getTop,
+            clean: clearStack,
+        }),
+        [pushElement, popElement, getTop, clearStack]
+    );
+
     return (
         <Simulator
             structureName={STRUCTURE_NAME.STACK}
             structure={stack}
-            actions={{
-                push: pushElement,
-                pop: popElement,
-                getTop: getTop,
-                clean: clearStack,
-            }}
+            actions={actions}
             query={query}
             error={error}
         >

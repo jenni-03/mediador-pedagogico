@@ -9,7 +9,7 @@ export function AvlTreeSimulator() {
     // Instanciación del árbol AVL
     const structure = useRef(new ArbolAVL<number>()).current;
 
-    // Hook de estado/acciones para AVL
+    // Llamada al hook useAVLTree para gestionar el estado del árbol AVL
     const { tree, query, error, operations } = useAVLTree(structure);
 
     // Desestructuración de operaciones soportadas por el AVL
@@ -25,7 +25,7 @@ export function AvlTreeSimulator() {
         resetQueryValues,
     } = operations;
 
-    // Conversión a jerarquía para renderizar
+    // Conversión del árbol a una estructura jerárquica para su renderizado
     const hData = useMemo(() => tree.convertirEstructuraJerarquica(), [tree]);
 
     // Acciones disponibles para el usuario
