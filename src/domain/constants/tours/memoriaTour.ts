@@ -355,4 +355,19 @@ export const getMemoriaTour = (): TourStep[] => [
     description:
       "🔄 Ahora es tu turno: prueba tus propios comandos, observa qué cambia en cada panel, rompe cosas y usa `clear` o el botón de limpiar para empezar otra vez. Así es como se entiende de verdad cómo se organiza la memoria en Java. 🚀",
   },
+
+  /* ===================== 19. PALETA DE COMANDOS ===================== */
+  {
+    id: "comandos",
+    type: "element",
+    description:
+      "⌨️ Si no sabes qué comando escribir, usa esta **paleta de ejemplos**. Cada botón te muestra la sintaxis, una descripción y un ejemplo. Puedes hacer click en **\"Probar en consola\"** para auto-llenar el comando.",
+  },
+
+  /* ===================== 20. RETOS GUIADOS ===================== */
+  {
+    type: "info",
+    description:
+      "🎯 Para practicar paso a paso, activa los **retos guiados** que aparecen encima de la paleta de comandos. Son 8 mini-retos progresivos que te llevan desde declarar un `int` hasta crear objetos complejos. ¡Intenta completarlos todos! 💪",
+  },
 ];

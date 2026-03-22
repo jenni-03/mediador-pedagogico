@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAnchors } from "./AnchorRegistry";
 import {
   HeapInspectorModal,
@@ -189,22 +190,13 @@ export const HeapView = React.memo(function HeapView({
 
   return (
     <section className="relative h-full min-h-0">
-      {/* Marco exterior sólido (igual a Stack) */}
       <div
-        className="absolute inset-0 -z-10 rounded-3xl pointer-events-none"
-        style={{
-          border: `1px solid ${C.ring}`,
-          boxShadow: "0 0 20px rgba(56,189,248,.10)",
-        }}
-      />
-      {/* Cuerpo sólido */}
-      <div
-        className="relative h-full min-h-0 rounded-3xl p-3 flex flex-col overflow-hidden"
+        className="relative h-full min-h-0 rounded-2xl p-3 flex flex-col overflow-hidden"
         data-tour="panelHeap"
         style={{ background: C.panel }}
       >
         {/* Header */}
-        <div className="mb-2 flex items-center gap-3">
+        <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
             <span
               className="grid place-items-center h-7 w-7 rounded-full"
@@ -233,18 +225,9 @@ export const HeapView = React.memo(function HeapView({
         {/* Contenedor scrolleable con micro-grid tenue */}
         <div
           ref={scrollRef}
-          className="relative flex-1 min-h-0 overflow-auto rounded-2xl p-2 stk-scroll"
+          className="relative flex-1 min-h-0 overflow-auto rounded-2xl p-2 mem-scroll"
           style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
         >
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 -z-10"
-            style={{
-              background:
-                "radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)",
-              backgroundSize: "18px 18px",
-            }}
-          />
           <ScrollFades showTop={!atTop} showBottom={!atBottom} />
 
           {heap.length === 0 ? (
@@ -256,14 +239,23 @@ export const HeapView = React.memo(function HeapView({
             </div>
           ) : (
             <div className="grid gap-2 sm:grid-cols-1">
-              {heap.map((e) => (
-                <HeapCard
-                  key={e.addr}
-                  entry={e}
-                  pulse={pulseSet.has(hexToNum(e.addr))}
-                  onInspect={() => setInspect(e)}
-                />
-              ))}
+              <AnimatePresence>
+                {heap.map((e) => (
+                  <motion.div
+                    key={e.addr}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  >
+                    <HeapCard
+                      entry={e}
+                      pulse={pulseSet.has(hexToNum(e.addr))}
+                      onInspect={() => setInspect(e)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -297,8 +289,8 @@ function MemoryMeter({
   } as React.CSSProperties;
 
   return (
-    <div className="grid grid-cols-[64px,1fr] gap-2 items-center">
-      <div className="relative h-16 w-16">
+    <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
+      <div className="relative h-14 w-14 shrink-0">
         <div className="absolute inset-0 rounded-full" style={donut} aria-hidden />
         <div
           className="absolute inset-1 rounded-full grid place-items-center"
@@ -312,7 +304,7 @@ function MemoryMeter({
       </div>
 
       <div
-        className="relative h-5 w-full rounded-full overflow-hidden"
+        className="relative h-5 w-full min-w-0 rounded-full overflow-hidden"
         style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
       >
         <div
@@ -429,7 +421,7 @@ function HeapCard({
         </div>
 
         {/* meta compacta por tipo */}
-        <div className="md:w-64">
+        <div className="w-full md:w-64">
           {entry.kind === "string" && <StringMeta meta={entry.meta} />}
           {entry.kind === "array" && <ArrayMeta meta={entry.meta} />}
           {entry.kind === "object" && <ObjectMeta meta={entry.meta} />}
@@ -556,13 +548,13 @@ function RefCountPill({ count, pulse }: { count: number; pulse?: boolean }) {
     cls = "bg-emerald-900/40 text-emerald-200 ring-1 ring-emerald-700/50";
 
   return (
-    <span
-      className={`text-[11px] rounded px-1.5 py-0.5 ${cls} ${
-        pulse ? "animate-pulse" : ""
-      }`}
+    <motion.span
+      className={`text-[11px] rounded px-1.5 py-0.5 ${cls}`}
+      animate={pulse ? { scale: [1, 1.15, 1] } : {}}
+      transition={{ duration: 0.4 }}
       title="Recuento de referencias"
     >
       refCount={count}
-    </span>
+    </motion.span>
   );
 }

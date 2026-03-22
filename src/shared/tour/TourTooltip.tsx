@@ -22,7 +22,6 @@ type Props = {
 const toNum = (val: string | number | undefined): number =>
   typeof val === "number" ? val : parseInt((val as string) || "0", 10);
 
-// Lógica principal del tooltip
 const TourTooltip: React.FC<Props> = ({
   description,
   highlightStyle,
@@ -38,15 +37,13 @@ const TourTooltip: React.FC<Props> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
 
-  const margin = 8; // margen mínimo
+  const margin = 8;
 
-  // Función para limitar (clamp) un valor dentro de un rango
   const clamp = (value: number, min: number, max: number) =>
     Math.max(min, Math.min(value, max));
 
   const calculatePosition = () => {
     if (isInfo) {
-      // Paso "info": simplemente centramos en el viewport
       setTooltipPos({
         top: viewportDimensions.height / 2,
         left: viewportDimensions.width / 2,
@@ -57,7 +54,6 @@ const TourTooltip: React.FC<Props> = ({
     if (!tooltipRef.current) return;
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
 
-    // Información del elemento resaltado
     const targetRect = {
       top: toNum(highlightStyle.top),
       left: toNum(highlightStyle.left),
@@ -65,7 +61,6 @@ const TourTooltip: React.FC<Props> = ({
       height: toNum(highlightStyle.height),
     };
 
-    // Calculamos espacio disponible en cada dirección:
     const spaceAbove = targetRect.top;
     const spaceBelow =
       viewportDimensions.height - (targetRect.top + targetRect.height);
@@ -73,9 +68,6 @@ const TourTooltip: React.FC<Props> = ({
     const spaceRight =
       viewportDimensions.width - (targetRect.left + targetRect.width);
 
-    // Validación extra:
-    // Si no hay suficiente espacio (margen) ni arriba, ni abajo, ni a los lados,
-    // entonces se posiciona DENTRO del div, centrado.
     if (
       spaceAbove < tooltipRect.height + margin &&
       spaceBelow < tooltipRect.height + margin &&
@@ -90,13 +82,11 @@ const TourTooltip: React.FC<Props> = ({
       return;
     }
 
-    // Posición horizontal inicial (centrado respecto al componente)
     let proposedLeft =
       targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
 
     let proposedTop: number;
 
-    // 1. ¿Cabe arriba?
     if (spaceAbove >= tooltipRect.height + margin) {
       proposedTop = targetRect.top - tooltipRect.height - margin;
       proposedLeft = clamp(
@@ -108,7 +98,6 @@ const TourTooltip: React.FC<Props> = ({
       return;
     }
 
-    // 2. ¿Cabe abajo?
     if (spaceBelow >= tooltipRect.height + margin) {
       proposedTop = targetRect.top + targetRect.height + margin;
       proposedLeft = clamp(
@@ -120,7 +109,6 @@ const TourTooltip: React.FC<Props> = ({
       return;
     }
 
-    // 3. ¿Cabe a la izquierda? (para cuando no cabe ni arriba ni abajo)
     if (spaceLeft >= tooltipRect.width + margin) {
       const proposedTop =
         targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
@@ -140,7 +128,6 @@ const TourTooltip: React.FC<Props> = ({
       return;
     }
 
-    // 4. ¿Cabe a la derecha?
     if (spaceRight >= tooltipRect.width + margin) {
       const proposedTop =
         targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
@@ -160,7 +147,6 @@ const TourTooltip: React.FC<Props> = ({
       return;
     }
 
-    // 5. Fallback (por seguridad): centrado dentro del componente
     const insideTop =
       targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
     const insideLeft =
@@ -168,13 +154,11 @@ const TourTooltip: React.FC<Props> = ({
     setTooltipPos({ top: insideTop, left: insideLeft });
   };
 
-  // Activamos la animación de opacidad al montar
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(t);
   }, []);
 
-  // Recalcula cuando cambian highlightStyle, isInfo o viewportDimensions
   useEffect(() => {
     calculatePosition();
     window.addEventListener("resize", calculatePosition);
@@ -184,7 +168,6 @@ const TourTooltip: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightStyle, isInfo, viewportDimensions]);
 
-  // Función para convertir **negrilla** en <strong>
   const parseDescription = (text: string): JSX.Element[] => {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, index) => {
@@ -192,7 +175,7 @@ const TourTooltip: React.FC<Props> = ({
         return (
           <strong
             key={index}
-            className="font-semibold text-[#F4F4F5] underline decoration-[#ff0040]/40 underline-offset-2"
+            className="font-semibold text-white underline decoration-emerald-400/40 underline-offset-2"
           >
             {part.slice(2, -2)}
           </strong>
@@ -201,20 +184,34 @@ const TourTooltip: React.FC<Props> = ({
       return <span key={index}>{part}</span>;
     });
   };
+
+  const accentColor = isInfo ? "#34d399" : "#38bdf8";
+
+  const baseStyle: React.CSSProperties = {
+    background: "#171c28",
+    border: `1px solid ${accentColor}30`,
+    boxShadow: `0 8px 32px rgba(0,0,0,.5), 0 0 0 1px ${accentColor}15`,
+    maxWidth: "min(90vw, 384px)",
+  };
+
   const tooltipContent = (
     <div
       ref={tooltipRef}
       style={
         isInfo
           ? {
+              ...baseStyle,
               position: "fixed",
               top: "50%",
               left: "50%",
-              transform: visible ? "translate(-50%, -50%) scale(1)" : "translate(-50%, -50%) scale(0.95)",
+              transform: visible
+                ? "translate(-50%, -50%) scale(1)"
+                : "translate(-50%, -50%) scale(0.95)",
               opacity: visible ? 1 : 0,
               transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
             }
           : {
+              ...baseStyle,
               position: "absolute",
               top: tooltipPos.top,
               left: tooltipPos.left,
@@ -223,49 +220,66 @@ const TourTooltip: React.FC<Props> = ({
               transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
             }
       }
-      className={`z-[11000] bg-[#121212] p-5 rounded-xl border-2
-      max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center
-      ${
-        isInfo
-          ? "border-[#00ff00] shadow-[0_0_20px_#00ff00]"
-          : "border-[#ff0040] shadow-[0_0_20px_#ff0040]"
-      }`}
+      className="z-[11000] max-h-[80vh] overflow-auto rounded-2xl"
     >
-      {/* Botón de cierre */}
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-3 w-8 h-8 flex items-center justify-center 
-        rounded-full bg-[#1f1f1f] text-[#ff0040] text-xl font-bold 
-        hover:bg-[#ff0040] hover:text-black transition-all duration-200 
-        shadow-[0_0_6px_#ff0040] focus:outline-none"
-        aria-label="Cerrar"
-      >
-        ×
-      </button>
-
-      {/* Título con Emoji */}
-      <div className="flex items-center justify-center mb-3 gap-2">
-        <span className="text-xl">{isInfo ? "💡" : "🤖"}</span>
-        <h2
-          className={`text-lg font-bold tracking-widest drop-shadow-[0_0_4px_#ff0040] 
-        ${isInfo ? "text-[#00ff00]" : "text-[#ff0040]"}`}
-        >
-          {isInfo ? "¡Descubre!" : "ASISTENTE"}
-        </h2>
-      </div>
-
-      {/* Descripción */}
-      <p className="text-gray-200 font-medium text-sm mb-4 leading-relaxed drop-shadow-sm">
-        {parseDescription(description)}
-      </p>
-
-      {/* Navegación */}
-      <TourNavigation
-        onPrev={onPrev}
-        onNext={onNext}
-        isFirst={isFirst}
-        isLast={isLast}
+      {/* Barra superior con gradiente */}
+      <div
+        className="h-1 rounded-t-2xl"
+        style={{
+          background: `linear-gradient(90deg, ${accentColor}, #8b5cf6, ${accentColor})`,
+        }}
       />
+
+      <div className="p-4">
+        {/* Header: avatar + nombre + close */}
+        <div className="flex items-center gap-2.5 mb-3">
+          <div
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base shadow-md"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}, #8b5cf6)`,
+            }}
+          >
+            🧭
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-zinc-100">
+              {isInfo ? "💡 ¡Descubre!" : "🤖 Asistente"}
+            </div>
+            <div className="text-[10px] text-zinc-500">Guía interactiva</div>
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 w-7 h-7 flex items-center justify-center
+              rounded-full text-zinc-500 text-base
+              hover:bg-white/10 hover:text-zinc-200 transition-colors focus:outline-none"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Burbuja de mensaje */}
+        <div
+          className="rounded-xl rounded-tl-sm px-3.5 py-3 mb-3"
+          style={{
+            background: "#1e2536",
+            border: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <p className="text-[13px] text-zinc-300 leading-relaxed">
+            {parseDescription(description)}
+          </p>
+        </div>
+
+        {/* Navigation */}
+        <TourNavigation
+          onPrev={onPrev}
+          onNext={onNext}
+          isFirst={isFirst}
+          isLast={isLast}
+          accentColor={accentColor}
+        />
+      </div>
     </div>
   );
 

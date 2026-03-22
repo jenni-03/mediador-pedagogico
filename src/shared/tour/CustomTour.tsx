@@ -444,12 +444,11 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
             setIsActive(true);
             setCurrentStep(0);
           }}
-          className="fixed bottom-5 right-5 w-12 h-12 rounded-full bg-white text-[#1a1a1a] flex items-center justify-center text-xl shadow-[0_0_10px_rgba(0,0,0,0.3)] hover:bg-[#ff0040] hover:text-white hover:shadow-[0_0_12px_#ff0040] transition-all duration-300 cursor-pointer z-[9999]"
+          className="fixed bottom-5 right-5 w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg hover:scale-110 transition-transform duration-200 cursor-pointer z-[9999]"
+          style={{ background: "linear-gradient(135deg, #38bdf8, #8b5cf6)" }}
           title="Asistente Tour"
         >
-          <span className="animate-pulse drop-shadow-[0_0_6px_#000000]">
-            🤖
-          </span>
+          <span className="text-lg">🧭</span>
         </button>
       )}
     </>

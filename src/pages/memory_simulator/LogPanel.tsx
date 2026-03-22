@@ -1,4 +1,5 @@
 // src/features/memory-sim/components/LogPanel.tsx
+import { motion } from "framer-motion";
 import React, {
   useState,
   useRef,
@@ -32,6 +33,8 @@ type LogPanelProps = {
   onCommand: (cmd: string) => void;
   onClear?: () => void;
   placeholder?: string;
+  prefillCommand?: string;
+  onPrefillConsumed?: () => void;
 };
 
 type LineKind = "info" | "ok" | "error" | "warn";
@@ -348,12 +351,23 @@ export const LogPanel = React.memo(function LogPanel({
   onCommand,
   onClear,
   placeholder,
+  prefillCommand,
+  onPrefillConsumed,
 }: LogPanelProps) {
   const [cmd, setCmd] = useState("");
   const [history, setHistory] = useState<string[]>([]);
   const [_histIdx, setHistIdx] = useState<number>(-1);
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Auto-fill desde MemoryCommandPalette
+  useEffect(() => {
+    if (prefillCommand) {
+      setCmd(prefillCommand);
+      onPrefillConsumed?.();
+      inputRef.current?.focus();
+    }
+  }, [prefillCommand, onPrefillConsumed]);
 
   const run = useCallback(() => {
     const raw = cmd;
@@ -489,7 +503,7 @@ export const LogPanel = React.memo(function LogPanel({
             title="Copiar todos los logs"
           >
             <CopyIcon className="h-3.5 w-3.5" />
-            Copiar
+            <span className="hidden sm:inline">Copiar</span>
           </button>
 
           {onClear && (
@@ -501,31 +515,29 @@ export const LogPanel = React.memo(function LogPanel({
               title="Limpiar consola"
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Limpiar
+              <span className="hidden sm:inline">Limpiar</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Área de logs: sólido + micro-grid */}
+      {/* Área de logs */}
       <div
-        className="relative max-h-[260px] overflow-auto px-3 py-3 stk-scroll"
+        className="relative max-h-[180px] sm:max-h-[260px] overflow-auto px-3 py-3 mem-scroll"
         data-tour="panelLogs"
         style={{ background: C.panelInner }}
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            background:
-              "radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)",
-            backgroundSize: "16px 16px",
-          }}
-        />
         {blocks.length ? (
           <div className="space-y-2">
             {blocks.map((b) => (
-              <CommandBlock key={b.id} b={b} />
+              <motion.div
+                key={b.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CommandBlock b={b} />
+              </motion.div>
             ))}
           </div>
         ) : (
@@ -565,7 +577,7 @@ export const LogPanel = React.memo(function LogPanel({
           <button
             onClick={run}
             disabled={!cmd.trim()}
-            className="rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 px-3 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-8px_rgba(215,38,56,.55)] hover:brightness-105 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 px-2.5 py-2 text-xs sm:px-3 sm:text-sm font-semibold text-white shadow-[0_6px_20px_-8px_rgba(215,38,56,.55)] hover:brightness-105 active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Ejecutar
           </button>
