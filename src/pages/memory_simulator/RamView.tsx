@@ -132,49 +132,49 @@ const TONE_CLS: Record<
   header: {
     bg: "bg-cyan-900/40",
     ring: "ring-cyan-400/70",
-    glow: "shadow-[0_0_8px_rgba(34,211,238,.35)]",
+    glow: "shadow-[0_0_4px_rgba(34,211,238,.3)]",
     text: "text-cyan-100",
   },
   data: {
     bg: "bg-emerald-900/35",
     ring: "ring-emerald-400/70",
-    glow: "shadow-[0_0_8px_rgba(52,211,153,.35)]",
+    glow: "shadow-[0_0_4px_rgba(52,211,153,.3)]",
     text: "text-emerald-100",
   },
   slot: {
     bg: "bg-zinc-900/70",
     ring: "ring-zinc-400/60",
-    glow: "shadow-[0_0_6px_rgba(161,161,170,.25)]",
+    glow: "shadow-[0_0_4px_rgba(161,161,170,.25)]",
     text: "text-zinc-200",
   },
   object: {
     bg: "bg-fuchsia-900/35",
     ring: "ring-fuchsia-400/70",
-    glow: "shadow-[0_0_8px_rgba(232,121,249,.35)]",
+    glow: "shadow-[0_0_4px_rgba(232,121,249,.3)]",
     text: "text-fuchsia-100",
   },
   prim: {
     bg: "bg-sky-900/35",
     ring: "ring-sky-400/70",
-    glow: "shadow-[0_0_8px_rgba(56,189,248,.35)]",
+    glow: "shadow-[0_0_4px_rgba(56,189,248,.3)]",
     text: "text-sky-100",
   },
   array: {
     bg: "bg-emerald-900/35",
     ring: "ring-emerald-400/70",
-    glow: "shadow-[0_0_8px_rgba(52,211,153,.35)]",
+    glow: "shadow-[0_0_4px_rgba(52,211,153,.3)]",
     text: "text-emerald-100",
   },
   string: {
     bg: "bg-indigo-900/35",
     ring: "ring-indigo-400/70",
-    glow: "shadow-[0_0_8px_rgba(129,140,248,.35)]",
+    glow: "shadow-[0_0_4px_rgba(129,140,248,.3)]",
     text: "text-indigo-100",
   },
 };
 
 /* ============================== PCB / Decoración ============================== */
-function PcbBoard() {
+const PcbBoard = React.memo(function PcbBoard() {
   return (
     <>
       <div
@@ -228,9 +228,9 @@ function PcbBoard() {
       </svg>
     </>
   );
-}
+});
 
-function ModuleNotch() {
+const ModuleNotch = React.memo(function ModuleNotch() {
   return (
     <div
       aria-hidden
@@ -242,21 +242,21 @@ function ModuleNotch() {
       }}
     />
   );
-}
+});
 
-function GoldPins() {
+const GoldPins = React.memo(function GoldPins() {
   return (
     <div className="pointer-events-none absolute left-10 right-10 bottom-1 h-3 flex items-end gap-[2px]">
       {Array.from({ length: PINS }, (_, i) => (
         <div
           key={i}
-          className="flex-1 h-[10px] rounded-[2px] bg-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,.6),inset_0_-1px_0_rgba(124,45,18,.5)]"
-          style={{ opacity: i % 2 === 0 ? 0.95 : 0.8, filter: "saturate(1.2)" }}
+          className="flex-1 h-[10px] rounded-[2px] bg-amber-300 shadow-[inset_0_1px_0_rgba(255,255,255,.6)]"
+          style={{ opacity: i % 2 === 0 ? 0.95 : 0.8 }}
         />
       ))}
     </div>
   );
-}
+});
 
 /* ===== Leyenda de tonos (para estudiantes) ===== */
 function LegendChip({ tone, label }: { tone: Tone; label: string }) {
@@ -352,15 +352,14 @@ type LabelSpan = { start: number; end: number; range: ByteRange };
 function computeLabelSpans(
   rowAddr: number,
   count: number,
-  ranges: ByteRange[],
-  prefer?: ByteRange | null
+  rangeMap: Map<number, ByteRange | null>,
 ): LabelSpan[] {
   const spans: LabelSpan[] = [];
   let current: LabelSpan | null = null;
 
   for (let i = 0; i < count; i++) {
     const addr = rowAddr + i;
-    const best = pickBestRangeAt(addr, ranges, prefer);
+    const best = rangeMap.get(addr) ?? null;
 
     const label = best?.label?.trim();
     if (label) {
@@ -478,7 +477,7 @@ function EmptyState({
 }
 
 /* ============================ Componente ============================ */
-export default function RamView({ snap }: { snap: UiRamSnapshot }) {
+function RamViewInner({ snap }: { snap: UiRamSnapshot }) {
   const baseAddr = Number.isFinite(snap?.baseAddr) ? snap.baseAddr : 0;
   const BPR = snap?.bytesPerRow ?? 16;
   const G = snap?.groupSize ?? 4;
@@ -504,6 +503,16 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
     [sortedRanges, snap?.activeAddr]
   );
 
+  // Pre-computar el mejor rango para cada dirección en un solo pase (O(bytes * ranges))
+  // en vez de llamar pickBestRangeAt() por cada byte en el render loop
+  const byteRangeMap = React.useMemo(() => {
+    const map = new Map<number, ByteRange | null>();
+    for (let addr = baseAddr; addr < baseAddr + buf.length; addr++) {
+      map.set(addr, pickBestRangeAt(addr, sortedRanges, activeEmphRange));
+    }
+    return map;
+  }, [sortedRanges, activeEmphRange, baseAddr, buf.length]);
+
   const chips: { id: number; rows: { addr: number; slice: Uint8Array }[] }[] =
     React.useMemo(() => {
       if (isEmpty) return [{ id: 0, rows: [] }];
@@ -518,12 +527,15 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
 
   React.useEffect(() => {
     if (typeof snap?.activeAddr !== "number") return;
-    const el = document.getElementById(`ram-${snap.activeAddr >>> 0}`);
-    el?.scrollIntoView({
-      block: "center",
-      inline: "nearest",
-      behavior: "smooth",
-    });
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`ram-${snap.activeAddr >>> 0}`);
+      el?.scrollIntoView({
+        block: "center",
+        inline: "nearest",
+        behavior: "smooth",
+      });
+    }, 300);
+    return () => clearTimeout(timer);
   }, [snap?.activeAddr]);
 
   return (
@@ -539,42 +551,6 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
       role="region"
       aria-label="Módulo de memoria RAM"
     >
-      {/* 🎨 Estilo de scroll específico para RamView */}
-      <style>{`
-        .ramview-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(148,163,184,0.8) transparent; /* Firefox */
-        }
-        .ramview-scroll::-webkit-scrollbar {
-          width: 8px;
-        }
-        .ramview-scroll::-webkit-scrollbar-track {
-          background: radial-gradient(circle at 50% 0%, rgba(148,163,184,0.18), transparent 55%);
-          border-radius: 9999px;
-        }
-        .ramview-scroll::-webkit-scrollbar-thumb {
-          background-image: linear-gradient(
-            to bottom,
-            rgba(148,163,184,0.95),
-            rgba(56,189,248,0.95)
-          );
-          border-radius: 9999px;
-          box-shadow:
-            0 0 0 1px rgba(15,23,42,0.95),
-            0 0 8px rgba(56,189,248,0.65);
-        }
-        .ramview-scroll::-webkit-scrollbar-thumb:hover {
-          background-image: linear-gradient(
-            to bottom,
-            rgba(226,232,240,0.98),
-            rgba(59,130,246,0.98)
-          );
-        }
-        .ramview-scroll::-webkit-scrollbar-corner {
-          background: transparent;
-        }
-      `}</style>
-
       <PcbBoard />
       <ModuleNotch />
       <GoldPins />
@@ -582,7 +558,7 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
       {/* Header */}
       <div className="relative z-10 p-4 pb-2 flex items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_12px_rgba(52,211,153,.8)]" />
+          <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
           <h2 className="text-lg font-semibold tracking-tight">
             SIMM / DIMM · RAM
           </h2>
@@ -655,12 +631,11 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                 {/* filas */}
                 <div className="pt-2 pb-2">
                   {chip.rows.map((row, ridx) => {
-                    const bytes = Array.from(row.slice);
+                    const bytes = row.slice;
                     const spans = computeLabelSpans(
                       row.addr,
                       bytes.length,
-                      sortedRanges,
-                      activeEmphRange
+                      byteRangeMap,
                     );
 
                     return (
@@ -712,13 +687,9 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                             columnGap: GAP,
                           }}
                         >
-                          {bytes.map((b, i) => {
+                          {Array.from(bytes).map((b, i) => {
                             const addr = row.addr + i;
-                            const best = pickBestRangeAt(
-                              addr,
-                              sortedRanges,
-                              activeEmphRange
-                            );
+                            const best = byteRangeMap.get(addr) ?? null;
                             const hasRange = !!best;
                             const tone = hasRange
                               ? normalizeTone(best?.tone)
@@ -744,8 +715,8 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                                   hasRange
                                     ? TONE_CLS[tone].bg
                                     : "bg-zinc-900/40",
-                                  "shadow-[inset_0_1px_0_rgba(255,255,255,.05),0_2px_6px_rgba(0,0,0,.25)]",
-                                  "transition-transform will-change-transform hover:-translate-y-[1px] active:translate-y-0",
+                                  "shadow-sm",
+                                  "hover:-translate-y-[1px] hover:transition-transform active:translate-y-0",
                                   groupSep
                                     ? "border-l-2 border-l-emerald-800/60"
                                     : "",
@@ -761,7 +732,6 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
                                 <span className="tracking-tight">
                                   {toHex2(b)}
                                 </span>
-                                <span className="pointer-events-none absolute inset-0 rounded-lg opacity-[0.06] bg-gradient-to-b from-white/30 to-transparent" />
                               </div>
                             );
                           })}
@@ -778,3 +748,6 @@ export default function RamView({ snap }: { snap: UiRamSnapshot }) {
     </section>
   );
 }
+
+const RamView = React.memo(RamViewInner);
+export default RamView;

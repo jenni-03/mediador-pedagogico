@@ -22,7 +22,7 @@ const Section = ({
   <section
     className={`rounded-xl bg-zinc-950/60 ring-1 ring-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] ${className}`}
   >
-    <header className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] sticky top-0 z-10 bg-zinc-950/70 backdrop-blur">
+    <header className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] sticky top-0 z-10 bg-zinc-950">
       <h3 className="text-[11px] uppercase tracking-[0.16em] text-zinc-300">
         {title}
       </h3>
@@ -102,7 +102,7 @@ const SimpleTable = ({
 }) => (
   <div className="max-h-64 overflow-auto rounded-lg ring-1 ring-white/[0.06]">
     <table className={`w-full text-xs ${compact ? "leading-5" : ""}`}>
-      <thead className="sticky top-0 bg-zinc-950/80 backdrop-blur text-zinc-400">
+      <thead className="sticky top-0 bg-zinc-950 text-zinc-400">
         {head}
       </thead>
       <tbody className="[&>tr]:border-t [&>tr]:border-white/[0.06] [&>tr:hover]:bg-white/[0.03]">

@@ -187,24 +187,14 @@ function srcTheme(src: UiRamItem["source"]) {
 /* =================== Backdrop PCB (sutil y sólido) =================== */
 function IndexBackdrop() {
   return (
-    <>
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, rgba(56,189,248,.18) 0 1px, transparent 1px 20px), repeating-linear-gradient(90deg, rgba(56,189,248,.18) 0 1px, transparent 1px 20px)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(1100px 520px at -10% 110%, rgba(56,189,248,.12), transparent 60%), radial-gradient(1000px 460px at 120% -10%, rgba(16,185,129,.12), transparent 60%)",
-        }}
-      />
-    </>
+    <div
+      aria-hidden
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        background:
+          "radial-gradient(800px 400px at -10% 110%, rgba(56,189,248,.08), transparent 60%)",
+      }}
+    />
   );
 }
 
@@ -339,22 +329,6 @@ function ItemCard({
       onMouseEnter={() => onHoverRange?.(it.range)}
       onMouseLeave={() => onLeaveRange?.()}
     >
-      <style>{`
-        .icq-card{ container-type:inline-size; }
-        .icq-body{ padding:.65rem .75rem; gap:.55rem; }
-        .icq-title{ font-size:clamp(.96rem,1.0vw + .52rem,1.06rem); }
-        .icq-chip,.icq-badge{ border-radius:9999px; padding:.18rem .55rem; }
-        .icq-metrics{ display:flex; gap:.45rem; align-items:center; }
-        .icq-card[data-pressed="y"]{ outline:2px solid transparent; box-shadow:0 0 0 2px rgba(167,139,250,.35) inset; }
-        @container (max-width: 430px){
-          .icq-body{ padding:.5rem .6rem; gap:.48rem; }
-          .icq-title{ font-size:.98rem; }
-          .icq-chip{ font-size:.62rem; padding:.12rem .45rem; }
-          .icq-badge{ font-size:.62rem; padding:.12rem .45rem; }
-          .icq-metrics{ width:100%; justify-content:space-between; flex-wrap:wrap; order:4; }
-        }
-      `}</style>
-
       {/* rail */}
       <div
         className={[
@@ -577,6 +551,21 @@ function Column({
       className="flex flex-col flex-1 min-h-0 rounded-xl overflow-hidden"
       style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
     >
+      <style>{`
+        .icq-card{ container-type:inline-size; }
+        .icq-body{ padding:.65rem .75rem; gap:.55rem; }
+        .icq-title{ font-size:clamp(.96rem,1.0vw + .52rem,1.06rem); }
+        .icq-chip,.icq-badge{ border-radius:9999px; padding:.18rem .55rem; }
+        .icq-metrics{ display:flex; gap:.45rem; align-items:center; }
+        .icq-card[data-pressed="y"]{ outline:2px solid transparent; box-shadow:0 0 0 2px rgba(167,139,250,.35) inset; }
+        @container (max-width: 430px){
+          .icq-body{ padding:.5rem .6rem; gap:.48rem; }
+          .icq-title{ font-size:.98rem; }
+          .icq-chip{ font-size:.62rem; padding:.12rem .45rem; }
+          .icq-badge{ font-size:.62rem; padding:.12rem .45rem; }
+          .icq-metrics{ width:100%; justify-content:space-between; flex-wrap:wrap; order:4; }
+        }
+      `}</style>
       <div
         className="shrink-0 px-3 py-2"
         style={{
@@ -644,7 +633,7 @@ function Column({
 }
 
 /* =================== Panel principal (controlable) =================== */
-export default function RamIndexPanel({
+function RamIndexPanelInner({
   items,
   onFocusRange,
   selectedId,
@@ -764,34 +753,6 @@ export default function RamIndexPanel({
     >
       <IndexBackdrop />
 
-      {/* scroll del índice */}
-      <style>{`
-        .ramindex-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(148,163,184,0.9) transparent;
-        }
-        .ramindex-scroll::-webkit-scrollbar {
-          width: 8px;
-        }
-        .ramindex-scroll::-webkit-scrollbar-track {
-          background: radial-gradient(circle at 50% 0%, rgba(15,23,42,0.95), transparent 55%);
-          border-radius: 9999px;
-        }
-        .ramindex-scroll::-webkit-scrollbar-thumb {
-          background-image: linear-gradient(to bottom, rgba(129,140,248,0.97), rgba(45,212,191,0.94));
-          border-radius: 9999px;
-          box-shadow:
-            0 0 0 1px rgba(15,23,42,0.98),
-            0 0 10px rgba(45,212,191,0.75);
-        }
-        .ramindex-scroll::-webkit-scrollbar-thumb:hover {
-          background-image: linear-gradient(to bottom, rgba(244,244,245,0.98), rgba(56,189,248,0.98));
-        }
-        .ramindex-scroll::-webkit-scrollbar-corner {
-          background: transparent;
-        }
-      `}</style>
-
       {/* Título + leyenda */}
       <div className="relative p-3 sm:p-4 pb-2">
         <div className="flex flex-wrap items-center gap-3">
@@ -885,3 +846,6 @@ export default function RamIndexPanel({
     </section>
   );
 }
+
+const RamIndexPanel = React.memo(RamIndexPanelInner);
+export default RamIndexPanel;

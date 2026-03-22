@@ -343,7 +343,7 @@ const CommandBlock = ({ b }: { b: CmdBlock }) => {
 };
 
 /* ───────────────────────── Componente principal ───────────────────────── */
-export function LogPanel({
+export const LogPanel = React.memo(function LogPanel({
   logs,
   onCommand,
   onClear,
@@ -424,7 +424,9 @@ export function LogPanel({
   };
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() => {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
   }, [logs]);
 
   const blocks = useMemo(() => buildBlocks(logs), [logs]);
@@ -574,4 +576,4 @@ export function LogPanel({
       </div>
     </section>
   );
-}
+});

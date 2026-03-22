@@ -210,21 +210,21 @@ const TourTooltip: React.FC<Props> = ({
               position: "fixed",
               top: "50%",
               left: "50%",
-              transform: "translate(-50%, -50%)",
+              transform: visible ? "translate(-50%, -50%) scale(1)" : "translate(-50%, -50%) scale(0.95)",
               opacity: visible ? 1 : 0,
-              transition: "all 0.5s ease-out",
+              transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
             }
           : {
               position: "absolute",
               top: tooltipPos.top,
               left: tooltipPos.left,
               opacity: visible ? 1 : 0,
-              transition: "all 0.5s ease-out",
+              transform: visible ? "scale(1)" : "scale(0.95)",
+              transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
             }
       }
-      className={`z-[11000] bg-[#121212] p-5 rounded-xl border-2 
-      max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center 
-      transition-all duration-500 ease-out
+      className={`z-[11000] bg-[#121212] p-5 rounded-xl border-2
+      max-w-[90%] sm:max-w-sm max-h-[80vh] overflow-auto text-center
       ${
         isInfo
           ? "border-[#00ff00] shadow-[0_0_20px_#00ff00]"
@@ -245,7 +245,7 @@ const TourTooltip: React.FC<Props> = ({
 
       {/* Título con Emoji */}
       <div className="flex items-center justify-center mb-3 gap-2">
-        <span className="text-xl animate-bounce">{isInfo ? "💡" : "🤖"}</span>
+        <span className="text-xl">{isInfo ? "💡" : "🤖"}</span>
         <h2
           className={`text-lg font-bold tracking-widest drop-shadow-[0_0_4px_#ff0040] 
         ${isInfo ? "text-[#00ff00]" : "text-[#ff0040]"}`}

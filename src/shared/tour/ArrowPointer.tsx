@@ -1,7 +1,7 @@
 import React from "react";
 
 type ArrowPointerProps = {
-  position: "top" | "bottom"; // “top” para colocar el arrow sobre el highlight, “bottom” para debajo
+  position: "top" | "bottom";
   highlightStyle: React.CSSProperties;
 };
 
@@ -9,7 +9,6 @@ const ArrowPointer: React.FC<ArrowPointerProps> = ({
   position,
   highlightStyle,
 }) => {
-  // Extraemos los datos numéricos de la posición y tamaño del highlight
   const top = typeof highlightStyle.top === "number" ? highlightStyle.top : 0;
   const left =
     typeof highlightStyle.left === "number" ? highlightStyle.left : 0;
@@ -18,30 +17,30 @@ const ArrowPointer: React.FC<ArrowPointerProps> = ({
   const height =
     typeof highlightStyle.height === "number" ? highlightStyle.height : 0;
 
-  let arrowTop: number;
-  // Si la posición es "top" significa que el arrow se ubicará sobre el highlight (para tooltip lateral o tooltip abajo)
-  if (position === "top") {
-    arrowTop = top - 40; // Ajusta este valor para que se vea bien; en este ejemplo 40px de margen
-  } else {
-    // Si es "bottom", el arrow se dibuja debajo del highlight (para tooltip que se posiciona arriba)
-    arrowTop = top + height + 20; // nuevamente, ajusta el 20px según tu diseño
-  }
-
-  // Centrar el arrow horizontalmente respecto al highlight
-  const arrowLeft = left + width / 2 - 12; // 12 es la mitad del ancho del arrow (en este caso, si usas el emoji, ajústalo según convenga)
+  const arrowTop = position === "top" ? top - 40 : top + height + 20;
+  const arrowLeft = left + width / 2 - 12;
 
   return (
-    <div
-      className="absolute z-[9999] text-2xl animate-bounce"
-      style={{
-        top: arrowTop,
-        left: arrowLeft,
-        filter: "drop-shadow(0 0 6px #ff0040)",
-        pointerEvents: "none", // Esto permite que el arrow no interfiera en los eventos sobre otros elementos
-      }}
-    >
-      🤖
-    </div>
+    <>
+      <style>{`
+        @keyframes tour-arrow-in {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      <div
+        className="absolute z-[9999] text-2xl animate-bounce"
+        style={{
+          top: arrowTop,
+          left: arrowLeft,
+          pointerEvents: "none",
+          opacity: 0,
+          animation: "tour-arrow-in 0.3s ease-out 0.4s forwards",
+        }}
+      >
+        🤖
+      </div>
+    </>
   );
 };
 

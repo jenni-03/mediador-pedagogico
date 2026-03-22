@@ -6,7 +6,7 @@ import { HeapView } from "./HeapView";
 import RamView from "./RamView";
 import { LogPanel } from "./LogPanel";
 import { AnchorRegistryProvider } from "./AnchorRegistry";
-import { HighlightProvider, useHighlight } from "./HighlightCtx";
+import { HighlightProvider, useHighlightState } from "./HighlightCtx";
 import { Header } from "../../pages/simulator/components/molecules/Header";
 import RamIndexPanel from "./RamIndexPanel";
 import { buildRamViewSnap } from "./ramViewAdapter";
@@ -15,7 +15,7 @@ import CustomTour, { TourType } from "../../shared/tour/CustomTour";
 
 function AppInner() {
   const { snapshot, logs, animEvents, actions } = useMemorySimulator(1024 * 8);
-  const { highlight } = useHighlight();
+  const highlight = useHighlightState();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [peekRange, setPeekRange] = useState<{
@@ -37,16 +37,17 @@ function AppInner() {
     return () => clearTimeout(t);
   }, [peekRange]);
 
+  const highlightStart = highlight?.ranges?.[0]?.start;
   const ramSnap = useMemo(
     () =>
       buildRamViewSnap(snapshot as any, {
         selectedId,
         peekRange,
-        activeFromHighlight: highlight?.ranges?.[0]?.start,
+        activeFromHighlight: highlightStart,
         bytesPerRow: 16,
         groupSize: 4,
       }),
-    [snapshot, selectedId, peekRange, highlight]
+    [snapshot, selectedId, peekRange, highlightStart]
   );
 
   const handlePick = useCallback((item: any | null) => {
@@ -112,7 +113,7 @@ function AppInner() {
             className="
               w-full rounded-2xl border border-neutral-700/40 bg-neutral-900/60 px-4 py-6
               shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)]
-              backdrop-saturate-150 space-y-6
+              space-y-6
             "
           >
             <div

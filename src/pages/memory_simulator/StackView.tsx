@@ -155,7 +155,7 @@ function useContainerWidth<T extends HTMLElement>() {
 /* ============================================================
    StackView — gamer sólido
    ============================================================ */
-export function StackView({ frames }: { frames: UiFrame[] }) {
+export const StackView = React.memo(function StackView({ frames }: { frames: UiFrame[] }) {
   const items = React.useMemo(
     () => (frames ?? []).flatMap((f) => (f.slots ?? []).map((slot, idx) => ({ key: `${f.id}:${idx}`, slot }))),
     [frames]
@@ -255,7 +255,7 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
       </div>
     </section>
   );
-}
+});
 
 function ScrollFades({ showTop, showBottom }: { showTop: boolean; showBottom: boolean }) {
   return (

@@ -71,8 +71,8 @@ html, body { height:auto; min-height:100%; }
     radial-gradient(70vw 44vh at 78% 26%, rgba(167,139,250, calc(.42*var(--aurora-intensity))), transparent 72%),
     /* aurora sky */
     radial-gradient(65vw 42vh at 50% 120%, rgba(56,189,248,  calc(.30*var(--aurora-intensity))), transparent 75%);
-  filter: saturate(1.05);
-  mix-blend-mode: screen;
+  opacity: 0.38;
+  will-change: transform;
   animation: aurora-drift 60s linear infinite;
 }
 
@@ -106,8 +106,8 @@ html, body { height:auto; min-height:100%; }
     center, center,
     0 0, 0 0, 0 0;
 
-  opacity: 1;
-  mix-blend-mode: soft-light;
+  opacity: 0.22;
+  will-change: transform;
 
   /* desvanecido hacia bordes para que no “ensucie” el layout */
   -webkit-mask-image: radial-gradient(120% 100% at 50% 48%, #000 62%, transparent 100%);
@@ -132,18 +132,25 @@ html, body { height:auto; min-height:100%; }
   100% { transform: translate3d(0,0,0); }
 }
 @keyframes stars-drift {
-  0%   { background-position: center, center, 0 0, 0 0, 0 0; }
-  100% { background-position: center, center, -260px -160px, -180px -120px, 0 0; }
+  0%   { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(-60px,-40px,0); }
 }
 @keyframes stars-twinkle {
   0%,100% { opacity: .95; }
   50%     { opacity: 1; }
 }
 
-/* Reduce motion? Desactivamos animaciones */
+/* Reduce motion? Desactivamos animaciones y reducimos efectos */
 @media (prefers-reduced-motion: reduce){
   .brand-canvas::before,
-  .brand-canvas::after{ animation: none !important; }
+  .brand-canvas::after{ animation: none !important; opacity: 0.05 !important; }
+}
+
+/* Móvil: reducir efectos de fondo para mejor rendimiento */
+@media (max-width: 768px){
+  .brand-canvas{ box-shadow: none; }
+  .brand-canvas::before{ opacity: 0.15; }
+  .brand-canvas::after{ opacity: 0.08; }
 }
 
 /* ── Paddings responsivos del contenido (igual que v9) ───────────────────────────────────── */
@@ -173,6 +180,46 @@ html, body { height:auto; min-height:100%; }
 }
 .stk-scroll::-webkit-scrollbar-thumb:hover{ background: rgba(200,170,255,.86); }
 .stk-scroll::-webkit-scrollbar-corner{ background: transparent; }
+
+/* ── Scrollbar RamView ───────────────────────────────────────────────────────── */
+.ramview-scroll{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,0.8) transparent;
+}
+.ramview-scroll::-webkit-scrollbar{ width:8px; }
+.ramview-scroll::-webkit-scrollbar-track{
+  background: radial-gradient(circle at 50% 0%, rgba(148,163,184,0.18), transparent 55%);
+  border-radius:9999px;
+}
+.ramview-scroll::-webkit-scrollbar-thumb{
+  background-image: linear-gradient(to bottom, rgba(148,163,184,0.95), rgba(56,189,248,0.95));
+  border-radius:9999px;
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.95), 0 0 8px rgba(56,189,248,0.65);
+}
+.ramview-scroll::-webkit-scrollbar-thumb:hover{
+  background-image: linear-gradient(to bottom, rgba(226,232,240,0.98), rgba(59,130,246,0.98));
+}
+.ramview-scroll::-webkit-scrollbar-corner{ background: transparent; }
+
+/* ── Scrollbar RamIndexPanel ─────────────────────────────────────────────────── */
+.ramindex-scroll{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148,163,184,0.9) transparent;
+}
+.ramindex-scroll::-webkit-scrollbar{ width:8px; }
+.ramindex-scroll::-webkit-scrollbar-track{
+  background: radial-gradient(circle at 50% 0%, rgba(15,23,42,0.95), transparent 55%);
+  border-radius:9999px;
+}
+.ramindex-scroll::-webkit-scrollbar-thumb{
+  background-image: linear-gradient(to bottom, rgba(129,140,248,0.97), rgba(45,212,191,0.94));
+  border-radius:9999px;
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.98), 0 0 10px rgba(45,212,191,0.75);
+}
+.ramindex-scroll::-webkit-scrollbar-thumb:hover{
+  background-image: linear-gradient(to bottom, rgba(244,244,245,0.98), rgba(56,189,248,0.98));
+}
+.ramindex-scroll::-webkit-scrollbar-corner{ background: transparent; }
 `
     );
   }, []);

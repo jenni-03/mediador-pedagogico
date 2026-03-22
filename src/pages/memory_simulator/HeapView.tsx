@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useAnchors } from "./AnchorRegistry";
 import {
   HeapInspectorModal,
@@ -174,7 +174,7 @@ function ScrollFades({
 }
 
 /* ───────── Vista principal ───────── */
-export function HeapView({
+export const HeapView = React.memo(function HeapView({
   heap,
   pulseAddrs = [],
 }: {
@@ -276,7 +276,7 @@ export function HeapView({
       />
     </section>
   );
-}
+});
 
 /* ───────── Donut + barra (sólidos) ───────── */
 function MemoryMeter({

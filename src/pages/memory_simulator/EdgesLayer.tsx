@@ -8,6 +8,7 @@ export function EdgesLayer({ edges }: { edges: Edge[] }) {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
   const [lines, setLines] = React.useState<Line[]>([]);
   const { getRect } = useAnchors();
+  const rafRef = React.useRef(0);
 
   const compute = React.useCallback(() => {
     const svg = svgRef.current;
@@ -37,12 +38,21 @@ export function EdgesLayer({ edges }: { edges: Edge[] }) {
     setLines(out);
   }, [edges, getRect]);
 
+  const debouncedCompute = React.useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(compute);
+  }, [compute]);
+
   React.useLayoutEffect(() => {
     compute();
-    const ro = new ResizeObserver(compute);
-    ro.observe(document.body);
-    return () => ro.disconnect();
-  }, [compute]);
+    const parent = svgRef.current?.parentElement ?? document.body;
+    const ro = new ResizeObserver(debouncedCompute);
+    ro.observe(parent);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [compute, debouncedCompute]);
 
   return (
     <svg
@@ -68,7 +78,7 @@ export function EdgesLayer({ edges }: { edges: Edge[] }) {
         const base =
           "fill-none stroke-[1.5] text-indigo-400 dark:text-indigo-300 opacity-80";
         const hi =
-          "stroke-[2.5] text-emerald-400 dark:text-emerald-300 drop-shadow";
+          "stroke-[2.5] text-emerald-400 dark:text-emerald-300";
         return (
           <path
             key={i}
