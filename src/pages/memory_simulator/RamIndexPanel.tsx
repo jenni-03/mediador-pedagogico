@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { HexAddr, ByteRange, UiRamItem } from "./types/inspector-types";
 
 /* =================== Paleta sólida (teal/slate gamer) =================== */
@@ -184,29 +185,7 @@ function srcTheme(src: UiRamItem["source"]) {
   }
 }
 
-/* =================== Backdrop PCB (sutil y sólido) =================== */
-function IndexBackdrop() {
-  return (
-    <>
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, rgba(56,189,248,.18) 0 1px, transparent 1px 20px), repeating-linear-gradient(90deg, rgba(56,189,248,.18) 0 1px, transparent 1px 20px)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(1100px 520px at -10% 110%, rgba(56,189,248,.12), transparent 60%), radial-gradient(1000px 460px at 120% -10%, rgba(16,185,129,.12), transparent 60%)",
-        }}
-      />
-    </>
-  );
-}
+/* IndexBackdrop eliminado — sin efecto visual perceptible, ahorra composición GPU */
 
 /* =================== Leyenda =================== */
 function LegendBar() {
@@ -219,7 +198,7 @@ function LegendBar() {
     </span>
   );
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5 sm:gap-2">
       <Item
         label="ref"
         cls="bg-amber-500/25 text-amber-100 ring-1 ring-amber-300/40"
@@ -260,9 +239,9 @@ function TabButton({
   tourId?: string;
 }) {
   const base =
-    "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium tracking-wide transition-all";
+    "inline-flex items-center gap-1.5 sm:gap-2 rounded-full px-2 sm:px-3 py-1 text-[10px] sm:text-[11px] font-medium tracking-wide transition-all";
   const common = active
-    ? "bg-emerald-500/20 text-emerald-100 shadow-[0_0_0_1px_rgba(52,211,153,.7),0_0_14px_rgba(16,185,129,.8)]"
+    ? "bg-emerald-500/20 text-emerald-100 ring-2 ring-emerald-400/60"
     : "bg-[#141925]/85 text-zinc-300 hover:bg-[#1b2332] hover:text-zinc-50 border border-white/5";
   const dotColor =
     tone === "amber"
@@ -281,7 +260,7 @@ function TabButton({
       data-tour={tourId}
     >
       <span
-        className={`h-2 w-2 rounded-full ${dotColor} shadow-[0_0_8px_rgba(250,250,250,.9)]`}
+        className={`h-2 w-2 rounded-full ${dotColor}`}
       />
       <span>{label}</span>
       <span className="text-[10px] px-1.5 py-[1px] rounded-full bg-black/40 font-mono tabular-nums">
@@ -339,22 +318,6 @@ function ItemCard({
       onMouseEnter={() => onHoverRange?.(it.range)}
       onMouseLeave={() => onLeaveRange?.()}
     >
-      <style>{`
-        .icq-card{ container-type:inline-size; }
-        .icq-body{ padding:.65rem .75rem; gap:.55rem; }
-        .icq-title{ font-size:clamp(.96rem,1.0vw + .52rem,1.06rem); }
-        .icq-chip,.icq-badge{ border-radius:9999px; padding:.18rem .55rem; }
-        .icq-metrics{ display:flex; gap:.45rem; align-items:center; }
-        .icq-card[data-pressed="y"]{ outline:2px solid transparent; box-shadow:0 0 0 2px rgba(167,139,250,.35) inset; }
-        @container (max-width: 430px){
-          .icq-body{ padding:.5rem .6rem; gap:.48rem; }
-          .icq-title{ font-size:.98rem; }
-          .icq-chip{ font-size:.62rem; padding:.12rem .45rem; }
-          .icq-badge{ font-size:.62rem; padding:.12rem .45rem; }
-          .icq-metrics{ width:100%; justify-content:space-between; flex-wrap:wrap; order:4; }
-        }
-      `}</style>
-
       {/* rail */}
       <div
         className={[
@@ -376,7 +339,7 @@ function ItemCard({
           }
         }}
         className={[
-          "icq-body relative w-full text-left flex flex-wrap items-center",
+          "icq-body relative w-full min-w-0 text-left flex flex-wrap items-center overflow-hidden",
           pressed ? "bg-black/15" : "hover:bg-black/10",
         ].join(" ")}
         title={`${titleText}${isHeap ? ` • ${seg}` : ""}`}
@@ -417,13 +380,13 @@ function ItemCard({
           )}
         </div>
 
-        <div className="icq-metrics shrink-0">
+        <div className="icq-metrics shrink-0 max-w-[45%] flex flex-wrap justify-end gap-1">
           {(it.source === "heap-header" || it.source === "heap-data") && (
-            <span className="icq-badge bg-[#2D3747] text-zinc-100 ring-1 ring-[#3B4659] tabular-nums">
+            <span className="icq-badge bg-[#2D3747] text-zinc-100 ring-1 ring-[#3B4659] tabular-nums truncate">
               {fmtBytes((it as any).bytes ?? 0)}
             </span>
           )}
-          <span className="icq-badge bg-[#2D3747] text-zinc-100 ring-1 ring-[#3B4659] font-mono tabular-nums">
+          <span className="icq-badge bg-[#2D3747] text-zinc-100 ring-1 ring-[#3B4659] font-mono tabular-nums truncate text-[10px]">
             {(it.range.from as string).toUpperCase()}
           </span>
         </div>
@@ -574,9 +537,24 @@ function Column({
 }) {
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 rounded-xl overflow-hidden"
+      className="flex flex-col flex-1 min-h-0 max-h-full rounded-xl overflow-hidden"
       style={{ background: C.panelInner, border: `1px solid ${C.ring}` }}
     >
+      <style>{`
+        .icq-card{ container-type:inline-size; }
+        .icq-body{ padding:.65rem .75rem; gap:.55rem; }
+        .icq-title{ font-size:clamp(.96rem,1.0vw + .52rem,1.06rem); }
+        .icq-chip,.icq-badge{ border-radius:9999px; padding:.18rem .55rem; }
+        .icq-metrics{ display:flex; gap:.45rem; align-items:center; }
+        .icq-card[data-pressed="y"]{ outline:2px solid transparent; box-shadow:0 0 0 2px rgba(167,139,250,.35) inset; }
+        @container (max-width: 430px){
+          .icq-body{ padding:.5rem .6rem; gap:.48rem; }
+          .icq-title{ font-size:.98rem; }
+          .icq-chip{ font-size:.62rem; padding:.12rem .45rem; }
+          .icq-badge{ font-size:.62rem; padding:.12rem .45rem; }
+          .icq-metrics{ width:100%; justify-content:space-between; flex-wrap:wrap; order:4; }
+        }
+      `}</style>
       <div
         className="shrink-0 px-3 py-2"
         style={{
@@ -585,7 +563,7 @@ function Column({
         }}
       >
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-400/85 shadow-[0_0_6px_rgba(52,211,153,.9)]" />
+          <span className="h-2 w-2 rounded-full bg-emerald-400/85" />
           <span className="text-[12px] tracking-wide uppercase text-emerald-100">
             {title}
           </span>
@@ -595,7 +573,7 @@ function Column({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 ramindex-scroll">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 mem-scroll">
         {items.length === 0 ? (
           <div
             className="px-3 py-10 text-sm text-zinc-300 text-center border border-dashed rounded-xl"
@@ -644,7 +622,7 @@ function Column({
 }
 
 /* =================== Panel principal (controlable) =================== */
-export default function RamIndexPanel({
+function RamIndexPanelInner({
   items,
   onFocusRange,
   selectedId,
@@ -762,42 +740,12 @@ export default function RamIndexPanel({
           "0 20px 36px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04)",
       }}
     >
-      <IndexBackdrop />
-
-      {/* scroll del índice */}
-      <style>{`
-        .ramindex-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(148,163,184,0.9) transparent;
-        }
-        .ramindex-scroll::-webkit-scrollbar {
-          width: 8px;
-        }
-        .ramindex-scroll::-webkit-scrollbar-track {
-          background: radial-gradient(circle at 50% 0%, rgba(15,23,42,0.95), transparent 55%);
-          border-radius: 9999px;
-        }
-        .ramindex-scroll::-webkit-scrollbar-thumb {
-          background-image: linear-gradient(to bottom, rgba(129,140,248,0.97), rgba(45,212,191,0.94));
-          border-radius: 9999px;
-          box-shadow:
-            0 0 0 1px rgba(15,23,42,0.98),
-            0 0 10px rgba(45,212,191,0.75);
-        }
-        .ramindex-scroll::-webkit-scrollbar-thumb:hover {
-          background-image: linear-gradient(to bottom, rgba(244,244,245,0.98), rgba(56,189,248,0.98));
-        }
-        .ramindex-scroll::-webkit-scrollbar-corner {
-          background: transparent;
-        }
-      `}</style>
-
       {/* Título + leyenda */}
       <div className="relative p-3 sm:p-4 pb-2">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.9)]" />
-            <h2 className="text-lg sm:text-xl font-semibold tracking-tight">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            <h2 className="text-base sm:text-xl font-semibold tracking-tight">
               RAM · Índice
             </h2>
           </div>
@@ -813,17 +761,28 @@ export default function RamIndexPanel({
           className="relative h-full rounded-xl overflow-hidden flex flex-col min-h-0"
           style={{ background: C.panelSoft, border: `1px solid ${C.ring}` }}
         >
-          <div className="flex-1 min-w-0 min-h-0 p-3 sm:p-4 flex">
-            <Column
-              title={currentTitle}
-              items={currentItems}
-              allItems={itemsClean}
-              selectedId={selId}
-              onToggleItem={toggle}
-              onFocusRange={(r) => onFocusRange?.(r)}
-              heapOwnerNameOf={heapOwnerNameOf}
-              attrsOf={attrsOf}
-            />
+          <div className="flex-1 min-w-0 min-h-0 p-3 sm:p-4 flex overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={tab}
+                className="w-full min-h-0 flex flex-col"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <Column
+                  title={currentTitle}
+                  items={currentItems}
+                  allItems={itemsClean}
+                  selectedId={selId}
+                  onToggleItem={toggle}
+                  onFocusRange={(r) => onFocusRange?.(r)}
+                  heapOwnerNameOf={heapOwnerNameOf}
+                  attrsOf={attrsOf}
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* barra de pestañas + botón Limpiar RAM */}
@@ -831,25 +790,8 @@ export default function RamIndexPanel({
             className="shrink-0 px-3 sm:px-4 pb-3 pt-2 border-t border-[rgba(148,163,184,0.35)] bg-gradient-to-t from-black/45 via-black/15 to-transparent"
             data-tour="tabsRamIndex"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-              {onClearAll && (
-                <button
-                  type="button"
-                  onClick={onClearAll}
-                  data-tour="limpiar"
-                  className="inline-flex items-center gap-2 rounded-full border border-rose-400/80 bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-50 shadow-[0_0_0_1px_rgba(248,113,113,0.7),0_0_18px_rgba(248,113,113,0.7)] hover:bg-rose-500/30 hover:border-rose-200/90 hover:shadow-[0_0_0_1px_rgba(254,202,202,0.9),0_0_22px_rgba(248,113,113,0.95)] transition-colors"
-                  title="Borrar todas las estructuras de la memoria"
-                >
-                  <span className="text-sm">🧹</span>
-                  <span>Limpiar RAM</span>
-                  <span className="hidden sm:inline text-[9px] px-1.5 py-[1px] rounded-full bg-black/40 font-mono uppercase tracking-wide">
-                    Reset total
-                  </span>
-                </button>
-              )}
-
-              <div className="flex-1 flex justify-center">
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 order-2 sm:order-1 flex-1">
                   <TabButton
                     tourId="tabRamStack"
                     active={tab === "stack"}
@@ -874,8 +816,20 @@ export default function RamIndexPanel({
                     tone="emerald"
                     onClick={() => setTab("data")}
                   />
-                </div>
               </div>
+
+              {onClearAll && (
+                <button
+                  type="button"
+                  onClick={onClearAll}
+                  data-tour="limpiar"
+                  className="order-1 sm:order-2 inline-flex items-center justify-center gap-2 rounded-full border border-rose-400/60 bg-rose-500/15 px-3 py-1.5 text-[11px] font-semibold text-rose-50 ring-1 ring-rose-400/40 hover:bg-rose-500/25 transition-colors w-full sm:w-auto"
+                  title="Borrar todas las estructuras de la memoria"
+                >
+                  <span className="text-sm">🧹</span>
+                  <span>Limpiar RAM</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -885,3 +839,6 @@ export default function RamIndexPanel({
     </section>
   );
 }
+
+const RamIndexPanel = React.memo(RamIndexPanelInner);
+export default RamIndexPanel;

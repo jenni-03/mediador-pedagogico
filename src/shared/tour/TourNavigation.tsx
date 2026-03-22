@@ -1,8 +1,11 @@
+import React from "react";
+
 type Props = {
   onPrev: () => void;
   onNext: () => void;
   isFirst: boolean;
   isLast: boolean;
+  accentColor?: string;
 };
 
 const TourNavigation: React.FC<Props> = ({
@@ -10,27 +13,27 @@ const TourNavigation: React.FC<Props> = ({
   onNext,
   isFirst,
   isLast,
+  accentColor = "#38bdf8",
 }) => (
-  <div className="flex justify-between mt-4 gap-2">
+  <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/[0.06]">
     <button
       onClick={onPrev}
       disabled={isFirst}
-      className={`px-4 py-2 text-sm rounded-md border border-[#ff0040] transition 
-        ${
-          isFirst
-            ? "bg-transparent text-gray-500 opacity-50 cursor-not-allowed"
-            : "bg-[#1c1c1c] text-[#ff0040] hover:bg-[#ff0040] hover:text-black shadow-[0_0_10px_#ff0040]"
-        }`}
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+        isFirst
+          ? "text-zinc-600 cursor-not-allowed"
+          : "text-zinc-300 hover:bg-white/10"
+      }`}
     >
-      Anterior
+      ← Anterior
     </button>
 
     <button
       onClick={onNext}
-      className="px-4 py-2 text-sm rounded-md bg-[#ff0040] text-white font-semibold shadow-[0_0_10px_#ff0040]
-        hover:bg-white hover:text-[#ff0040] transition"
+      className="inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-colors"
+      style={{ background: accentColor }}
     >
-      {isLast ? "Finalizar" : "Siguiente"}
+      {isLast ? "Finalizar ✓" : "Siguiente →"}
     </button>
   </div>
 );

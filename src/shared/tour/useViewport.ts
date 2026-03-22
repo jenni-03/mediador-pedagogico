@@ -7,15 +7,22 @@ const useViewport = () => {
   });
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      setViewport({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setViewport({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      }, 200);
     };
 
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timer);
+    };
   }, []);
 
   return viewport;

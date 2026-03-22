@@ -55,6 +55,8 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
     stepIndexRef.current = currentStep;
   }, [currentStep]);
 
+  const rafId = useRef(0);
+  const isTransitioningRef = useRef(false);
   const stepLockRef = useRef(false);
   const withStepLock = (fn: () => void) => {
     if (stepLockRef.current) return;
@@ -211,8 +213,15 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
 
       if (elements.length === 0) return;
 
+      // Habilitar transición solo al cambiar de paso (no durante scroll)
+      isTransitioningRef.current = true;
+      const transitionTimer = setTimeout(() => {
+        isTransitioningRef.current = false;
+      }, 500);
+
       const updateHighlightPosition = () => {
-        const boxes: React.CSSProperties[] = elements.map((el) => {
+        let newArrowPos: "top" | "bottom" = "top";
+        const boxes: React.CSSProperties[] = elements.map((el, i) => {
           const rect = el.getBoundingClientRect();
           const scrollTop =
             window.scrollY || document.documentElement.scrollTop;
@@ -222,9 +231,10 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
           const left = rect.left + scrollLeft - 8;
           const width = rect.width + 16;
           const height = rect.height + 16;
-          const shouldShowAbove = top + height + 150 > viewportHeight;
 
-          setArrowPosition(shouldShowAbove ? "bottom" : "top");
+          if (i === 0) {
+            newArrowPos = (top + height + 150 > viewportHeight) ? "bottom" : "top";
+          }
 
           return {
             position: "absolute",
@@ -236,26 +246,36 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
             borderRadius: "12px",
             zIndex: 9998,
             pointerEvents: "none",
-            transition: "all 0.3s ease",
+            ...(isTransitioningRef.current
+              ? { transition: "top 0.4s ease-out, left 0.4s ease-out, width 0.4s ease-out, height 0.4s ease-out" }
+              : {}),
           };
         });
 
+        setArrowPosition(newArrowPos);
         setHighlightBoxes(boxes);
+      };
+
+      const throttledUpdate = () => {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = requestAnimationFrame(updateHighlightPosition);
       };
 
       elements[0].scrollIntoView({ behavior: "smooth", block: "center" });
       const t = setTimeout(updateHighlightPosition, 400);
 
-      window.addEventListener("scroll", updateHighlightPosition, true);
-      window.addEventListener("resize", updateHighlightPosition);
+      window.addEventListener("scroll", throttledUpdate, true);
+      window.addEventListener("resize", throttledUpdate);
 
-      const resizeObserver = new ResizeObserver(updateHighlightPosition);
+      const resizeObserver = new ResizeObserver(throttledUpdate);
       elements.forEach((el) => resizeObserver.observe(el));
 
       return () => {
         clearTimeout(t);
-        window.removeEventListener("scroll", updateHighlightPosition, true);
-        window.removeEventListener("resize", updateHighlightPosition);
+        clearTimeout(transitionTimer);
+        cancelAnimationFrame(rafId.current);
+        window.removeEventListener("scroll", throttledUpdate, true);
+        window.removeEventListener("resize", throttledUpdate);
         resizeObserver.disconnect();
       };
     }
@@ -424,12 +444,11 @@ const CustomTour: React.FC<CustomTourProps> = ({ tipo }) => {
             setIsActive(true);
             setCurrentStep(0);
           }}
-          className="fixed bottom-5 right-5 w-12 h-12 rounded-full bg-white text-[#1a1a1a] flex items-center justify-center text-xl shadow-[0_0_10px_rgba(0,0,0,0.3)] hover:bg-[#ff0040] hover:text-white hover:shadow-[0_0_12px_#ff0040] transition-all duration-300 cursor-pointer z-[9999]"
+          className="fixed bottom-5 right-5 w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg hover:scale-110 transition-transform duration-200 cursor-pointer z-[9999]"
+          style={{ background: "linear-gradient(135deg, #38bdf8, #8b5cf6)" }}
           title="Asistente Tour"
         >
-          <span className="animate-pulse drop-shadow-[0_0_6px_#000000]">
-            🤖
-          </span>
+          <span className="text-lg">🧭</span>
         </button>
       )}
     </>

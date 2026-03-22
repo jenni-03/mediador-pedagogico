@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PrimitiveType } from "../../../domain/RAM/memoria/layout";
 
 type Props = {
@@ -63,6 +63,7 @@ export function ArrayElementsPanel({
   // Altura efectiva (cap por viewport)
   const [effectiveMaxH, setEffectiveMaxH] = useState<number>(maxHeight);
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     const compute = () => {
       const byVh =
         typeof window !== "undefined"
@@ -70,10 +71,17 @@ export function ArrayElementsPanel({
           : maxHeight;
       setEffectiveMaxH(Math.min(maxHeight, byVh));
     };
+    const debouncedCompute = () => {
+      clearTimeout(timer);
+      timer = setTimeout(compute, 200);
+    };
     compute();
     if (typeof window !== "undefined") {
-      window.addEventListener("resize", compute);
-      return () => window.removeEventListener("resize", compute);
+      window.addEventListener("resize", debouncedCompute);
+      return () => {
+        window.removeEventListener("resize", debouncedCompute);
+        clearTimeout(timer);
+      };
     }
   }, [vhCap, maxHeight]);
 
@@ -91,12 +99,30 @@ export function ArrayElementsPanel({
 
   const cardPad = compact ? "p-2" : "p-3";
 
+  const scrollRafRef = useRef(0);
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    cancelAnimationFrame(scrollRafRef.current);
+    const container = e.currentTarget;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      const cTop = container.getBoundingClientRect().top;
+      let current = 0;
+      for (let i = 0; i < groupRefs.current.length; i++) {
+        const node = groupRefs.current[i];
+        if (!node) continue;
+        const nTop = node.getBoundingClientRect().top - cTop;
+        if (nTop <= 8) current = i;
+        else break;
+      }
+      setActiveIdx((prev) => (prev !== current ? current : prev));
+    });
+  }, []);
+
   return (
     <div
       className={`rounded-xl border border-neutral-800 bg-neutral-900/40 ${className}`}
     >
       {/* índice de bloques */}
-      <div className="sticky top-0 z-[1] flex flex-wrap gap-1.5 p-2 border-b border-neutral-800 bg-neutral-900/60 backdrop-blur">
+      <div className="sticky top-0 z-[1] flex flex-wrap gap-1.5 p-2 border-b border-neutral-800 bg-neutral-900">
         {groups.map((g, i) => (
           <button
             key={i}
@@ -118,24 +144,12 @@ export function ArrayElementsPanel({
       <div
         className="overflow-y-auto"
         style={{ maxHeight: effectiveMaxH }}
-        onScroll={(e) => {
-          const container = e.currentTarget as HTMLDivElement;
-          const cTop = container.getBoundingClientRect().top;
-          let current = 0;
-          for (let i = 0; i < groupRefs.current.length; i++) {
-            const node = groupRefs.current[i];
-            if (!node) continue;
-            const nTop = node.getBoundingClientRect().top - cTop;
-            if (nTop <= 8) current = i;
-            else break;
-          }
-          if (current !== activeIdx) setActiveIdx(current);
-        }}
+        onScroll={handleScroll}
       >
         {groups.map((g, gi) => (
           <div key={gi} ref={setGroupRef}>
             {/* cabecera del bloque */}
-            <div className="sticky top-0 z-[1] px-3 py-1 bg-neutral-950/70 backdrop-blur border-b border-neutral-800">
+            <div className="sticky top-0 z-[1] px-3 py-1 bg-neutral-950 border-b border-neutral-800">
               <div className="text-[12px] text-neutral-300 font-mono">
                 Bloque {gi}: [{g.start} – {g.end}] · addr{" "}
                 {hex(base + g.start * elemSize)} —{" "}

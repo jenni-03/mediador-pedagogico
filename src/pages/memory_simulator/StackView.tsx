@@ -4,6 +4,7 @@
 // -----------------------------------------------------------------------------
 
 import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 /* ===== Tipos espejo del snapshot ===== */
 type HexAddr = `0x${string}`;
@@ -155,7 +156,7 @@ function useContainerWidth<T extends HTMLElement>() {
 /* ============================================================
    StackView — gamer sólido
    ============================================================ */
-export function StackView({ frames }: { frames: UiFrame[] }) {
+export const StackView = React.memo(function StackView({ frames }: { frames: UiFrame[] }) {
   const items = React.useMemo(
     () => (frames ?? []).flatMap((f) => (f.slots ?? []).map((slot, idx) => ({ key: `${f.id}:${idx}`, slot }))),
     [frames]
@@ -166,23 +167,13 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
 
   return (
     <section className="relative h-full min-h-0 min-w-0">
-      {/* Marco exterior con acento sutil */}
       <div
-        className="absolute inset-0 -z-10 rounded-3xl pointer-events-none"
-        style={{
-          border: `1px solid ${C.ring}`,
-          boxShadow: "0 0 20px rgba(167,139,250,.10)",
-        }}
-      />
-
-      {/* Cuerpo sólido */}
-      <div
-        className="relative h-full min-h-0 min-w-0 flex flex-col rounded-3xl p-3 overflow-hidden"
+        className="relative h-full min-h-0 min-w-0 flex flex-col rounded-2xl p-3 overflow-hidden"
         data-tour="panelStack"
         style={{ background: C.panel }}
       >
         {/* Header */}
-        <div className="mb-2 flex flex-wrap items-center gap-3 min-w-0">
+        <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <span
               className="grid place-items-center h-7 w-7 rounded-full"
@@ -217,19 +208,9 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
         >
           <div
             ref={scrollRef}
-            className="relative h-full min-h-0 overflow-auto rounded-2xl p-2 stk-scroll"
+            className="relative h-full min-h-0 overflow-auto rounded-2xl p-2 mem-scroll"
             style={{ background: C.panelSoft }}
           >
-            {/* micro-grid */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 -z-10"
-              style={{
-                background: "radial-gradient(rgba(255,255,255,.025) 1px, transparent 1px)",
-                backgroundSize: "18px 18px",
-              }}
-            />
-
             <ScrollFades showTop={!atTop} showBottom={!atBottom} />
 
             {items.length === 0 ? (
@@ -241,13 +222,22 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
               </div>
             ) : (
               <ul className="flex flex-col gap-3">
-                {items.map(({ key, slot }) => (
-                  <li key={key} className="relative isolate overflow-visible rounded-xl p-0 min-w-0 contain-paint">
-                    <div className="px-2 py-1">
-                      {slot.kind === "prim" ? <PrimSlotCard slot={slot as UiPrimSlot} /> : <RefSlotCard slot={slot as UiRefSlot} />}
-                    </div>
-                  </li>
-                ))}
+                <AnimatePresence>
+                  {items.map(({ key, slot }) => (
+                    <motion.li
+                      key={key}
+                      className="relative isolate overflow-visible rounded-xl p-0 min-w-0 contain-paint"
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 12 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                      <div className="px-2 py-1">
+                        {slot.kind === "prim" ? <PrimSlotCard slot={slot as UiPrimSlot} /> : <RefSlotCard slot={slot as UiRefSlot} />}
+                      </div>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
               </ul>
             )}
           </div>
@@ -255,7 +245,7 @@ export function StackView({ frames }: { frames: UiFrame[] }) {
       </div>
     </section>
   );
-}
+});
 
 function ScrollFades({ showTop, showBottom }: { showTop: boolean; showBottom: boolean }) {
   return (
